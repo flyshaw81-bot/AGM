@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AGM 项目里程碑看板</title>
+    <style>
+      :root { color-scheme: dark; --bg: #0b1020; --panel: rgba(18, 26, 44, 0.92); --panel-soft: rgba(25, 36, 58, 0.78); --border: rgba(134, 160, 204, 0.18); --text: #e8eef9; --muted: #9db0cd; --accent: #6ea8ff; --accent-soft: rgba(110, 168, 255, 0.18); --ok: #4fd1a5; --planned: #7f8aa3; --blocked: #ff7a7a; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; font-family: Inter, system-ui, sans-serif; background: radial-gradient(circle at top, rgba(48, 72, 120, 0.28), transparent 36%), linear-gradient(180deg, #0b1020 0%, #0a0f1a 100%); color: var(--text); }
+      .shell { width: min(1280px, calc(100vw - 32px)); margin: 24px auto; display: grid; gap: 16px; }
+      .hero, .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 20px; box-shadow: 0 20px 48px rgba(0, 0, 0, 0.28); backdrop-filter: blur(12px); }
+      .hero { padding: 24px; display: grid; gap: 18px; }
+      .hero__eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+      .hero__title { margin: 0; font-size: clamp(30px, 4vw, 46px); line-height: 1.1; }
+      .hero__meta { display: flex; flex-wrap: wrap; gap: 10px; }
+      .badge { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--border); background: var(--panel-soft); border-radius: 999px; padding: 8px 12px; color: var(--muted); font-size: 13px; }
+      .overview { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+      .grid { display: grid; grid-template-columns: 1.35fr 0.95fr; gap: 16px; }
+      .stack { display: grid; gap: 16px; }
+      .panel { padding: 18px; }
+      .panel__title { margin: 0 0 14px; font-size: 16px; }
+      .metric__label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+      .metric__value { margin-top: 8px; font-size: 28px; font-weight: 700; }
+      .metric__hint { margin-top: 8px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+      .progress { height: 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); overflow: hidden; margin: 10px 0 8px; }
+      .progress__bar { height: 100%; border-radius: inherit; background: linear-gradient(90deg, #5e96ff 0%, #8dc0ff 100%); }
+      .status { padding: 4px 10px; border-radius: 999px; font-size: 12px; border: 1px solid transparent; }
+      .status--completed { color: var(--ok); background: rgba(79, 209, 165, 0.12); border-color: rgba(79, 209, 165, 0.2); }
+      .status--in_progress { color: var(--accent); background: var(--accent-soft); border-color: rgba(110, 168, 255, 0.24); }
+      .status--planned { color: var(--planned); background: rgba(127, 138, 163, 0.14); border-color: rgba(127, 138, 163, 0.18); }
+      .status--blocked { color: var(--blocked); background: rgba(255, 122, 122, 0.12); border-color: rgba(255, 122, 122, 0.2); }
+      .milestone-list, .bullet-list { display: grid; gap: 12px; }
+      .milestone, .bullet { border: 1px solid var(--border); border-radius: 16px; background: rgba(255, 255, 255, 0.03); padding: 14px; }
+      .milestone__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+      .milestone__title { font-size: 15px; font-weight: 600; }
+      .kv { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
+      .kv:last-child { border-bottom: 0; padding-bottom: 0; }
+      .muted { color: var(--muted); }
+      .small { font-size: 13px; line-height: 1.5; }
+      @media (max-width: 1100px) { .overview, .grid { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <div><div class="hero__eyebrow">AGM 终局里程碑看板</div><h1 id="projectName" class="hero__title">加载中…</h1><p id="projectSummary" class="muted small"></p></div>
+        <div class="hero__meta"><div class="badge">状态：<strong id="projectStatus"></strong></div><div class="badge">更新于：<strong id="updatedAt"></strong></div></div>
+      </section>
+      <section class="overview">
+        <div class="panel"><div class="metric__label">总体进度</div><div id="overallProgress" class="metric__value">0%</div><div class="progress"><div id="overallProgressBar" class="progress__bar" style="width: 0%"></div></div><div class="metric__hint">这里衡量的是距离最终 AGM 目标的完成度，而不是当前局部 bridge 阶段。</div></div>
+        <div class="panel"><div class="metric__label">剩余进度</div><div id="remainingProgress" class="metric__value">0%</div><div class="metric__hint">离“完整独立、可扩展、能力与体验顶级”的终局还剩多少路要走。</div></div>
+        <div class="panel"><div class="metric__label">当前里程碑</div><div id="currentMilestoneTitle" class="metric__value" style="font-size: 22px">—</div><div id="currentMilestoneSummary" class="metric__hint"></div></div>
+        <div class="panel"><div class="metric__label">下一里程碑</div><div id="nextMilestoneTitle" class="metric__value" style="font-size: 22px">—</div><div id="nextMilestoneSummary" class="metric__hint"></div></div>
+      </section>
+      <section class="grid">
+        <div class="stack"><section class="panel"><h2 class="panel__title">关键里程碑</h2><div id="milestones" class="milestone-list"></div></section></div>
+        <div class="stack"><section class="panel"><h2 class="panel__title">距离最终目标还差什么</h2><div id="remainingToGoal" class="bullet-list"></div></section><section class="panel"><h2 class="panel__title">终局判断标准</h2><div class="kv"><span class="muted">独立性</span><strong>不再依赖 legacy UI</strong></div><div class="kv"><span class="muted">编辑能力</span><strong>强编辑闭环</strong></div><div class="kv"><span class="muted">算法能力</span><strong>持续增强并可扩展</strong></div><div class="kv"><span class="muted">产品体验</span><strong>精美、易用、人性化</strong></div></section></div>
+      </section>
+    </main>
+    <script>
+      const fallbackData = {
+  "project": {
+    "name": "AGM",
+    "status": "in_progress",
+    "overallProgress": 99,
+    "remainingProgress": 1,
+    "summary": "AGM（Atlas Generation Matrix，阿特拉斯生成矩阵）的终局已明确为面向游戏开发的程序化世界与地图内容生产工具。当前 bridge-first 阶段已完成新壳基础、高频 workflow 收回、主要 world 配置桥接推进、AGM 全仓库命名迁移，AGM World JSON 已接入 generation、climate、population、entities、resources、rules 与 playability；Game Export Pipeline 已把 resourceMap、provinceMap、biomeMap 扩展为 package 内地图层并提供独立 JSON、Tiled Map JSON、GeoJSON map layers、heightmap metadata、可复原 Heightfield JSON、8-bit grayscale Heightmap PNG 与 engine manifest 导出；engine manifest 已包含 importLayout、Unity/Godot/Unreal engineProfiles、heightfield/raster bindings 与 RAW/16-bit pending warning。本轮已清理 Vite production build 中 public CSS 缺失和 legacy classic script bundling warnings，仅保留 chunk size warning。整体约 99%，RAW/16-bit terrain export、真实引擎导入器/project 结构与双语产品化仍需继续推进。"
+  },
+  "currentMilestone": {
+    "title": "Build warnings cleanup / public asset paths",
+    "summary": "AGM Studio 已清理 production build 中反复出现的 public static asset warnings：src/index.html 的 legacy CSS 和 classic script 现在使用 %BASE_URL% 指向 public assets，并通过 vite-ignore 明确跳过 Vite HTML asset bundling 处理。Build 不再输出 CSS missing 和 non-module script bundling warnings，仅保留既有 chunk size warning；focused export workflow E2E 已通过。"
+  },
+  "nextMilestone": {
+    "title": "RAW / 16-bit terrain height export 与真实引擎导入结构",
+    "summary": "下一步应继续在 Heightfield JSON 与 8-bit PNG 之上提供 RAW 或 16-bit terrain height export，并补充 Unity/Godot/Unreal 更真实的 terrain import 目录和说明结构。"
+  },
+  "milestones": [
+    {
+      "title": "新 Studio 与渲染宿主基础",
+      "status": "completed",
+      "progress": 100,
+      "summary": "新的 shell、舞台区、视口预设和 hosted render surface 已建立，AGM Studio 已具备继续替代旧 UI 的基础。"
+    },
+    {
+      "title": "高频工作流收回到 AGM",
+      "status": "in_progress",
+      "progress": 99,
+      "summary": "一批高频查看、导出、数据与生成入口已收回到 AGM，并已切入 precipitation、temperature 组、map size、latitude、longitude 以及 globe wind tiers 0 / 1 / 2 / 3 / 4 / 5；profile 默认 parameterDraft 与显式 override 已在 Generate map 前应用到 states、burgs、growthRate、sizeVariety、provincesRatio 等 generation inputs，并能展示参数 impact 与结果 metrics。"
+    },
+    {
+      "title": "World Document 与状态架构",
+      "status": "in_progress",
+      "progress": 99,
+      "summary": "AGM 自有 World Document / AGM World JSON 已接入 generation、climate、population、entities、resources、rules、playability 与 maps.resourceMap / maps.provinceMap / maps.biomeMap；rules 节点包含 agm.rules.v0、version、biomeRules、resourceTags、resourceRules、provinceStructure、profileRules、weights、sourceFields，playability 已携带 profile-weighted balance hints、auto-fix drafts、generatorProfileSuggestions、parameterDraft、generationProfileImpact 参数 diff 与 resultMetrics，generation 已携带用户显式 profileOverrides，且 effective profile parameters 已可驱动生成前参数应用与 spawn、route、settlement、resource、biome、province structure、resource map 结果层解释。"
+    },
+    {
+      "title": "World Editor 与高级工作流闭环",
+      "status": "planned",
+      "progress": 87,
+      "summary": "编辑器入口、shell 联动、平衡检查、drill-down、Canvas focus overlay、真实坐标聚焦、实体轮廓、auto-fix drafts、Apply / Discard / Undo / Redo、appliedPreviewChanges，以及 settlement、route connector、biome habitability、state fair-start、support settlement、province connector、biome rule/resource 的写入、撤销、表单编辑、rules schema、独立导出、导入恢复、资源规则、profile 规则、profile-weighted 修复排序、可见生成建议、generation profile override、profile 默认参数生成前应用、Preview Beta 可见体验和独立地图层导出已有基础，但完整国家、城市、资源、路线编辑闭环仍需推进。"
+    },
+    {
+      "title": "World Generator 与游戏规则系统",
+      "status": "planned",
+      "progress": 74,
+      "summary": "AGM Studio 提供地形与世界生成基础，AGM 已继续切入世界生成控制；AGM Rules Pack 现在可表达 biomeRules、resourceRules、provinceStructure 与 profileRules，playability 已根据 profileRules 输出可见 generatorProfileSuggestions，parameterDraft 已可编辑并写回 generation.profileOverrides，未编辑时 profile 默认 parameterDraft 也会作为 effective generation parameters 应用到 states、burgs、growthRate、sizeVariety、provincesRatio 等生成输入，并记录参数 diff 与生成前后 resultMetrics；spawnFairnessWeight 已参与 spawn candidate 评分和 reasons 解释，routeConnectivityScore 已影响 route connector preview 与 provinceStructure，settlementDensityTarget 已影响 support settlement preview，resourceCoverageTarget 已影响 resourceRules coverage、provinceStructure 与 maps.resourceMap / maps.provinceMap，biomeFrictionWeight 已影响 biome habitability preview、biomeRules friction band 与 maps.biomeMap。下一步要继续把 profile impact 推进到真实地图格式导出、路线拓扑与 settlement placement 等更深层生成算法。"
+    },
+    {
+      "title": "Game Export Pipeline",
+      "status": "planned",
+      "progress": 60,
+      "summary": "PNG/SVG 等基础导出已纳入 AGM Studio；AGM 已新增 AGM World JSON package export、独立 AGM Rules Pack JSON export、独立 Resource / Province / Biome Map JSON export、Tiled-compatible Map JSON export、GeoJSON map layer export、heightmap metadata export、可复原 Heightfield JSON export、8-bit grayscale Heightmap PNG raster export 与 engine manifest export，并让 engine manifest 携带 importLayout、recommendedFiles、Unity/Godot/Unreal engineProfiles、heightfield/raster layerBindings 和 RAW/16-bit pending validation warning；production build 的 public asset warnings 已清理。Preview Beta 已把 AGM World JSON、独立地图层、Tiled JSON、GeoJSON、heightmap metadata、Heightfield JSON、Heightmap PNG 与 engine manifest 标为核心游戏数据输出，但 RAW/16-bit terrain export 与真实引擎 importer/project 结构仍需建立。"
+    },
+    {
+      "title": "精美 UI / UX 与简易操作",
+      "status": "planned",
+      "progress": 94,
+      "summary": "现代化外壳已经起步，Project document panel 已开始面向游戏项目 profile，AGM Balance Checker 已把可玩性提示可视化并提供 drill-down、editor 入口、Canvas focus overlay、真实坐标聚焦、实体轮廓、Fix / Adjust 入口、auto-fix draft 草案展示、dry-run preview diff、Apply / Discard / Undo / Redo 预览历史、Applied changes 按 draft 汇总的写入队列摘要，以及 settlement、route connector、biome habitability、state fair-start、state priority、support settlement 城市属性、province connector 属性与 biome AGM rule/resource 元数据写入 / 撤销反馈、可见摘要、表单调整、Rules Pack 导出/导入、资源规则、profile 规则、profile-weighted 修复排序、可见生成建议、可编辑参数覆盖、profile 默认参数生成前应用、Profile generation impact 的参数 diff / Result metrics 展示，以及 AGM Studio Preview Beta 的三步产品化引导、legacy loading 开屏动画移除，以及独立 Resource / Province / Biome Map JSON、Tiled Map JSON、GeoJSON map layers、heightmap metadata、Heightfield JSON、Heightmap PNG 与带 Unity/Godot/Unreal import layout hints 的 engine manifest 导出入口。"
+    },
+    {
+      "title": "可扩展架构、规则包与产品化交付",
+      "status": "planned",
+      "progress": 68,
+      "summary": "模块化边界、规则包/内容包、扩展点、双语能力、长期演进结构和真正独立应用交付方式仍需推进；AGM 全仓库命名迁移已完成，agm.rules.v0 已具备 version、biomeRules、resourceTags、resourceRules、profileRules、导入/导出/校验闭环，并通过 playability.generatorProfileSuggestions / parameterDraft / generationProfileImpact 与 generation.profileOverrides 影响下游生成建议、生成前参数应用、结果层 impact 解释、独立地图层导出、Heightfield JSON、Heightmap PNG、engine manifest import profiles、Preview Beta 可见体验和更干净的 Vite production build。"
+    }
+  ],
+  "remainingToGoal": [
+    "继续把其他世界参数链路从 world-configurator 收回到 AGM，但避免把搬控件误当终局。",
+    "把 profile-driven 生成从 effective parameters 继续推进到更深层生成逻辑：route topology、settlement placement、独立 map exports 和真实游戏引擎导出管线。",
+    "建立面向游戏设计目标的 World Generator：RPG、策略、4X、跑团、开放世界等 profile 应真实影响生成逻辑。",
+    "把编辑器从“能打开旧编辑器”推进到“可通过 AGM 队列真实应用自动修复、可编辑国家、城市、资源、路线并修复关联数据”的 World Editor。",
+    "扩展平衡检查器，检查资源集中、国家碎片化、城市距离、出生点公平性、资源/生物群系规则可玩性等更多游戏设计问题。",
+    "建立 Game Export Pipeline：已起步独立 biome/province/resource map JSON、Tiled-compatible Map JSON、GeoJSON map layers、heightmap metadata、可复原 Heightfield JSON、8-bit grayscale Heightmap PNG 与带 Unity/Godot/Unreal import layout hints 的 engine manifest，仍需 RAW/16-bit terrain export 和真实引擎 importer/project 结构。",
+    "为规则包、风格包、战役模板、内容包市场和简体中文 / 英文双语切换准备稳定结构。"
+  ],
+  "updatedAt": "2026-04-26T05:02:00+08:00"
+};
+      function setText(id, value) { document.getElementById(id).textContent = value ?? "—"; }
+      function renderStatus(status) { const labels = {planned: "计划中", in_progress: "进行中", completed: "已完成", blocked: "阻塞"}; return `<span class="status status--${status}">${labels[status] || status}</span>`; }
+      function renderStatusText(status) { const labels = {planned: "计划中", in_progress: "进行中", completed: "已完成", blocked: "阻塞"}; return labels[status] || status; }
+      function renderBullets(containerId, items, emptyText = "暂无内容") { const container = document.getElementById(containerId); container.innerHTML = items.length ? items.map(item => `<div class="bullet">${item}</div>`).join("") : `<div class="bullet muted">${emptyText}</div>`; }
+      function renderMilestones(items) { const container = document.getElementById("milestones"); container.innerHTML = items.length ? items.map(item => `<article class="milestone"><div class="milestone__head"><div class="milestone__title">${item.title}</div>${renderStatus(item.status)}</div><div class="progress"><div class="progress__bar" style="width: ${item.progress}%"></div></div><div class="muted small" style="margin-bottom: 6px">完成度 ${item.progress}%</div><div class="small">${item.summary}</div></article>`).join("") : `<div class="milestone muted">暂无关键里程碑</div>`; }
+      function renderDashboard(data) { setText("projectName", data.project.name); setText("projectSummary", data.project.summary); setText("projectStatus", renderStatusText(data.project.status)); setText("updatedAt", data.updatedAt); setText("overallProgress", `${data.project.overallProgress}%`); document.getElementById("overallProgressBar").style.width = `${data.project.overallProgress}%`; setText("remainingProgress", `${data.project.remainingProgress}%`); setText("currentMilestoneTitle", data.currentMilestone.title); setText("currentMilestoneSummary", data.currentMilestone.summary); setText("nextMilestoneTitle", data.nextMilestone.title); setText("nextMilestoneSummary", data.nextMilestone.summary); renderMilestones(data.milestones || []); renderBullets("remainingToGoal", data.remainingToGoal || [], "暂无剩余缺口"); }
+      async function loadData() { const isFileProtocol = window.location.protocol === "file:"; if (isFileProtocol) { renderDashboard(fallbackData); return; } try { const response = await fetch("./project-progress.json", {cache: "no-store"}); if (!response.ok) throw new Error(`HTTP ${response.status}`); renderDashboard(await response.json()); } catch { renderDashboard(fallbackData); } }
+      loadData();
+    </script>
+  </body>
+</html>
