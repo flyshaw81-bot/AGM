@@ -50,6 +50,12 @@ export type EngineSettingsDomTargets = {
   getInput: (id: string) => HTMLInputElement | null;
 };
 
+export type EngineWorldRuntimeTargets = {
+  getMapCoordinates: () => typeof mapCoordinates;
+  getGraphWidth: () => number;
+  getGraphHeight: () => number;
+};
+
 export type EngineWorldSettingsStore = {
   get: () => EngineWorldSettings;
   replace: (nextSettings: EngineWorldSettings) => EngineWorldSettings;
@@ -102,6 +108,14 @@ export function createGlobalSettingsDomTargets(): EngineSettingsDomTargets {
   };
 }
 
+export function createGlobalWorldRuntimeTargets(): EngineWorldRuntimeTargets {
+  return {
+    getMapCoordinates: () => mapCoordinates,
+    getGraphWidth: () => graphWidth,
+    getGraphHeight: () => graphHeight,
+  };
+}
+
 export function createSettingsInputNumberReader(
   domTargets: EngineSettingsDomTargets,
 ): (id: string, fallback: number) => number {
@@ -110,13 +124,14 @@ export function createSettingsInputNumberReader(
 
 export function createGlobalWorldSettingsTargets(
   domTargets: EngineSettingsDomTargets = createGlobalSettingsDomTargets(),
+  runtimeTargets: EngineWorldRuntimeTargets = createGlobalWorldRuntimeTargets(),
 ): EngineWorldSettingsTargets {
   const readInputNumber = createSettingsInputNumberReader(domTargets);
 
   return {
-    getMapCoordinates: () => mapCoordinates,
-    getGraphWidth: () => graphWidth,
-    getGraphHeight: () => graphHeight,
+    getMapCoordinates: runtimeTargets.getMapCoordinates,
+    getGraphWidth: runtimeTargets.getGraphWidth,
+    getGraphHeight: runtimeTargets.getGraphHeight,
     getMapSizePercent: () => readInputNumber("mapSizeOutput", 0),
     getLatitudePercent: () => readInputNumber("latitudeOutput", 0),
     getLongitudePercent: () => readInputNumber("longitudeOutput", 0),

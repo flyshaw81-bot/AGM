@@ -4,6 +4,7 @@ import {
   createGlobalPopulationSettings,
   createGlobalTimingSettings,
   createGlobalUnitSettings,
+  createGlobalWorldRuntimeTargets,
   createGlobalWorldSettings,
   createGlobalWorldSettingsTargets,
   createPopulationSettings,
@@ -14,6 +15,7 @@ import {
   createWorldSettings,
   createWorldSettingsStore,
   type EngineSettingsDomTargets,
+  type EngineWorldRuntimeTargets,
 } from "./engine-runtime-settings";
 
 const originalDocument = globalThis.document;
@@ -152,6 +154,47 @@ describe("runtime setting adapters", () => {
       latitudePercent: 42,
       longitudePercent: 0,
     });
+  });
+
+  it("composes world settings from separate DOM and runtime targets", () => {
+    const domTargets: EngineSettingsDomTargets = {
+      getInput: (id) =>
+        (({
+          mapSizeOutput: { value: "75" },
+          latitudeOutput: { value: "38" },
+          longitudeOutput: { value: "61" },
+        })[id] as HTMLInputElement | undefined) ?? null,
+    };
+    const runtimeTargets: EngineWorldRuntimeTargets = {
+      getMapCoordinates: () => ({ latN: 25 }) as typeof mapCoordinates,
+      getGraphWidth: () => 640,
+      getGraphHeight: () => 360,
+    };
+
+    expect(
+      createWorldSettings(
+        createGlobalWorldSettingsTargets(domTargets, runtimeTargets),
+      ),
+    ).toEqual({
+      mapCoordinates: { latN: 25 },
+      graphWidth: 640,
+      graphHeight: 360,
+      mapSizePercent: 75,
+      latitudePercent: 38,
+      longitudePercent: 61,
+    });
+  });
+
+  it("reads map runtime values through the explicit global runtime target", () => {
+    globalThis.mapCoordinates = { latN: 12 } as typeof mapCoordinates;
+    globalThis.graphWidth = 960;
+    globalThis.graphHeight = 540;
+
+    const targets = createGlobalWorldRuntimeTargets();
+
+    expect(targets.getMapCoordinates()).toEqual({ latN: 12 });
+    expect(targets.getGraphWidth()).toBe(960);
+    expect(targets.getGraphHeight()).toBe(540);
   });
 
   it("stores, patches, and refreshes world settings through a runtime store", () => {
