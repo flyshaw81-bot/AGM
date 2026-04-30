@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createGlobalProjectControlTargets } from "./engineProjectControlTargets";
+import {
+  createGlobalProjectControlTargets,
+  createProjectControlTargets,
+} from "./engineProjectControlTargets";
 
 type TestControlGlobals = typeof globalThis & {
   convertTemperature?: (value: number, unit: string) => unknown;
@@ -90,5 +93,38 @@ describe("createGlobalProjectControlTargets", () => {
     expect(targets.applyWindTierToRuntime(2, 135)).toBe(true);
     expect(globalThis.options.winds[2]).toBe(135);
     expect(setItem).toHaveBeenCalledWith("winds", "0,0,135,0,0,0");
+  });
+
+  it("composes project control targets from injected DOM, runtime, and storage adapters", () => {
+    const label = { textContent: "" } as HTMLElement;
+    const setOptionNumber = vi.fn();
+    const setWindTransform = vi.fn();
+    const setWindOptions = vi.fn();
+    const targets = createProjectControlTargets(
+      {
+        getTemperatureLabel: () => label,
+        getWindTransform: () => "rotate(45 210 30)",
+        setWindTransform,
+      },
+      {
+        setOptionNumber,
+        convertTemperature: () => "68\u00b0F",
+        setWindTierValue: () => [0, 90, 0],
+        isWindTierInCurrentMap: () => true,
+      },
+      {
+        setWindOptions,
+      },
+    );
+
+    expect(targets.getTemperatureLabel("temperatureEquatorF")).toBe(label);
+    targets.setOptionNumber("temperatureEquator", 20);
+    expect(setOptionNumber).toHaveBeenCalledWith("temperatureEquator", 20);
+    expect(targets.convertTemperature(20, "\u00b0F")).toBe("68\u00b0F");
+    expect(targets.getWindTransform(1)).toBe("rotate(45 210 30)");
+    targets.setWindTransform(1, "rotate(90 210 30)");
+    expect(setWindTransform).toHaveBeenCalledWith(1, "rotate(90 210 30)");
+    expect(targets.applyWindTierToRuntime(1, 90)).toBe(true);
+    expect(setWindOptions).toHaveBeenCalledWith([0, 90, 0]);
   });
 });

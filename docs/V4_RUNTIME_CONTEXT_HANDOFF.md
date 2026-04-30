@@ -418,7 +418,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 124 test files, 392 tests.
+- `npm.cmd run test -- --run` passed: 124 test files, 393 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -875,9 +875,10 @@ services instead of reading `globalThis.Routes` inline:
   redraw through injected targets instead of directly reading `document`,
   `window`, `pack`, layer helpers, or draw helpers inline.
 - `src/studio/bridge/engineProjectControlTargets.ts` now owns the Studio
-  project control compatibility boundary for temperature labels/conversion,
-  option writes, wind SVG transforms, wind-option persistence, map-coordinate
-  tier checks, and the current `d3.range` helper.
+  project control compatibility boundary through DOM, runtime, and storage
+  adapters. Temperature labels/conversion, option writes, wind SVG transforms,
+  wind-option persistence, map-coordinate tier checks, and the current
+  `d3.range` helper can now be composed independently.
 - `src/studio/bridge/engineProjectControls.ts` no longer directly reads
   `window`, `document`, `options`, `localStorage`, or `d3`; project control
   events still use the existing DOM pair helpers, but runtime/global effects
@@ -1020,7 +1021,8 @@ services instead of reading `globalThis.Routes` inline:
 - `src/studio/bridge/engineProjectControls.test.ts` and
   `src/studio/bridge/engineProjectControlTargets.test.ts` cover project
   control wind command behavior, missing SVG path preservation, temperature
-  target forwarding, wind transform forwarding, and wind-option persistence.
+  target forwarding, wind transform forwarding, wind-option persistence, and
+  injected DOM/runtime/storage adapter composition.
 - `src/studio/bridge/engineProjectForm.test.ts` and
   `src/studio/bridge/engineProjectFormTargets.test.ts` cover project form
   summary reads, cached-summary fallbacks, helper forwarding, injected/default
@@ -1101,8 +1103,9 @@ pack resources through dedicated bridge adapters. `EngineCanvasAccessTargets`
 now splits canvas dimensions, map data, and renderer calls through dedicated
 app-level adapters.
 `EngineProjectClimateTargets` still reads climate, layer, pack-height, and 3D
-helpers behind a bridge-level adapter. `EngineProjectControlTargets` still
-reads project-control DOM/global helpers behind a bridge-level adapter.
+helpers behind a bridge-level adapter. `EngineProjectControlTargets` now splits
+project-control DOM, runtime, and storage helpers through dedicated bridge
+adapters.
 `EngineProjectFormTargets` now splits project-form DOM reads and runtime wind
 state through dedicated bridge adapters. `EngineProjectSummaryTargets` now
 splits project summary storage, document, cache, and database helpers through
