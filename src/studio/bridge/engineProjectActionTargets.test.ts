@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createGlobalProjectActionTargets } from "./engineProjectActionTargets";
+import {
+  createGlobalProjectActionTargets,
+  createProjectActionTargets,
+} from "./engineProjectActionTargets";
 
 type TestActionGlobals = typeof globalThis & {
   applyOption?: (
@@ -86,5 +89,54 @@ describe("createGlobalProjectActionTargets", () => {
       textContent: "Custom",
       value: "custom",
     });
+  });
+
+  it("composes project action targets from injected adapters", () => {
+    const input = {} as HTMLInputElement;
+    const output = {} as HTMLOutputElement;
+    const select = {
+      options: [{ value: "volcano" }],
+    } as unknown as HTMLSelectElement;
+    const clickElement = vi.fn();
+    const dispatchInputAndChange = vi.fn();
+    const dispatchChange = vi.fn();
+    const addSelectOption = vi.fn();
+    const applyOption = vi.fn(() => true);
+    const targets = createProjectActionTargets(
+      {
+        getInput: (id) => (id === "pointsInput" ? input : null),
+        getOutput: (id) => (id === "pointsOutput" ? output : null),
+        getSelect: (id) => (id === "templateInput" ? select : null),
+        clickElement,
+        dispatchInputAndChange,
+        dispatchChange,
+      },
+      {
+        findSelectOption: (currentSelect, value) =>
+          Array.from(currentSelect.options).find(
+            (option) => option.value === value,
+          ),
+        addSelectOption,
+      },
+      {
+        applyOption,
+        getTemplateLabel: (template) =>
+          template === "volcano" ? "Volcano" : template,
+      },
+    );
+
+    expect(targets.getInput("pointsInput")).toBe(input);
+    expect(targets.getOutput("pointsOutput")).toBe(output);
+    expect(targets.getSelect("templateInput")).toBe(select);
+    targets.clickElement("optionsCopySeed");
+    expect(clickElement).toHaveBeenCalledWith("optionsCopySeed");
+    targets.dispatchInputAndChange(input);
+    expect(dispatchInputAndChange).toHaveBeenCalledWith(input);
+    expect(targets.findSelectOption(select, "volcano")?.value).toBe("volcano");
+    targets.addSelectOption(select, "Custom", "custom");
+    expect(addSelectOption).toHaveBeenCalledWith(select, "Custom", "custom");
+    expect(targets.applyOption(select, "volcano", "Volcano")).toBe(true);
+    expect(applyOption).toHaveBeenCalledWith(select, "volcano", "Volcano");
+    expect(targets.getTemplateLabel("volcano")).toBe("Volcano");
   });
 });

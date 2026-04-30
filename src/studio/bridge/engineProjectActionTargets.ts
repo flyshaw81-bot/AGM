@@ -32,6 +32,36 @@ export type EngineProjectActionTargets = {
   getTemplateLabel: (template: string) => string;
 };
 
+export type EngineProjectActionDomAdapter = {
+  getInput: (id: string) => HTMLInputElement | null;
+  getOutput: (id: string) => HTMLOutputElement | null;
+  getSelect: (id: string) => HTMLSelectElement | null;
+  clickElement: (id: string) => void;
+  dispatchInputAndChange: (element: HTMLElement) => void;
+  dispatchChange: (element: HTMLElement) => void;
+};
+
+export type EngineProjectActionSelectAdapter = {
+  findSelectOption: (
+    select: HTMLSelectElement,
+    value: string,
+  ) => HTMLOptionElement | undefined;
+  addSelectOption: (
+    select: HTMLSelectElement,
+    label: string,
+    value: string,
+  ) => void;
+};
+
+export type EngineProjectActionRuntimeAdapter = {
+  applyOption: (
+    select: HTMLSelectElement,
+    value: string,
+    label: string,
+  ) => boolean;
+  getTemplateLabel: (template: string) => string;
+};
+
 function getActionWindow(): EngineProjectActionWindow {
   return (globalThis.window ?? globalThis) as EngineProjectActionWindow;
 }
@@ -41,6 +71,14 @@ function getDocument(): Document | undefined {
 }
 
 export function createGlobalProjectActionTargets(): EngineProjectActionTargets {
+  return createProjectActionTargets(
+    createGlobalProjectActionDomAdapter(),
+    createGlobalProjectActionSelectAdapter(),
+    createGlobalProjectActionRuntimeAdapter(),
+  );
+}
+
+export function createGlobalProjectActionDomAdapter(): EngineProjectActionDomAdapter {
   return {
     getInput: (id) =>
       (getDocument()?.getElementById(id) as
@@ -65,11 +103,21 @@ export function createGlobalProjectActionTargets(): EngineProjectActionTargets {
     dispatchChange: (element) => {
       element.dispatchEvent(new Event("change", { bubbles: true }));
     },
+  };
+}
+
+export function createGlobalProjectActionSelectAdapter(): EngineProjectActionSelectAdapter {
+  return {
     findSelectOption: (select, value) =>
       Array.from(select.options).find((option) => option.value === value),
     addSelectOption: (select, label, value) => {
       select.options.add(new Option(label, value));
     },
+  };
+}
+
+export function createGlobalProjectActionRuntimeAdapter(): EngineProjectActionRuntimeAdapter {
+  return {
     applyOption: (select, value, label) => {
       const applyOption = getActionWindow().applyOption;
       if (typeof applyOption !== "function") return false;
@@ -80,5 +128,24 @@ export function createGlobalProjectActionTargets(): EngineProjectActionTargets {
       getActionWindow().heightmapTemplates?.[template]?.name ??
       getActionWindow().precreatedHeightmaps?.[template]?.name ??
       template,
+  };
+}
+
+export function createProjectActionTargets(
+  domAdapter: EngineProjectActionDomAdapter,
+  selectAdapter: EngineProjectActionSelectAdapter,
+  runtimeAdapter: EngineProjectActionRuntimeAdapter,
+): EngineProjectActionTargets {
+  return {
+    getInput: domAdapter.getInput,
+    getOutput: domAdapter.getOutput,
+    getSelect: domAdapter.getSelect,
+    clickElement: domAdapter.clickElement,
+    dispatchInputAndChange: domAdapter.dispatchInputAndChange,
+    dispatchChange: domAdapter.dispatchChange,
+    findSelectOption: selectAdapter.findSelectOption,
+    addSelectOption: selectAdapter.addSelectOption,
+    applyOption: runtimeAdapter.applyOption,
+    getTemplateLabel: runtimeAdapter.getTemplateLabel,
   };
 }

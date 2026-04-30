@@ -418,7 +418,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 124 test files, 389 tests.
+- `npm.cmd run test -- --run` passed: 124 test files, 390 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -897,9 +897,10 @@ services instead of reading `globalThis.Routes` inline:
   summary state through injected targets instead of directly reading
   `document`, `localStorage`, `sessionStorage`, `globalThis`, or `ldb` inline.
 - `src/studio/bridge/engineProjectActionTargets.ts` now owns the Studio project
-  action compatibility boundary for inputs, outputs, selects, button clicks,
-  form event dispatch, template option lookup/insertion, `applyOption`, and
-  heightmap template label fallback.
+  action compatibility boundary through DOM, select, and runtime adapters.
+  Inputs, outputs, selects, button clicks, form event dispatch, template option
+  lookup/insertion, `applyOption`, and heightmap template label fallback are
+  split into replaceable adapters.
 - `src/studio/bridge/engineProjectActions.ts` now applies project action
   mutations through injected targets instead of directly reading `document`,
   `window.applyOption`, or heightmap template globals inline. Removing its old
@@ -1027,8 +1028,9 @@ services instead of reading `globalThis.Routes` inline:
   composition.
 - `src/studio/bridge/engineProjectActions.test.ts` and
   `src/studio/bridge/engineProjectActionTargets.test.ts` cover project action
-  clamping, button mapping, pending template apply/fallback behavior, default
-  DOM control resolution, event dispatch, and template label forwarding.
+  clamping, button mapping, pending template apply/fallback behavior, injected
+  adapter composition, default DOM control resolution, event dispatch, and
+  template label forwarding.
 - `src/studio/bridge/engineLayerActions.test.ts` and
   `src/studio/bridge/engineLayerTargets.test.ts` cover layer state/detail
   composition, layer toggles, injected/default handler forwarding, active state
@@ -1099,8 +1101,8 @@ reads project-control DOM/global helpers behind a bridge-level adapter.
 state through dedicated bridge adapters. `EngineProjectSummaryTargets` now
 splits project summary storage, document, cache, and database helpers through
 dedicated bridge adapters.
-`EngineProjectActionTargets` still reads project action DOM/template helpers
-behind a bridge-level adapter. `EngineLayerTargets` now splits layer DOM and
+`EngineProjectActionTargets` now splits project action DOM, select, and runtime
+template helpers through dedicated bridge adapters. `EngineLayerTargets` now splits layer DOM and
 runtime helpers through dedicated bridge adapters. `EngineStyleTargets` now
 splits style runtime, storage, and toggle helpers through dedicated bridge
 adapters.
