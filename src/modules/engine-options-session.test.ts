@@ -6,8 +6,8 @@ import {
   createRuntimeOptionsRandomAdapter,
   createRuntimeOptionsSession,
   createRuntimeOptionsWriterAdapter,
+  type EngineOptionsBrowserControlTargets,
   type EngineOptionsControlAdapter,
-  type EngineOptionsDistanceScaleTargets,
   type EngineOptionsNamingAdapter,
   type EngineOptionsRandomAdapter,
   type EngineOptionsReaderAdapter,
@@ -228,14 +228,27 @@ describe("EngineOptionsSessionModule", () => {
     expect(controls.usesUsUnits()).toBe(true);
   });
 
-  it("writes distance scale through injected browser targets", () => {
-    const targets: EngineOptionsDistanceScaleTargets = {
+  it("writes unit and climate controls through injected browser targets", () => {
+    const targets: EngineOptionsBrowserControlTargets = {
+      setPrecipitation: vi.fn(),
       setDistanceScale: vi.fn(),
+      setDistanceUnit: vi.fn(),
+      setHeightUnit: vi.fn(),
+      setTemperatureScale: vi.fn(),
     };
+    const writer = createGlobalOptionsWriterAdapter(targets);
 
-    createGlobalOptionsWriterAdapter(targets).setDistanceScale(2.5);
+    writer.setPrecipitation(120);
+    writer.setDistanceScale(2.5);
+    writer.setDistanceUnit("mi");
+    writer.setHeightUnit("ft");
+    writer.setTemperatureScale("\u00b0F");
 
+    expect(targets.setPrecipitation).toHaveBeenCalledWith(120);
     expect(targets.setDistanceScale).toHaveBeenCalledWith(2.5);
+    expect(targets.setDistanceUnit).toHaveBeenCalledWith("mi");
+    expect(targets.setHeightUnit).toHaveBeenCalledWith("ft");
+    expect(targets.setTemperatureScale).toHaveBeenCalledWith("\u00b0F");
   });
 
   it("routes era generation through the naming adapter", () => {

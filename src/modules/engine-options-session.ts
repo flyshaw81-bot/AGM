@@ -20,8 +20,12 @@ export type EngineOptionsLocaleTargets = {
   getLanguage: () => string;
 };
 
-export type EngineOptionsDistanceScaleTargets = {
+export type EngineOptionsBrowserControlTargets = {
+  setPrecipitation: (value: number) => void;
   setDistanceScale: (value: number) => void;
+  setDistanceUnit: (value: string) => void;
+  setHeightUnit: (value: string) => void;
+  setTemperatureScale: (value: string) => void;
 };
 
 export function createGlobalOptionsLocaleTargets(): EngineOptionsLocaleTargets {
@@ -30,11 +34,23 @@ export function createGlobalOptionsLocaleTargets(): EngineOptionsLocaleTargets {
   };
 }
 
-export function createGlobalOptionsDistanceScaleTargets(): EngineOptionsDistanceScaleTargets {
+export function createGlobalOptionsBrowserControlTargets(): EngineOptionsBrowserControlTargets {
   return {
+    setPrecipitation: (value) => {
+      precInput.value = (globalThis as any).precOutput.value = String(value);
+    },
     setDistanceScale: (value) => {
       globalThis.distanceScale = value;
       (globalThis as any).distanceScaleInput.value = value;
+    },
+    setDistanceUnit: (value) => {
+      distanceUnitInput.value = value;
+    },
+    setHeightUnit: (value) => {
+      heightUnit.value = value;
+    },
+    setTemperatureScale: (value) => {
+      (globalThis as any).temperatureScale.value = value;
     },
   };
 }
@@ -189,7 +205,7 @@ export function createRuntimeOptionsNamingAdapter(
 }
 
 export function createGlobalOptionsWriterAdapter(
-  distanceScaleTargets: EngineOptionsDistanceScaleTargets = createGlobalOptionsDistanceScaleTargets(),
+  browserTargets: EngineOptionsBrowserControlTargets = createGlobalOptionsBrowserControlTargets(),
 ): EngineOptionsWriterAdapter {
   return {
     setCellsDensity: (density) =>
@@ -236,19 +252,11 @@ export function createGlobalOptionsWriterAdapter(
     setTemperatureSouthPole: (value) => {
       options.temperatureSouthPole = value;
     },
-    setPrecipitation: (value) => {
-      precInput.value = (globalThis as any).precOutput.value = String(value);
-    },
-    setDistanceScale: (value) => distanceScaleTargets.setDistanceScale(value),
-    setDistanceUnit: (value) => {
-      distanceUnitInput.value = value;
-    },
-    setHeightUnit: (value) => {
-      heightUnit.value = value;
-    },
-    setTemperatureScale: (value) => {
-      (globalThis as any).temperatureScale.value = value;
-    },
+    setPrecipitation: (value) => browserTargets.setPrecipitation(value),
+    setDistanceScale: (value) => browserTargets.setDistanceScale(value),
+    setDistanceUnit: (value) => browserTargets.setDistanceUnit(value),
+    setHeightUnit: (value) => browserTargets.setHeightUnit(value),
+    setTemperatureScale: (value) => browserTargets.setTemperatureScale(value),
     setYear: (value) => {
       (globalThis as any).yearInput.value = value;
     },
