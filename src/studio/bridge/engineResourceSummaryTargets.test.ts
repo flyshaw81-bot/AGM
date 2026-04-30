@@ -1,5 +1,8 @@
-import { afterEach, describe, expect, it } from "vitest";
-import { createGlobalResourceSummaryTargets } from "./engineResourceSummaryTargets";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  createGlobalResourceSummaryTargets,
+  createResourceSummaryTargets,
+} from "./engineResourceSummaryTargets";
 
 const originalPack = globalThis.pack;
 const originalBiomesData = globalThis.biomesData;
@@ -43,5 +46,35 @@ describe("createGlobalResourceSummaryTargets", () => {
 
     expect(targets.getBiomeData()).toBe(biomeData);
     expect(globalThis.biomesData).toBe(biomeData);
+  });
+
+  it("composes resource summary targets from injected biome and pack adapters", () => {
+    const biomeData = { i: [1] };
+    const states = [{ i: 1, name: "Aurelia" }];
+    const setBiomeData = vi.fn();
+    const targets = createResourceSummaryTargets(
+      {
+        getBiomeData: () => biomeData,
+        setBiomeData,
+      },
+      {
+        getStates: () => states,
+        getBurgs: () => [],
+        getCultures: () => [],
+        getReligions: () => [],
+        getProvinces: () => [],
+        getRoutes: () => [],
+        getZones: () => [],
+        getCellArea: (cellId) => (cellId === 7 ? 12 : undefined),
+        getCellPopulation: (cellId) => (cellId === 7 ? 3 : undefined),
+      },
+    );
+
+    expect(targets.getBiomeData()).toBe(biomeData);
+    targets.setBiomeData(biomeData);
+    expect(setBiomeData).toHaveBeenCalledWith(biomeData);
+    expect(targets.getStates()).toBe(states);
+    expect(targets.getCellArea(7)).toBe(12);
+    expect(targets.getCellPopulation(7)).toBe(3);
   });
 });

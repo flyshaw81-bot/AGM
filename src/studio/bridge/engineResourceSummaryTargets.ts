@@ -12,13 +12,30 @@ export type EngineResourceSummaryTargets = {
   getCellPopulation: (cellId: number) => number | undefined;
 };
 
+export type EngineResourceBiomeAdapter = {
+  getBiomeData: () => unknown;
+  setBiomeData: (data: unknown) => void;
+};
+
+export type EngineResourcePackAdapter = {
+  getStates: () => unknown;
+  getBurgs: () => unknown;
+  getCultures: () => unknown;
+  getReligions: () => unknown;
+  getProvinces: () => unknown;
+  getRoutes: () => unknown;
+  getZones: () => unknown;
+  getCellArea: (cellId: number) => number | undefined;
+  getCellPopulation: (cellId: number) => number | undefined;
+};
+
 function finiteNumberOrUndefined(value: unknown) {
   return typeof value === "number" && Number.isFinite(value)
     ? value
     : undefined;
 }
 
-export function createGlobalResourceSummaryTargets(): EngineResourceSummaryTargets {
+export function createGlobalResourceBiomeAdapter(): EngineResourceBiomeAdapter {
   return {
     getBiomeData: () => {
       const data = globalThis.biomesData || globalThis.Biomes?.getDefault?.();
@@ -28,6 +45,11 @@ export function createGlobalResourceSummaryTargets(): EngineResourceSummaryTarge
     setBiomeData: (data) => {
       if (data) globalThis.biomesData = data as typeof biomesData;
     },
+  };
+}
+
+export function createGlobalResourcePackAdapter(): EngineResourcePackAdapter {
+  return {
     getStates: () => globalThis.pack?.states,
     getBurgs: () => globalThis.pack?.burgs,
     getCultures: () => globalThis.pack?.cultures,
@@ -40,4 +62,30 @@ export function createGlobalResourceSummaryTargets(): EngineResourceSummaryTarge
     getCellPopulation: (cellId) =>
       finiteNumberOrUndefined(globalThis.pack?.cells?.pop?.[cellId]),
   };
+}
+
+export function createResourceSummaryTargets(
+  biomeAdapter: EngineResourceBiomeAdapter,
+  packAdapter: EngineResourcePackAdapter,
+): EngineResourceSummaryTargets {
+  return {
+    getBiomeData: biomeAdapter.getBiomeData,
+    setBiomeData: biomeAdapter.setBiomeData,
+    getStates: packAdapter.getStates,
+    getBurgs: packAdapter.getBurgs,
+    getCultures: packAdapter.getCultures,
+    getReligions: packAdapter.getReligions,
+    getProvinces: packAdapter.getProvinces,
+    getRoutes: packAdapter.getRoutes,
+    getZones: packAdapter.getZones,
+    getCellArea: packAdapter.getCellArea,
+    getCellPopulation: packAdapter.getCellPopulation,
+  };
+}
+
+export function createGlobalResourceSummaryTargets(): EngineResourceSummaryTargets {
+  return createResourceSummaryTargets(
+    createGlobalResourceBiomeAdapter(),
+    createGlobalResourcePackAdapter(),
+  );
 }

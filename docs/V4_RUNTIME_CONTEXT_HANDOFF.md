@@ -418,7 +418,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 124 test files, 390 tests.
+- `npm.cmd run test -- --run` passed: 124 test files, 391 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -857,8 +857,9 @@ services instead of reading `globalThis.Routes` inline:
   `globalThis.pack`, `graphWidth`, `graphHeight`, `svgWidth`, or `svgHeight`
   inline.
 - `src/studio/bridge/engineResourceSummaryTargets.ts` now owns resource summary
-  lookup for biome data, entity collections, world-resource collections, and
-  zone cell metrics.
+  lookup through biome-data and pack-resource adapters. Biome data, entity
+  collections, world-resource collections, and zone cell metrics can now be
+  composed independently.
 - `src/studio/bridge/engineResourceSummary.ts` now builds world/entity
   summaries through injected targets instead of directly reading
   `globalThis.pack` / `biomesData` inline.
@@ -1007,7 +1008,8 @@ services instead of reading `globalThis.Routes` inline:
   resolution and the compatibility target adapter.
 - `src/studio/bridge/engineResourceSummary.test.ts` and
   `src/studio/bridge/engineResourceSummaryTargets.test.ts` cover world/entity
-  summary generation and the compatibility target adapter.
+  summary generation, compatibility target adapters, and injected biome/pack
+  adapter composition.
 - `src/studio/app/engineCanvasAccess.test.ts` covers canvas access target
   injection and the default global adapter.
 - `src/studio/bridge/engineProjectClimate.test.ts` and
@@ -1091,8 +1093,9 @@ Known remaining debt for this slice: `EngineRouteWritebackTargets` still reads
 `globalThis.pack`; `EngineSettlementWritebackTargets` still reads
 `globalThis.pack`; `EngineAutoFixUndoTargets`, `EngineStateWritebackTargets`,
 `EngineBiomeWritebackTargets`, `EngineEntityMutationTargets`, and
-`EngineFocusGeometryTargets`, and `EngineResourceSummaryTargets` still read the
-active global map/resources behind explicit adapters. `EngineCanvasAccessTargets`
+`EngineFocusGeometryTargets` still read the active global map/resources behind
+explicit adapters. `EngineResourceSummaryTargets` now splits biome data and
+pack resources through dedicated bridge adapters. `EngineCanvasAccessTargets`
 still reads canvas globals behind an app-level adapter.
 `EngineProjectClimateTargets` still reads climate, layer, pack-height, and 3D
 helpers behind a bridge-level adapter. `EngineProjectControlTargets` still
