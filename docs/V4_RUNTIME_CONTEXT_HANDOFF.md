@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 180 test files, 676 tests.
+- `npm.cmd run test -- --run` passed: 180 test files, 677 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1993,6 +1993,9 @@ installs the seeded Alea generator; focused tests cover the restoration
 behavior.
 `river-generator.ts` now restores the previous global `Math.random` after
 river generation installs the seeded Alea generator, including failure paths;
+focused tests cover the restoration behavior.
+`provinces-generator.ts` now restores the previous global `Math.random` after
+province generation installs the seeded Alea generator, including failure paths;
 focused tests cover the restoration behavior.
 
 `engine-runtime-settings.ts` now routes settings input lookups through
