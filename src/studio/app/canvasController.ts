@@ -25,6 +25,32 @@ export {
 export { syncCanvasSelectionHighlight } from "./canvasSelectionHighlight";
 export { syncOverlays };
 
+export type CanvasInteractionTargets = {
+  getCanvasFrame: () => HTMLElement | null;
+  getMapHost: () => HTMLElement | null;
+  isControlEvent: (event: Event) => boolean;
+  getPaintPreviewAt: typeof getCanvasPaintPreviewAt;
+  getSelectionAt: typeof getCanvasSelectionAt;
+  syncPaintPreview: (state: StudioState) => void;
+  syncToolHud: (state: StudioState) => void;
+  syncViewport: typeof syncEngineViewport;
+  isPaintTool: typeof isPaintCanvasTool;
+};
+
+export function createGlobalCanvasInteractionTargets(): CanvasInteractionTargets {
+  return {
+    getCanvasFrame: () => document.getElementById("studioCanvasFrame"),
+    getMapHost: () => document.getElementById("studioMapHost"),
+    isControlEvent: isCanvasControlEvent,
+    getPaintPreviewAt: getCanvasPaintPreviewAt,
+    getSelectionAt: getCanvasSelectionAt,
+    syncPaintPreview: syncCanvasPaintPreview,
+    syncToolHud: syncCanvasToolHud,
+    syncViewport: syncEngineViewport,
+    isPaintTool: isPaintCanvasTool,
+  };
+}
+
 function isCanvasControlEvent(event: Event) {
   return (
     event.target instanceof Element &&
@@ -41,9 +67,10 @@ export function bindCanvasToolInteractions(
   onViewportPatch: (patch: Partial<StudioState["viewport"]>) => void,
   onSelection: (selection: CanvasSelectionState) => void,
   onCanvasPaint: (preview: CanvasPaintPreviewState) => boolean,
+  targets: CanvasInteractionTargets = createGlobalCanvasInteractionTargets(),
 ) {
-  const frame = document.getElementById("studioCanvasFrame");
-  const host = document.getElementById("studioMapHost");
+  const frame = targets.getCanvasFrame();
+  const host = targets.getMapHost();
   if (!frame || !host) return;
 
   let panStart: {
@@ -59,9 +86,9 @@ export function bindCanvasToolInteractions(
   let paintChanged = false;
 
   const updatePaintPreview = (event: PointerEvent) => {
-    state.viewport.paintPreview = getCanvasPaintPreviewAt(event, state);
-    syncCanvasPaintPreview(state);
-    syncCanvasToolHud(state);
+    state.viewport.paintPreview = targets.getPaintPreviewAt(event, state);
+    targets.syncPaintPreview(state);
+    targets.syncToolHud(state);
     return state.viewport.paintPreview;
   };
 
@@ -71,13 +98,13 @@ export function bindCanvasToolInteractions(
     paintedCells.add(preview.cellId);
     const changed = onCanvasPaint(preview);
     paintChanged = paintChanged || changed;
-    syncCanvasPaintPreview(state);
-    syncCanvasToolHud(state);
+    targets.syncPaintPreview(state);
+    targets.syncToolHud(state);
     return changed;
   };
 
   frame.addEventListener("pointerdown", (event) => {
-    if (isCanvasControlEvent(event) || event.button !== 0) return;
+    if (targets.isControlEvent(event) || event.button !== 0) return;
     if (state.viewport.canvasTool === "pan") {
       const rect = frame.getBoundingClientRect();
       panStart = {
@@ -94,7 +121,7 @@ export function bindCanvasToolInteractions(
       return;
     }
 
-    if (!isPaintCanvasTool(state.viewport.canvasTool)) return;
+    if (!targets.isPaintTool(state.viewport.canvasTool)) return;
     activePaintPointerId = event.pointerId;
     paintedCells = new Set<number>();
     paintChanged = false;
@@ -104,7 +131,7 @@ export function bindCanvasToolInteractions(
   });
 
   frame.addEventListener("pointermove", (event) => {
-    if (isCanvasControlEvent(event)) return;
+    if (targets.isControlEvent(event)) return;
     if (panStart && state.viewport.canvasTool === "pan") {
       state.viewport.panX =
         panStart.panX + (event.clientX - panStart.clientX) * panStart.scaleX;
@@ -112,7 +139,7 @@ export function bindCanvasToolInteractions(
         panStart.panY + (event.clientY - panStart.clientY) * panStart.scaleY;
       host.dataset.panX = String(Math.round(state.viewport.panX));
       host.dataset.panY = String(Math.round(state.viewport.panY));
-      syncEngineViewport(
+      targets.syncViewport(
         state.viewport.presetId,
         state.viewport.orientation,
         state.viewport.fitMode,
@@ -120,11 +147,11 @@ export function bindCanvasToolInteractions(
         state.viewport.panX,
         state.viewport.panY,
       );
-      syncCanvasToolHud(state);
+      targets.syncToolHud(state);
       return;
     }
 
-    if (!isPaintCanvasTool(state.viewport.canvasTool)) return;
+    if (!targets.isPaintTool(state.viewport.canvasTool)) return;
     if (activePaintPointerId === event.pointerId) {
       paintAtPointer(event);
       return;
@@ -162,9 +189,9 @@ export function bindCanvasToolInteractions(
   });
 
   frame.addEventListener("click", (event) => {
-    if (isCanvasControlEvent(event)) return;
+    if (targets.isControlEvent(event)) return;
     if (state.viewport.canvasTool === "select") {
-      const selection = getCanvasSelectionAt(event, state);
+      const selection = targets.getSelectionAt(event, state);
       if (selection) onSelection(selection);
     }
   });

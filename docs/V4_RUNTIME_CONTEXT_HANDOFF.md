@@ -60,6 +60,10 @@
 > Canvas overlay sync now uses `CanvasOverlayTargets`, so paint preview, tool
 > HUD, and frame overlay DOM lookups can be injected and tested without a
 > browser document.
+> Canvas tool interaction binding now uses `CanvasInteractionTargets`, so frame
+> and map host lookup, control-event checks, paint preview lookup, selection
+> lookup, overlay/HUD sync, viewport sync, and paint-tool checks are injected
+> instead of hard-wired into the binding path.
 > Please review whether each remaining global dependency is behind an explicit
 > compatibility adapter, and keep treating AGM `window.*` module mounts
 > separately from old public UI debt.
@@ -463,7 +467,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 142 test files, 475 tests.
+- `npm.cmd run test -- --run` passed: 143 test files, 479 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1264,6 +1268,12 @@ Canvas overlay sync now has a dedicated `CanvasOverlayTargets` boundary for
 paint preview, tool HUD, and frame overlay DOM lookups. The default adapter
 still queries the current Studio DOM, while focused tests exercise overlay
 state updates with injected fake elements and no browser document.
+Canvas tool interaction binding now has a dedicated `CanvasInteractionTargets`
+boundary for canvas frame and map host lookup, control-event filtering, paint
+preview lookup, selection lookup, overlay/HUD sync, viewport sync, and
+paint-tool checks. The default adapter still wires the current Studio DOM and
+engine viewport bridge, while focused tests drive pan, paint, and select
+pointer flows with injected frame/host fakes.
 Direct editor targets can also compose focus, entity mutation, and biome
 mutation commands directly from an injected `EngineRuntimeContext`. The default
 adapters still delegate to current entity mutation/focus bridge helpers, but
