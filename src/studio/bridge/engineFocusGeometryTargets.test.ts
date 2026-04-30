@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { createGlobalFocusGeometryTargets } from "./engineFocusGeometryTargets";
+import {
+  createFocusGeometryTargets,
+  createGlobalFocusGeometryTargets,
+} from "./engineFocusGeometryTargets";
 
 const originalPack = globalThis.pack;
 const originalGraphWidth = globalThis.graphWidth;
@@ -49,5 +52,34 @@ describe("createGlobalFocusGeometryTargets", () => {
     expect(targets.getState(2)).toBe(state);
     expect(targets.getZone(9)).toBe(zone);
     expect(targets.getZone(99)).toBeUndefined();
+  });
+
+  it("composes focus geometry targets from injected dimension, cell, and entity adapters", () => {
+    const state = { i: 2 };
+    const targets = createFocusGeometryTargets(
+      {
+        getWidth: () => 1024,
+        getHeight: () => 768,
+      },
+      {
+        getCellIds: () => [1],
+        getCellPoint: () => [10, 20],
+        getCellFieldValue: () => 2,
+      },
+      {
+        getState: () => state,
+        getProvince: () => undefined,
+        getBurg: () => undefined,
+        getRoute: () => undefined,
+        getZone: () => undefined,
+      },
+    );
+
+    expect(targets.getWidth()).toBe(1024);
+    expect(targets.getHeight()).toBe(768);
+    expect(targets.getCellIds()).toEqual([1]);
+    expect(targets.getCellPoint(1)).toEqual([10, 20]);
+    expect(targets.getCellFieldValue("state", 1)).toBe(2);
+    expect(targets.getState(2)).toBe(state);
   });
 });

@@ -13,13 +13,32 @@ export type EngineFocusGeometryTargets = {
   getZone: (zoneId: number) => Record<string, unknown> | undefined;
 };
 
+export type EngineFocusDimensionAdapter = {
+  getWidth: () => number | undefined;
+  getHeight: () => number | undefined;
+};
+
+export type EngineFocusCellAdapter = {
+  getCellIds: () => number[];
+  getCellPoint: (cellId: number) => EngineFocusPoint | undefined;
+  getCellFieldValue: (field: string, cellId: number) => unknown;
+};
+
+export type EngineFocusEntityAdapter = {
+  getState: (stateId: number) => Record<string, unknown> | undefined;
+  getProvince: (provinceId: number) => Record<string, unknown> | undefined;
+  getBurg: (burgId: number) => Record<string, unknown> | undefined;
+  getRoute: (routeId: number) => Record<string, unknown> | undefined;
+  getZone: (zoneId: number) => Record<string, unknown> | undefined;
+};
+
 function finiteNumberOrUndefined(value: unknown) {
   return typeof value === "number" && Number.isFinite(value)
     ? value
     : undefined;
 }
 
-export function createGlobalFocusGeometryTargets(): EngineFocusGeometryTargets {
+export function createGlobalFocusDimensionAdapter(): EngineFocusDimensionAdapter {
   return {
     getWidth: () =>
       finiteNumberOrUndefined(globalThis.graphWidth) ||
@@ -27,6 +46,11 @@ export function createGlobalFocusGeometryTargets(): EngineFocusGeometryTargets {
     getHeight: () =>
       finiteNumberOrUndefined(globalThis.graphHeight) ||
       finiteNumberOrUndefined(globalThis.svgHeight),
+  };
+}
+
+export function createGlobalFocusCellAdapter(): EngineFocusCellAdapter {
+  return {
     getCellIds: () => Array.from(globalThis.pack?.cells?.i || []),
     getCellPoint: (cellId) => {
       const point = globalThis.pack?.cells?.p?.[cellId];
@@ -36,6 +60,11 @@ export function createGlobalFocusGeometryTargets(): EngineFocusGeometryTargets {
       (globalThis.pack?.cells as Record<string, any> | undefined)?.[field]?.[
         cellId
       ],
+  };
+}
+
+export function createGlobalFocusEntityAdapter(): EngineFocusEntityAdapter {
+  return {
     getState: (stateId) =>
       globalThis.pack?.states?.[stateId] as unknown as
         | Record<string, unknown>
@@ -57,4 +86,31 @@ export function createGlobalFocusGeometryTargets(): EngineFocusGeometryTargets {
         (item) => (item as Record<string, unknown> | undefined)?.i === zoneId,
       ) as Record<string, unknown> | undefined,
   };
+}
+
+export function createFocusGeometryTargets(
+  dimensionAdapter: EngineFocusDimensionAdapter,
+  cellAdapter: EngineFocusCellAdapter,
+  entityAdapter: EngineFocusEntityAdapter,
+): EngineFocusGeometryTargets {
+  return {
+    getWidth: dimensionAdapter.getWidth,
+    getHeight: dimensionAdapter.getHeight,
+    getCellIds: cellAdapter.getCellIds,
+    getCellPoint: cellAdapter.getCellPoint,
+    getCellFieldValue: cellAdapter.getCellFieldValue,
+    getState: entityAdapter.getState,
+    getProvince: entityAdapter.getProvince,
+    getBurg: entityAdapter.getBurg,
+    getRoute: entityAdapter.getRoute,
+    getZone: entityAdapter.getZone,
+  };
+}
+
+export function createGlobalFocusGeometryTargets(): EngineFocusGeometryTargets {
+  return createFocusGeometryTargets(
+    createGlobalFocusDimensionAdapter(),
+    createGlobalFocusCellAdapter(),
+    createGlobalFocusEntityAdapter(),
+  );
 }

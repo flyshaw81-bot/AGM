@@ -418,7 +418,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 124 test files, 395 tests.
+- `npm.cmd run test -- --run` passed: 124 test files, 396 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -852,7 +852,8 @@ services instead of reading `globalThis.Routes` inline:
   mutations through injected targets instead of directly reading
   `globalThis.pack` or calling public draw helpers inline.
 - `src/studio/bridge/engineFocusGeometryTargets.ts` now owns focus geometry
-  lookup for dimensions, cells, entities, routes, and zones.
+  lookup through dedicated dimension, cell, and entity adapters for map
+  dimensions, cells, entities, routes, and zones.
 - `src/studio/bridge/engineFocusGeometry.ts` now resolves Studio focus
   geometry through injected targets instead of directly reading
   `globalThis.pack`, `graphWidth`, `graphHeight`, `svgWidth`, or `svgHeight`
@@ -1010,7 +1011,8 @@ services instead of reading `globalThis.Routes` inline:
   composition, and command execution slice.
 - `src/studio/bridge/engineFocusGeometry.test.ts` and
   `src/studio/bridge/engineFocusGeometryTargets.test.ts` cover focus geometry
-  resolution and the compatibility target adapter.
+  resolution, injected dimension/cell/entity adapter composition, and the
+  compatibility target adapter.
 - `src/studio/bridge/engineResourceSummary.test.ts` and
   `src/studio/bridge/engineResourceSummaryTargets.test.ts` cover world/entity
   summary generation, compatibility target adapters, and injected biome/pack
@@ -1100,8 +1102,10 @@ services instead of reading `globalThis.Routes` inline:
 Known remaining debt for this slice: `EngineRouteWritebackTargets` still reads
 `globalThis.pack`; `EngineSettlementWritebackTargets` still reads
 `globalThis.pack`; `EngineAutoFixUndoTargets`, `EngineStateWritebackTargets`,
-`EngineBiomeWritebackTargets` and `EngineFocusGeometryTargets` still read the
-active global map/resources behind explicit adapters.
+`EngineBiomeWritebackTargets` still reads the active global map/resources
+behind explicit adapters. `EngineFocusGeometryTargets` now splits focus
+dimensions, cell geometry, and entity lookups through dedicated bridge
+adapters.
 `EngineEntityMutationTargets` now splits direct-editor entity lookup and redraw
 forwarding through dedicated bridge adapters. `EngineResourceSummaryTargets`
 now splits biome data and pack resources through dedicated bridge adapters.
