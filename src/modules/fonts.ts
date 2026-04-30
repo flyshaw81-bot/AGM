@@ -15,18 +15,16 @@ export type EngineFontResourceRuntime = {
   addWebFont: (family: string, src: string) => void;
 };
 
-declare global {
-  var AGMFontResources: EngineFontResourceRuntime;
-  var declareFont: (font: FontDefinition) => void;
-  var getUsedFonts: (svg: SVGSVGElement) => FontDefinition[];
-  var loadFontsAsDataURI: (
-    fonts: FontDefinition[],
-  ) => Promise<FontDefinition[]>;
-  var addGoogleFont: (family: string) => Promise<void>;
-  var addLocalFont: (family: string) => void;
-  var addWebFont: (family: string, src: string) => void;
-  var fonts: FontDefinition[];
-}
+type EngineFontResourceCompatibilityTarget = typeof globalThis & {
+  AGMFontResources?: EngineFontResourceRuntime;
+  declareFont?: (font: FontDefinition) => void;
+  getUsedFonts?: (svg: SVGSVGElement) => FontDefinition[];
+  loadFontsAsDataURI?: (fonts: FontDefinition[]) => Promise<FontDefinition[]>;
+  addGoogleFont?: (family: string) => Promise<void>;
+  addLocalFont?: (family: string) => void;
+  addWebFont?: (family: string, src: string) => void;
+  fonts?: FontDefinition[];
+};
 
 const fontDefinitions: FontDefinition[] = [
   { family: "Arial" },
@@ -305,7 +303,7 @@ function createFontFace(font: FontDefinition) {
   return new FontFace(family, src, { ...rest, display: "block" });
 }
 
-function createBrowserFontResourceAdapter(): EngineFontResourceAdapter {
+export function createBrowserFontResourceAdapter(): EngineFontResourceAdapter {
   return {
     addFontOption,
     registerFontFace: (font) => {
@@ -341,28 +339,42 @@ function createBrowserFontResourceAdapter(): EngineFontResourceAdapter {
   };
 }
 
-const fontResourceService = new EngineFontResourceService(
+export function createFontResourceRuntime(
+  service: EngineFontResourceService,
+): EngineFontResourceRuntime {
+  return {
+    fonts: service.getAllFonts(),
+    declareFont: (font) => service.declareFont(font),
+    getUsedFonts: (svg) => service.getUsedFonts(svg),
+    loadFontsAsDataURI: (fonts) => service.loadFontsAsDataURI(fonts),
+    addGoogleFont: (family) => service.addGoogleFont(family),
+    addLocalFont: (family) => service.addLocalFont(family),
+    addWebFont: (family, src) => service.addWebFont(family, src),
+  };
+}
+
+export function installGlobalFontResourceCompatibility(
+  runtime: EngineFontResourceRuntime,
+  target: EngineFontResourceCompatibilityTarget = globalThis,
+) {
+  target.AGMFontResources = runtime;
+  target.fonts = runtime.fonts;
+  target.declareFont = runtime.declareFont;
+  target.getUsedFonts = runtime.getUsedFonts;
+  target.loadFontsAsDataURI = runtime.loadFontsAsDataURI;
+  target.addGoogleFont = runtime.addGoogleFont;
+  target.addLocalFont = runtime.addLocalFont;
+  target.addWebFont = runtime.addWebFont;
+}
+
+export const fontResourceService = new EngineFontResourceService(
   fontDefinitions,
   createBrowserFontResourceAdapter(),
 );
 
-const fontResourceRuntime: EngineFontResourceRuntime = {
-  fonts: fontResourceService.getAllFonts(),
-  declareFont: (font) => fontResourceService.declareFont(font),
-  getUsedFonts: (svg) => fontResourceService.getUsedFonts(svg),
-  loadFontsAsDataURI: (fonts) => fontResourceService.loadFontsAsDataURI(fonts),
-  addGoogleFont: (family) => fontResourceService.addGoogleFont(family),
-  addLocalFont: (family) => fontResourceService.addLocalFont(family),
-  addWebFont: (family, src) => fontResourceService.addWebFont(family, src),
-};
+export const fontResourceRuntime =
+  createFontResourceRuntime(fontResourceService);
 
-globalThis.AGMFontResources = fontResourceRuntime;
-globalThis.fonts = fontResourceRuntime.fonts;
-globalThis.declareFont = fontResourceRuntime.declareFont;
-globalThis.getUsedFonts = fontResourceRuntime.getUsedFonts;
-globalThis.loadFontsAsDataURI = fontResourceRuntime.loadFontsAsDataURI;
-globalThis.addGoogleFont = fontResourceRuntime.addGoogleFont;
-globalThis.addLocalFont = fontResourceRuntime.addLocalFont;
-globalThis.addWebFont = fontResourceRuntime.addWebFont;
+installGlobalFontResourceCompatibility(fontResourceRuntime);
 
 fontResourceService.declareDefaultFonts();

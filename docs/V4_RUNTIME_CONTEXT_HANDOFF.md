@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 172 test files, 629 tests.
+- `npm.cmd run test -- --run` passed: 172 test files, 630 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1873,6 +1873,16 @@ drives the map-store reset, generation pipeline calls, province pole refresh,
 and statistics lifecycle through an injected `EngineRuntimeContext`. `Resampler`
 is now exported for tests while the existing `window.Resample` compatibility
 mount remains unchanged.
+Religion naming now accepts deity-less forms safely. `generateReligionName`
+accepts `string | null`, `Animism` and `Non-theism` no longer call
+`split()` on a null deity, and the explicit `add(center, context)` path has
+regression coverage for that case.
+Font resources now expose a formal `createFontResourceRuntime()` and
+`installGlobalFontResourceCompatibility()` boundary. `fonts.ts` no longer
+declares the eight compatibility globals as TypeScript `var` globals; the
+existing public UI/export callers still receive the same runtime values through
+the centralized compatibility installer until those callers are migrated to
+injected font-resource commands.
 
 ## Next Recommended Slice
 
@@ -1887,8 +1897,9 @@ order:
 3. Defer `Rivers.remove(...)` until rendered river selection state is isolated
    behind a renderer/command adapter.
 4. Continue reducing module-level browser UI exits. `fonts.ts` now has a
-   formal `EngineFontResourceService` and a centralized `AGMFontResources`
-   facade; the next high-value step is to replace that compatibility facade
-   with injected font-resource commands where Studio-owned flows call it.
+   formal `EngineFontResourceService`, a typed runtime factory, and a
+   centralized compatibility installer; the next high-value step is to replace
+   public UI/export `AGMFontResources` callers with injected font-resource
+   commands where Studio-owned flows call it.
 5. Defer manual Burgs editor methods (`add/remove/changeGroup`) until the
    editor command layer can own rendered icons, labels, routes, and COA updates.
