@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, it } from "vitest";
+import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 import type { EngineAutoFixPreviewChange } from "./engineActionTypes";
 import {
   createGlobalRouteWritebackTargets,
   createRouteWritebackTargets,
+  createRuntimeRouteWritebackTargets,
 } from "./engineAutoFixRouteTargets";
 
 const originalPack = globalThis.pack;
@@ -112,5 +114,33 @@ describe("createGlobalRouteWritebackTargets", () => {
     expect(targets.resolveRouteCell(change)).toBe(11);
     expect(targets.getWritableProvince(4)).toBe(province);
     expect(targets.getWritableProvince(5)).toBeUndefined();
+  });
+
+  it("creates route writeback targets from an injected runtime context", () => {
+    const province = { i: 4, center: 10 };
+    const context = {
+      pack: {
+        cells: {
+          i: [10, 11],
+          h: { 10: 30, 11: 30 },
+          province: { 10: 4, 11: 4 },
+          routes: { 10: { 11: 1 }, 11: {} },
+        },
+        provinces: {
+          4: province,
+        },
+      },
+    } as unknown as EngineRuntimeContext;
+    const change = {
+      id: "route:runtime:4",
+      operation: "link",
+      entity: "route",
+      summary: "Connect province",
+      refs: { provinces: [4] },
+    } satisfies EngineAutoFixPreviewChange;
+    const targets = createRuntimeRouteWritebackTargets(context);
+
+    expect(targets.resolveRouteCell(change)).toBe(11);
+    expect(targets.getWritableProvince(4)).toBe(province);
   });
 });

@@ -1,3 +1,4 @@
+import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 import type {
   AgmWritableProvince,
   EngineAutoFixPreviewChange,
@@ -115,6 +116,22 @@ export function createGlobalRouteWritebackMapAdapter(): EngineRouteWritebackMapA
   };
 }
 
+export function createRuntimeRouteWritebackMapAdapter(
+  context: EngineRuntimeContext,
+): EngineRouteWritebackMapAdapter {
+  return {
+    getCellIds: () => Array.from(context.pack?.cells?.i || []),
+    getCellHeight: (cellId) => context.pack?.cells?.h?.[cellId],
+    getCellProvince: (cellId) => context.pack?.cells?.province?.[cellId],
+    getCellState: (cellId) => context.pack?.cells?.state?.[cellId],
+    getCellRoutes: (cellId) => context.pack?.cells?.routes?.[cellId],
+    getProvince: (provinceId) =>
+      context.pack?.provinces?.[provinceId] as unknown as
+        | AgmWritableProvince
+        | undefined,
+  };
+}
+
 export function createRouteWritebackTargets(
   mapAdapter: EngineRouteWritebackMapAdapter,
 ): EngineRouteWritebackTargets {
@@ -128,4 +145,12 @@ export function createRouteWritebackTargets(
 
 export function createGlobalRouteWritebackTargets(): EngineRouteWritebackTargets {
   return createRouteWritebackTargets(createGlobalRouteWritebackMapAdapter());
+}
+
+export function createRuntimeRouteWritebackTargets(
+  context: EngineRuntimeContext,
+): EngineRouteWritebackTargets {
+  return createRouteWritebackTargets(
+    createRuntimeRouteWritebackMapAdapter(context),
+  );
 }
