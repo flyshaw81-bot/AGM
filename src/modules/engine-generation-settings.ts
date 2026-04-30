@@ -18,50 +18,85 @@ export type EngineGenerationSettings = {
   statesGrowthRate: number;
 };
 
-function getInput(id: string): HTMLInputElement | null {
-  return document.getElementById(id) as HTMLInputElement | null;
+export type EngineGenerationControlInput = Pick<
+  Partial<HTMLInputElement>,
+  "dataset" | "value" | "valueAsNumber"
+>;
+
+export type EngineGenerationControlSelect = Pick<
+  Partial<HTMLSelectElement>,
+  "selectedOptions" | "value"
+>;
+
+export type EngineGenerationSettingsTargets = {
+  getInput: (id: string) => EngineGenerationControlInput | null;
+  getSelect: (id: string) => EngineGenerationControlSelect | null;
+  getGlobalInput: (name: string) => EngineGenerationControlInput | undefined;
+};
+
+export function createGlobalGenerationSettingsTargets(): EngineGenerationSettingsTargets {
+  return {
+    getInput: (id) => document.getElementById(id) as HTMLInputElement | null,
+    getSelect: (id) => document.getElementById(id) as HTMLSelectElement | null,
+    getGlobalInput: (name) =>
+      globalThis[name as keyof typeof globalThis] as
+        | HTMLInputElement
+        | undefined,
+  };
 }
 
-function getSelect(id: string): HTMLSelectElement | null {
-  return document.getElementById(id) as HTMLSelectElement | null;
+function getInputNumber(
+  targets: EngineGenerationSettingsTargets,
+  id: string,
+  fallback: number,
+): number {
+  return Number(targets.getInput(id)?.value ?? fallback);
 }
 
-function getGlobalInput(name: string): HTMLInputElement | undefined {
-  return globalThis[name as keyof typeof globalThis] as
-    | HTMLInputElement
-    | undefined;
+function getInputValueAsNumber(
+  targets: EngineGenerationSettingsTargets,
+  id: string,
+  fallback: number,
+): number {
+  return targets.getInput(id)?.valueAsNumber || fallback;
 }
 
-function getInputNumber(id: string, fallback: number): number {
-  return Number(getInput(id)?.value ?? fallback);
-}
-
-function getInputValueAsNumber(id: string, fallback: number): number {
-  return getInput(id)?.valueAsNumber || fallback;
-}
-
-export function createGlobalGenerationSettings(): EngineGenerationSettings {
-  const cultureSetInput = getSelect("culturesSet");
+export function createGenerationSettings(
+  targets: EngineGenerationSettingsTargets,
+): EngineGenerationSettings {
+  const cultureSetInput = targets.getSelect("culturesSet");
 
   return {
-    heightmapTemplateId: getInput("templateInput")?.value,
-    pointsCount: Number(getGlobalInput("pointsInput")?.dataset?.cells ?? 0),
-    heightExponent: Number(getGlobalInput("heightExponentInput")?.value ?? 1),
-    lakeElevationLimit: getInputNumber("lakeElevationLimitOutput", 0),
-    resolveDepressionsSteps: getInputNumber("resolveDepressionsStepsOutput", 0),
-    statesCount: getInputNumber("statesNumber", 0),
-    manorsCount: getInputNumber("manorsInput", 1000),
-    religionsCount: getInputNumber("religionsNumber", 0),
-    provincesRatio: getInputValueAsNumber("provincesRatio", 100),
-    culturesCount: getInputNumber("culturesInput", 0),
+    heightmapTemplateId: targets.getInput("templateInput")?.value,
+    pointsCount: Number(
+      targets.getGlobalInput("pointsInput")?.dataset?.cells ?? 0,
+    ),
+    heightExponent: Number(
+      targets.getGlobalInput("heightExponentInput")?.value ?? 1,
+    ),
+    lakeElevationLimit: getInputNumber(targets, "lakeElevationLimitOutput", 0),
+    resolveDepressionsSteps: getInputNumber(
+      targets,
+      "resolveDepressionsStepsOutput",
+      0,
+    ),
+    statesCount: getInputNumber(targets, "statesNumber", 0),
+    manorsCount: getInputNumber(targets, "manorsInput", 1000),
+    religionsCount: getInputNumber(targets, "religionsNumber", 0),
+    provincesRatio: getInputValueAsNumber(targets, "provincesRatio", 100),
+    culturesCount: getInputNumber(targets, "culturesInput", 0),
     cultureSet: cultureSetInput?.value ?? "random",
     cultureSetMax: Number(
       cultureSetInput?.selectedOptions?.[0]?.dataset?.max ?? 0,
     ),
-    cultureEmblemShape: getInput("emblemShape")?.value ?? "",
-    cultureNeutralRate: getInputValueAsNumber("neutralRate", 1),
-    stateSizeVariety: getInputValueAsNumber("sizeVariety", 1),
-    globalGrowthRate: getInputValueAsNumber("growthRate", 1),
-    statesGrowthRate: getInputValueAsNumber("statesGrowthRate", 1),
+    cultureEmblemShape: targets.getInput("emblemShape")?.value ?? "",
+    cultureNeutralRate: getInputValueAsNumber(targets, "neutralRate", 1),
+    stateSizeVariety: getInputValueAsNumber(targets, "sizeVariety", 1),
+    globalGrowthRate: getInputValueAsNumber(targets, "growthRate", 1),
+    statesGrowthRate: getInputValueAsNumber(targets, "statesGrowthRate", 1),
   };
+}
+
+export function createGlobalGenerationSettings(): EngineGenerationSettings {
+  return createGenerationSettings(createGlobalGenerationSettingsTargets());
 }

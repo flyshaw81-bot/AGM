@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { createGlobalGenerationSettings } from "./engine-generation-settings";
+import {
+  createGenerationSettings,
+  createGlobalGenerationSettings,
+  type EngineGenerationSettingsTargets,
+} from "./engine-generation-settings";
 
 const originalDocument = globalThis.document;
 const originalPointsInput = globalThis.pointsInput;
@@ -11,6 +15,17 @@ function installDocument(
   globalThis.document = {
     getElementById: (id: string) => controls[id] ?? null,
   } as unknown as Document;
+}
+
+function createTargets(
+  controls: Record<string, Partial<HTMLInputElement | HTMLSelectElement>>,
+  globals: Record<string, Partial<HTMLInputElement>> = {},
+): EngineGenerationSettingsTargets {
+  return {
+    getInput: (id) => controls[id] ?? null,
+    getSelect: (id) => controls[id] ?? null,
+    getGlobalInput: (name) => globals[name],
+  };
 }
 
 describe("createGlobalGenerationSettings", () => {
@@ -91,6 +106,56 @@ describe("createGlobalGenerationSettings", () => {
       stateSizeVariety: 1.5,
       globalGrowthRate: 1.75,
       statesGrowthRate: 2,
+    });
+  });
+
+  it("can read generation settings through explicit targets without globals", () => {
+    expect(
+      createGenerationSettings(
+        createTargets(
+          {
+            templateInput: { value: "volcano" },
+            lakeElevationLimitOutput: { value: "22" },
+            resolveDepressionsStepsOutput: { value: "3" },
+            statesNumber: { value: "17" },
+            manorsInput: { value: "800" },
+            religionsNumber: { value: "5" },
+            provincesRatio: { valueAsNumber: 55 },
+            culturesInput: { value: "9" },
+            culturesSet: {
+              selectedOptions: [{ dataset: { max: "12" } }] as any,
+              value: "oriental",
+            },
+            emblemShape: { value: "round" },
+            neutralRate: { valueAsNumber: 1.1 },
+            sizeVariety: { valueAsNumber: 2.2 },
+            growthRate: { valueAsNumber: 1.4 },
+            statesGrowthRate: { valueAsNumber: 1.7 },
+          },
+          {
+            pointsInput: { dataset: { cells: "18000" } },
+            heightExponentInput: { value: "2.4" },
+          },
+        ),
+      ),
+    ).toMatchObject({
+      heightmapTemplateId: "volcano",
+      pointsCount: 18000,
+      heightExponent: 2.4,
+      lakeElevationLimit: 22,
+      resolveDepressionsSteps: 3,
+      statesCount: 17,
+      manorsCount: 800,
+      religionsCount: 5,
+      provincesRatio: 55,
+      culturesCount: 9,
+      cultureSet: "oriental",
+      cultureSetMax: 12,
+      cultureEmblemShape: "round",
+      cultureNeutralRate: 1.1,
+      stateSizeVariety: 2.2,
+      globalGrowthRate: 1.4,
+      statesGrowthRate: 1.7,
     });
   });
 });

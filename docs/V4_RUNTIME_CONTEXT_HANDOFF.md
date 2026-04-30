@@ -815,6 +815,10 @@ Completed:
   `random` / `gauss` / `rand` / `rw` functions. The default adapter preserves
   the current seeded/public random behavior, but `EngineOptionsSessionModule`
   no longer calls those globals directly from its core session logic.
+- Split generation-settings reads into `createGenerationSettings(targets)` plus
+  `createGlobalGenerationSettingsTargets()`. The default targets still read
+  current DOM/global controls, but the settings mapper is now testable without
+  `document` or `globalThis` inputs.
 - Added `EngineRuntimeContext.optionsSession`. Generation session preparation
   now receives the active context and uses `context.optionsSession` for option
   randomization when available, instead of always reaching for the global
