@@ -33,6 +33,7 @@ function createPipelineContext(id: string): EngineRuntimeContext {
       add: () => null,
       remove: () => {},
       findById: () => undefined,
+      getType: () => "Generic",
     },
     routes: {
       isCrossroad: () => false,

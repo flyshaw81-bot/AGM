@@ -7,7 +7,6 @@ import {
   createTestRuntimeAdapters,
 } from "./test-runtime-context";
 
-const originalBurgs = globalThis.Burgs;
 const originalRandom = Math.random;
 
 function createProvinceContext(): EngineRuntimeContext {
@@ -121,15 +120,12 @@ function createProvinceContext(): EngineRuntimeContext {
 
 describe("ProvinceModule", () => {
   afterEach(() => {
-    globalThis.Burgs = originalBurgs;
     Math.random = originalRandom;
   });
 
   it("generates provinces against an explicit runtime context", () => {
-    globalThis.Burgs = {
-      getType: vi.fn(() => "Generic"),
-    } as unknown as typeof Burgs;
     const context = createProvinceContext();
+    context.burgs.getType = vi.fn(() => "Generic");
 
     new ProvinceModule().generate(context);
 
@@ -148,16 +144,21 @@ describe("ProvinceModule", () => {
     });
     expect(context.pack.states[1].provinces).toEqual([1, 2]);
     expect(Array.from(context.pack.cells.province)).toEqual([1, 1, 2, 2]);
+    expect(context.burgs.getType).toHaveBeenCalledWith(0, 0);
+    expect(context.burgs.getType).toHaveBeenCalledWith(2, 0);
     expect(context.heraldry.generate).toHaveBeenCalled();
     expect(context.heraldry.getShield).toHaveBeenCalledWith(1, 1);
   });
 
   it("restores global Math.random after failed province generation", () => {
-    globalThis.Burgs = undefined as unknown as typeof Burgs;
+    const context = createProvinceContext();
+    context.heraldry.generate = vi.fn(() => {
+      throw new Error("heraldry failed");
+    });
 
-    expect(() =>
-      new ProvinceModule().generate(createProvinceContext()),
-    ).toThrow();
+    expect(() => new ProvinceModule().generate(context)).toThrow(
+      "heraldry failed",
+    );
     expect(Math.random).toBe(originalRandom);
   });
 });

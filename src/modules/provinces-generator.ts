@@ -154,7 +154,7 @@ export class ProvinceModule {
           const fullName = `${name} ${formName}`;
           const color = getMixedColor(s.color!);
           const kinship = nameByBurg ? 0.8 : 0.4;
-          const type = Burgs.getType(center, burg.port);
+          const type = context.burgs.getType(center, burg.port);
           const coa = context.heraldry.generate(
             stateBurgs[i].coa,
             kinship,
@@ -357,7 +357,7 @@ export class ProvinceModule {
               ? P(0.7)
               : P(0.3);
           const kinship = dominion ? 0 : 0.4;
-          const type = Burgs.getType(center, burgs[burg]?.port);
+          const type = context.burgs.getType(center, burgs[burg]?.port);
           const coa = context.heraldry.generate(
             s.coa,
             kinship,

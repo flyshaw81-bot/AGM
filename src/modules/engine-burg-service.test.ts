@@ -20,6 +20,7 @@ describe("createGlobalBurgService", () => {
     globalThis.Burgs = {
       add: vi.fn(() => 3),
       remove: vi.fn(),
+      getType: vi.fn(() => "River"),
     } as unknown as typeof Burgs;
     globalThis.pack = {
       burgs: [undefined, undefined, undefined, burg],
@@ -31,9 +32,11 @@ describe("createGlobalBurgService", () => {
     burgs.remove(3);
     expect(burgs.findById(3)).toBe(burg);
     expect(burgs.findById(99)).toBeUndefined();
+    expect(burgs.getType(12, 0)).toBe("River");
 
     expect(Burgs.add).toHaveBeenCalledWith([10, 20]);
     expect(Burgs.remove).toHaveBeenCalledWith(3);
+    expect(Burgs.getType).toHaveBeenCalledWith(12, 0, undefined);
   });
 
   it("composes burg service from injected runtime targets", () => {
@@ -41,6 +44,7 @@ describe("createGlobalBurgService", () => {
     const burgModule = {
       add: vi.fn(() => 2),
       remove: vi.fn(),
+      getType: vi.fn(() => "Highland"),
     };
     const burgs = createEngineBurgService({
       getBurgModule: () => burgModule,
@@ -50,9 +54,11 @@ describe("createGlobalBurgService", () => {
     expect(burgs.add([30, 40])).toBe(2);
     burgs.remove(2);
     expect(burgs.findById(2)).toBe(burg);
+    expect(burgs.getType(7, 1)).toBe("Highland");
 
     expect(burgModule.add).toHaveBeenCalledWith([30, 40]);
     expect(burgModule.remove).toHaveBeenCalledWith(2);
+    expect(burgModule.getType).toHaveBeenCalledWith(7, 1, undefined);
   });
 
   it("keeps command calls safe when the burg module is not mounted", () => {
@@ -64,6 +70,7 @@ describe("createGlobalBurgService", () => {
     expect(burgs.add([10, 20])).toBeNull();
     expect(() => burgs.remove(3)).not.toThrow();
     expect(burgs.findById(3)).toBeUndefined();
+    expect(burgs.getType(3, 0)).toBe("Generic");
   });
 
   it("reads runtime burg data from context pack instead of global pack", () => {
@@ -82,6 +89,7 @@ describe("createGlobalBurgService", () => {
     const burgModule = {
       add: vi.fn(() => 5),
       remove: vi.fn(),
+      getType: vi.fn(() => "Lake"),
     };
     const context = {
       pack: {
@@ -102,7 +110,9 @@ describe("createGlobalBurgService", () => {
     expect(burgs.findById(5)).not.toBe(globalBurg);
     expect(burgs.add([1, 2])).toBe(5);
     burgs.remove(5);
+    expect(burgs.getType(5, 1)).toBe("Lake");
     expect(burgModule.add).toHaveBeenCalledWith([1, 2]);
     expect(burgModule.remove).toHaveBeenCalledWith(5);
+    expect(burgModule.getType).toHaveBeenCalledWith(5, 1, context);
   });
 });

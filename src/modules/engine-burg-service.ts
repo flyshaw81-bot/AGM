@@ -4,17 +4,24 @@ import type { EngineRuntimeContext } from "./engine-runtime-context";
 type EngineBurgModule = {
   add?: (point: [number, number]) => number | null;
   remove?: (burgId: number) => void;
+  getType?: (
+    cellId: number,
+    port?: number,
+    context?: EngineRuntimeContext,
+  ) => string;
 };
 
 export type EngineBurgServiceTargets = {
   getBurgModule: () => EngineBurgModule | undefined;
   getBurgs: () => (Burg | undefined)[] | undefined;
+  getTypeContext?: () => EngineRuntimeContext | undefined;
 };
 
 export type EngineBurgService = {
   add: (point: [number, number]) => number | null;
   remove: (burgId: number) => void;
   findById: (burgId: number) => Burg | undefined;
+  getType: (cellId: number, port?: number) => string;
 };
 
 export function createEngineBurgService(
@@ -26,6 +33,10 @@ export function createEngineBurgService(
       targets.getBurgModule()?.remove?.(burgId);
     },
     findById: (burgId) => targets.getBurgs()?.[burgId],
+    getType: (cellId, port) =>
+      targets
+        .getBurgModule()
+        ?.getType?.(cellId, port, targets.getTypeContext?.()) ?? "Generic",
   };
 }
 
@@ -43,5 +54,6 @@ export function createRuntimeBurgService(
   return createEngineBurgService({
     getBurgModule: () => burgModule,
     getBurgs: () => context.pack.burgs as (Burg | undefined)[] | undefined,
+    getTypeContext: () => context,
   });
 }

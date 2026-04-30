@@ -673,9 +673,10 @@ Completed:
 - Route query/editor helpers (`connect`, `remove`, `generateName`, `getLength`,
   and route lookup helpers) still rely on global `pack` or rendered SVG state
   where they are not part of the pure generation path.
-- Provinces generation still depends on global `Burgs.getType`, `COA`, `Alea`,
-  and the existing global random-number side effect. It is context-routed, not
-  fully pure yet.
+- Provinces generation now routes burg type lookup through `context.burgs` and
+  COA generation through `context.heraldry`. It still installs seeded `Alea`
+  during generation for compatibility, but restores the previous `Math.random`
+  after success or failure, so it is context-routed but not fully pure yet.
 - Zones generation route checks and eruption note lookup now flow through
   `context.routes` and `context.notes`. The default global context still backs
   those adapters with the existing public runtime, so this is boundary
@@ -1997,6 +1998,10 @@ focused tests cover the restoration behavior.
 `provinces-generator.ts` now restores the previous global `Math.random` after
 province generation installs the seeded Alea generator, including failure paths;
 focused tests cover the restoration behavior.
+`provinces-generator.ts` also routes burg type lookup through
+`context.burgs.getType(...)` instead of calling the global `Burgs.getType`
+mount directly; the default burg service still delegates to the mounted module
+for compatibility.
 
 `engine-runtime-settings.ts` now routes settings input lookups through
 `EngineSettingsDomTargets`, keeping the browser `document.getElementById`

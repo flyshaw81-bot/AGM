@@ -46,6 +46,7 @@ export function createTestRuntimeAdapters(): Pick<
       add: () => null,
       remove: () => {},
       findById: () => undefined,
+      getType: () => "Generic",
     },
     routes: {
       isCrossroad: () => false,
