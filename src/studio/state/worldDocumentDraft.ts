@@ -13,6 +13,7 @@ import {
   createGlobalWorldDocumentDraftBuilderTargets,
   type WorldDocumentDraftBuilderTargets,
 } from "./worldDocumentDraftBuilders";
+import type { WorldDocumentDraftImportTargets } from "./worldDocumentDraftImport";
 import { createEngineManifestExport } from "./worldDocumentEngineExports";
 import {
   type EnginePackageBundleTargets,
@@ -41,7 +42,7 @@ export {
 } from "./worldDocumentDraftBuilders";
 export type { WorldRulesDraft } from "./worldDocumentDraftTypes";
 
-export type WorldDocumentDraftTargets = {
+export type WorldDocumentDraftTargets = WorldDocumentDraftImportTargets & {
   createDraft: (
     state: StudioState,
     projectSummary: EngineProjectSummary,
@@ -70,6 +71,8 @@ export function createGlobalWorldDocumentDraftTargets(
     createDraft: (state, projectSummary) =>
       createAgmDocumentDraft(state, projectSummary, builderTargets),
     setStorageItem: (key, value) => localStorage.setItem(key, value),
+    getStorageItem: (key) => localStorage.getItem(key),
+    readFileText: (file) => file.text(),
     downloadJson: downloadJsonDraft,
     downloadBlob: downloadBlobDraft,
     createPngBlob: createHeightmapPngBlob,

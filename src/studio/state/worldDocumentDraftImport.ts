@@ -10,6 +10,18 @@ import {
   isWorldRulesDraft,
 } from "./worldDocumentDraftImportGuards";
 
+export type WorldDocumentDraftImportTargets = {
+  getStorageItem: (key: string) => string | null;
+  readFileText: (file: File) => Promise<string>;
+};
+
+export function createGlobalWorldDocumentDraftImportTargets(): WorldDocumentDraftImportTargets {
+  return {
+    getStorageItem: (key) => localStorage.getItem(key),
+    readFileText: (file) => file.text(),
+  };
+}
+
 function isLayerStates(
   value: unknown,
 ): value is Partial<Record<LayerAction, boolean>> {
@@ -264,8 +276,13 @@ function parseAgmDocumentDraft(rawDraft: string) {
   }
 }
 
-export function loadAgmDocumentDraft() {
-  const rawDraft = localStorage.getItem(AGM_DRAFT_STORAGE_KEY);
+export function loadAgmDocumentDraft(
+  targets: Pick<
+    WorldDocumentDraftImportTargets,
+    "getStorageItem"
+  > = createGlobalWorldDocumentDraftImportTargets(),
+) {
+  const rawDraft = targets.getStorageItem(AGM_DRAFT_STORAGE_KEY);
   return rawDraft ? parseAgmDocumentDraft(rawDraft) : null;
 }
 
@@ -279,10 +296,22 @@ export function parseAgmRulesPackDraft(rawDraft: string) {
   }
 }
 
-export async function importAgmRulesPackDraft(file: File) {
-  return parseAgmRulesPackDraft(await file.text());
+export async function importAgmRulesPackDraft(
+  file: File,
+  targets: Pick<
+    WorldDocumentDraftImportTargets,
+    "readFileText"
+  > = createGlobalWorldDocumentDraftImportTargets(),
+) {
+  return parseAgmRulesPackDraft(await targets.readFileText(file));
 }
 
-export async function importAgmDocumentDraft(file: File) {
-  return parseAgmDocumentDraft(await file.text());
+export async function importAgmDocumentDraft(
+  file: File,
+  targets: Pick<
+    WorldDocumentDraftImportTargets,
+    "readFileText"
+  > = createGlobalWorldDocumentDraftImportTargets(),
+) {
+  return parseAgmDocumentDraft(await targets.readFileText(file));
 }

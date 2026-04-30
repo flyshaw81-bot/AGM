@@ -66,6 +66,8 @@ function createTargets(draft: AgmDocumentDraft): WorldDocumentDraftTargets {
   return {
     createDraft: vi.fn(() => draft),
     setStorageItem: vi.fn(),
+    getStorageItem: vi.fn(),
+    readFileText: vi.fn(),
     downloadJson: vi.fn(),
     downloadBlob: vi.fn(),
     createPngBlob: vi.fn(async () => new Blob(["png"])),

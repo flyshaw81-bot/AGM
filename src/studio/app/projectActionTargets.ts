@@ -220,7 +220,7 @@ export function createProjectDraftAdapter(
       saveAgmDocumentDraft(state, projectSummary, targets),
     exportAgmDraft: (state, projectSummary) =>
       exportAgmDocumentDraft(state, projectSummary, targets),
-    loadAgmDraft: loadAgmDocumentDraft,
+    loadAgmDraft: () => loadAgmDocumentDraft(targets),
     restoreAgmDraft: restoreAgmDocumentState,
   };
 }
