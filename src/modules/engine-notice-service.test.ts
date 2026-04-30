@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createGlobalNoticeService } from "./engine-notice-service";
+import {
+  createGlobalNoticeService,
+  createJQueryNoticeDialogHost,
+  type EngineNoticeDialogHost,
+} from "./engine-notice-service";
 
 const originalAlertMessage = globalThis.alertMessage;
 const originalDollar = globalThis.$;
@@ -8,24 +12,21 @@ const originalClearMainTip = globalThis.clearMainTip;
 const originalCleanupData = globalThis.cleanupData;
 const originalRegenerateMap = globalThis.regenerateMap;
 
-function installNoticeGlobals() {
-  const dialog = vi.fn();
-  const close = vi.fn();
-  const dollar = vi.fn((selectorOrThis: unknown) => {
-    if (selectorOrThis === "#alert") return { dialog };
-    return {
-      dialog: close,
-    };
-  });
+function createDialogHost() {
+  const host: EngineNoticeDialogHost = {
+    setHtml: vi.fn(),
+    open: vi.fn(),
+    close: vi.fn(),
+  };
 
-  globalThis.alertMessage = { innerHTML: "" } as HTMLElement;
-  globalThis.$ = dollar as unknown as typeof $;
+  return host;
+}
+
+function installGenerationGlobals() {
   globalThis.parseError = vi.fn(() => "Parsed failure");
   globalThis.clearMainTip = vi.fn();
   globalThis.cleanupData = vi.fn();
   globalThis.regenerateMap = vi.fn();
-
-  return { dialog, close, dollar };
 }
 
 describe("createGlobalNoticeService", () => {
@@ -38,10 +39,10 @@ describe("createGlobalNoticeService", () => {
     globalThis.regenerateMap = originalRegenerateMap;
   });
 
-  it("opens a modal through the current alert dialog compatibility host", () => {
-    const { dialog } = installNoticeGlobals();
+  it("opens a modal through an injected dialog host", () => {
+    const host = createDialogHost();
 
-    createGlobalNoticeService().showModal({
+    createGlobalNoticeService(host).showModal({
       title: "Notice",
       html: "<p>Body</p>",
       resizable: true,
@@ -49,8 +50,8 @@ describe("createGlobalNoticeService", () => {
       position: { my: "left" },
     });
 
-    expect(globalThis.alertMessage.innerHTML).toBe("<p>Body</p>");
-    expect(dialog).toHaveBeenCalledWith(
+    expect(host.setHtml).toHaveBeenCalledWith("<p>Body</p>");
+    expect(host.open).toHaveBeenCalledWith(
       expect.objectContaining({
         resizable: true,
         title: "Notice",
@@ -61,30 +62,33 @@ describe("createGlobalNoticeService", () => {
   });
 
   it("uses the default close button when no modal buttons are provided", () => {
-    const { close, dialog } = installNoticeGlobals();
+    const host = createDialogHost();
 
-    createGlobalNoticeService().showModal({
+    createGlobalNoticeService(host).showModal({
       title: "Notice",
       html: "Body",
     });
 
-    const options = dialog.mock.calls[0][0];
-    options.buttons.Ok.call("dialog-node");
+    const options = vi.mocked(host.open).mock.calls[0][0];
+    options.buttons?.Ok.call("dialog-node");
 
-    expect(close).toHaveBeenCalledWith("close");
+    expect(host.close).toHaveBeenCalledWith("dialog-node");
   });
 
   it("routes generation errors through cleanup, regenerate, and ignore dialog actions", () => {
-    const { close, dialog } = installNoticeGlobals();
+    installGenerationGlobals();
+    const host = createDialogHost();
     const error = new Error("Boom");
 
-    createGlobalNoticeService().showGenerationError(error);
+    createGlobalNoticeService(host).showGenerationError(error);
 
     expect(globalThis.parseError).toHaveBeenCalledWith(error);
     expect(globalThis.clearMainTip).toHaveBeenCalledWith();
-    expect(globalThis.alertMessage.innerHTML).toContain("Parsed failure");
+    expect(host.setHtml).toHaveBeenCalledWith(
+      expect.stringContaining("Parsed failure"),
+    );
 
-    const options = dialog.mock.calls[0][0];
+    const options = vi.mocked(host.open).mock.calls[0][0];
     expect(options).toMatchObject({
       resizable: false,
       title: "Generation error",
@@ -92,13 +96,34 @@ describe("createGlobalNoticeService", () => {
       position: { my: "center", at: "center", of: "svg" },
     });
 
-    options.buttons["Cleanup data"]();
-    options.buttons.Regenerate.call("dialog-node");
-    options.buttons.Ignore.call("dialog-node");
+    options.buttons?.["Cleanup data"].call("dialog-node");
+    options.buttons?.Regenerate.call("dialog-node");
+    options.buttons?.Ignore.call("dialog-node");
 
     expect(globalThis.cleanupData).toHaveBeenCalledWith();
     expect(globalThis.regenerateMap).toHaveBeenCalledWith("generation error");
-    expect(close).toHaveBeenCalledTimes(2);
+    expect(host.close).toHaveBeenCalledTimes(2);
+    expect(host.close).toHaveBeenCalledWith("dialog-node");
+  });
+
+  it("keeps jQuery UI access inside the default compatibility host", () => {
+    const dialog = vi.fn();
+    const close = vi.fn();
+    const dollar = vi.fn((selectorOrDialog: unknown) => {
+      if (selectorOrDialog === "#alert") return { dialog };
+      return { dialog: close };
+    });
+    globalThis.alertMessage = { innerHTML: "" } as HTMLElement;
+    globalThis.$ = dollar as unknown as typeof $;
+
+    const host = createJQueryNoticeDialogHost();
+    host.setHtml("<p>Body</p>");
+    host.open({ title: "Notice", resizable: false });
+    host.close("dialog-node");
+
+    expect(globalThis.alertMessage.innerHTML).toBe("<p>Body</p>");
+    expect(dollar).toHaveBeenCalledWith("#alert");
+    expect(dialog).toHaveBeenCalledWith({ title: "Notice", resizable: false });
     expect(close).toHaveBeenCalledWith("close");
   });
 });

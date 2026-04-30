@@ -418,7 +418,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 124 test files, 378 tests.
+- `npm.cmd run test -- --run` passed: 124 test files, 379 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -510,9 +510,10 @@ Completed:
   discovery are handled by `EngineFontResourceService`, so review remaining
   font debt as `window.*` caller migration rather than missing service
   creation.
-- The default/global `EngineNoticeService` still delegates to the old
-  `alertMessage` + jQuery dialog implementation. That compatibility is now
-  isolated in `engine-notice-service.ts`, not inside `CulturesModule`.
+- `EngineNoticeService` now depends on an injectable
+  `EngineNoticeDialogHost`. The default `createJQueryNoticeDialogHost()` keeps
+  the old `alertMessage` + jQuery dialog behavior for compatibility, but the
+  notice service itself no longer calls jQuery UI directly.
 - Runtime warning/error output now has an `EngineLogService` adapter. The
   default global adapter still delegates to the existing `WARN` / `ERROR`
   console gates, but Burgs, Rivers depression resolution, Religions generation,
@@ -686,10 +687,11 @@ Completed:
   focused tests for map/burg rendering calls, COA/element removal, ice redraws,
   and scale-bar forwarding.
 - Moved notice modal/error handling into `src/modules/engine-notice-service.ts`.
-  The default service still delegates to `alertMessage` and jQuery UI dialog,
-  but the compatibility debt is no longer inline in `engine-runtime-context.ts`.
-  Added focused tests for modal dialog options, default close action, and
-  generation-error cleanup/regenerate/ignore actions.
+  The notice service now depends on `EngineNoticeDialogHost`; only the default
+  `createJQueryNoticeDialogHost()` touches `alertMessage` and jQuery UI dialog.
+  Added focused tests for injected-host modal options, default close action,
+  generation-error cleanup/regenerate/ignore actions, and the jQuery host
+  compatibility wrapper.
 - Moved runtime feedback and log services into
   `src/modules/engine-feedback-service.ts` and
   `src/modules/engine-log-service.ts`. The default adapters still delegate to
