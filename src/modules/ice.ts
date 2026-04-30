@@ -47,57 +47,63 @@ export class IceModule {
     const { graphWidth = 0, graphHeight = 0 } = context.worldSettings;
     const { cells, features } = grid;
     const { temp, h } = cells;
-    Math.random = Alea(context.seed);
+    const previousRandom = Math.random;
 
-    const ICEBERG_MAX_TEMP = 0;
-    const GLACIER_MAX_TEMP = -8;
-    const minMaxTemp = min<number>(temp)!;
+    try {
+      Math.random = Alea(context.seed);
 
-    // Generate glaciers on cold land
-    {
-      const type = "iceShield";
-      const getType = (cellId: number) =>
-        h[cellId] >= 20 && temp[cellId] <= GLACIER_MAX_TEMP ? type : null;
-      const isolines = getIsolines(grid, getType, { polygons: true });
+      const ICEBERG_MAX_TEMP = 0;
+      const GLACIER_MAX_TEMP = -8;
+      const minMaxTemp = min<number>(temp)!;
 
-      if (isolines[type]?.polygons) {
-        isolines[type].polygons.forEach((points: Point[]) => {
-          const clipped = clipPoly(points, graphWidth, graphHeight);
-          pack.ice.push({
-            i: this.getNextId(context),
-            points: clipped,
-            type: "glacier",
+      // Generate glaciers on cold land
+      {
+        const type = "iceShield";
+        const getType = (cellId: number) =>
+          h[cellId] >= 20 && temp[cellId] <= GLACIER_MAX_TEMP ? type : null;
+        const isolines = getIsolines(grid, getType, { polygons: true });
+
+        if (isolines[type]?.polygons) {
+          isolines[type].polygons.forEach((points: Point[]) => {
+            const clipped = clipPoly(points, graphWidth, graphHeight);
+            pack.ice.push({
+              i: this.getNextId(context),
+              points: clipped,
+              type: "glacier",
+            });
           });
+        }
+      }
+
+      // Generate icebergs on cold water
+      for (const cellId of grid.cells.i) {
+        const t = temp[cellId];
+        if (h[cellId] >= 20) continue; // no icebergs on land
+        if (t > ICEBERG_MAX_TEMP) continue; // too warm: no icebergs
+        if (features[cells.f[cellId]].type === "lake") continue; // no icebergs on lakes
+        if (P(0.8)) continue; // skip most of eligible cells
+
+        const randomFactor = 0.8 + rand() * 0.4; // random size factor
+        let baseSize = (1 - normalize(t, minMaxTemp, 1)) * 0.8; // size: 0 = zero, 1 = full
+        if (cells.t[cellId] === -1) baseSize /= 1.3; // coastline: smaller icebergs
+        const size = minmax(rn(baseSize * randomFactor, 2), 0.1, 1);
+
+        const [cx, cy] = grid.points[cellId];
+        const points = getGridPolygon(cellId, grid).map(([x, y]: Point) => [
+          rn(lerp(cx, x, size), 2),
+          rn(lerp(cy, y, size), 2),
+        ]);
+
+        pack.ice.push({
+          i: this.getNextId(context),
+          points,
+          type: "iceberg",
+          cellId,
+          size,
         });
       }
-    }
-
-    // Generate icebergs on cold water
-    for (const cellId of grid.cells.i) {
-      const t = temp[cellId];
-      if (h[cellId] >= 20) continue; // no icebergs on land
-      if (t > ICEBERG_MAX_TEMP) continue; // too warm: no icebergs
-      if (features[cells.f[cellId]].type === "lake") continue; // no icebergs on lakes
-      if (P(0.8)) continue; // skip most of eligible cells
-
-      const randomFactor = 0.8 + rand() * 0.4; // random size factor
-      let baseSize = (1 - normalize(t, minMaxTemp, 1)) * 0.8; // size: 0 = zero, 1 = full
-      if (cells.t[cellId] === -1) baseSize /= 1.3; // coastline: smaller icebergs
-      const size = minmax(rn(baseSize * randomFactor, 2), 0.1, 1);
-
-      const [cx, cy] = grid.points[cellId];
-      const points = getGridPolygon(cellId, grid).map(([x, y]: Point) => [
-        rn(lerp(cx, x, size), 2),
-        rn(lerp(cy, y, size), 2),
-      ]);
-
-      pack.ice.push({
-        i: this.getNextId(context),
-        points,
-        type: "iceberg",
-        cellId,
-        size,
-      });
+    } finally {
+      Math.random = previousRandom;
     }
   }
 

@@ -16,8 +16,13 @@ function createIceContext() {
     grid: {
       cells: {
         i: [0],
+        f: new Uint8Array([0]),
+        h: new Uint8Array([0]),
+        t: new Int8Array([-1]),
+        temp: new Int8Array([-10]),
         v: [[0, 1, 2, 3]],
       },
+      features: [{ type: "ocean" }],
       points: [[5, 5]],
       vertices: {
         p: [
@@ -106,5 +111,19 @@ describe("IceModule", () => {
     expect(context.pack.ice).toHaveLength(0);
     expect(calls.redrawIceberg).toBe(2);
     expect(calls.redrawGlacier).toBe(0);
+  });
+
+  it("restores global Math.random after ice generation", () => {
+    const originalRandom = Math.random;
+    const { context } = createIceContext();
+    const ice = new IceModule();
+
+    try {
+      ice.generate(context);
+
+      expect(Math.random).toBe(originalRandom);
+    } finally {
+      Math.random = originalRandom;
+    }
   });
 });
