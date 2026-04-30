@@ -21,32 +21,15 @@ import {
 import { createInitialState } from "./initialState";
 import { updateProjectCenterState } from "./projectCenter";
 import { createStudioShellEventHandlers } from "./studioShellHandlers";
+import {
+  createGlobalStudioWorkflowWatcherTargets,
+  watchStudioWorkflow,
+} from "./studioWorkflowWatcher";
 import { injectStudioStyles } from "./styles";
 import { updateViewportDimensions } from "./viewportState";
 
 async function syncProjectSummaryState() {
   return syncEngineProjectSummary();
-}
-
-function watchEditorWorkflow(root: HTMLElement, state: StudioState) {
-  const syncAndRender = async () => {
-    const editorChanged = syncEditorWorkflowState(state);
-    const projectSummaryChanged = await syncProjectSummaryState();
-    const documentChanged = syncDocumentState(state);
-    if (editorChanged || projectSummaryChanged || documentChanged) {
-      render(root, state);
-    }
-  };
-
-  window.setInterval(() => {
-    void syncAndRender();
-  }, 500);
-  window.addEventListener("focus", () => {
-    void syncAndRender();
-  });
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") void syncAndRender();
-  });
 }
 
 function render(root: HTMLElement, state: StudioState) {
@@ -128,7 +111,11 @@ async function bootstrapStudio() {
   await syncProjectSummaryState();
   syncDocumentState(state);
   render(root, state);
-  watchEditorWorkflow(root, state);
+  watchStudioWorkflow(
+    root,
+    state,
+    createGlobalStudioWorkflowWatcherTargets(render, syncProjectSummaryState),
+  );
 
   window.addEventListener("resize", () => {
     syncEngineViewport(
