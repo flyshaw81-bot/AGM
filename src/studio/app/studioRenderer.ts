@@ -23,6 +23,7 @@ import {
 } from "./engineHost";
 import { updateProjectCenterState } from "./projectCenter";
 import { createStudioShellEventHandlers } from "./studioShellHandlers";
+import { syncStudioDocumentTheme } from "./studioThemeSync";
 import type { RenderStudioApp } from "./studioWorkflowWatcher";
 import { updateViewportDimensions } from "./viewportState";
 
@@ -72,9 +73,7 @@ export function createGlobalStudioRendererTargets(): StudioRendererTargets {
     setRootTheme: (root, theme) => {
       root.dataset.studioTheme = theme;
     },
-    setDocumentTheme: (theme) => {
-      document.documentElement.dataset.studioTheme = theme;
-    },
+    setDocumentTheme: syncStudioDocumentTheme,
     relocateEngineMapHost,
     syncOverlays,
     syncViewport: syncEngineViewport,

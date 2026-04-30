@@ -75,6 +75,8 @@
 > injectable across preview, paint apply, undo, and biome coverage paths.
 > Studio style injection now uses `StudioStyleTargets`, so duplicate style
 > detection, style element creation, and head insertion are injectable.
+> Studio document theme sync now uses `StudioThemeSyncTargets`, so renderer
+> composition no longer writes directly to `document.documentElement`.
 > Please review whether each remaining global dependency is behind an explicit
 > compatibility adapter, and keep treating AGM `window.*` module mounts
 > separately from old public UI debt.
@@ -478,7 +480,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 147 test files, 489 tests.
+- `npm.cmd run test -- --run` passed: 148 test files, 490 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1305,6 +1307,10 @@ Studio style injection now has a dedicated `StudioStyleTargets` boundary for
 duplicate style detection, style element creation, and head insertion. The
 default adapter still writes to the browser document, while focused tests verify
 style injection and duplicate prevention through injected document fakes.
+Studio document theme sync now has a dedicated `StudioThemeSyncTargets`
+boundary. The default adapter still writes the theme dataset to the browser
+document element, while `studioRenderer.ts` composes the sync helper instead of
+owning the document write inline.
 Direct editor targets can also compose focus, entity mutation, and biome
 mutation commands directly from an injected `EngineRuntimeContext`. The default
 adapters still delegate to current entity mutation/focus bridge helpers, but
