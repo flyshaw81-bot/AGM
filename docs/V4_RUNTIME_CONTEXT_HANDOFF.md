@@ -100,6 +100,10 @@
 > `InitialStateTargets`, so startup state construction no longer owns
 > engine-document, style-preset, viewport-preset, preference, or project-center
 > default adapter wiring inline.
+> Studio bootstrap default dependencies now live in
+> `StudioBootstrapTargets`, so startup orchestration no longer owns style,
+> DOM, initial-state, workflow-watcher, project-summary, document-sync, root,
+> or viewport-sync default adapter wiring inline.
 > Please review whether each remaining global dependency is behind an explicit
 > compatibility adapter, and keep treating AGM `window.*` module mounts
 > separately from old public UI debt.
@@ -503,7 +507,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 155 test files, 505 tests.
+- `npm.cmd run test -- --run` passed: 156 test files, 506 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1372,6 +1376,12 @@ Initial Studio state default runtime access now has a dedicated
 viewport preset lookup, preference targets, and project-center storage targets.
 `initialState.ts` continues to re-export the target type/factory while startup
 state construction no longer owns those default adapter imports inline.
+Studio bootstrap default runtime access now has a dedicated
+`studioBootstrapTargets.ts` adapter for style injection, DOM startup helpers,
+initial state creation, viewport dimension updates, root creation, project
+summary sync, document sync, workflow watching, and viewport sync.
+`studioBootstrap.ts` continues to re-export the target type/factory while
+bootstrap orchestration no longer owns those default adapter imports inline.
 Direct editor targets can also compose focus, entity mutation, and biome
 mutation commands directly from an injected `EngineRuntimeContext`. The default
 adapters still delegate to current entity mutation/focus bridge helpers, but

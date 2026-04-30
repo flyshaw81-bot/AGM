@@ -1,4 +1,4 @@
-import type { StudioViewportSync } from "./studioBootstrap";
+import type { StudioViewportSync } from "./studioBootstrapTargets";
 
 export type StudioBootstrapDomTargets = {
   enableStudioBody: () => void;
