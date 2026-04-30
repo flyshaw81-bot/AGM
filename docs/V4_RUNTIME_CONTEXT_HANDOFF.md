@@ -81,6 +81,9 @@
 > body class setup, loading removal, resize/DOMContentLoaded listeners, ready
 > state reads, and public viewport sync mounting are isolated from bootstrap
 > composition.
+> Project center default storage/summary/clock access now uses
+> `ProjectCenterTargets` from a dedicated adapter module, so project-center
+> state logic no longer owns `localStorage`, engine summary, or clock calls.
 > Please review whether each remaining global dependency is behind an explicit
 > compatibility adapter, and keep treating AGM `window.*` module mounts
 > separately from old public UI debt.
@@ -484,7 +487,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 149 test files, 491 tests.
+- `npm.cmd run test -- --run` passed: 150 test files, 492 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1322,6 +1325,11 @@ DOMContentLoaded listener wiring, and public viewport sync mounting. The
 default adapter still writes to browser DOM/window APIs, while
 `studioBootstrap.ts` composes the DOM helper and no longer owns those direct
 browser calls inline.
+Project center default browser/runtime access now has a dedicated
+`projectCenterTargets.ts` adapter for recent-project storage, engine project
+summary reads, and clock access. `projectCenter.ts` continues to re-export the
+target type/factory for existing call sites, while the state update/load logic
+no longer owns those direct calls inline.
 Direct editor targets can also compose focus, entity mutation, and biome
 mutation commands directly from an injected `EngineRuntimeContext`. The default
 adapters still delegate to current entity mutation/focus bridge helpers, but

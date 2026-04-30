@@ -1,29 +1,20 @@
-import { getEngineProjectSummary } from "../bridge/engineActions";
-import type { EngineProjectSummary } from "../bridge/engineActionTypes";
 import type {
   ProjectCenterState,
   RecentProjectEntry,
   StudioState,
 } from "../types";
+import {
+  createGlobalProjectCenterTargets,
+  type ProjectCenterTargets,
+} from "./projectCenterTargets";
+
+export {
+  createGlobalProjectCenterTargets,
+  type ProjectCenterTargets,
+} from "./projectCenterTargets";
 
 export const PROJECT_CENTER_STORAGE_KEY = "agm.projectCenter.recentProjects";
 const PROJECT_CENTER_MAX_RECENT = 6;
-
-export type ProjectCenterTargets = {
-  getStorageItem: (key: string) => string | null;
-  setStorageItem: (key: string, value: string) => void;
-  getProjectSummary: () => EngineProjectSummary;
-  now: () => number;
-};
-
-export function createGlobalProjectCenterTargets(): ProjectCenterTargets {
-  return {
-    getStorageItem: (key) => localStorage.getItem(key),
-    setStorageItem: (key, value) => localStorage.setItem(key, value),
-    getProjectSummary: getEngineProjectSummary,
-    now: () => Date.now(),
-  };
-}
 
 function createProjectId(name: string, seed: string) {
   return (
