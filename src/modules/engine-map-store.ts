@@ -46,6 +46,31 @@ export function createGlobalMapStoreRuntimeAdapter(): EngineMapStoreRuntimeAdapt
   };
 }
 
+export type RuntimeMapStoreGridFactory = () => typeof grid;
+
+export function createRuntimeMapStoreRuntimeAdapter(
+  context: EngineRuntimeContext,
+  createGrid: RuntimeMapStoreGridFactory,
+): EngineMapStoreRuntimeAdapter {
+  return {
+    getGrid: () => context.grid,
+    getPack: () => context.pack,
+    getNotes: () => context.notes.all(),
+    clone: (value) => structuredClone(value),
+    setGrid: (nextGrid) => {
+      context.grid = nextGrid;
+    },
+    setPack: (nextPack) => {
+      context.pack = nextPack;
+    },
+    setNotes: (nextNotes) => {
+      const notes = context.notes.all();
+      notes.splice(0, notes.length, ...nextNotes);
+    },
+    createGrid,
+  };
+}
+
 export function createMapStore(
   runtimeAdapter: EngineMapStoreRuntimeAdapter,
   getCurrentContext: () => EngineRuntimeContext,

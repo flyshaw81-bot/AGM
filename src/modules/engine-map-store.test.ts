@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createGlobalMapStore, createMapStore } from "./engine-map-store";
+import {
+  createGlobalMapStore,
+  createMapStore,
+  createRuntimeMapStoreRuntimeAdapter,
+} from "./engine-map-store";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
 
 const originalStructuredClone = globalThis.structuredClone;
@@ -172,5 +176,40 @@ describe("createGlobalMapStore", () => {
       cloned: [{ id: "n4", name: "Note", legend: "Text" }],
     });
     expect(clone).toHaveBeenCalledTimes(3);
+  });
+
+  it("creates a runtime adapter over context grid, pack, and notes service", () => {
+    const clone = vi.fn((value) => ({ cloned: value }));
+    globalThis.structuredClone = clone as typeof structuredClone;
+    const nextGrid = { cells: { i: [8] } } as typeof grid;
+    const notes = [
+      { id: "n5", name: "Runtime", legend: "Note" },
+      { id: "n6", name: "Second", legend: "Note" },
+    ];
+    const context = {
+      grid: { cells: { i: [1] } } as typeof grid,
+      pack: { cells: { i: [2] } } as typeof pack,
+      notes: {
+        all: () => notes,
+      },
+    } as unknown as EngineRuntimeContext;
+    const adapter = createRuntimeMapStoreRuntimeAdapter(
+      context,
+      () => nextGrid,
+    );
+
+    expect(adapter.getGrid()).toBe(context.grid);
+    expect(adapter.getPack()).toBe(context.pack);
+    expect(adapter.getNotes()).toBe(notes);
+    expect(adapter.clone(context.pack)).toEqual({ cloned: context.pack });
+
+    adapter.setGrid(nextGrid);
+    adapter.setPack({ cells: { i: [3] } } as typeof pack);
+    adapter.setNotes([{ id: "n7", name: "Replacement", legend: "Note" }]);
+
+    expect(context.grid).toBe(nextGrid);
+    expect(context.pack).toEqual({ cells: { i: [3] } });
+    expect(notes).toEqual([{ id: "n7", name: "Replacement", legend: "Note" }]);
+    expect(adapter.createGrid()).toBe(nextGrid);
   });
 });

@@ -94,6 +94,9 @@
 > `getGlobalEngineRuntimeContext()` wires them back to the context pack, so
 > `findById` reads no longer need to fall through `globalThis.pack` once a
 > runtime context exists.
+> Engine map store now exposes `createRuntimeMapStoreRuntimeAdapter()`, so
+> snapshot/reset flows can read and write context `grid`/`pack` and context
+> note service state instead of requiring the global map variables.
 > Studio style injection now uses `StudioStyleTargets`, so duplicate style
 > detection, style element creation, and head insertion are injectable.
 > Studio document theme sync now uses `StudioThemeSyncTargets`, so renderer
