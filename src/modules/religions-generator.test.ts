@@ -88,6 +88,32 @@ function createReligionsContext(): EngineRuntimeContext {
 }
 
 describe("ReligionsModule", () => {
+  it("generates names for non-theistic forms without a deity", () => {
+    const context = createReligionsContext();
+    const religions = new ReligionsModule() as unknown as {
+      generateReligionName: (
+        variety: string,
+        form: string,
+        deity: string | null,
+        center: number,
+        context: EngineRuntimeContext,
+      ) => [string, string];
+    };
+
+    expect(() =>
+      religions.generateReligionName(
+        "Organized",
+        "Non-theism",
+        null,
+        0,
+        context,
+      ),
+    ).not.toThrow();
+    expect(() =>
+      religions.generateReligionName("Folk", "Animism", null, 0, context),
+    ).not.toThrow();
+  });
+
   it("generates folk religions against an explicit runtime context", () => {
     const context = createReligionsContext();
 

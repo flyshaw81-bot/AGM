@@ -656,7 +656,7 @@ export class ReligionsModule {
         let [name, expansion] = this.generateReligionName(
           type,
           form,
-          supreme!,
+          deity,
           center,
           context,
         );
@@ -1068,7 +1068,7 @@ export class ReligionsModule {
     const [name, expansion] = this.generateReligionName(
       type,
       form,
-      deity!,
+      deity,
       center,
       context,
     );
@@ -1134,7 +1134,7 @@ export class ReligionsModule {
   private generateReligionName(
     variety: string,
     form: string,
-    deity: string,
+    deity: string | null,
     center: number,
     context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
   ): [string, string] {
@@ -1142,7 +1142,7 @@ export class ReligionsModule {
 
     const random = () => context.naming.getCulture(cells.culture[center]);
     const type = rw(types[form]);
-    const supreme = deity.split(/[ ,]+/)[0];
+    const supreme = deity?.split(/[ ,]+/)[0];
     const culture = cultures[cells.culture[center]].name;
 
     const place = (adj?: boolean): string => {
@@ -1157,9 +1157,9 @@ export class ReligionsModule {
     const m = rw(namingMethods[variety]);
     if (m === "Random + type") return [`${random()} ${type}`, "global"];
     if (m === "Random + ism") return [`${trimVowels(random())}ism`, "global"];
-    if (m === "Supreme + ism" && deity)
+    if (m === "Supreme + ism" && supreme)
       return [`${trimVowels(supreme)}ism`, "global"];
-    if (m === "Faith of + Supreme" && deity)
+    if (m === "Faith of + Supreme" && supreme)
       return [
         `${ra(["Faith", "Way", "Path", "Word", "Witnesses"])} of ${supreme}`,
         "global",
