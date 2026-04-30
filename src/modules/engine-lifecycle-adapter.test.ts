@@ -120,8 +120,8 @@ describe("createGlobalLifecycleAdapter", () => {
     adapter.drawOceanLayers(context);
     adapter.defineMapSize(context);
     adapter.calculateMapCoordinates(context);
-    adapter.rebuildGraph();
-    adapter.createDefaultRuler();
+    adapter.rebuildGraph(context);
+    adapter.createDefaultRuler(context);
     adapter.showStatistics(context);
 
     expect(targets.addLakesInDeepDepressions).toHaveBeenCalledWith(22);
@@ -258,12 +258,20 @@ describe("createGlobalLifecycleAdapter", () => {
       defineMapSize: vi.fn(),
       calculateMapCoordinates: vi.fn(),
     };
+    const mapGraphLifecycle = {
+      rebuildGraph: vi.fn(),
+      createDefaultRuler: vi.fn(),
+    };
     const waterFeatures = {
       addLakesInDeepDepressions: vi.fn(),
       openNearSeaLakes: vi.fn(),
       drawOceanLayers: vi.fn(),
     };
-    const targets = createLifecycleTargets({ mapPlacement, waterFeatures });
+    const targets = createLifecycleTargets({
+      mapGraphLifecycle,
+      mapPlacement,
+      waterFeatures,
+    });
 
     targets.addLakesInDeepDepressions(25);
     targets.openNearSeaLakes("volcano");
@@ -274,6 +282,8 @@ describe("createGlobalLifecycleAdapter", () => {
       latitudePercent: 20,
       longitudePercent: 30,
     });
+    targets.rebuildGraph();
+    targets.createDefaultRuler();
 
     expect(waterFeatures.addLakesInDeepDepressions).toHaveBeenCalledWith(25);
     expect(waterFeatures.openNearSeaLakes).toHaveBeenCalledWith("volcano");
@@ -284,6 +294,8 @@ describe("createGlobalLifecycleAdapter", () => {
       latitudePercent: 20,
       longitudePercent: 30,
     });
+    expect(mapGraphLifecycle.rebuildGraph).toHaveBeenCalledWith();
+    expect(mapGraphLifecycle.createDefaultRuler).toHaveBeenCalledWith();
   });
 
   it("uses runtime map placement service from the context when available", () => {
@@ -338,5 +350,28 @@ describe("createGlobalLifecycleAdapter", () => {
     expect(targets.addLakesInDeepDepressions).not.toHaveBeenCalled();
     expect(targets.openNearSeaLakes).not.toHaveBeenCalled();
     expect(targets.drawOceanLayers).not.toHaveBeenCalled();
+  });
+
+  it("uses runtime map graph lifecycle service from the context when available", () => {
+    const targets = createTargets();
+    const mapGraphLifecycle = {
+      rebuildGraph: vi.fn(),
+      createDefaultRuler: vi.fn(),
+    };
+    const context = {
+      ...createContext(),
+      mapGraphLifecycle,
+    } as unknown as EngineRuntimeContext;
+    const adapter = createLifecycleAdapter(() => {
+      throw new Error("explicit context should be used");
+    }, targets);
+
+    adapter.rebuildGraph(context);
+    adapter.createDefaultRuler(context);
+
+    expect(mapGraphLifecycle.rebuildGraph).toHaveBeenCalledWith();
+    expect(mapGraphLifecycle.createDefaultRuler).toHaveBeenCalledWith();
+    expect(targets.rebuildGraph).not.toHaveBeenCalled();
+    expect(targets.createDefaultRuler).not.toHaveBeenCalled();
   });
 });

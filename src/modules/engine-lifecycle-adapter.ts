@@ -1,4 +1,8 @@
 import {
+  createGlobalMapGraphLifecycleService,
+  type EngineMapGraphLifecycleService,
+} from "./engine-map-graph-lifecycle-service";
+import {
   createGlobalMapPlacementService,
   type EngineMapPlacementService,
 } from "./engine-map-placement-service";
@@ -14,8 +18,8 @@ export type EngineLifecycleAdapter = {
   drawOceanLayers: (context?: EngineRuntimeContext) => void;
   defineMapSize: (context?: EngineRuntimeContext) => void;
   calculateMapCoordinates: (context?: EngineRuntimeContext) => void;
-  rebuildGraph: () => void;
-  createDefaultRuler: () => void;
+  rebuildGraph: (context?: EngineRuntimeContext) => void;
+  createDefaultRuler: (context?: EngineRuntimeContext) => void;
   showStatistics: (context?: EngineRuntimeContext) => void;
 };
 
@@ -37,6 +41,7 @@ export type EngineLifecycleTargets = {
 };
 
 export type EngineLifecycleRuntimeServices = {
+  mapGraphLifecycle: EngineMapGraphLifecycleService;
   mapPlacement: EngineMapPlacementService;
   waterFeatures: EngineWaterFeatureService;
 };
@@ -68,6 +73,7 @@ export function createLifecycleSettingsSnapshot(
 
 export function createGlobalLifecycleTargets(): EngineLifecycleTargets {
   return createLifecycleTargets({
+    mapGraphLifecycle: createGlobalMapGraphLifecycleService(),
     mapPlacement: createGlobalMapPlacementService(),
     waterFeatures: createGlobalWaterFeatureService(),
   });
@@ -93,10 +99,10 @@ export function createLifecycleTargets(
       services.mapPlacement.calculateMapCoordinates(settings);
     },
     rebuildGraph: () => {
-      reGraph();
+      services.mapGraphLifecycle.rebuildGraph();
     },
     createDefaultRuler: () => {
-      createDefaultRuler();
+      services.mapGraphLifecycle.createDefaultRuler();
     },
     showStatistics: (heightmapTemplateId) => {
       showStatistics(heightmapTemplateId);
@@ -155,11 +161,19 @@ export function createLifecycleAdapter(
         targets.calculateMapCoordinates(mapCoordinates);
       }
     },
-    rebuildGraph: () => {
-      targets.rebuildGraph();
+    rebuildGraph: (context = getCurrentContext()) => {
+      if (context.mapGraphLifecycle) {
+        context.mapGraphLifecycle.rebuildGraph();
+      } else {
+        targets.rebuildGraph();
+      }
     },
-    createDefaultRuler: () => {
-      targets.createDefaultRuler();
+    createDefaultRuler: (context = getCurrentContext()) => {
+      if (context.mapGraphLifecycle) {
+        context.mapGraphLifecycle.createDefaultRuler();
+      } else {
+        targets.createDefaultRuler();
+      }
     },
     showStatistics: (context = getCurrentContext()) => {
       const settings = createLifecycleSettingsSnapshot(context);

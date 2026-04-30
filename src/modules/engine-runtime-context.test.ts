@@ -77,6 +77,10 @@ describe("getGlobalEngineRuntimeContext", () => {
     expect(snapshot.grid).toEqual(globalThis.grid);
     expect(snapshot.pack).toEqual(globalThis.pack);
     expect(snapshot.notes).toEqual(runtimeNotes);
+    expect(typeof context.mapGraphLifecycle?.rebuildGraph).toBe("function");
+    expect(typeof context.mapGraphLifecycle?.createDefaultRuler).toBe(
+      "function",
+    );
     expect(typeof context.mapPlacement?.defineMapSize).toBe("function");
     expect(typeof context.mapPlacement?.calculateMapCoordinates).toBe(
       "function",

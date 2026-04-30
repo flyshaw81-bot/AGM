@@ -1834,6 +1834,11 @@ Lifecycle water feature preparation now has a formal
 `openNearSeaLakes`, and `OceanLayers`. `getGlobalEngineRuntimeContext()` wires
 `waterFeatures`, and lifecycle calls prefer the explicit context service before
 falling back to compatibility lifecycle targets.
+Map graph lifecycle preparation now has a formal
+`EngineMapGraphLifecycleService` for `reGraph` and `createDefaultRuler`.
+`preparePackGraph()` passes the active runtime context into lifecycle calls, so
+explicit contexts can route graph rebuild/ruler creation through
+`context.mapGraphLifecycle` without falling back to global helpers.
 
 ## Next Recommended Slice
 

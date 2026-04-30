@@ -118,9 +118,9 @@ export class EngineGenerationPipelineModule {
   preparePackGraph(
     context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
   ) {
-    context.lifecycle.rebuildGraph();
+    context.lifecycle.rebuildGraph(context);
     this.markupPack(context);
-    context.lifecycle.createDefaultRuler();
+    context.lifecycle.createDefaultRuler(context);
   }
 
   generateRivers(

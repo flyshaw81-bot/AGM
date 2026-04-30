@@ -40,6 +40,10 @@ import {
   type EngineLogService,
 } from "./engine-log-service";
 import {
+  createGlobalMapGraphLifecycleService,
+  type EngineMapGraphLifecycleService,
+} from "./engine-map-graph-lifecycle-service";
+import {
   createGlobalMapPlacementService,
   type EngineMapPlacementService,
 } from "./engine-map-placement-service";
@@ -101,6 +105,7 @@ export type { EngineBurgService } from "./engine-burg-service";
 export type { EngineFeedbackService } from "./engine-feedback-service";
 export type { EngineHeraldryService } from "./engine-heraldry-service";
 export type { EngineLogService } from "./engine-log-service";
+export type { EngineMapGraphLifecycleService } from "./engine-map-graph-lifecycle-service";
 export type { EngineMapPlacementService } from "./engine-map-placement-service";
 export type { EngineMapSnapshot, EngineMapStore } from "./engine-map-store";
 export type { EngineNamingService } from "./engine-naming-service";
@@ -140,6 +145,7 @@ export type EngineRuntimeContext = {
   units: EngineUnitSettings;
   heraldry: EngineHeraldryService;
   mapStore: EngineMapStore;
+  mapGraphLifecycle?: EngineMapGraphLifecycleService;
   mapPlacement?: EngineMapPlacementService;
   waterFeatures?: EngineWaterFeatureService;
   seedSession: EngineSeedSessionService;
@@ -180,6 +186,7 @@ export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
     units: createGlobalUnitSettings(),
     heraldry: createGlobalHeraldryService(),
     mapStore: undefined as never,
+    mapGraphLifecycle: undefined,
     mapPlacement: undefined,
     waterFeatures: undefined,
     seedSession: undefined as never,
@@ -202,6 +209,7 @@ export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
   context.burgs = createRuntimeBurgService(context);
   context.routes = createRuntimeRouteService(context);
   context.mapStore = createRuntimeMapStore(context, () => context);
+  context.mapGraphLifecycle = createGlobalMapGraphLifecycleService();
   context.mapPlacement = createGlobalMapPlacementService();
   context.waterFeatures = createGlobalWaterFeatureService();
   context.worldSettingsStore = createRuntimeWorldSettingsStore(context);
