@@ -928,6 +928,12 @@ Completed:
   to compatibility-mounted services, but those calls are no longer inline in
   `engine-runtime-context.ts`. Added focused forwarding tests for state campaign
   / pole refresh and heraldry generation / shield selection.
+- `engine-state-service.ts` and `engine-heraldry-service.ts` now also separate
+  service composition from global compatibility factories through
+  `createEngineStateService(targets)` and
+  `createEngineHeraldryService(targets)`. The global factories still read the
+  current AGM `States` / `COA` mounts, but the service logic itself no longer
+  owns those global reads.
 - Public lifecycle/render helper calls used by resample are now centralized in
   `createGlobalLifecycleAdapter()`. It still delegates to the existing public
   helpers; this is compatibility isolation, not replacement of those helpers.

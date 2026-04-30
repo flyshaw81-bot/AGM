@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createGlobalStateService } from "./engine-state-service";
+import {
+  createEngineStateService,
+  createGlobalStateService,
+} from "./engine-state-service";
 
 const originalStates = globalThis.States;
 
@@ -23,5 +26,22 @@ describe("createGlobalStateService", () => {
 
     expect(States.generateCampaign).toHaveBeenCalledWith(state);
     expect(States.getPoles).toHaveBeenCalledWith();
+  });
+
+  it("composes state service from injected runtime targets", () => {
+    const campaign = [{ name: "Campaign" }];
+    const statesModule = {
+      generateCampaign: vi.fn(() => campaign),
+      getPoles: vi.fn(),
+    };
+    const states = createEngineStateService({
+      getStatesModule: () => statesModule,
+    });
+
+    expect(states.generateCampaign({ i: 2 })).toBe(campaign);
+    states.getPoles();
+
+    expect(statesModule.generateCampaign).toHaveBeenCalledWith({ i: 2 });
+    expect(statesModule.getPoles).toHaveBeenCalledWith();
   });
 });

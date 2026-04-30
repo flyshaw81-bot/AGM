@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createGlobalHeraldryService } from "./engine-heraldry-service";
+import {
+  createEngineHeraldryService,
+  createGlobalHeraldryService,
+} from "./engine-heraldry-service";
 
 const originalCoa = globalThis.COA;
 const originalMathRandom = Math.random;
@@ -45,5 +48,39 @@ describe("createGlobalHeraldryService", () => {
     } as unknown as typeof COA;
 
     expect(createGlobalHeraldryService().getRandomShield()).toBe("pointed");
+  });
+
+  it("composes heraldry service from injected runtime targets", () => {
+    const coa = { shield: "heater" };
+    const heraldryModule = {
+      generate: vi.fn(() => coa),
+      getShield: vi.fn(() => "round"),
+      shields: {
+        types: { heater: 1 },
+        heater: { pointed: 1 },
+      },
+    };
+    const pickWeighted = vi
+      .fn()
+      .mockReturnValueOnce("heater")
+      .mockReturnValueOnce("pointed");
+    const heraldry = createEngineHeraldryService({
+      getHeraldryModule: () => heraldryModule,
+      pickWeighted,
+    });
+
+    expect(heraldry.generate("parent", null, "dominion")).toBe(coa);
+    expect(heraldry.getShield(1, 2)).toBe("round");
+    expect(heraldry.getRandomShield()).toBe("pointed");
+
+    expect(heraldryModule.generate).toHaveBeenCalledWith(
+      "parent",
+      null,
+      "dominion",
+      undefined,
+    );
+    expect(heraldryModule.getShield).toHaveBeenCalledWith(1, 2);
+    expect(pickWeighted).toHaveBeenCalledWith({ heater: 1 });
+    expect(pickWeighted).toHaveBeenCalledWith({ pointed: 1 });
   });
 });

@@ -1,13 +1,31 @@
+type EngineStatesModule = {
+  generateCampaign: (state: any) => any[];
+  getPoles: () => void;
+};
+
+export type EngineStateServiceTargets = {
+  getStatesModule: () => EngineStatesModule;
+};
+
 export type EngineStateService = {
   generateCampaign: (state: any) => any[];
   getPoles: () => void;
 };
 
-export function createGlobalStateService(): EngineStateService {
+export function createEngineStateService(
+  targets: EngineStateServiceTargets,
+): EngineStateService {
   return {
-    generateCampaign: (state) => States.generateCampaign(state),
+    generateCampaign: (state) =>
+      targets.getStatesModule().generateCampaign(state),
     getPoles: () => {
-      States.getPoles();
+      targets.getStatesModule().getPoles();
     },
   };
+}
+
+export function createGlobalStateService(): EngineStateService {
+  return createEngineStateService({
+    getStatesModule: () => States,
+  });
 }
