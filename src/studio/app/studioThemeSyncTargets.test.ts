@@ -1,8 +1,19 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { createGlobalStudioThemeSyncTargets } from "./studioThemeSyncTargets";
+import {
+  createGlobalStudioThemeSyncTargets,
+  createStudioThemeSyncTargets,
+} from "./studioThemeSyncTargets";
 
 describe("studioThemeSyncTargets", () => {
+  it("composes theme sync targets from injected document adapters", () => {
+    const targets = {
+      setDocumentTheme: vi.fn(),
+    };
+
+    expect(createStudioThemeSyncTargets(targets)).toBe(targets);
+  });
+
   it("composes default document theme adapter", () => {
     const originalDocument = globalThis.document;
     globalThis.document = {

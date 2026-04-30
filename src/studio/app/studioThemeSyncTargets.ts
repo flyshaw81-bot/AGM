@@ -4,10 +4,16 @@ export type StudioThemeSyncTargets = {
   setDocumentTheme: (theme: StudioState["theme"]) => void;
 };
 
+export function createStudioThemeSyncTargets(
+  targets: StudioThemeSyncTargets,
+): StudioThemeSyncTargets {
+  return targets;
+}
+
 export function createGlobalStudioThemeSyncTargets(): StudioThemeSyncTargets {
-  return {
+  return createStudioThemeSyncTargets({
     setDocumentTheme: (theme) => {
       document.documentElement.dataset.studioTheme = theme;
     },
-  };
+  });
 }

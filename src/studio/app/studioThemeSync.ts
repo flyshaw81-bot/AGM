@@ -6,6 +6,7 @@ import {
 
 export {
   createGlobalStudioThemeSyncTargets,
+  createStudioThemeSyncTargets,
   type StudioThemeSyncTargets,
 } from "./studioThemeSyncTargets";
 
