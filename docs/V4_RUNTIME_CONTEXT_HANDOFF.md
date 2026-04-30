@@ -418,7 +418,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 124 test files, 393 tests.
+- `npm.cmd run test -- --run` passed: 124 test files, 394 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -868,9 +868,10 @@ services instead of reading `globalThis.Routes` inline:
   backed by dedicated dimension, map-data, and renderer adapters instead of
   directly reading `globalThis` in every exported helper.
 - `src/studio/bridge/engineProjectClimateTargets.ts` now owns the Studio
-  project climate redraw compatibility boundary: auto-apply DOM reads,
-  climate/globe functions, AGM module calls, pack height preservation,
-  layer redraw checks, and 3D refresh scheduling.
+  project climate redraw compatibility boundary through DOM, pipeline,
+  renderer, and scheduler adapters: auto-apply DOM reads, climate/globe
+  functions, AGM module calls, pack height preservation, layer redraw checks,
+  and 3D refresh scheduling can now be composed independently.
 - `src/studio/bridge/engineProjectClimate.ts` now applies the project climate
   redraw through injected targets instead of directly reading `document`,
   `window`, `pack`, layer helpers, or draw helpers inline.
@@ -1017,7 +1018,8 @@ services instead of reading `globalThis.Routes` inline:
   default global adapter.
 - `src/studio/bridge/engineProjectClimate.test.ts` and
   `src/studio/bridge/engineProjectClimateTargets.test.ts` cover project climate
-  redraw command execution and the default compatibility target adapter.
+  redraw command execution, injected adapter composition, and the default
+  compatibility target adapter.
 - `src/studio/bridge/engineProjectControls.test.ts` and
   `src/studio/bridge/engineProjectControlTargets.test.ts` cover project
   control wind command behavior, missing SVG path preservation, temperature
@@ -1102,10 +1104,10 @@ explicit adapters. `EngineResourceSummaryTargets` now splits biome data and
 pack resources through dedicated bridge adapters. `EngineCanvasAccessTargets`
 now splits canvas dimensions, map data, and renderer calls through dedicated
 app-level adapters.
-`EngineProjectClimateTargets` still reads climate, layer, pack-height, and 3D
-helpers behind a bridge-level adapter. `EngineProjectControlTargets` now splits
-project-control DOM, runtime, and storage helpers through dedicated bridge
-adapters.
+`EngineProjectClimateTargets` now splits climate DOM reads, generation
+pipeline helpers, renderer calls, and scheduling through dedicated bridge
+adapters. `EngineProjectControlTargets` now splits project-control DOM,
+runtime, and storage helpers through dedicated bridge adapters.
 `EngineProjectFormTargets` now splits project-form DOM reads and runtime wind
 state through dedicated bridge adapters. `EngineProjectSummaryTargets` now
 splits project summary storage, document, cache, and database helpers through

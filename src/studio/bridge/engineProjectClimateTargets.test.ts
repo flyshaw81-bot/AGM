@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createGlobalProjectClimateTargets } from "./engineProjectClimateTargets";
+import {
+  createGlobalProjectClimateTargets,
+  createProjectClimateTargets,
+} from "./engineProjectClimateTargets";
 
 type TestClimateGlobals = typeof globalThis & {
   updateGlobePosition?: () => void;
@@ -111,5 +114,58 @@ describe("createGlobalProjectClimateTargets", () => {
 
     expect(drawBiomes).toHaveBeenCalledWith();
     expect(updateThreeD).toHaveBeenCalledWith();
+  });
+
+  it("composes climate targets from injected DOM, pipeline, renderer, and scheduler adapters", () => {
+    const calculateTemperatures = vi.fn();
+    const drawBiomes = vi.fn();
+    const schedule = vi.fn();
+    const heights = new Uint8Array([1, 2]);
+    const targets = createProjectClimateTargets(
+      {
+        shouldAutoApplyClimate: () => false,
+        hasCanvas3d: () => true,
+      },
+      {
+        canUpdateGlobePosition: () => true,
+        canApplyClimatePipeline: () => true,
+        updateGlobeTemperature: vi.fn(),
+        updateGlobePosition: vi.fn(),
+        calculateTemperatures,
+        generatePrecipitation: vi.fn(),
+        cloneHeights: () => heights,
+        generateRivers: vi.fn(),
+        specifyRivers: vi.fn(),
+        restoreHeights: vi.fn(),
+        defineBiomes: vi.fn(),
+        defineFeatureGroups: vi.fn(),
+        defineLakeNames: vi.fn(),
+      },
+      {
+        isLayerOn: () => true,
+        drawTemperature: vi.fn(),
+        drawPrecipitation: vi.fn(),
+        drawBiomes,
+        drawCoordinates: vi.fn(),
+        drawRivers: vi.fn(),
+        updateThreeD: vi.fn(),
+      },
+      {
+        schedule,
+      },
+    );
+
+    expect(targets.shouldAutoApplyClimate()).toBe(false);
+    expect(targets.canApplyClimatePipeline()).toBe(true);
+    targets.calculateTemperatures();
+    expect(calculateTemperatures).toHaveBeenCalledWith();
+    expect(targets.cloneHeights()).toBe(heights);
+    expect(targets.isLayerOn("toggleBiomes")).toBe(true);
+    targets.drawBiomes();
+    expect(drawBiomes).toHaveBeenCalledWith();
+    expect(targets.hasCanvas3d()).toBe(true);
+    const callback = vi.fn();
+    targets.schedule(callback, 10);
+    expect(schedule).toHaveBeenCalledWith(callback, 10);
   });
 });

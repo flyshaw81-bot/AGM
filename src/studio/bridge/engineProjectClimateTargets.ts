@@ -60,6 +60,41 @@ export type EngineProjectClimateTargets = {
   schedule: (callback: () => void, delay: number) => void;
 };
 
+export type EngineProjectClimateDomAdapter = {
+  shouldAutoApplyClimate: () => boolean;
+  hasCanvas3d: () => boolean;
+};
+
+export type EngineProjectClimatePipelineAdapter = {
+  canUpdateGlobePosition: () => boolean;
+  canApplyClimatePipeline: () => boolean;
+  updateGlobeTemperature: () => void;
+  updateGlobePosition: () => void;
+  calculateTemperatures: () => void;
+  generatePrecipitation: () => void;
+  cloneHeights: () => Uint8Array | undefined;
+  generateRivers: () => void;
+  specifyRivers: () => void;
+  restoreHeights: (heights: Uint8Array) => void;
+  defineBiomes: () => void;
+  defineFeatureGroups: () => void;
+  defineLakeNames: () => void;
+};
+
+export type EngineProjectClimateRendererAdapter = {
+  isLayerOn: (layer: string) => boolean;
+  drawTemperature: () => void;
+  drawPrecipitation: () => void;
+  drawBiomes: () => void;
+  drawCoordinates: () => void;
+  drawRivers: () => void;
+  updateThreeD: () => void;
+};
+
+export type EngineProjectClimateSchedulerAdapter = {
+  schedule: (callback: () => void, delay: number) => void;
+};
+
 function getClimateWindow(): ClimateWindow {
   return (globalThis.window ?? globalThis) as ClimateWindow;
 }
@@ -95,6 +130,15 @@ function isClimatePipelineAvailable(options: EngineClimateRedrawOptions) {
 export function createGlobalProjectClimateTargets(
   options: EngineClimateRedrawOptions = {},
 ): EngineProjectClimateTargets {
+  return createProjectClimateTargets(
+    createGlobalProjectClimateDomAdapter(),
+    createGlobalProjectClimatePipelineAdapter(options),
+    createGlobalProjectClimateRendererAdapter(),
+    createGlobalProjectClimateSchedulerAdapter(),
+  );
+}
+
+export function createGlobalProjectClimateDomAdapter(): EngineProjectClimateDomAdapter {
   return {
     shouldAutoApplyClimate: () => {
       const wcAutoChange = getDocument()?.getElementById("wcAutoChange") as
@@ -103,6 +147,14 @@ export function createGlobalProjectClimateTargets(
         | undefined;
       return wcAutoChange ? wcAutoChange.checked : true;
     },
+    hasCanvas3d: () => Boolean(getDocument()?.getElementById("canvas3d")),
+  };
+}
+
+export function createGlobalProjectClimatePipelineAdapter(
+  options: EngineClimateRedrawOptions = {},
+): EngineProjectClimatePipelineAdapter {
+  return {
     canUpdateGlobePosition: () =>
       isFunction(getClimateWindow().updateGlobePosition),
     canApplyClimatePipeline: () => isClimatePipelineAvailable(options),
@@ -123,15 +175,57 @@ export function createGlobalProjectClimateTargets(
     defineBiomes: () => getClimateWindow().Biomes?.define?.(),
     defineFeatureGroups: () => getClimateWindow().Features?.defineGroups?.(),
     defineLakeNames: () => getClimateWindow().Lakes?.defineNames?.(),
+  };
+}
+
+export function createGlobalProjectClimateRendererAdapter(): EngineProjectClimateRendererAdapter {
+  return {
     isLayerOn: (layer) => getClimateWindow().layerIsOn?.(layer) === true,
     drawTemperature: () => getClimateWindow().drawTemperature?.(),
     drawPrecipitation: () => getClimateWindow().drawPrecipitation?.(),
     drawBiomes: () => getClimateWindow().drawBiomes?.(),
     drawCoordinates: () => getClimateWindow().drawCoordinates?.(),
     drawRivers: () => getClimateWindow().drawRivers?.(),
-    hasCanvas3d: () => Boolean(getDocument()?.getElementById("canvas3d")),
     updateThreeD: () => getClimateWindow().ThreeD?.update?.(),
+  };
+}
+
+export function createGlobalProjectClimateSchedulerAdapter(): EngineProjectClimateSchedulerAdapter {
+  return {
     schedule: (callback, delay) =>
       getClimateWindow().setTimeout(callback, delay),
+  };
+}
+
+export function createProjectClimateTargets(
+  domAdapter: EngineProjectClimateDomAdapter,
+  pipelineAdapter: EngineProjectClimatePipelineAdapter,
+  rendererAdapter: EngineProjectClimateRendererAdapter,
+  schedulerAdapter: EngineProjectClimateSchedulerAdapter,
+): EngineProjectClimateTargets {
+  return {
+    shouldAutoApplyClimate: domAdapter.shouldAutoApplyClimate,
+    canUpdateGlobePosition: pipelineAdapter.canUpdateGlobePosition,
+    canApplyClimatePipeline: pipelineAdapter.canApplyClimatePipeline,
+    updateGlobeTemperature: pipelineAdapter.updateGlobeTemperature,
+    updateGlobePosition: pipelineAdapter.updateGlobePosition,
+    calculateTemperatures: pipelineAdapter.calculateTemperatures,
+    generatePrecipitation: pipelineAdapter.generatePrecipitation,
+    cloneHeights: pipelineAdapter.cloneHeights,
+    generateRivers: pipelineAdapter.generateRivers,
+    specifyRivers: pipelineAdapter.specifyRivers,
+    restoreHeights: pipelineAdapter.restoreHeights,
+    defineBiomes: pipelineAdapter.defineBiomes,
+    defineFeatureGroups: pipelineAdapter.defineFeatureGroups,
+    defineLakeNames: pipelineAdapter.defineLakeNames,
+    isLayerOn: rendererAdapter.isLayerOn,
+    drawTemperature: rendererAdapter.drawTemperature,
+    drawPrecipitation: rendererAdapter.drawPrecipitation,
+    drawBiomes: rendererAdapter.drawBiomes,
+    drawCoordinates: rendererAdapter.drawCoordinates,
+    drawRivers: rendererAdapter.drawRivers,
+    hasCanvas3d: domAdapter.hasCanvas3d,
+    updateThreeD: rendererAdapter.updateThreeD,
+    schedule: schedulerAdapter.schedule,
   };
 }
