@@ -12,10 +12,13 @@ describe("createGlobalProjectCenterTargets", () => {
       setStorageItem: vi.fn(),
     };
     const summary = {
-      getProjectSummary: vi.fn(() => ({
-        pendingSeed: "seed-1",
-        hasLocalSnapshot: true,
-      }) as EngineProjectSummary),
+      getProjectSummary: vi.fn(
+        () =>
+          ({
+            pendingSeed: "seed-1",
+            hasLocalSnapshot: true,
+          }) as EngineProjectSummary,
+      ),
     };
     const clock = {
       now: vi.fn(() => 7890),

@@ -138,6 +138,9 @@
 > Project center targets now compose explicit storage, summary, and clock
 > adapters, so recent-project persistence can swap browser storage separately
 > from engine summary reads and timestamp generation.
+> Generation profile targets now compose explicit summary, draft, settings, and
+> clock adapters, so profile suggestion reads can evolve separately from engine
+> setting writes and impact timestamps.
 > Please review whether each remaining global dependency is behind an explicit
 > compatibility adapter, and keep treating AGM `window.*` module mounts
 > separately from old public UI debt.
@@ -541,7 +544,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 164 test files, 516 tests.
+- `npm.cmd run test -- --run` passed: 164 test files, 517 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1468,6 +1471,11 @@ storage, summary, and clock adapters inside `projectCenterTargets.ts`;
 `createProjectCenterTargets` composes those adapters for recent-project
 persistence while keeping the existing global factory compatible with current
 call sites.
+Generation profile default runtime access is now split into explicit summary,
+draft, settings, and clock adapters inside `generationProfileTargets.ts`;
+`createGenerationProfileTargets` composes those adapters for profile defaults,
+result sampling, engine setting writes, and impact timestamps while keeping the
+existing global factory compatible with current call sites.
 Direct editor targets can also compose focus, entity mutation, and biome
 mutation commands directly from an injected `EngineRuntimeContext`. The default
 adapters still delegate to current entity mutation/focus bridge helpers, but
