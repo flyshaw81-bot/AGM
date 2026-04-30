@@ -21,6 +21,66 @@ export type EngineTimingSettings = {
   shouldTime: boolean;
 };
 
+export type EngineWorldSettingsTargets = {
+  getMapCoordinates: () => typeof mapCoordinates;
+  getGraphWidth: () => number;
+  getGraphHeight: () => number;
+  getInputNumber: (id: string, fallback: number) => number;
+};
+
+export type EnginePopulationSettingsTargets = {
+  getPopulationRate: () => number;
+  getUrbanDensity: () => number;
+  getUrbanization: () => number;
+};
+
+export type EngineUnitSettingsTargets = {
+  getHeightUnit: () => string;
+};
+
+export type EngineTimingSettingsTargets = {
+  getShouldTime: () => boolean;
+};
+
+export function createWorldSettings(
+  targets: EngineWorldSettingsTargets,
+): EngineWorldSettings {
+  return {
+    mapCoordinates: targets.getMapCoordinates(),
+    graphWidth: targets.getGraphWidth(),
+    graphHeight: targets.getGraphHeight(),
+    mapSizePercent: targets.getInputNumber("mapSizeOutput", 0),
+    latitudePercent: targets.getInputNumber("latitudeOutput", 0),
+    longitudePercent: targets.getInputNumber("longitudeOutput", 0),
+  };
+}
+
+export function createPopulationSettings(
+  targets: EnginePopulationSettingsTargets,
+): EnginePopulationSettings {
+  return {
+    populationRate: targets.getPopulationRate(),
+    urbanDensity: targets.getUrbanDensity(),
+    urbanization: targets.getUrbanization(),
+  };
+}
+
+export function createUnitSettings(
+  targets: EngineUnitSettingsTargets,
+): EngineUnitSettings {
+  return {
+    height: targets.getHeightUnit(),
+  };
+}
+
+export function createTimingSettings(
+  targets: EngineTimingSettingsTargets,
+): EngineTimingSettings {
+  return {
+    shouldTime: targets.getShouldTime(),
+  };
+}
+
 function getInput(id: string): HTMLInputElement | null {
   return document.getElementById(id) as HTMLInputElement | null;
 }
@@ -29,33 +89,47 @@ function getInputNumber(id: string, fallback: number): number {
   return Number(getInput(id)?.value ?? fallback);
 }
 
-export function createGlobalWorldSettings(): EngineWorldSettings {
+export function createGlobalWorldSettingsTargets(): EngineWorldSettingsTargets {
   return {
-    mapCoordinates,
-    graphWidth,
-    graphHeight,
-    mapSizePercent: getInputNumber("mapSizeOutput", 0),
-    latitudePercent: getInputNumber("latitudeOutput", 0),
-    longitudePercent: getInputNumber("longitudeOutput", 0),
+    getMapCoordinates: () => mapCoordinates,
+    getGraphWidth: () => graphWidth,
+    getGraphHeight: () => graphHeight,
+    getInputNumber,
   };
+}
+
+export function createGlobalPopulationSettingsTargets(): EnginePopulationSettingsTargets {
+  return {
+    getPopulationRate: () => populationRate,
+    getUrbanDensity: () => urbanDensity,
+    getUrbanization: () => urbanization,
+  };
+}
+
+export function createGlobalUnitSettingsTargets(): EngineUnitSettingsTargets {
+  return {
+    getHeightUnit: () => heightUnit.value,
+  };
+}
+
+export function createGlobalTimingSettingsTargets(): EngineTimingSettingsTargets {
+  return {
+    getShouldTime: () => TIME,
+  };
+}
+
+export function createGlobalWorldSettings(): EngineWorldSettings {
+  return createWorldSettings(createGlobalWorldSettingsTargets());
 }
 
 export function createGlobalPopulationSettings(): EnginePopulationSettings {
-  return {
-    populationRate,
-    urbanDensity,
-    urbanization,
-  };
+  return createPopulationSettings(createGlobalPopulationSettingsTargets());
 }
 
 export function createGlobalUnitSettings(): EngineUnitSettings {
-  return {
-    height: heightUnit.value,
-  };
+  return createUnitSettings(createGlobalUnitSettingsTargets());
 }
 
 export function createGlobalTimingSettings(): EngineTimingSettings {
-  return {
-    shouldTime: TIME,
-  };
+  return createTimingSettings(createGlobalTimingSettingsTargets());
 }

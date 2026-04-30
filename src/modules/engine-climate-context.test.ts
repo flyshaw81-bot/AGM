@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { createGlobalClimateContext } from "./engine-climate-context";
+import {
+  createClimateContext,
+  createGlobalClimateContext,
+} from "./engine-climate-context";
 
 const originalGrid = globalThis.grid;
 const originalMapCoordinates = globalThis.mapCoordinates;
@@ -76,6 +79,40 @@ describe("createGlobalClimateContext", () => {
       pointsCount: 0,
       precipitationPercent: 100,
       debugTemperature: false,
+      shouldTime: false,
+    });
+  });
+
+  it("builds a climate runtime context from injected targets", () => {
+    const injectedGrid = { cells: { i: [1] } } as typeof grid;
+    const injectedOptions = { temperatureEquator: 21 } as typeof options;
+    const precipitationLayer = { selectAll: () => ({ remove: () => {} }) };
+
+    expect(
+      createClimateContext({
+        getGrid: () => injectedGrid,
+        getCoordinates: () => ({ latN: 70, latS: -50, latT: 120 }),
+        getGraphWidth: () => 640,
+        getGraphHeight: () => 420,
+        getOptions: () => injectedOptions,
+        getHeightExponent: () => 1.6,
+        getPointsCount: () => 5000,
+        getPrecipitationPercent: () => 80,
+        getPrecipitationLayer: () => precipitationLayer as typeof prec,
+        getDebugTemperature: () => true,
+        getShouldTime: () => false,
+      }),
+    ).toMatchObject({
+      grid: injectedGrid,
+      coordinates: { latN: 70, latS: -50, latT: 120 },
+      graphWidth: 640,
+      graphHeight: 420,
+      options: injectedOptions,
+      heightExponent: 1.6,
+      pointsCount: 5000,
+      precipitationPercent: 80,
+      precipitationLayer,
+      debugTemperature: true,
       shouldTime: false,
     });
   });

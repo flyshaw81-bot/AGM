@@ -854,12 +854,20 @@ Completed:
   `src/modules/engine-runtime-settings.ts`. These are still compatibility
   adapters over current globals/controls, but the runtime context assembler now
   only wires them into `EngineRuntimeContext`.
+- `engine-runtime-settings.ts` now also exposes injected builders for world,
+  population, unit, and timing settings. The global factories still read the
+  current public controls/runtime globals, but the core settings builders consume
+  explicit targets.
 - Moved global climate-context construction into
   `src/modules/engine-climate-context.ts`. Both `getGlobalEngineRuntimeContext()`
   and `Climate.getGlobalClimateRuntimeContext()` now use the same adapter,
   avoiding duplicate reads of `heightExponentInput`, `pointsInput`, `precInput`,
   `DEBUG.temperature`, and `TIME`. Added focused tests for explicit climate
   globals and default-control fallback values.
+- `engine-climate-context.ts` now also exposes `createClimateContext(targets)`,
+  so climate context assembly can run from injected grid/options/control/timing
+  targets while `createGlobalClimateContext()` remains the compatibility
+  factory.
 - Moved lifecycle adapter construction into
   `src/modules/engine-lifecycle-adapter.ts`. The adapter now receives a
   `getCurrentContext` provider, so it can preserve no-argument compatibility
@@ -1011,10 +1019,10 @@ or `redraw*` usage in that file.
 The remaining compatibility debt is not gone; it has been moved into explicit
 adapters with focused tests:
 
-- `engine-generation-settings.ts` and `engine-runtime-settings.ts` still read
-  current public controls and runtime globals.
-- `engine-climate-context.ts` still reads climate controls and public runtime
-  climate globals.
+- `engine-generation-settings.ts` still reads current public controls.
+- `engine-runtime-settings.ts` and `engine-climate-context.ts` still read
+  current public controls/runtime globals through their global compatibility
+  factories, but their core builders now consume explicit targets.
 - `engine-generation-session-services.ts` still wraps public-compatible seed,
   graph, option, grid, and active-view session behavior through global
   factories, but the grid session and session adapter core now consume explicit

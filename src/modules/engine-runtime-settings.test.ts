@@ -4,6 +4,10 @@ import {
   createGlobalTimingSettings,
   createGlobalUnitSettings,
   createGlobalWorldSettings,
+  createPopulationSettings,
+  createTimingSettings,
+  createUnitSettings,
+  createWorldSettings,
 } from "./engine-runtime-settings";
 
 const originalDocument = globalThis.document;
@@ -72,5 +76,48 @@ describe("runtime setting adapters", () => {
     });
     expect(createGlobalUnitSettings()).toEqual({ height: "ft" });
     expect(createGlobalTimingSettings()).toEqual({ shouldTime: true });
+  });
+
+  it("creates runtime settings from injected targets", () => {
+    expect(
+      createWorldSettings({
+        getMapCoordinates: () => ({ latN: 50 }) as typeof mapCoordinates,
+        getGraphWidth: () => 1024,
+        getGraphHeight: () => 768,
+        getInputNumber: (id, fallback) =>
+          (
+            ({
+              mapSizeOutput: 70,
+              latitudeOutput: 35,
+              longitudeOutput: 55,
+            }) as Record<string, number>
+          )[id] ?? fallback,
+      }),
+    ).toEqual({
+      mapCoordinates: { latN: 50 },
+      graphWidth: 1024,
+      graphHeight: 768,
+      mapSizePercent: 70,
+      latitudePercent: 35,
+      longitudePercent: 55,
+    });
+
+    expect(
+      createPopulationSettings({
+        getPopulationRate: () => 5,
+        getUrbanDensity: () => 6,
+        getUrbanization: () => 7,
+      }),
+    ).toEqual({
+      populationRate: 5,
+      urbanDensity: 6,
+      urbanization: 7,
+    });
+    expect(createUnitSettings({ getHeightUnit: () => "m" })).toEqual({
+      height: "m",
+    });
+    expect(createTimingSettings({ getShouldTime: () => false })).toEqual({
+      shouldTime: false,
+    });
   });
 });
