@@ -938,6 +938,9 @@ Completed:
   The adapter still reads current public controls and global inputs for
   compatibility, but `engine-runtime-context.ts` no longer owns those DOM reads
   inline. Added focused tests for default values and explicit control reads.
+- `engine-generation-settings.ts` now reads the remaining global controls
+  through explicit `getPointsInput()` / `getHeightExponentInput()` targets
+  instead of a generic string-keyed global input getter.
 - Moved world, population, unit, and timing settings into
   `src/modules/engine-runtime-settings.ts`. These are still compatibility
   adapters over current globals/controls, but the runtime context assembler now

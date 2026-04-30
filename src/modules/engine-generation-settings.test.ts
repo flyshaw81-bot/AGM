@@ -30,7 +30,8 @@ function createTargets(
   return {
     getInput: (id) => controls[id] ?? null,
     getSelect: (id) => controls[id] ?? null,
-    getGlobalInput: (name) => globals[name],
+    getPointsInput: () => globals.pointsInput,
+    getHeightExponentInput: () => globals.heightExponentInput,
   };
 }
 
@@ -177,11 +178,8 @@ describe("createGlobalGenerationSettings", () => {
         })[id] as Element | undefined) ?? null,
     };
     const globalControlTargets: EngineGenerationGlobalControlTargets = {
-      getGlobalInput: (name) =>
-        ({
-          pointsInput: { dataset: { cells: "4200" } },
-          heightExponentInput: { value: "1.4" },
-        })[name],
+      getPointsInput: () => ({ dataset: { cells: "4200" } }),
+      getHeightExponentInput: () => ({ value: "1.4" }),
     };
 
     expect(

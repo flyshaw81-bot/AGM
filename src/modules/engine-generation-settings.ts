@@ -33,7 +33,8 @@ export type EngineGenerationControlSelect = Pick<
 export type EngineGenerationSettingsTargets = {
   getInput: (id: string) => EngineGenerationControlInput | null;
   getSelect: (id: string) => EngineGenerationControlSelect | null;
-  getGlobalInput: (name: string) => EngineGenerationControlInput | undefined;
+  getPointsInput: () => EngineGenerationControlInput | undefined;
+  getHeightExponentInput: () => EngineGenerationControlInput | undefined;
 };
 
 export type EngineGenerationDomTargets = {
@@ -41,7 +42,8 @@ export type EngineGenerationDomTargets = {
 };
 
 export type EngineGenerationGlobalControlTargets = {
-  getGlobalInput: (name: string) => EngineGenerationControlInput | undefined;
+  getPointsInput: () => EngineGenerationControlInput | undefined;
+  getHeightExponentInput: () => EngineGenerationControlInput | undefined;
 };
 
 export type EngineGenerationSettingsStore = {
@@ -61,10 +63,8 @@ export function createGlobalGenerationDomTargets(): EngineGenerationDomTargets {
 
 export function createGlobalGenerationControlTargets(): EngineGenerationGlobalControlTargets {
   return {
-    getGlobalInput: (name) =>
-      globalThis[name as keyof typeof globalThis] as
-        | HTMLInputElement
-        | undefined,
+    getPointsInput: () => globalThis.pointsInput,
+    getHeightExponentInput: () => globalThis.heightExponentInput,
   };
 }
 
@@ -77,7 +77,8 @@ export function createGenerationSettingsTargets(
       domTargets.getElementById(id) as EngineGenerationControlInput | null,
     getSelect: (id) =>
       domTargets.getElementById(id) as EngineGenerationControlSelect | null,
-    getGlobalInput: globalControlTargets.getGlobalInput,
+    getPointsInput: globalControlTargets.getPointsInput,
+    getHeightExponentInput: globalControlTargets.getHeightExponentInput,
   };
 }
 
@@ -111,12 +112,8 @@ export function createGenerationSettings(
 
   return {
     heightmapTemplateId: targets.getInput("templateInput")?.value,
-    pointsCount: Number(
-      targets.getGlobalInput("pointsInput")?.dataset?.cells ?? 0,
-    ),
-    heightExponent: Number(
-      targets.getGlobalInput("heightExponentInput")?.value ?? 1,
-    ),
+    pointsCount: Number(targets.getPointsInput()?.dataset?.cells ?? 0),
+    heightExponent: Number(targets.getHeightExponentInput()?.value ?? 1),
     lakeElevationLimit: getInputNumber(targets, "lakeElevationLimitOutput", 0),
     resolveDepressionsSteps: getInputNumber(
       targets,
