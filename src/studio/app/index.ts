@@ -4,7 +4,7 @@ import {
 } from "../bridge/engineActions";
 import { syncEngineViewport } from "../bridge/engineMapHost";
 import { bindStudioShellEvents, renderStudioShell } from "../layout/shell";
-import type { FitMode, Orientation, StudioState } from "../types";
+import type { StudioState } from "../types";
 import {
   applyCanvasPaintPreview,
   bindCanvasToolInteractions,
@@ -13,19 +13,16 @@ import {
 } from "./canvasController";
 import { syncDocumentState, syncEditorWorkflowState } from "./documentState";
 import {
-  ensureStudioRoot,
   preserveEngineNode,
   relocateEngineMapHost,
   syncEngineDialogsPosition,
 } from "./engineHost";
-import { createInitialState } from "./initialState";
 import { updateProjectCenterState } from "./projectCenter";
-import { createStudioShellEventHandlers } from "./studioShellHandlers";
 import {
-  createGlobalStudioWorkflowWatcherTargets,
-  watchStudioWorkflow,
-} from "./studioWorkflowWatcher";
-import { injectStudioStyles } from "./styles";
+  createGlobalStudioBootstrapTargets,
+  startStudioApp,
+} from "./studioBootstrap";
+import { createStudioShellEventHandlers } from "./studioShellHandlers";
 import { updateViewportDimensions } from "./viewportState";
 
 async function syncProjectSummaryState() {
@@ -101,54 +98,4 @@ function render(root: HTMLElement, state: StudioState) {
   );
 }
 
-async function bootstrapStudio() {
-  injectStudioStyles();
-  document.body.classList.add("studio-enabled");
-  document.getElementById("loading")?.remove();
-  const state = createInitialState();
-  updateViewportDimensions(state);
-  const root = ensureStudioRoot();
-  await syncProjectSummaryState();
-  syncDocumentState(state);
-  render(root, state);
-  watchStudioWorkflow(
-    root,
-    state,
-    createGlobalStudioWorkflowWatcherTargets(render, syncProjectSummaryState),
-  );
-
-  window.addEventListener("resize", () => {
-    syncEngineViewport(
-      state.viewport.presetId,
-      state.viewport.orientation,
-      state.viewport.fitMode,
-      state.viewport.zoom,
-      state.viewport.panX,
-      state.viewport.panY,
-    );
-  });
-}
-
-if (document.readyState === "loading") {
-  document.addEventListener(
-    "DOMContentLoaded",
-    () => {
-      void bootstrapStudio();
-    },
-    { once: true },
-  );
-} else {
-  void bootstrapStudio();
-}
-
-declare global {
-  interface Window {
-    studioViewportSync?: (
-      presetId: string,
-      orientation: Orientation,
-      fitMode: FitMode,
-    ) => void;
-  }
-}
-
-window.studioViewportSync = syncEngineViewport;
+startStudioApp(createGlobalStudioBootstrapTargets(render));

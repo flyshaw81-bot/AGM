@@ -51,6 +51,9 @@
 > Studio workflow watching now uses `StudioWorkflowWatcherTargets`, so interval,
 > focus, and visibilitychange wiring are isolated from workflow sync/render
 > decisions.
+> Studio bootstrap now uses `StudioBootstrapTargets`, so body/loading setup,
+> DOMContentLoaded startup, resize viewport sync, and public viewport sync
+> mounting are isolated from the app entrypoint.
 > Please review whether each remaining global dependency is behind an explicit
 > compatibility adapter, and keep treating AGM `window.*` module mounts
 > separately from old public UI debt.
@@ -454,7 +457,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 139 test files, 463 tests.
+- `npm.cmd run test -- --run` passed: 140 test files, 467 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1241,6 +1244,11 @@ Studio workflow watching now has a dedicated `StudioWorkflowWatcherTargets`
 boundary for interval, focus, and visibilitychange registration plus workflow
 sync/render decisions; the default adapter still uses browser events, while
 tests can drive the callbacks without `window` or `document`.
+Studio bootstrap now has a dedicated `StudioBootstrapTargets` boundary for
+style injection, body/loading setup, initial state creation, DOMContentLoaded
+startup, resize viewport sync, workflow watcher creation, and public
+`studioViewportSync` mounting; `index.ts` now only wires the render function
+into the bootstrap target factory.
 Direct editor targets can also compose focus, entity mutation, and biome
 mutation commands directly from an injected `EngineRuntimeContext`. The default
 adapters still delegate to current entity mutation/focus bridge helpers, but
