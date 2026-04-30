@@ -64,10 +64,40 @@ export type DirectEditorActionTargets = {
   ) => void;
 };
 
-export function createGlobalDirectEditorActionTargets(): DirectEditorActionTargets {
+export type DirectEditorDocumentAdapter = {
+  syncDocument: (state: StudioState) => void;
+};
+
+export type DirectEditorFocusAdapter = {
+  resolveFocusGeometry: (focus: EngineFocusTarget) => EngineFocusGeometry;
+};
+
+export type DirectEditorMutationAdapter = {
+  updateState: DirectEditorActionTargets["updateState"];
+  updateBurg: DirectEditorActionTargets["updateBurg"];
+  updateCulture: DirectEditorActionTargets["updateCulture"];
+  updateReligion: DirectEditorActionTargets["updateReligion"];
+  updateProvince: DirectEditorActionTargets["updateProvince"];
+  updateRoute: DirectEditorActionTargets["updateRoute"];
+  updateZone: DirectEditorActionTargets["updateZone"];
+  updateBiome: DirectEditorActionTargets["updateBiome"];
+  updateDiplomacy: DirectEditorActionTargets["updateDiplomacy"];
+};
+
+export function createGlobalDirectEditorDocumentAdapter(): DirectEditorDocumentAdapter {
   return {
     syncDocument: syncDocumentState,
+  };
+}
+
+export function createGlobalDirectEditorFocusAdapter(): DirectEditorFocusAdapter {
+  return {
     resolveFocusGeometry: resolveEngineFocusGeometry,
+  };
+}
+
+export function createGlobalDirectEditorMutationAdapter(): DirectEditorMutationAdapter {
+  return {
     updateState: updateEngineStateName,
     updateBurg: updateEngineBurg,
     updateCulture: updateEngineCulture,
@@ -78,4 +108,32 @@ export function createGlobalDirectEditorActionTargets(): DirectEditorActionTarge
     updateBiome: updateEngineBiomeResource,
     updateDiplomacy: updateEngineDiplomacy,
   };
+}
+
+export function createDirectEditorActionTargets(
+  documentAdapter: DirectEditorDocumentAdapter,
+  focusAdapter: DirectEditorFocusAdapter,
+  mutationAdapter: DirectEditorMutationAdapter,
+): DirectEditorActionTargets {
+  return {
+    syncDocument: documentAdapter.syncDocument,
+    resolveFocusGeometry: focusAdapter.resolveFocusGeometry,
+    updateState: mutationAdapter.updateState,
+    updateBurg: mutationAdapter.updateBurg,
+    updateCulture: mutationAdapter.updateCulture,
+    updateReligion: mutationAdapter.updateReligion,
+    updateProvince: mutationAdapter.updateProvince,
+    updateRoute: mutationAdapter.updateRoute,
+    updateZone: mutationAdapter.updateZone,
+    updateBiome: mutationAdapter.updateBiome,
+    updateDiplomacy: mutationAdapter.updateDiplomacy,
+  };
+}
+
+export function createGlobalDirectEditorActionTargets(): DirectEditorActionTargets {
+  return createDirectEditorActionTargets(
+    createGlobalDirectEditorDocumentAdapter(),
+    createGlobalDirectEditorFocusAdapter(),
+    createGlobalDirectEditorMutationAdapter(),
+  );
 }

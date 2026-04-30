@@ -418,7 +418,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 127 test files, 405 tests.
+- `npm.cmd run test -- --run` passed: 128 test files, 406 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1114,6 +1114,9 @@ services instead of reading `globalThis.Routes` inline:
 - `src/studio/app/directEditorActionHandlers.test.ts` covers direct editor
   entity selection, entity mutation, diplomacy mutation, and relationship queue
   history handling through injected direct editor action targets.
+- `src/studio/app/directEditorActionTargets.test.ts` covers composition of
+  document, focus, and mutation adapters into the app-level direct editor
+  action target.
 - `src/studio/app/autoFixPreview.test.ts` covers autofix preview apply, manual
   biome rule writeback, rules-pack import writeback, and undo/redo through
   injected autofix preview targets.
@@ -1173,11 +1176,12 @@ draft, autofix, canvas, workspace, and preference commands through dedicated
 app-level adapters. The default adapters still delegate to the current editor
 bridge, focus geometry, draft import, autofix, canvas, workspace, and
 preference helpers, but `studioShellHandlers.ts` no longer owns those direct
-calls inline. `DirectEditorActionTargets` is an
-  app-level boundary and still delegates to current entity mutation/focus bridge
-  helpers by default, but `directEditorActionHandlers.ts` and
-  `directEditorEntityActionHandlers.ts` no longer own those direct bridge calls
-  inline. `AutoFixPreviewTargets` is an app-level boundary and still delegates
+calls inline. `DirectEditorActionTargets` now splits document sync, focus
+geometry, and entity mutation commands through dedicated app-level adapters.
+The default adapters still delegate to current entity mutation/focus bridge
+helpers, but `directEditorActionHandlers.ts` and
+`directEditorEntityActionHandlers.ts` no longer own those direct bridge calls
+inline. `AutoFixPreviewTargets` is an app-level boundary and still delegates
   to current project summary, world draft, engine writeback, and writeback undo
   helpers by default, but `autoFixPreview.ts` no longer owns those direct bridge
   calls inline. This checkpoint closes the first
