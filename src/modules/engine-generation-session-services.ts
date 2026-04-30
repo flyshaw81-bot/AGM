@@ -56,6 +56,14 @@ export type EngineGenerationSessionServices = {
   gridSession: EngineGridSessionService;
 };
 
+export type EngineGenerationSessionServiceTargets = {
+  getSeedSession: () => EngineSeedSessionService;
+  getGraphSession: () => EngineGraphSessionService;
+  getOptionsSession: () => EngineOptionsSessionModule;
+  createSessionLifecycle: () => EngineGenerationSessionLifecycle;
+  createGridSession: () => EngineGridSessionService;
+};
+
 export type EngineGenerationSessionAdapter = {
   prepare: (
     request?: EngineGenerationSessionRequest,
@@ -170,13 +178,25 @@ export function createGlobalGenerationSessionLifecycle(
   return createGenerationSessionLifecycle(targets);
 }
 
-export function createGlobalGenerationSessionServices(): EngineGenerationSessionServices {
+export function createGlobalGenerationSessionServiceTargets(): EngineGenerationSessionServiceTargets {
   return {
-    sessionLifecycle: createGlobalGenerationSessionLifecycle(),
-    seedSession: EngineSeedSession,
-    graphSession: EngineGraphSession,
-    optionsSession: EngineOptionsSession,
-    gridSession: createGlobalGridSessionService(),
+    getSeedSession: () => EngineSeedSession,
+    getGraphSession: () => EngineGraphSession,
+    getOptionsSession: () => EngineOptionsSession,
+    createSessionLifecycle: createGlobalGenerationSessionLifecycle,
+    createGridSession: createGlobalGridSessionService,
+  };
+}
+
+export function createGlobalGenerationSessionServices(
+  targets: EngineGenerationSessionServiceTargets = createGlobalGenerationSessionServiceTargets(),
+): EngineGenerationSessionServices {
+  return {
+    sessionLifecycle: targets.createSessionLifecycle(),
+    seedSession: targets.getSeedSession(),
+    graphSession: targets.getGraphSession(),
+    optionsSession: targets.getOptionsSession(),
+    gridSession: targets.createGridSession(),
   };
 }
 

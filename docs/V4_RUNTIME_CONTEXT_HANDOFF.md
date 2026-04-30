@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 180 test files, 668 tests.
+- `npm.cmd run test -- --run` passed: 180 test files, 670 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1975,6 +1975,10 @@ backward-compatible for the current public runtime.
 `engine-render-adapter.ts` now exports `createGlobalRenderTargets()`, so the
 default DOM/SVG render helpers are an explicit target factory and
 `createGlobalRenderAdapter()` can be composed with injected render targets.
+`engine-generation-session-services.ts` now separates default session service
+lookup into `EngineGenerationSessionServiceTargets`, so compatibility reads for
+`EngineSeedSession`, `EngineGraphSession`, `EngineOptionsSession`, lifecycle,
+and grid-session creation are explicit and injectable.
 
 `engine-runtime-settings.ts` now routes settings input lookups through
 `EngineSettingsDomTargets`, keeping the browser `document.getElementById`

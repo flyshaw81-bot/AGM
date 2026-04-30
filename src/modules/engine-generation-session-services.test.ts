@@ -5,6 +5,7 @@ import {
   createGlobalGenerationSessionAdapter,
   createGlobalGenerationSessionLifecycleTargets,
   createGlobalGenerationSessionServices,
+  createGlobalGenerationSessionServiceTargets,
   createGlobalGridSessionTargets,
   createGridSessionService,
   createRuntimeGenerationSessionAdapter,
@@ -38,6 +39,64 @@ describe("createGlobalGenerationSessionServices", () => {
     expect(services.optionsSession).toBe(EngineOptionsSession);
     expect(typeof services.gridSession.prepareGrid).toBe("function");
     expect(typeof services.sessionLifecycle.resetActiveView).toBe("function");
+  });
+
+  it("composes default generation services from explicit service targets", () => {
+    const seedSession = {
+      apply: vi.fn(() => "seed"),
+      resolve: vi.fn(() => "seed"),
+    };
+    const graphSession = {
+      applyGraphSize: vi.fn(),
+    };
+    const optionsSession = {
+      randomizeOptions: vi.fn(),
+      randomizeHeightmapTemplate: vi.fn(),
+      randomizeCultureSet: vi.fn(),
+      generateEra: vi.fn(),
+    };
+    const sessionLifecycle = {
+      resetActiveView: vi.fn(),
+    };
+    const gridSession = {
+      prepareGrid: vi.fn(),
+    };
+
+    const services = createGlobalGenerationSessionServices({
+      getSeedSession: () => seedSession,
+      getGraphSession: () => graphSession,
+      getOptionsSession: () => optionsSession,
+      createSessionLifecycle: () => sessionLifecycle,
+      createGridSession: () => gridSession,
+    });
+
+    expect(services.seedSession).toBe(seedSession);
+    expect(services.graphSession).toBe(graphSession);
+    expect(services.optionsSession).toBe(optionsSession);
+    expect(services.sessionLifecycle).toBe(sessionLifecycle);
+    expect(services.gridSession).toBe(gridSession);
+  });
+
+  it("reads compatibility generation services through explicit global service targets", () => {
+    const seedSession = {
+      apply: vi.fn(() => "seed"),
+      resolve: vi.fn(() => "seed"),
+    };
+    const graphSession = {
+      applyGraphSize: vi.fn(),
+    };
+    vi.stubGlobal("EngineSeedSession", seedSession);
+    vi.stubGlobal("EngineGraphSession", graphSession);
+
+    const targets = createGlobalGenerationSessionServiceTargets();
+
+    expect(targets.getSeedSession()).toBe(seedSession);
+    expect(targets.getGraphSession()).toBe(graphSession);
+    expect(targets.getOptionsSession()).toBe(EngineOptionsSession);
+    expect(typeof targets.createSessionLifecycle().resetActiveView).toBe(
+      "function",
+    );
+    expect(typeof targets.createGridSession().prepareGrid).toBe("function");
   });
 
   it("composes grid session service from injected targets", () => {
