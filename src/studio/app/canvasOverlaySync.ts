@@ -1,10 +1,30 @@
 import type { StudioState } from "../types";
 import { isPaintCanvasTool } from "./canvasPaintEditing";
 
-export function syncCanvasPaintPreview(state: StudioState) {
-  const overlay = document.querySelector<HTMLElement>(
-    "[data-canvas-paint-preview='true']",
-  );
+export type CanvasOverlayTargets = {
+  getPaintPreviewOverlay: () => HTMLElement | null;
+  getToolHud: () => HTMLElement | null;
+  getCanvasFrame: () => HTMLElement | null;
+};
+
+export function createGlobalCanvasOverlayTargets(): CanvasOverlayTargets {
+  return {
+    getPaintPreviewOverlay: () =>
+      document.querySelector<HTMLElement>("[data-canvas-paint-preview='true']"),
+    getToolHud: () =>
+      document.querySelector<HTMLElement>("[data-canvas-tool-hud='true']"),
+    getCanvasFrame: () => document.getElementById("studioCanvasFrame"),
+  };
+}
+
+export function syncCanvasPaintPreview(
+  state: StudioState,
+  targets: Pick<
+    CanvasOverlayTargets,
+    "getPaintPreviewOverlay"
+  > = createGlobalCanvasOverlayTargets(),
+) {
+  const overlay = targets.getPaintPreviewOverlay();
   const marker = overlay?.querySelector<HTMLElement>(
     ".studio-canvas-paint-preview__marker",
   );
@@ -25,10 +45,14 @@ export function syncCanvasPaintPreview(state: StudioState) {
   label.textContent = preview.label;
 }
 
-export function syncCanvasToolHud(state: StudioState) {
-  const hud = document.querySelector<HTMLElement>(
-    "[data-canvas-tool-hud='true']",
-  );
+export function syncCanvasToolHud(
+  state: StudioState,
+  targets: Pick<
+    CanvasOverlayTargets,
+    "getToolHud"
+  > = createGlobalCanvasOverlayTargets(),
+) {
+  const hud = targets.getToolHud();
   if (!hud) return;
   const activePreview =
     state.viewport.paintPreview?.tool === state.viewport.canvasTool
@@ -53,8 +77,11 @@ export function syncCanvasToolHud(state: StudioState) {
     details.textContent = `Painting ${activePreview.label}`;
 }
 
-export function syncOverlays(state: StudioState) {
-  const frame = document.getElementById("studioCanvasFrame");
+export function syncOverlays(
+  state: StudioState,
+  targets: CanvasOverlayTargets = createGlobalCanvasOverlayTargets(),
+) {
+  const frame = targets.getCanvasFrame();
   const safeArea = frame?.querySelector<HTMLElement>(
     ".studio-canvas-frame__overlay--safe-area",
   );
@@ -77,5 +104,5 @@ export function syncOverlays(state: StudioState) {
   if (measure)
     measure.style.display =
       state.viewport.canvasTool === "measure" ? "grid" : "none";
-  syncCanvasPaintPreview(state);
+  syncCanvasPaintPreview(state, targets);
 }

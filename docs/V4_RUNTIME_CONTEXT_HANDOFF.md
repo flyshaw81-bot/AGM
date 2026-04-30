@@ -57,6 +57,9 @@
 > Studio rendering now uses `StudioRendererTargets`, so shell HTML writes,
 > theme writes, map/dialog host sync, canvas interaction binding, viewport
 > sync, and shell event binding are isolated from the app entrypoint.
+> Canvas overlay sync now uses `CanvasOverlayTargets`, so paint preview, tool
+> HUD, and frame overlay DOM lookups can be injected and tested without a
+> browser document.
 > Please review whether each remaining global dependency is behind an explicit
 > compatibility adapter, and keep treating AGM `window.*` module mounts
 > separately from old public UI debt.
@@ -460,7 +463,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 141 test files, 472 tests.
+- `npm.cmd run test -- --run` passed: 142 test files, 475 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1257,6 +1260,10 @@ workflow/document/project-center sync, shell HTML writes, theme writes,
 map/dialog host sync, overlays, viewport sync, canvas selection/paint binding,
 and shell event binding; `index.ts` now only composes `createStudioRenderer()`
 with the bootstrap target factory.
+Canvas overlay sync now has a dedicated `CanvasOverlayTargets` boundary for
+paint preview, tool HUD, and frame overlay DOM lookups. The default adapter
+still queries the current Studio DOM, while focused tests exercise overlay
+state updates with injected fake elements and no browser document.
 Direct editor targets can also compose focus, entity mutation, and biome
 mutation commands directly from an injected `EngineRuntimeContext`. The default
 adapters still delegate to current entity mutation/focus bridge helpers, but
