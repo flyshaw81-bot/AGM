@@ -5,6 +5,7 @@ import {
   createGlobalGenerationSessionAdapter,
   createGlobalGenerationSessionLifecycleTargets,
   createGlobalGenerationSessionServices,
+  createGlobalGridSessionTargets,
   createGridSessionService,
   createRuntimeGenerationSessionAdapter,
   createRuntimeGenerationSessionServices,
@@ -84,6 +85,34 @@ describe("createGlobalGenerationSessionServices", () => {
     }).prepareGrid({ seed: "target-seed" });
 
     expect(currentGrid.cells.h).toBeUndefined();
+  });
+
+  it("composes global grid session targets from injected global accessors", () => {
+    const currentGrid = {
+      cells: { h: new Uint8Array([1]) },
+    } as typeof grid;
+    const nextGrid = {
+      cells: { i: [1] },
+    } as typeof grid;
+    const setGrid = vi.fn();
+    const targets = createGlobalGridSessionTargets({
+      getGrid: () => currentGrid,
+      setGrid,
+      getSeed: () => "global-seed",
+      getGraphWidth: () => 700,
+      getGraphHeight: () => 500,
+    });
+
+    expect(targets.getGrid()).toBe(currentGrid);
+    expect(targets.getSeed()).toBe("global-seed");
+    expect(targets.getGraphWidth()).toBe(700);
+    expect(targets.getGraphHeight()).toBe(500);
+
+    targets.setGrid(nextGrid);
+
+    expect(setGrid).toHaveBeenCalledWith(nextGrid);
+    expect(typeof targets.generateGrid).toBe("function");
+    expect(typeof targets.shouldRegenerateGrid).toBe("function");
   });
 
   it("prepares runtime context grid without mutating global grid", () => {

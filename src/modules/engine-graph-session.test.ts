@@ -32,6 +32,8 @@ describe("EngineGraphSessionModule", () => {
     const root = createSelection(calls, "root");
     (globalThis as any).mapWidthInput = { value: "1200" };
     (globalThis as any).mapHeightInput = { value: "800" };
+    globalThis.graphWidth = 1;
+    globalThis.graphHeight = 1;
     (globalThis as any).landmass = root;
     (globalThis as any).oceanPattern = root;
     globalThis.oceanLayers = root as any;
@@ -46,6 +48,16 @@ describe("EngineGraphSessionModule", () => {
       selector: "mask#fog > rect",
       name: "width",
       value: 1200,
+    });
+    expect(calls).toContainEqual({
+      selector: "rect",
+      name: "width",
+      value: 1200,
+    });
+    expect(calls).not.toContainEqual({
+      selector: "rect",
+      name: "width",
+      value: 1,
     });
     expect(calls).toContainEqual({
       selector: "mask#water > rect",

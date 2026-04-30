@@ -35,6 +35,11 @@ export type EngineGridSessionTargets = {
   ) => boolean;
 };
 
+export type EngineGlobalGridSessionTargets = Pick<
+  EngineGridSessionTargets,
+  "getGrid" | "setGrid" | "getSeed" | "getGraphWidth" | "getGraphHeight"
+>;
+
 export type EngineGenerationSessionLifecycle = {
   resetActiveView: () => void;
 };
@@ -90,7 +95,21 @@ export function createGridSessionService(
 }
 
 export function createGlobalGridSessionService(): EngineGridSessionService {
-  return createGridSessionService({
+  return createGridSessionService(createGlobalGridSessionTargets());
+}
+
+export function createGlobalGridSessionTargets(
+  globalTargets: EngineGlobalGridSessionTargets = createBrowserGlobalGridSessionTargets(),
+): EngineGridSessionTargets {
+  return {
+    ...globalTargets,
+    generateGrid,
+    shouldRegenerateGrid,
+  };
+}
+
+export function createBrowserGlobalGridSessionTargets(): EngineGlobalGridSessionTargets {
+  return {
     getGrid: () => globalThis.grid,
     setGrid: (nextGrid) => {
       globalThis.grid = nextGrid;
@@ -98,9 +117,7 @@ export function createGlobalGridSessionService(): EngineGridSessionService {
     getSeed: () => globalThis.seed,
     getGraphWidth: () => globalThis.graphWidth,
     getGraphHeight: () => globalThis.graphHeight,
-    generateGrid,
-    shouldRegenerateGrid,
-  });
+  };
 }
 
 export function createRuntimeGridSessionService(

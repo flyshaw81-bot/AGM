@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 180 test files, 657 tests.
+- `npm.cmd run test -- --run` passed: 180 test files, 658 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1983,6 +1983,12 @@ browser globals.
 `createGlobalNamesRuntimeAdapters()`. `NamesGenerator` itself uses injected
 runtime adapters for diagnostics, tips, and randomness instead of scattering
 global fallbacks across methods.
+
+`engine-graph-session.ts` now applies explicit width/height parameters when
+setting graph rectangle bounds instead of re-reading stale `globalThis`
+dimensions. `engine-generation-session-services.ts` now exposes
+`createBrowserGlobalGridSessionTargets()` and `createGlobalGridSessionTargets()`
+so default grid session global access is isolated behind a typed adapter.
 
 ## Next Recommended Slice
 

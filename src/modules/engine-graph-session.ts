@@ -10,12 +10,8 @@ type AttributeTarget = {
   selectAll?: (selector: string) => AttributeTarget;
 };
 
-function setRectBounds(target: AttributeTarget) {
-  target
-    .attr("x", 0)
-    .attr("y", 0)
-    .attr("width", globalThis.graphWidth)
-    .attr("height", globalThis.graphHeight);
+function setRectBounds(target: AttributeTarget, width: number, height: number) {
+  target.attr("x", 0).attr("y", 0).attr("width", width).attr("height", height);
 }
 
 export type EngineGraphSessionTargets = {
