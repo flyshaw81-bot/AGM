@@ -8,6 +8,10 @@ export type EngineHostDialogAdapter = {
   queryDialogs: () => HTMLElement[];
 };
 
+export type EngineHostDialogDomAdapter = {
+  querySelectorAll: (selector: string) => HTMLElement[];
+};
+
 export type EngineHostTargets = EngineHostDomAdapter & EngineHostDialogAdapter;
 
 export function createGlobalEngineHostDomAdapter(): EngineHostDomAdapter {
@@ -20,14 +24,20 @@ export function createGlobalEngineHostDomAdapter(): EngineHostDomAdapter {
   };
 }
 
-export function createJQueryEngineHostDialogAdapter(): EngineHostDialogAdapter {
+export function createGlobalEngineHostDialogDomAdapter(): EngineHostDialogDomAdapter {
   return {
-    queryDialogs: () =>
+    querySelectorAll: (selector) =>
       Array.from(
-        globalThis.document?.querySelectorAll<HTMLElement>(
-          "#dialogs > .ui-dialog",
-        ) ?? [],
+        globalThis.document?.querySelectorAll<HTMLElement>(selector) ?? [],
       ),
+  };
+}
+
+export function createJQueryEngineHostDialogAdapter(
+  domAdapter: EngineHostDialogDomAdapter = createGlobalEngineHostDialogDomAdapter(),
+): EngineHostDialogAdapter {
+  return {
+    queryDialogs: () => domAdapter.querySelectorAll("#dialogs > .ui-dialog"),
   };
 }
 

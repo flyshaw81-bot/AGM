@@ -8,6 +8,7 @@ import {
 } from "./engineHost";
 import {
   createEngineHostTargets,
+  createGlobalEngineHostDialogDomAdapter,
   createGlobalEngineHostTargets,
   createJQueryEngineHostDialogAdapter,
   type EngineHostTargets,
@@ -165,6 +166,20 @@ describe("engine host", () => {
 
   it("keeps old dialog wrapper queries inside the default dialog adapter", () => {
     const { element: dialog } = createElement("dialog");
+    const domAdapter = {
+      querySelectorAll: vi.fn(() => [dialog]),
+    };
+
+    const adapter = createJQueryEngineHostDialogAdapter(domAdapter);
+
+    expect(adapter.queryDialogs()).toEqual([dialog]);
+    expect(domAdapter.querySelectorAll).toHaveBeenCalledWith(
+      "#dialogs > .ui-dialog",
+    );
+  });
+
+  it("keeps host dialog DOM queries inside the default DOM adapter", () => {
+    const { element: dialog } = createElement("dialog");
     const querySelectorAll = vi.fn(() => [dialog]);
     const originalDocument = globalThis.document;
     globalThis.document = {
@@ -172,9 +187,11 @@ describe("engine host", () => {
     } as unknown as Document;
 
     try {
-      const adapter = createJQueryEngineHostDialogAdapter();
+      const adapter = createGlobalEngineHostDialogDomAdapter();
 
-      expect(adapter.queryDialogs()).toEqual([dialog]);
+      expect(adapter.querySelectorAll("#dialogs > .ui-dialog")).toEqual([
+        dialog,
+      ]);
       expect(querySelectorAll).toHaveBeenCalledWith("#dialogs > .ui-dialog");
     } finally {
       globalThis.document = originalDocument;

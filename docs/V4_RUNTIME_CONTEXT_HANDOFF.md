@@ -87,6 +87,9 @@
 > Engine editor dialog compatibility now uses `EngineEditorDialogDomAdapter`,
 > so dialog element lookup and computed-style reads are isolated from the
 > jQuery wrapper close/open-state adapter.
+> Engine host dialog compatibility now uses `EngineHostDialogDomAdapter`, so
+> old `.ui-dialog` wrapper queries are isolated from host relocation and dialog
+> positioning targets.
 > Studio style injection now uses `StudioStyleTargets`, so duplicate style
 > detection, style element creation, and head insertion are injectable.
 > Studio document theme sync now uses `StudioThemeSyncTargets`, so renderer
