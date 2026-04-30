@@ -22,21 +22,45 @@ import {
 
 type WorldPackageDraft = WorldDocumentDraft["package"];
 
+export type EnginePackageZipInstance = {
+  file: (path: string, content: string | Blob) => void;
+  generateAsync: (options: { type: "blob" }) => Promise<Blob>;
+};
+
+export type EnginePackageZipConstructor = new () => EnginePackageZipInstance;
+
+export type EnginePackageBundleTargets = {
+  loadZip: () => Promise<EnginePackageZipConstructor>;
+  downloadBlob: (filename: string, blob: Blob) => void;
+  createPngBlob: typeof createHeightmapPngBlob;
+  createRaw16Blob: typeof createHeightmapRaw16Blob;
+};
+
+export function createGlobalEnginePackageBundleTargets(): EnginePackageBundleTargets {
+  return {
+    loadZip: loadJsZip,
+    downloadBlob: downloadBlobDraft,
+    createPngBlob: createHeightmapPngBlob,
+    createRaw16Blob: createHeightmapRaw16Blob,
+  };
+}
+
 export async function exportEnginePackageBundle(
   documentName: string,
   packageDraft: WorldPackageDraft,
+  targets: EnginePackageBundleTargets = createGlobalEnginePackageBundleTargets(),
 ) {
   const baseName = packageDraft.manifest.id;
   const heightmapMetadata = createHeightmapMetadataExport(packageDraft);
   const heightfield = createHeightfieldExport(packageDraft);
-  const heightmapPngBlob = await createHeightmapPngBlob(heightfield);
-  const heightmapRaw16Blob = createHeightmapRaw16Blob(heightfield);
+  const heightmapPngBlob = await targets.createPngBlob(heightfield);
+  const heightmapRaw16Blob = targets.createRaw16Blob(heightfield);
   const engineManifest = createEngineManifestExport(packageDraft);
   const importerStubFiles = createImporterStubFiles(
     packageDraft,
     engineManifest,
   );
-  const JsZip = await loadJsZip();
+  const JsZip = await targets.loadZip();
   const zip = new JsZip();
 
   zip.file(
@@ -93,6 +117,6 @@ export async function exportEnginePackageBundle(
 
   const filename = createSafeFilename(documentName, "agm-engine-package.zip");
   const blob = await zip.generateAsync({ type: "blob" });
-  downloadBlobDraft(filename, blob);
+  targets.downloadBlob(filename, blob);
   return { filename, manifest: engineManifest, heightfield };
 }
