@@ -73,6 +73,8 @@
 > Canvas paint editing now uses `CanvasPaintEditingTargets`, so graph size,
 > pack/grid cell access, edit-layer redraw, and edit-entry timestamps are
 > injectable across preview, paint apply, undo, and biome coverage paths.
+> Studio style injection now uses `StudioStyleTargets`, so duplicate style
+> detection, style element creation, and head insertion are injectable.
 > Please review whether each remaining global dependency is behind an explicit
 > compatibility adapter, and keep treating AGM `window.*` module mounts
 > separately from old public UI debt.
@@ -476,7 +478,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 146 test files, 487 tests.
+- `npm.cmd run test -- --run` passed: 147 test files, 489 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1299,6 +1301,10 @@ for graph dimensions, pack/grid cell access, edit-layer redraw, and timestamps.
 The default adapter still composes current engine canvas access helpers, while
 focused tests exercise preview creation, paint writes, undo, and biome coverage
 batch writes with injected cells, redraw, and clock fakes.
+Studio style injection now has a dedicated `StudioStyleTargets` boundary for
+duplicate style detection, style element creation, and head insertion. The
+default adapter still writes to the browser document, while focused tests verify
+style injection and duplicate prevention through injected document fakes.
 Direct editor targets can also compose focus, entity mutation, and biome
 mutation commands directly from an injected `EngineRuntimeContext`. The default
 adapters still delegate to current entity mutation/focus bridge helpers, but
