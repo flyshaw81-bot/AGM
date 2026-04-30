@@ -835,6 +835,9 @@ Completed:
 - Extended `EngineRenderAdapter` with optional canvas redraw hooks and made
   runtime canvas access prefer `context.rendering` for heightmap/biome/cell
   redraws and active zoom sync before falling back to compatibility globals.
+- Added `createRuntimeCanvasPaintEditingTargets(context)` so canvas paint
+  editing can use runtime graph size, pack/grid cells, and redraw hooks without
+  going through global canvas access targets.
 - Routed state expansionism randomness through the same runtime random service.
   This keeps the seeded default behavior while moving another context-aware
   generation step off direct `Math.random()` calls.

@@ -1,4 +1,6 @@
+import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 import {
+  createRuntimeEngineCanvasAccessTargets,
   getEngineCanvasGraphSize,
   getEngineGridCells,
   getEnginePackCells,
@@ -39,6 +41,21 @@ export function createGlobalCanvasPaintEditingTargets(): CanvasPaintEditingTarge
     getGridCells: () =>
       getEngineGridCells() as CanvasPaintGridCells | undefined,
     redrawEditLayers: redrawEngineCanvasEditLayers,
+    now: () => Date.now(),
+  });
+}
+
+export function createRuntimeCanvasPaintEditingTargets(
+  context: EngineRuntimeContext,
+): CanvasPaintEditingTargets {
+  const canvasTargets = createRuntimeEngineCanvasAccessTargets(context);
+  return createCanvasPaintEditingTargets({
+    getGraphSize: () => getEngineCanvasGraphSize(canvasTargets),
+    getPackCells: () =>
+      getEnginePackCells(canvasTargets) as CanvasPaintPackCells | undefined,
+    getGridCells: () =>
+      getEngineGridCells(canvasTargets) as CanvasPaintGridCells | undefined,
+    redrawEditLayers: () => redrawEngineCanvasEditLayers(canvasTargets),
     now: () => Date.now(),
   });
 }

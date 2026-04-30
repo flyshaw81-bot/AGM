@@ -12,6 +12,7 @@ export {
   type CanvasPaintEditingTargets,
   createCanvasPaintEditingTargets,
   createGlobalCanvasPaintEditingTargets,
+  createRuntimeCanvasPaintEditingTargets,
 } from "./canvasPaintEditingTargets";
 
 export function isPaintCanvasTool(
