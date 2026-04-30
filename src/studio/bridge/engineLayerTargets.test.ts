@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createGlobalLayerTargets } from "./engineLayerTargets";
+import {
+  createGlobalLayerTargets,
+  createLayerTargets,
+} from "./engineLayerTargets";
 
 type TestLayerGlobals = typeof globalThis & {
   toggleRivers?: () => void;
@@ -19,6 +22,25 @@ describe("createGlobalLayerTargets", () => {
   });
 
   it("forwards layer handler checks, active state, and toggles", () => {
+    const toggleRivers = vi.fn();
+    const targets = createLayerTargets(
+      {
+        getHandler: (action) =>
+          action === "toggleRivers" ? toggleRivers : undefined,
+        isLayerOn: (action) => action === "toggleRivers",
+      },
+      {
+        getLayerItems: () => [],
+      },
+    );
+
+    expect(targets.hasLayerHandler("toggleRivers")).toBe(true);
+    expect(targets.isLayerOn("toggleRivers")).toBe(true);
+    targets.toggleLayer("toggleRivers");
+    expect(toggleRivers).toHaveBeenCalledWith();
+  });
+
+  it("keeps global layer handlers behind the default runtime adapter", () => {
     const toggleRivers = vi.fn();
     testGlobals.toggleRivers = toggleRivers;
     testGlobals.layerIsOn = vi.fn((layerId) => layerId === "toggleRivers");
@@ -45,6 +67,40 @@ describe("createGlobalLayerTargets", () => {
       getElementById: vi.fn((id) => (id === "mapLayers" ? list : null)),
     } as unknown as Document;
 
+    const targets = createLayerTargets(
+      {
+        getHandler: () => undefined,
+        isLayerOn: () => false,
+      },
+      {
+        getLayerItems: () => [item as unknown as HTMLLIElement],
+      },
+    );
+
+    expect(targets.getLayerDetails()).toEqual([
+      {
+        id: "toggleRivers",
+        label: "Rivers",
+        shortcut: "R",
+        pinned: true,
+      },
+    ]);
+  });
+
+  it("keeps map layer list queries behind the default DOM adapter", () => {
+    const item = {
+      id: "toggleRivers",
+      textContent: " Rivers ",
+      dataset: { shortcut: "R" },
+      classList: { contains: vi.fn((name) => name === "solid") },
+    };
+    const list = {
+      querySelectorAll: vi.fn(() => [item]),
+    };
+    globalThis.document = {
+      getElementById: vi.fn((id) => (id === "mapLayers" ? list : null)),
+    } as unknown as Document;
+
     expect(createGlobalLayerTargets().getLayerDetails()).toEqual([
       {
         id: "toggleRivers",
@@ -53,5 +109,6 @@ describe("createGlobalLayerTargets", () => {
         pinned: true,
       },
     ]);
+    expect(list.querySelectorAll).toHaveBeenCalledWith("li[id^='toggle']");
   });
 });

@@ -418,7 +418,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 124 test files, 383 tests.
+- `npm.cmd run test -- --run` passed: 124 test files, 385 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -905,8 +905,10 @@ services instead of reading `globalThis.Routes` inline:
   broad `Window[key: string]` declaration also exposed and fixed two hidden
   loose-typing dependencies in adjacent bridge files.
 - `src/studio/bridge/engineLayerTargets.ts` now owns the Studio layer
-  compatibility boundary for layer handler detection, active-state reads,
-  layer toggles, and `#mapLayers` detail metadata.
+  compatibility boundary through `EngineLayerRuntimeAdapter` and
+  `EngineLayerDomAdapter`. Layer handler detection, active-state reads, layer
+  toggles, and `#mapLayers` detail metadata are split into replaceable
+  adapters.
 - `src/studio/bridge/engineLayerActions.ts` now builds layer states/details and
   toggles layers through injected targets instead of directly reading
   `window`, `document`, or `layerIsOn` inline.
@@ -1023,8 +1025,8 @@ services instead of reading `globalThis.Routes` inline:
   DOM control resolution, event dispatch, and template label forwarding.
 - `src/studio/bridge/engineLayerActions.test.ts` and
   `src/studio/bridge/engineLayerTargets.test.ts` cover layer state/detail
-  composition, layer toggles, default handler forwarding, active state reads,
-  and DOM layer-list metadata parsing.
+  composition, layer toggles, injected/default handler forwarding, active state
+  reads, and DOM layer-list metadata parsing.
 - `src/studio/bridge/engineStyle.test.ts` and
   `src/studio/bridge/engineStyleTargets.test.ts` cover preset priority,
   system/custom classification, style apply hook priority, storage fallback,
@@ -1090,8 +1092,8 @@ reads project-control DOM/global helpers behind a bridge-level adapter.
 state through dedicated bridge adapters. `EngineProjectSummaryTargets` still reads project summary
 storage/document/cache helpers behind a bridge-level adapter.
 `EngineProjectActionTargets` still reads project action DOM/template helpers
-behind a bridge-level adapter. `EngineLayerTargets` still reads layer DOM/global
-helpers behind a bridge-level adapter. `EngineStyleTargets` still reads style
+behind a bridge-level adapter. `EngineLayerTargets` now splits layer DOM and
+runtime helpers through dedicated bridge adapters. `EngineStyleTargets` still reads style
 DOM/storage/global helpers behind a bridge-level adapter.
 `EngineDataActionTargets` still reads data panel DOM/runtime helpers and
 uses `engineDocumentSource.ts` through a bridge-level adapter. The document
