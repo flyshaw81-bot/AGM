@@ -34,8 +34,8 @@ export function createJQueryNoticeDialogHost(): EngineNoticeDialogHost {
   };
 }
 
-export function createGlobalNoticeService(
-  dialogHost: EngineNoticeDialogHost = createJQueryNoticeDialogHost(),
+export function createEngineNoticeService(
+  dialogHost: EngineNoticeDialogHost,
 ): EngineNoticeService {
   return {
     showModal: ({
@@ -83,4 +83,10 @@ export function createGlobalNoticeService(
       });
     },
   };
+}
+
+export function createGlobalNoticeService(
+  dialogHost: EngineNoticeDialogHost = createJQueryNoticeDialogHost(),
+): EngineNoticeService {
+  return createEngineNoticeService(dialogHost);
 }

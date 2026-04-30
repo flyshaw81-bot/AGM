@@ -696,6 +696,10 @@ Completed:
   `EngineNoticeDialogHost`. The default `createJQueryNoticeDialogHost()` keeps
   the old `alertMessage` + jQuery dialog behavior for compatibility, but the
   notice service itself no longer calls jQuery UI directly.
+- `EngineNoticeService` now also exposes `createEngineNoticeService(dialogHost)`.
+  `createGlobalNoticeService()` is only the compatibility factory that wires the
+  jQuery host, leaving a clear slot for a Studio modal/toast host once UI work
+  is aligned with Pencil.
 - Runtime warning/error output now has an `EngineLogService` adapter. The
   default global adapter still delegates to the existing `WARN` / `ERROR`
   console gates, but Burgs, Rivers depression resolution, Religions generation,

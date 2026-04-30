@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  createEngineNoticeService,
   createGlobalNoticeService,
   createJQueryNoticeDialogHost,
   type EngineNoticeDialogHost,
@@ -42,7 +43,7 @@ describe("createGlobalNoticeService", () => {
   it("opens a modal through an injected dialog host", () => {
     const host = createDialogHost();
 
-    createGlobalNoticeService(host).showModal({
+    createEngineNoticeService(host).showModal({
       title: "Notice",
       html: "<p>Body</p>",
       resizable: true,
@@ -64,7 +65,7 @@ describe("createGlobalNoticeService", () => {
   it("uses the default close button when no modal buttons are provided", () => {
     const host = createDialogHost();
 
-    createGlobalNoticeService(host).showModal({
+    createEngineNoticeService(host).showModal({
       title: "Notice",
       html: "Body",
     });
@@ -80,7 +81,7 @@ describe("createGlobalNoticeService", () => {
     const host = createDialogHost();
     const error = new Error("Boom");
 
-    createGlobalNoticeService(host).showGenerationError(error);
+    createEngineNoticeService(host).showGenerationError(error);
 
     expect(globalThis.parseError).toHaveBeenCalledWith(error);
     expect(globalThis.clearMainTip).toHaveBeenCalledWith();
@@ -125,5 +126,18 @@ describe("createGlobalNoticeService", () => {
     expect(dollar).toHaveBeenCalledWith("#alert");
     expect(dialog).toHaveBeenCalledWith({ title: "Notice", resizable: false });
     expect(close).toHaveBeenCalledWith("close");
+  });
+
+  it("composes the global service through the default compatibility host", () => {
+    const host = createDialogHost();
+
+    createGlobalNoticeService(host).showModal({
+      title: "Global notice",
+      html: "Body",
+    });
+
+    expect(host.open).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "Global notice" }),
+    );
   });
 });
