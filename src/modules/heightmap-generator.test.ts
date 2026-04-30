@@ -86,6 +86,34 @@ describe("HeightmapModule", () => {
     expect(heights).toEqual(new Uint8Array([0, 29, 58, 100]));
   });
 
+  it("restores global Math.random after generation", async () => {
+    const originalRandom = Math.random;
+    const originalTemplates = globalThis.heightmapTemplates;
+    const heightmap = new HeightmapModule(
+      createImageTargets(
+        new Uint8ClampedArray([
+          0, 0, 0, 255, 64, 64, 64, 255, 128, 128, 128, 255, 255, 255, 255, 255,
+        ]),
+      ),
+    );
+
+    try {
+      globalThis.heightmapTemplates = {};
+
+      await heightmap.generate(createPrecreatedGraph(), {
+        generationSettings: { heightmapTemplateId: "missing-precreated" },
+        random: { next: () => 0.5 },
+        seed: "heightmap-seed",
+        timing: { shouldTime: false },
+      } as never);
+
+      expect(Math.random).toBe(originalRandom);
+    } finally {
+      globalThis.heightmapTemplates = originalTemplates;
+      Math.random = originalRandom;
+    }
+  });
+
   it("reports invalid point ranges through injected log targets", () => {
     const error = vi.fn();
     const heightmap = new HeightmapModule(

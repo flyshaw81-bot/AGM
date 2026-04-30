@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 180 test files, 672 tests.
+- `npm.cmd run test -- --run` passed: 180 test files, 673 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1982,6 +1982,9 @@ and grid-session creation are explicit and injectable.
 `engine-graph-session.ts` now separates map dimension globals
 (`mapWidthInput`, `mapHeightInput`, `graphWidth`, `graphHeight`) from SVG
 selection lookups via `EngineGraphRuntimeTargets` and `EngineGraphSvgTargets`.
+`heightmap-generator.ts` now restores the previous global `Math.random` after
+heightmap generation, including failure paths after the seeded Alea generator is
+installed; focused tests cover the restoration behavior.
 
 `engine-runtime-settings.ts` now routes settings input lookups through
 `EngineSettingsDomTargets`, keeping the browser `document.getElementById`

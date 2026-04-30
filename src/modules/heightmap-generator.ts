@@ -633,11 +633,12 @@ export class HeightmapModule {
     shouldTime && console.time("defineHeightmap");
     const id = context.generationSettings.heightmapTemplateId ?? "";
     const previousRandomSource = this.randomSource;
-    this.randomSource = context.random;
-    Math.random = Alea(context.seed);
-    const isTemplate = id in heightmapTemplates;
+    const previousRandom = Math.random;
 
     try {
+      this.randomSource = context.random;
+      Math.random = Alea(context.seed);
+      const isTemplate = id in heightmapTemplates;
       const heights = isTemplate
         ? this.fromTemplate(graph, id)
         : await this.fromPrecreated(graph, id);
@@ -647,6 +648,7 @@ export class HeightmapModule {
       return heights as Uint8Array;
     } finally {
       this.randomSource = previousRandomSource;
+      Math.random = previousRandom;
     }
   }
 
