@@ -149,6 +149,9 @@
 > `CanvasSelectionHighlightTargets`, so highlight sync no longer owns selected
 > state queries, selected border queries, canvas host lookup, state path lookup,
 > state border lookup, or parent reordering wiring inline.
+> `CanvasSelectionHighlightTargets` now also exposes an explicit
+> `createCanvasSelectionHighlightTargets` composer, so injected highlight DOM
+> adapters stay separate from the global Studio/browser document factory.
 > Canvas interaction geometry default dependencies now live in
 > `CanvasInteractionGeometryTargets`, so geometry resolution no longer owns
 > canvas frame lookup, graph size reads, or pack reads inline.
@@ -1521,6 +1524,10 @@ selected border queries, canvas frame/host lookup, state path lookup, state
 border lookup, and parent reordering. `canvasSelectionHighlight.ts` continues
 to re-export the target type/factory while selection highlight syncing no longer
 owns those document queries inline.
+`canvasSelectionHighlightTargets.ts` now also exposes
+`createCanvasSelectionHighlightTargets` for explicit highlight target
+composition, keeping injected DOM targets separate from the global
+Studio/browser document factory.
 Canvas interaction geometry default runtime access now has a dedicated
 `canvasInteractionGeometryTargets.ts` adapter for canvas frame lookup, graph
 size reads, and pack reads. `canvasInteractionGeometry.ts` continues to

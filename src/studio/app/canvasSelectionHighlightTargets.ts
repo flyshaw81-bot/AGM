@@ -8,8 +8,14 @@ export type CanvasSelectionHighlightTargets = {
   appendToParent: (element: SVGElement) => void;
 };
 
+export function createCanvasSelectionHighlightTargets(
+  targets: CanvasSelectionHighlightTargets,
+): CanvasSelectionHighlightTargets {
+  return targets;
+}
+
 export function createGlobalCanvasSelectionHighlightTargets(): CanvasSelectionHighlightTargets {
-  return {
+  return createCanvasSelectionHighlightTargets({
     getSelectedStateElements: () =>
       Array.from(
         document.querySelectorAll<SVGElement>(
@@ -35,5 +41,5 @@ export function createGlobalCanvasSelectionHighlightTargets(): CanvasSelectionHi
     appendToParent: (element) => {
       element.parentElement?.appendChild(element);
     },
-  };
+  });
 }

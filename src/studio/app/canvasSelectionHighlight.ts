@@ -6,6 +6,7 @@ import {
 
 export {
   type CanvasSelectionHighlightTargets,
+  createCanvasSelectionHighlightTargets,
   createGlobalCanvasSelectionHighlightTargets,
 } from "./canvasSelectionHighlightTargets";
 

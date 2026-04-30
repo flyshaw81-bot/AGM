@@ -1,7 +1,24 @@
 import { describe, expect, it, vi } from "vitest";
-import { createGlobalCanvasSelectionHighlightTargets } from "./canvasSelectionHighlightTargets";
+import {
+  createCanvasSelectionHighlightTargets,
+  createGlobalCanvasSelectionHighlightTargets,
+} from "./canvasSelectionHighlightTargets";
 
-describe("createGlobalCanvasSelectionHighlightTargets", () => {
+describe("canvas selection highlight targets", () => {
+  it("composes selection highlight targets from injected DOM adapters", () => {
+    const targets = {
+      getSelectedStateElements: vi.fn(() => []),
+      getSelectedStateBorderElements: vi.fn(() => []),
+      getCanvasFrame: vi.fn(() => null),
+      getMapHost: vi.fn(() => null),
+      getStatePath: vi.fn(() => null),
+      getStateBorder: vi.fn(() => null),
+      appendToParent: vi.fn(),
+    };
+
+    expect(createCanvasSelectionHighlightTargets(targets)).toBe(targets);
+  });
+
   it("composes default selection highlight DOM lookups", () => {
     const selectedState = { id: "state7" };
     const selectedBorder = { id: "state-border7" };
