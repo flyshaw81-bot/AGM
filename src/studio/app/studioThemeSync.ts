@@ -1,16 +1,13 @@
 import type { StudioState } from "../types";
+import {
+  createGlobalStudioThemeSyncTargets,
+  type StudioThemeSyncTargets,
+} from "./studioThemeSyncTargets";
 
-export type StudioThemeSyncTargets = {
-  setDocumentTheme: (theme: StudioState["theme"]) => void;
-};
-
-export function createGlobalStudioThemeSyncTargets(): StudioThemeSyncTargets {
-  return {
-    setDocumentTheme: (theme) => {
-      document.documentElement.dataset.studioTheme = theme;
-    },
-  };
-}
+export {
+  createGlobalStudioThemeSyncTargets,
+  type StudioThemeSyncTargets,
+} from "./studioThemeSyncTargets";
 
 export function syncStudioDocumentTheme(
   theme: StudioState["theme"],
