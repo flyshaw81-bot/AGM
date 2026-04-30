@@ -6,7 +6,11 @@ import {
   relocateEngineMapHost,
   syncEngineDialogsPosition,
 } from "./engineHost";
-import type { EngineHostTargets } from "./engineHostTargets";
+import {
+  createGlobalEngineHostTargets,
+  createJQueryEngineHostDialogAdapter,
+  type EngineHostTargets,
+} from "./engineHostTargets";
 
 function createElement(id = "") {
   const children = new Set<HTMLElement>();
@@ -118,5 +122,42 @@ describe("engine host", () => {
 
     expect(dialog.style.left).toBe("18px");
     expect(dialog.style.top).toBe("28px");
+  });
+
+  it("combines injected DOM and dialog adapters for global host targets", () => {
+    const { element: root } = createElement("studioRoot");
+    const { element: dialog } = createElement("dialog");
+
+    const targets = createGlobalEngineHostTargets(
+      {
+        getElementById: vi.fn(() => root),
+        createElement: vi.fn(),
+        appendToBody: vi.fn(),
+      },
+      {
+        queryDialogs: vi.fn(() => [dialog]),
+      },
+    );
+
+    expect(targets.getElementById("studioRoot")).toBe(root);
+    expect(targets.queryDialogs()).toEqual([dialog]);
+  });
+
+  it("keeps old dialog wrapper queries inside the default dialog adapter", () => {
+    const { element: dialog } = createElement("dialog");
+    const querySelectorAll = vi.fn(() => [dialog]);
+    const originalDocument = globalThis.document;
+    globalThis.document = {
+      querySelectorAll,
+    } as unknown as Document;
+
+    try {
+      const adapter = createJQueryEngineHostDialogAdapter();
+
+      expect(adapter.queryDialogs()).toEqual([dialog]);
+      expect(querySelectorAll).toHaveBeenCalledWith("#dialogs > .ui-dialog");
+    } finally {
+      globalThis.document = originalDocument;
+    }
   });
 });

@@ -418,7 +418,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 124 test files, 380 tests.
+- `npm.cmd run test -- --run` passed: 124 test files, 382 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -949,9 +949,11 @@ services instead of reading `globalThis.Routes` inline:
   open-state sync, close behavior, and open-before-close sequencing through
   injected targets instead of directly reading `window`, `document`, or
   `.ui-dialog` inline.
-- `src/studio/app/engineHostTargets.ts` now owns the Studio host compatibility
-  boundary for root/dialog container creation, body preservation, map host
-  relocation, and old dialog wrapper queries.
+- `src/studio/app/engineHostTargets.ts` now splits Studio host compatibility
+  into `EngineHostDomAdapter` and `EngineHostDialogAdapter`. The default
+  `createJQueryEngineHostDialogAdapter()` still owns old dialog wrapper
+  queries, but DOM host creation and dialog lookup are no longer bundled as one
+  opaque target.
 - `src/studio/app/engineHost.ts` now performs Studio host setup and dialog
   position clamping through injected targets instead of directly reading
   `document` inline.
@@ -1098,8 +1100,9 @@ compatibility, but the tracking logic is now testable through injected targets.
 helpers behind a bridge-level adapter. `EngineTopbarTargets` still delegates to
 Data action functions behind a bridge-level adapter. `EngineEditorTargets` now
 splits public editor handlers from old jQuery UI dialog wrappers through
-dedicated bridge adapters. `EngineHostTargets` still owns app-level DOM host and old
-dialog wrapper queries behind an app-level adapter. `EngineMapHostTargets` now
+dedicated bridge adapters. `EngineHostTargets` now splits app-level DOM host
+and old dialog wrapper queries through dedicated app-level adapters.
+`EngineMapHostTargets` now
 owns the document-state part of the map host plus the first viewport sizing
 adapter, content transform target, and SVG compatibility target. The map host
 still relies on old runtime objects behind the target adapter, but
