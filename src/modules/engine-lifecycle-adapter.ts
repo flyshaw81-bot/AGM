@@ -11,16 +11,18 @@ export type EngineLifecycleAdapter = {
   showStatistics: (context?: EngineRuntimeContext) => void;
 };
 
+export type EngineMapCoordinateSettings = {
+  mapSizePercent?: number;
+  latitudePercent?: number;
+  longitudePercent?: number;
+};
+
 export type EngineLifecycleTargets = {
   addLakesInDeepDepressions: (lakeElevationLimit: number) => void;
   openNearSeaLakes: (heightmapTemplateId: string | undefined) => void;
   drawOceanLayers: (context: EngineRuntimeContext) => void;
   defineMapSize: (heightmapTemplateId: string | undefined) => void;
-  calculateMapCoordinates: (settings: {
-    mapSizePercent?: number;
-    latitudePercent?: number;
-    longitudePercent?: number;
-  }) => void;
+  calculateMapCoordinates: (settings: EngineMapCoordinateSettings) => void;
   rebuildGraph: () => void;
   createDefaultRuler: () => void;
   showStatistics: (heightmapTemplateId: string | undefined) => void;

@@ -1817,6 +1817,9 @@ Lifecycle adapter now creates a `EngineLifecycleSettingsSnapshot` from the
 runtime context, preferring `generationSettingsStore.get()` and
 `worldSettingsStore.get()` when available. Lifecycle methods read that snapshot
 instead of scattering direct settings field access through each method.
+Map coordinate lifecycle settings now use a named `EngineMapCoordinateSettings`
+type, preparing that helper path for a later runtime-owned map placement
+service.
 
 ## Next Recommended Slice
 
