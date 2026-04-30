@@ -1,7 +1,37 @@
 import { describe, expect, it, vi } from "vitest";
-import { createGlobalProjectCenterTargets } from "./projectCenterTargets";
+import type { EngineProjectSummary } from "../bridge/engineActionTypes";
+import {
+  createGlobalProjectCenterTargets,
+  createProjectCenterTargets,
+} from "./projectCenterTargets";
 
 describe("createGlobalProjectCenterTargets", () => {
+  it("composes storage, summary, and clock project center adapters", () => {
+    const storage = {
+      getStorageItem: vi.fn(() => "[]"),
+      setStorageItem: vi.fn(),
+    };
+    const summary = {
+      getProjectSummary: vi.fn(() => ({
+        pendingSeed: "seed-1",
+        hasLocalSnapshot: true,
+      }) as EngineProjectSummary),
+    };
+    const clock = {
+      now: vi.fn(() => 7890),
+    };
+
+    const targets = createProjectCenterTargets(storage, summary, clock);
+
+    expect(targets.getStorageItem("recent")).toBe("[]");
+    targets.setStorageItem("recent", "[{}]");
+    expect(targets.getProjectSummary()).toMatchObject({
+      pendingSeed: "seed-1",
+    });
+    expect(targets.now()).toBe(7890);
+    expect(storage.setStorageItem).toHaveBeenCalledWith("recent", "[{}]");
+  });
+
   it("wires browser storage and clock behind project center targets", () => {
     const storage = {
       getItem: vi.fn(() => "[]"),

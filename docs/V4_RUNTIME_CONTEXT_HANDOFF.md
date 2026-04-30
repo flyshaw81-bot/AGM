@@ -135,6 +135,9 @@
 > Studio preference targets now compose explicit storage and document adapters,
 > so language/theme/navigation persistence can swap browser storage separately
 > from document language/theme writes.
+> Project center targets now compose explicit storage, summary, and clock
+> adapters, so recent-project persistence can swap browser storage separately
+> from engine summary reads and timestamp generation.
 > Please review whether each remaining global dependency is behind an explicit
 > compatibility adapter, and keep treating AGM `window.*` module mounts
 > separately from old public UI debt.
@@ -538,7 +541,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 164 test files, 515 tests.
+- `npm.cmd run test -- --run` passed: 164 test files, 516 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1460,6 +1463,11 @@ Studio preference default browser access is now split into explicit storage and
 document adapters inside `preferenceTargets.ts`; `createStudioPreferenceTargets`
 composes those adapters for language/theme/navigation persistence while keeping
 the existing global factory compatible with current call sites.
+Project center default browser/runtime access is now split into explicit
+storage, summary, and clock adapters inside `projectCenterTargets.ts`;
+`createProjectCenterTargets` composes those adapters for recent-project
+persistence while keeping the existing global factory compatible with current
+call sites.
 Direct editor targets can also compose focus, entity mutation, and biome
 mutation commands directly from an injected `EngineRuntimeContext`. The default
 adapters still delegate to current entity mutation/focus bridge helpers, but
