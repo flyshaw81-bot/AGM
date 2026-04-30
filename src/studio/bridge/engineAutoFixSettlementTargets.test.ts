@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest";
 import type { EngineAutoFixPreviewChange } from "./engineActionTypes";
-import { createGlobalSettlementWritebackTargets } from "./engineAutoFixSettlementTargets";
+import {
+  createGlobalSettlementWritebackTargets,
+  createSettlementWritebackTargets,
+} from "./engineAutoFixSettlementTargets";
 
 const originalPack = globalThis.pack;
 
@@ -75,5 +78,27 @@ describe("createGlobalSettlementWritebackTargets", () => {
     expect(
       createGlobalSettlementWritebackTargets().resolveSettlementPoint(change),
     ).toEqual({ x: 300, y: 420 });
+  });
+
+  it("composes settlement writeback targets from an injected map adapter", () => {
+    const targets = createSettlementWritebackTargets({
+      findStateBurg: () => undefined,
+      getStateCellIds: () => [10, 11, 12],
+      getCellPoint: (cellId) =>
+        cellId === 11 ? { x: 120, y: 140 } : undefined,
+      getProvinceCenterCell: () => undefined,
+    });
+    const change = {
+      id: "burg:state:4",
+      operation: "create",
+      entity: "burg",
+      summary: "Add support settlement",
+      refs: { states: [4] },
+    } satisfies EngineAutoFixPreviewChange;
+
+    expect(targets.resolveSettlementPoint(change)).toEqual({
+      x: 120,
+      y: 140,
+    });
   });
 });

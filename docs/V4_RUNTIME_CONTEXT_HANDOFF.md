@@ -418,7 +418,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 124 test files, 400 tests.
+- `npm.cmd run test -- --run` passed: 124 test files, 401 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -827,9 +827,10 @@ services instead of reading `globalThis.Routes` inline:
   directly calling `globalThis.Burgs.add` and then reading
   `globalThis.pack.burgs`.
 - `src/studio/bridge/engineAutoFixSettlementTargets.ts` now owns settlement
-  writeback point resolution. It is still a compatibility adapter over
-  `globalThis.pack`, but the state-burg, state-cell, and province-center
-  fallback behavior is tested outside the command execution path.
+  writeback point resolution through a dedicated map adapter. The default
+  adapter still reads `globalThis.pack`, but the state-burg, state-cell, and
+  province-center fallback behavior is tested outside the command execution
+  path.
 - `src/studio/bridge/engineAutoFixUndo.ts` now removes created burgs through
   the injected `EngineBurgService` instead of directly calling
   `globalThis.Burgs.remove`.
@@ -997,8 +998,8 @@ services instead of reading `globalThis.Routes` inline:
   `src/studio/bridge/engineAutoFixSettlementCommands.test.ts` cover the burg
   command adapter and settlement writeback service injection.
 - `src/studio/bridge/engineAutoFixSettlementTargets.test.ts` covers the
-  remaining settlement target compatibility lookup while it still reads the
-  active global map.
+  remaining settlement target compatibility lookup and injected map adapter
+  composition while the default adapter still reads the active global map.
 - `src/studio/bridge/engineAutoFixUndoTargets.test.ts` covers undo lookup for
   writable provinces, states, and biome data, plus injected
   province/state/biome adapter composition, while default adapters still come
@@ -1107,7 +1108,8 @@ services instead of reading `globalThis.Routes` inline:
 
 Known remaining debt for this slice: `EngineRouteWritebackTargets` now splits
 route cell/province lookup through a dedicated map adapter.
-`EngineSettlementWritebackTargets` still reads `globalThis.pack`;
+`EngineSettlementWritebackTargets` now splits settlement point lookup through a
+dedicated map adapter.
 `EngineAutoFixUndoTargets`, `EngineStateWritebackTargets`,
 `EngineBiomeWritebackTargets` now splits biome-data lookup and redraw
 forwarding through dedicated bridge adapters. `EngineFocusGeometryTargets` now

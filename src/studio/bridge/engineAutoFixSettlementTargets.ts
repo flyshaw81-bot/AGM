@@ -11,47 +11,90 @@ export type EngineSettlementWritebackTargets = {
   ) => EngineSettlementWritebackPoint | null;
 };
 
+export type EngineSettlementWritebackMapAdapter = {
+  findStateBurg: (
+    stateId: number,
+  ) => EngineSettlementWritebackPoint | undefined;
+  getStateCellIds: (stateId: number) => number[];
+  getCellPoint: (cellId: number) => EngineSettlementWritebackPoint | undefined;
+  getProvinceCenterCell: (provinceId: number) => number | undefined;
+};
+
 function resolveAgmSettlementWritebackPoint(
   change: EngineAutoFixPreviewChange,
+  mapAdapter: EngineSettlementWritebackMapAdapter,
 ) {
   const stateId = change.refs.states?.[0];
   if (stateId !== undefined) {
-    const existingStateBurg = globalThis.pack?.burgs?.find(
-      (burg) =>
-        burg &&
-        !burg.removed &&
-        burg.state === stateId &&
-        typeof burg.x === "number" &&
-        typeof burg.y === "number",
-    );
-    if (existingStateBurg)
-      return { x: existingStateBurg.x, y: existingStateBurg.y };
-    const stateCells = Array.from(globalThis.pack?.cells?.i || []).filter(
-      (cellId) => globalThis.pack?.cells?.state?.[cellId] === stateId,
-    );
+    const existingStateBurg = mapAdapter.findStateBurg(stateId);
+    if (existingStateBurg) return existingStateBurg;
+    const stateCells = mapAdapter.getStateCellIds(stateId);
     const stateCenterCell = stateCells[Math.floor(stateCells.length / 2)];
     const statePoint =
       stateCenterCell === undefined
         ? undefined
-        : globalThis.pack?.cells?.p?.[stateCenterCell];
-    if (statePoint) return { x: statePoint[0], y: statePoint[1] };
+        : mapAdapter.getCellPoint(stateCenterCell);
+    if (statePoint) return statePoint;
   }
 
   const provinceId = change.refs.provinces?.[0];
-  const province =
+  const provinceCenterCell =
     provinceId === undefined
       ? undefined
-      : globalThis.pack?.provinces?.[provinceId];
+      : mapAdapter.getProvinceCenterCell(provinceId);
   const provincePoint =
-    province?.center === undefined
+    provinceCenterCell === undefined
       ? undefined
-      : globalThis.pack?.cells?.p?.[province.center];
-  if (provincePoint) return { x: provincePoint[0], y: provincePoint[1] };
+      : mapAdapter.getCellPoint(provinceCenterCell);
+  if (provincePoint) return provincePoint;
   return null;
 }
 
-export function createGlobalSettlementWritebackTargets(): EngineSettlementWritebackTargets {
+function pointOrUndefined(
+  value: unknown,
+): EngineSettlementWritebackPoint | undefined {
+  return Array.isArray(value) &&
+    typeof value[0] === "number" &&
+    typeof value[1] === "number"
+    ? { x: value[0], y: value[1] }
+    : undefined;
+}
+
+export function createGlobalSettlementWritebackMapAdapter(): EngineSettlementWritebackMapAdapter {
   return {
-    resolveSettlementPoint: resolveAgmSettlementWritebackPoint,
+    findStateBurg: (stateId) => {
+      const burg = globalThis.pack?.burgs?.find(
+        (item) =>
+          item &&
+          !item.removed &&
+          item.state === stateId &&
+          typeof item.x === "number" &&
+          typeof item.y === "number",
+      );
+      return burg ? { x: burg.x, y: burg.y } : undefined;
+    },
+    getStateCellIds: (stateId) =>
+      Array.from(globalThis.pack?.cells?.i || []).filter(
+        (cellId) => globalThis.pack?.cells?.state?.[cellId] === stateId,
+      ),
+    getCellPoint: (cellId) =>
+      pointOrUndefined(globalThis.pack?.cells?.p?.[cellId]),
+    getProvinceCenterCell: (provinceId) =>
+      globalThis.pack?.provinces?.[provinceId]?.center,
   };
+}
+
+export function createSettlementWritebackTargets(
+  mapAdapter: EngineSettlementWritebackMapAdapter,
+): EngineSettlementWritebackTargets {
+  return {
+    resolveSettlementPoint: (change) =>
+      resolveAgmSettlementWritebackPoint(change, mapAdapter),
+  };
+}
+
+export function createGlobalSettlementWritebackTargets(): EngineSettlementWritebackTargets {
+  return createSettlementWritebackTargets(
+    createGlobalSettlementWritebackMapAdapter(),
+  );
 }
