@@ -1,11 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  type BrowserBlobReaderTargets,
+  type BrowserNavigationTargets,
+  getBase64,
   getCoordinates,
   getLatitude,
   getLongitude,
   initializePrompt,
+  openURL,
   type StudioInputPromptTargets,
   type StudioInputRequest,
+  wiki,
 } from "./commonUtils";
 
 describe("getLongitude", () => {
@@ -141,6 +146,51 @@ describe("getCoordinates", () => {
       2,
     );
     expect(result).toEqual([0, 0]); // center of the world
+  });
+});
+
+describe("browser compatibility helpers", () => {
+  it("reads URL data through injected blob reader targets", () => {
+    const blob = new Blob(["map"]);
+    const callback = vi.fn();
+    const targets: BrowserBlobReaderTargets = {
+      requestBlob: vi.fn((_url, onBlob) => onBlob(blob)),
+      readAsDataURL: vi.fn((_blob, onResult) =>
+        onResult("data:text/plain;base64,bWFw"),
+      ),
+    };
+
+    getBase64("map.svg", callback, targets);
+
+    expect(targets.requestBlob).toHaveBeenCalledWith(
+      "map.svg",
+      expect.any(Function),
+    );
+    expect(targets.readAsDataURL).toHaveBeenCalledWith(
+      blob,
+      expect.any(Function),
+    );
+    expect(callback).toHaveBeenCalledWith("data:text/plain;base64,bWFw");
+  });
+
+  it("opens external and wiki URLs through injected navigation targets", () => {
+    const targets: BrowserNavigationTargets = {
+      open: vi.fn(),
+    };
+
+    openURL("https://example.test", targets);
+    wiki("map-layers", targets);
+
+    expect(targets.open).toHaveBeenNthCalledWith(
+      1,
+      "https://example.test",
+      "_blank",
+    );
+    expect(targets.open).toHaveBeenNthCalledWith(
+      2,
+      "docs/map-layers",
+      "_blank",
+    );
   });
 });
 

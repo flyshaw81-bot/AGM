@@ -143,6 +143,31 @@ export const parseError = (error: Error): string => {
   return errorParsed;
 };
 
+export type BrowserBlobReaderTargets = {
+  requestBlob: (url: string, callback: (response: Blob) => void) => void;
+  readAsDataURL: (
+    blob: Blob,
+    callback: (result: string | ArrayBuffer | null) => void,
+  ) => void;
+};
+
+export function createGlobalBrowserBlobReaderTargets(): BrowserBlobReaderTargets {
+  return {
+    requestBlob: (url, callback) => {
+      const xhr = new XMLHttpRequest();
+      xhr.onload = () => callback(xhr.response);
+      xhr.open("GET", url);
+      xhr.responseType = "blob";
+      xhr.send();
+    },
+    readAsDataURL: (blob, callback) => {
+      const reader = new FileReader();
+      reader.onloadend = () => callback(reader.result);
+      reader.readAsDataURL(blob);
+    },
+  };
+}
+
 /**
  * Convert a URL to base64 encoded data
  * @param url - The URL to convert
@@ -151,34 +176,45 @@ export const parseError = (error: Error): string => {
 export const getBase64 = (
   url: string,
   callback: (result: string | ArrayBuffer | null) => void,
+  targets: BrowserBlobReaderTargets = createGlobalBrowserBlobReaderTargets(),
 ): void => {
-  const xhr = new XMLHttpRequest();
-  xhr.onload = () => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      callback(reader.result);
-    };
-    reader.readAsDataURL(xhr.response);
-  };
-  xhr.open("GET", url);
-  xhr.responseType = "blob";
-  xhr.send();
+  targets.requestBlob(url, (blob) => {
+    targets.readAsDataURL(blob, callback);
+  });
 };
+
+export type BrowserNavigationTargets = {
+  open: (url: string, target: string) => void;
+};
+
+export function createGlobalBrowserNavigationTargets(): BrowserNavigationTargets {
+  return {
+    open: (url, target) => {
+      window.open(url, target);
+    },
+  };
+}
 
 /**
  * Open URL in a new tab or window
  * @param url - The URL to open
  */
-export const openURL = (url: string): void => {
-  window.open(url, "_blank");
+export const openURL = (
+  url: string,
+  targets: BrowserNavigationTargets = createGlobalBrowserNavigationTargets(),
+): void => {
+  targets.open(url, "_blank");
 };
 
 /**
  * Open project wiki-page
  * @param page - The wiki page name/path to open
  */
-export const wiki = (page: string): void => {
-  window.open(`docs/${page}`, "_blank");
+export const wiki = (
+  page: string,
+  targets: BrowserNavigationTargets = createGlobalBrowserNavigationTargets(),
+): void => {
+  targets.open(`docs/${page}`, "_blank");
 };
 
 /**

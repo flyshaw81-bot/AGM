@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 177 test files, 641 tests.
+- `npm.cmd run test -- --run` passed: 177 test files, 643 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1926,6 +1926,12 @@ keydown listeners, removal of the old `#prompt`, global request installation,
 and error-flag reads are injectable; the browser default remains in
 `createGlobalStudioInputPromptTargets()`. Focused tests cover installing and
 submitting the input prompt through fake targets.
+`utils/commonUtils.ts` also now has browser compatibility targets for URL
+opening and URL-to-data-URI conversion. `openURL()` and `wiki()` route through
+`BrowserNavigationTargets`, while `getBase64()` routes through
+`BrowserBlobReaderTargets`; default browser behavior remains backed by
+`window.open`, `XMLHttpRequest`, and `FileReader`, and focused tests cover the
+injected paths.
 
 ## Next Recommended Slice
 
