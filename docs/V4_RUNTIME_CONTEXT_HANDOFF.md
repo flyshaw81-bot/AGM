@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 169 test files, 622 tests.
+- `npm.cmd run test -- --run` passed: 172 test files, 629 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1866,6 +1866,13 @@ adapters. Default wiring checks Studio-owned dialog selectors/data attributes
 before falling back to the jQuery UI compatibility adapters. This does not
 remove old public dialogs yet, but it gives new Studio dialogs a non-jQuery
 path through the existing target factories.
+Targeted coverage was added for three audit gaps: `ProvinceModule.generate`
+now has an explicit runtime-context generation fixture, `createGlobalRandomService`
+has direct delegation coverage, and `Resampler.process` has a smoke test that
+drives the map-store reset, generation pipeline calls, province pole refresh,
+and statistics lifecycle through an injected `EngineRuntimeContext`. `Resampler`
+is now exported for tests while the existing `window.Resample` compatibility
+mount remains unchanged.
 
 ## Next Recommended Slice
 

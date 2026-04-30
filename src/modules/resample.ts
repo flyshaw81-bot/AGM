@@ -32,7 +32,7 @@ type ParentMapDefinition = {
   notes: any[];
 };
 
-class Resampler {
+export class Resampler {
   private saveRiversData(
     parentRivers: PackedGraph["rivers"],
     context: EngineRuntimeContext,
