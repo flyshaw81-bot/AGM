@@ -5,6 +5,7 @@ import {
   type EnginePackageZipInstance,
   exportEnginePackageBundle,
 } from "./worldDocumentEnginePackageDraft";
+import type { HeightmapPngExportTargets } from "./worldDocumentMapExports";
 
 function createPackageDraft(): WorldDocumentDraft["package"] {
   return {
@@ -149,5 +150,36 @@ describe("exportEnginePackageBundle", () => {
       expect.any(Blob),
     );
     expect(fileIoTargets.revokeObjectUrl).toHaveBeenCalledWith("blob:agm");
+  });
+
+  it("composes global package targets from injected PNG canvas targets", async () => {
+    const heightmapPngTargets: HeightmapPngExportTargets = {
+      createCanvas: vi.fn(() => {
+        const imageData = { data: new Uint8ClampedArray(4) } as ImageData;
+        return {
+          width: 0,
+          height: 0,
+          getContext: vi.fn(() => ({
+            createImageData: vi.fn(() => imageData),
+            putImageData: vi.fn(),
+          })),
+          toBlob: vi.fn((callback: BlobCallback) =>
+            callback(new Blob(["png"], { type: "image/png" })),
+          ),
+        } as unknown as ReturnType<HeightmapPngExportTargets["createCanvas"]>;
+      }),
+    };
+    const targets = createGlobalEnginePackageBundleTargets({
+      heightmapPngTargets,
+    });
+
+    await expect(
+      targets.createPngBlob({
+        grid: { width: 1, height: 1 },
+        values: [50],
+      } as Parameters<typeof targets.createPngBlob>[0]),
+    ).resolves.toBeInstanceOf(Blob);
+
+    expect(heightmapPngTargets.createCanvas).toHaveBeenCalledWith();
   });
 });

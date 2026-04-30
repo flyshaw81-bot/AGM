@@ -15,11 +15,13 @@ import {
 import { createImporterStubFiles } from "./worldDocumentImporterStubs";
 import {
   createGeoJsonMapLayerExport,
+  createGlobalHeightmapPngExportTargets,
   createHeightfieldExport,
   createHeightmapMetadataExport,
   createHeightmapPngBlob,
   createHeightmapRaw16Blob,
   createTiledMapExport,
+  type HeightmapPngExportTargets,
 } from "./worldDocumentMapExports";
 
 type WorldPackageDraft = WorldDocumentDraft["package"];
@@ -40,6 +42,7 @@ export type EnginePackageBundleTargets = {
 
 export type GlobalEnginePackageBundleTargetOptions = {
   fileIoTargets?: DraftFileIoTargets;
+  heightmapPngTargets?: HeightmapPngExportTargets;
 };
 
 export function createGlobalEnginePackageBundleTargets(
@@ -47,12 +50,15 @@ export function createGlobalEnginePackageBundleTargets(
 ): EnginePackageBundleTargets {
   const fileIoTargets =
     options.fileIoTargets ?? createGlobalDraftFileIoTargets();
+  const heightmapPngTargets =
+    options.heightmapPngTargets ?? createGlobalHeightmapPngExportTargets();
 
   return {
     loadZip: () => loadJsZip(fileIoTargets),
     downloadBlob: (filename, blob) =>
       downloadBlobDraft(filename, blob, fileIoTargets),
-    createPngBlob: createHeightmapPngBlob,
+    createPngBlob: (heightfield) =>
+      createHeightmapPngBlob(heightfield, heightmapPngTargets),
     createRaw16Blob: createHeightmapRaw16Blob,
   };
 }

@@ -198,9 +198,11 @@ export type WorldMapExportPackage = {
 
 export { createGeoJsonMapLayerExport } from "./worldDocumentGeoJsonMapExport";
 export {
+  createGlobalHeightmapPngExportTargets,
   createHeightfieldExport,
   createHeightmapMetadataExport,
   createHeightmapPngBlob,
   createHeightmapRaw16Blob,
+  type HeightmapPngExportTargets,
 } from "./worldDocumentHeightmapExports";
 export { createTiledMapExport } from "./worldDocumentTiledMapExport";

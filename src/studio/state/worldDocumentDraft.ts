@@ -24,11 +24,13 @@ import {
 } from "./worldDocumentEnginePackageDraft";
 import {
   createGeoJsonMapLayerExport,
+  createGlobalHeightmapPngExportTargets,
   createHeightfieldExport,
   createHeightmapMetadataExport,
   createHeightmapPngBlob,
   createHeightmapRaw16Blob,
   createTiledMapExport,
+  type HeightmapPngExportTargets,
 } from "./worldDocumentMapExports";
 
 export {
@@ -62,6 +64,7 @@ export type WorldDocumentDraftTargets = WorldDocumentDraftImportTargets & {
 export type GlobalWorldDocumentDraftTargetOptions = {
   builderTargets?: WorldDocumentDraftBuilderTargets;
   fileIoTargets?: DraftFileIoTargets;
+  heightmapPngTargets?: HeightmapPngExportTargets;
   enginePackageTargets?: EnginePackageBundleTargets;
 };
 
@@ -72,6 +75,8 @@ export function createGlobalWorldDocumentDraftTargets(
     options.builderTargets ?? createGlobalWorldDocumentDraftBuilderTargets();
   const fileIoTargets =
     options.fileIoTargets ?? createGlobalDraftFileIoTargets();
+  const heightmapPngTargets =
+    options.heightmapPngTargets ?? createGlobalHeightmapPngExportTargets();
 
   return {
     createDraft: (state, projectSummary) =>
@@ -83,12 +88,16 @@ export function createGlobalWorldDocumentDraftTargets(
       downloadJsonDraft(filename, draft, fileIoTargets),
     downloadBlob: (filename, blob) =>
       downloadBlobDraft(filename, blob, fileIoTargets),
-    createPngBlob: createHeightmapPngBlob,
+    createPngBlob: (heightfield) =>
+      createHeightmapPngBlob(heightfield, heightmapPngTargets),
     createRaw16Blob: createHeightmapRaw16Blob,
     exportEnginePackage: exportEnginePackageBundle,
     enginePackageTargets:
       options.enginePackageTargets ??
-      createGlobalEnginePackageBundleTargets({ fileIoTargets }),
+      createGlobalEnginePackageBundleTargets({
+        fileIoTargets,
+        heightmapPngTargets,
+      }),
   };
 }
 

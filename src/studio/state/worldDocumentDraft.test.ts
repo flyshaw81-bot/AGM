@@ -14,6 +14,7 @@ import type {
   AgmDocumentDraft,
   WorldDocumentDraftBuilderTargets,
 } from "./worldDocumentDraftBuilders";
+import type { HeightmapPngExportTargets } from "./worldDocumentMapExports";
 
 function createDraft(): AgmDocumentDraft {
   return {
@@ -194,6 +195,25 @@ function createFileIoTargets(): DraftFileIoTargets {
   };
 }
 
+function createHeightmapPngTargets(): HeightmapPngExportTargets {
+  return {
+    createCanvas: vi.fn(() => {
+      const imageData = { data: new Uint8ClampedArray(4) } as ImageData;
+      return {
+        width: 0,
+        height: 0,
+        getContext: vi.fn(() => ({
+          createImageData: vi.fn(() => imageData),
+          putImageData: vi.fn(),
+        })),
+        toBlob: vi.fn((callback: BlobCallback) =>
+          callback(new Blob(["png"], { type: "image/png" })),
+        ),
+      } as unknown as ReturnType<HeightmapPngExportTargets["createCanvas"]>;
+    }),
+  };
+}
+
 describe("worldDocumentDraft", () => {
   it("saves AGM drafts through injected storage targets", () => {
     const draft = createDraft();
@@ -291,5 +311,39 @@ describe("worldDocumentDraft", () => {
     expect(fileIoTargets.createObjectUrl).toHaveBeenCalledWith(
       expect.any(Blob),
     );
+  });
+
+  it("composes PNG export defaults from injected canvas targets", async () => {
+    const heightmapPngTargets = createHeightmapPngTargets();
+    const targets = createGlobalWorldDocumentDraftTargets({
+      heightmapPngTargets,
+    });
+
+    await expect(
+      targets.createPngBlob({
+        grid: { width: 1, height: 1 },
+        values: [50],
+      } as Parameters<typeof targets.createPngBlob>[0]),
+    ).resolves.toBeInstanceOf(Blob);
+
+    expect(heightmapPngTargets.createCanvas).toHaveBeenCalledWith();
+  });
+
+  it("passes injected canvas targets into engine package defaults", async () => {
+    const heightmapPngTargets = createHeightmapPngTargets();
+    const targets = createGlobalWorldDocumentDraftTargets({
+      heightmapPngTargets,
+    });
+
+    await expect(
+      targets.enginePackageTargets?.createPngBlob({
+        grid: { width: 1, height: 1 },
+        values: [50],
+      } as Parameters<
+        NonNullable<typeof targets.enginePackageTargets>["createPngBlob"]
+      >[0]),
+    ).resolves.toBeInstanceOf(Blob);
+
+    expect(heightmapPngTargets.createCanvas).toHaveBeenCalledWith();
   });
 });
