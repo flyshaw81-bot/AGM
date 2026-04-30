@@ -4,6 +4,7 @@ import {
   createGlobalLifecycleTargets,
   createLifecycleAdapter,
   createLifecycleSettingsSnapshot,
+  createLifecycleTargets,
   type EngineLifecycleAdapter,
   type EngineLifecycleTargets,
 } from "./engine-lifecycle-adapter";
@@ -250,5 +251,27 @@ describe("createGlobalLifecycleAdapter", () => {
     expect(calls.reGraph).toHaveBeenCalledWith();
     expect(calls.createDefaultRuler).toHaveBeenCalledWith();
     expect(calls.showStatistics).toHaveBeenCalledWith("archipelago");
+  });
+
+  it("can compose lifecycle targets from runtime services", () => {
+    const mapPlacement = {
+      defineMapSize: vi.fn(),
+      calculateMapCoordinates: vi.fn(),
+    };
+    const targets = createLifecycleTargets({ mapPlacement });
+
+    targets.defineMapSize("peninsula");
+    targets.calculateMapCoordinates({
+      mapSizePercent: 50,
+      latitudePercent: 20,
+      longitudePercent: 30,
+    });
+
+    expect(mapPlacement.defineMapSize).toHaveBeenCalledWith("peninsula");
+    expect(mapPlacement.calculateMapCoordinates).toHaveBeenCalledWith({
+      mapSizePercent: 50,
+      latitudePercent: 20,
+      longitudePercent: 30,
+    });
   });
 });

@@ -1,3 +1,7 @@
+import {
+  createGlobalMapPlacementService,
+  type EngineMapPlacementService,
+} from "./engine-map-placement-service";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
 
 export type EngineLifecycleAdapter = {
@@ -28,6 +32,10 @@ export type EngineLifecycleTargets = {
   showStatistics: (heightmapTemplateId: string | undefined) => void;
 };
 
+export type EngineLifecycleRuntimeServices = {
+  mapPlacement: EngineMapPlacementService;
+};
+
 export type EngineLifecycleSettingsSnapshot = {
   heightmapTemplateId?: string;
   lakeElevationLimit: number;
@@ -54,6 +62,14 @@ export function createLifecycleSettingsSnapshot(
 }
 
 export function createGlobalLifecycleTargets(): EngineLifecycleTargets {
+  return createLifecycleTargets({
+    mapPlacement: createGlobalMapPlacementService(),
+  });
+}
+
+export function createLifecycleTargets(
+  services: EngineLifecycleRuntimeServices,
+): EngineLifecycleTargets {
   return {
     addLakesInDeepDepressions: (lakeElevationLimit) => {
       addLakesInDeepDepressions(lakeElevationLimit);
@@ -65,10 +81,10 @@ export function createGlobalLifecycleTargets(): EngineLifecycleTargets {
       OceanLayers(context);
     },
     defineMapSize: (heightmapTemplateId) => {
-      defineMapSize(heightmapTemplateId);
+      services.mapPlacement.defineMapSize(heightmapTemplateId);
     },
     calculateMapCoordinates: (settings) => {
-      calculateMapCoordinates(settings);
+      services.mapPlacement.calculateMapCoordinates(settings);
     },
     rebuildGraph: () => {
       reGraph();

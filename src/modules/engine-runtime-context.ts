@@ -39,6 +39,10 @@ import {
   createGlobalLogService,
   type EngineLogService,
 } from "./engine-log-service";
+import {
+  createGlobalMapPlacementService,
+  type EngineMapPlacementService,
+} from "./engine-map-placement-service";
 import { createRuntimeMapStore, type EngineMapStore } from "./engine-map-store";
 import {
   createGlobalNamingService,
@@ -93,6 +97,7 @@ export type { EngineBurgService } from "./engine-burg-service";
 export type { EngineFeedbackService } from "./engine-feedback-service";
 export type { EngineHeraldryService } from "./engine-heraldry-service";
 export type { EngineLogService } from "./engine-log-service";
+export type { EngineMapPlacementService } from "./engine-map-placement-service";
 export type { EngineMapSnapshot, EngineMapStore } from "./engine-map-store";
 export type { EngineNamingService } from "./engine-naming-service";
 export type { EngineNote, EngineNoteService } from "./engine-note-service";
@@ -130,6 +135,7 @@ export type EngineRuntimeContext = {
   units: EngineUnitSettings;
   heraldry: EngineHeraldryService;
   mapStore: EngineMapStore;
+  mapPlacement?: EngineMapPlacementService;
   seedSession: EngineSeedSessionService;
   graphSession: EngineGraphSessionService;
   optionsSession: EngineOptionsSessionModule;
@@ -168,6 +174,7 @@ export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
     units: createGlobalUnitSettings(),
     heraldry: createGlobalHeraldryService(),
     mapStore: undefined as never,
+    mapPlacement: undefined,
     seedSession: undefined as never,
     graphSession: undefined as never,
     optionsSession: undefined as never,
@@ -188,6 +195,7 @@ export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
   context.burgs = createRuntimeBurgService(context);
   context.routes = createRuntimeRouteService(context);
   context.mapStore = createRuntimeMapStore(context, () => context);
+  context.mapPlacement = createGlobalMapPlacementService();
   context.worldSettingsStore = createRuntimeWorldSettingsStore(context);
   context.generationSettingsStore =
     createRuntimeGenerationSettingsStore(context);

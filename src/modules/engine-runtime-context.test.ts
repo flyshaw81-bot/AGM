@@ -77,6 +77,10 @@ describe("getGlobalEngineRuntimeContext", () => {
     expect(snapshot.grid).toEqual(globalThis.grid);
     expect(snapshot.pack).toEqual(globalThis.pack);
     expect(snapshot.notes).toEqual(runtimeNotes);
+    expect(typeof context.mapPlacement?.defineMapSize).toBe("function");
+    expect(typeof context.mapPlacement?.calculateMapCoordinates).toBe(
+      "function",
+    );
     context.notes.push({ id: "n2", name: "Context", legend: "Note" });
     expect(context.notes.all().map((note) => note.id)).toEqual(["n1", "n2"]);
     context.grid = {

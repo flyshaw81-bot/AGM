@@ -1820,6 +1820,11 @@ instead of scattering direct settings field access through each method.
 Map coordinate lifecycle settings now use a named `EngineMapCoordinateSettings`
 type, preparing that helper path for a later runtime-owned map placement
 service.
+Map placement now has a formal `EngineMapPlacementService` with global
+compatibility targets for `defineMapSize` and `calculateMapCoordinates`.
+`getGlobalEngineRuntimeContext()` wires `mapPlacement`, and lifecycle targets
+can be composed from runtime services instead of directly owning those public
+helper calls.
 
 ## Next Recommended Slice
 
