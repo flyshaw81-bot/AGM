@@ -43,6 +43,36 @@ export type EngineDataActionTargets = {
   loadUrl: () => void;
 };
 
+export type EngineDataDocumentSourceAdapter = {
+  ensureDocumentSourceTracking: () => void;
+  getDocumentSourceSummary: () => EngineDocumentSourceSummary;
+  getSaveTargetSummary: () => EngineSaveTargetSummary;
+  setDocumentSourceSummary: (summary: EngineDocumentSourceSummary) => void;
+};
+
+export type EngineDataDomAdapter = {
+  getDropboxState: () => EngineDropboxState;
+  hasFileInput: () => boolean;
+  clickFileInput: () => void;
+};
+
+export type EngineDataRuntimeAdapter = {
+  canQuickLoad: () => boolean;
+  quickLoad: () => Promise<void>;
+  canSaveMap: () => boolean;
+  saveMap: (method: "storage" | "machine" | "dropbox") => Promise<void>;
+  canConnectDropbox: () => boolean;
+  connectDropbox: () => Promise<void>;
+  canLoadFromDropbox: () => boolean;
+  loadFromDropbox: () => Promise<void>;
+  canShareDropbox: () => boolean;
+  createSharableDropboxLink: () => Promise<void>;
+  canGenerateMapOnLoad: () => boolean;
+  generateMapOnLoad: () => Promise<void>;
+  canLoadUrl: () => boolean;
+  loadUrl: () => void;
+};
+
 type EngineDataWindow = typeof globalThis & {
   quickLoad?: () => Promise<void>;
   saveMap?: (method: "storage" | "machine" | "dropbox") => Promise<void>;
@@ -69,12 +99,17 @@ function getSelectedDropboxLabel(select: HTMLSelectElement | null | undefined) {
   return select?.selectedOptions?.[0]?.textContent?.trim() || "";
 }
 
-export function createGlobalDataActionTargets(): EngineDataActionTargets {
+export function createGlobalDataDocumentSourceAdapter(): EngineDataDocumentSourceAdapter {
   return {
     ensureDocumentSourceTracking: ensureEngineDocumentSourceTracking,
     getDocumentSourceSummary: getEngineDocumentSourceSummary,
     getSaveTargetSummary: getEngineSaveTargetSummary,
     setDocumentSourceSummary: setEngineDocumentSourceSummary,
+  };
+}
+
+export function createGlobalDataDomAdapter(): EngineDataDomAdapter {
+  return {
     getDropboxState: () => {
       const dropboxConnectButton = getElement<HTMLButtonElement>(
         "dropboxConnectButton",
@@ -112,6 +147,11 @@ export function createGlobalDataActionTargets(): EngineDataActionTargets {
     },
     hasFileInput: () => Boolean(getElement<HTMLInputElement>("mapToLoad")),
     clickFileInput: () => getElement<HTMLInputElement>("mapToLoad")?.click(),
+  };
+}
+
+export function createGlobalDataRuntimeAdapter(): EngineDataRuntimeAdapter {
+  return {
     canQuickLoad: () => typeof getDataWindow().quickLoad === "function",
     quickLoad: () => getDataWindow().quickLoad?.() ?? Promise.resolve(),
     canSaveMap: () => typeof getDataWindow().saveMap === "function",
@@ -135,4 +175,43 @@ export function createGlobalDataActionTargets(): EngineDataActionTargets {
     canLoadUrl: () => typeof getDataWindow().loadURL === "function",
     loadUrl: () => getDataWindow().loadURL?.(),
   };
+}
+
+export function createDataActionTargets(
+  documentSourceAdapter: EngineDataDocumentSourceAdapter,
+  domAdapter: EngineDataDomAdapter,
+  runtimeAdapter: EngineDataRuntimeAdapter,
+): EngineDataActionTargets {
+  return {
+    ensureDocumentSourceTracking:
+      documentSourceAdapter.ensureDocumentSourceTracking,
+    getDocumentSourceSummary: documentSourceAdapter.getDocumentSourceSummary,
+    getSaveTargetSummary: documentSourceAdapter.getSaveTargetSummary,
+    setDocumentSourceSummary: documentSourceAdapter.setDocumentSourceSummary,
+    getDropboxState: domAdapter.getDropboxState,
+    hasFileInput: domAdapter.hasFileInput,
+    clickFileInput: domAdapter.clickFileInput,
+    canQuickLoad: runtimeAdapter.canQuickLoad,
+    quickLoad: runtimeAdapter.quickLoad,
+    canSaveMap: runtimeAdapter.canSaveMap,
+    saveMap: runtimeAdapter.saveMap,
+    canConnectDropbox: runtimeAdapter.canConnectDropbox,
+    connectDropbox: runtimeAdapter.connectDropbox,
+    canLoadFromDropbox: runtimeAdapter.canLoadFromDropbox,
+    loadFromDropbox: runtimeAdapter.loadFromDropbox,
+    canShareDropbox: runtimeAdapter.canShareDropbox,
+    createSharableDropboxLink: runtimeAdapter.createSharableDropboxLink,
+    canGenerateMapOnLoad: runtimeAdapter.canGenerateMapOnLoad,
+    generateMapOnLoad: runtimeAdapter.generateMapOnLoad,
+    canLoadUrl: runtimeAdapter.canLoadUrl,
+    loadUrl: runtimeAdapter.loadUrl,
+  };
+}
+
+export function createGlobalDataActionTargets(): EngineDataActionTargets {
+  return createDataActionTargets(
+    createGlobalDataDocumentSourceAdapter(),
+    createGlobalDataDomAdapter(),
+    createGlobalDataRuntimeAdapter(),
+  );
 }

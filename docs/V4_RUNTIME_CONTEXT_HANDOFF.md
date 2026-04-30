@@ -418,7 +418,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 124 test files, 387 tests.
+- `npm.cmd run test -- --run` passed: 124 test files, 388 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -923,10 +923,11 @@ services instead of reading `globalThis.Routes` inline:
   presets, and updates label toggles through injected targets instead of
   directly reading `window`, `document`, or `localStorage` inline.
 - `src/studio/bridge/engineDataActionTargets.ts` now owns the Studio data
-  panel compatibility boundary for document-source tracking, save-target
-  summaries, file-input state, Dropbox DOM state, and data runtime operations
-  such as quick load, save, Dropbox load/share, new-map generation, and URL
-  loading.
+  panel compatibility boundary through document-source, DOM, and runtime
+  adapters. Document-source tracking, save-target summaries, file-input state,
+  Dropbox DOM state, and data runtime operations such as quick load, save,
+  Dropbox load/share, new-map generation, and URL loading are split into
+  replaceable adapters.
 - `src/studio/bridge/engineDataActions.ts` now builds data action availability
   and runs data actions through injected targets instead of directly reading
   `window`, `document`, or runtime globals inline.
@@ -1039,8 +1040,8 @@ services instead of reading `globalThis.Routes` inline:
 - `src/studio/bridge/engineDataActions.test.ts` and
   `src/studio/bridge/engineDataActionTargets.test.ts` cover data action
   availability, Dropbox state reads, quick load/save/load-from-Dropbox/new-map
-  execution, URL loading, file input forwarding, and default DOM/runtime
-  forwarding.
+  execution, URL loading, file input forwarding, injected adapter composition,
+  and default DOM/runtime forwarding.
 - `src/studio/bridge/engineDocumentSource.test.ts` covers document source
   tracking for quick load, Dropbox load, URL load, local upload, generated
   maps, and save targets through injected targets without browser globals.
@@ -1102,8 +1103,8 @@ behind a bridge-level adapter. `EngineLayerTargets` now splits layer DOM and
 runtime helpers through dedicated bridge adapters. `EngineStyleTargets` now
 splits style runtime, storage, and toggle helpers through dedicated bridge
 adapters.
-`EngineDataActionTargets` still reads data panel DOM/runtime helpers and
-uses `engineDocumentSource.ts` through a bridge-level adapter. The document
+`EngineDataActionTargets` now splits data panel DOM, runtime helpers, and
+`engineDocumentSource.ts` through dedicated bridge adapters. The document
 source default target still wraps current global runtime functions for
 compatibility, but the tracking logic is now testable through injected targets.
 `EngineExportTargets` still reads export setting DOM inputs and export runtime

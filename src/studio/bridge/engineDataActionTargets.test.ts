@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createGlobalDataActionTargets } from "./engineDataActionTargets";
+import type {
+  EngineDocumentSourceSummary,
+  EngineSaveTargetSummary,
+} from "./engineActionTypes";
+import {
+  createDataActionTargets,
+  createGlobalDataActionTargets,
+} from "./engineDataActionTargets";
 
 type TestDataGlobals = typeof globalThis & {
   quickLoad?: () => Promise<void>;
@@ -83,5 +90,73 @@ describe("createGlobalDataActionTargets", () => {
     expect(quickLoad).toHaveBeenCalledWith();
     expect(saveMap).toHaveBeenCalledWith("storage");
     expect(loadURL).toHaveBeenCalledWith();
+  });
+
+  it("composes data action targets from injected document, DOM, and runtime adapters", async () => {
+    const documentSummary = {
+      sourceLabel: "AGM Core",
+      sourceDetail: "Current map",
+    } as EngineDocumentSourceSummary;
+    const saveSummary = {
+      saveLabel: "Browser storage",
+      saveDetail: "Local save",
+    } satisfies EngineSaveTargetSummary;
+    const ensureDocumentSourceTracking = vi.fn();
+    const setDocumentSourceSummary = vi.fn();
+    const clickFileInput = vi.fn();
+    const quickLoad = vi.fn(async () => undefined);
+    const saveMap = vi.fn(async () => undefined);
+    const targets = createDataActionTargets(
+      {
+        ensureDocumentSourceTracking,
+        getDocumentSourceSummary: () => documentSummary,
+        getSaveTargetSummary: () => saveSummary,
+        setDocumentSourceSummary,
+      },
+      {
+        getDropboxState: () => ({
+          connectButtonAvailable: true,
+          connected: false,
+          buttonsVisible: false,
+          selectedFile: "",
+          selectedLabel: "",
+          hasShareLink: false,
+          shareUrl: "",
+        }),
+        hasFileInput: () => true,
+        clickFileInput,
+      },
+      {
+        canQuickLoad: () => true,
+        quickLoad,
+        canSaveMap: () => true,
+        saveMap,
+        canConnectDropbox: () => false,
+        connectDropbox: async () => undefined,
+        canLoadFromDropbox: () => false,
+        loadFromDropbox: async () => undefined,
+        canShareDropbox: () => false,
+        createSharableDropboxLink: async () => undefined,
+        canGenerateMapOnLoad: () => false,
+        generateMapOnLoad: async () => undefined,
+        canLoadUrl: () => false,
+        loadUrl: vi.fn(),
+      },
+    );
+
+    targets.ensureDocumentSourceTracking();
+    expect(ensureDocumentSourceTracking).toHaveBeenCalledWith();
+    expect(targets.getDocumentSourceSummary()).toBe(documentSummary);
+    expect(targets.getSaveTargetSummary()).toBe(saveSummary);
+    targets.setDocumentSourceSummary(documentSummary);
+    expect(setDocumentSourceSummary).toHaveBeenCalledWith(documentSummary);
+    expect(targets.hasFileInput()).toBe(true);
+    targets.clickFileInput();
+    expect(clickFileInput).toHaveBeenCalledWith();
+    expect(targets.canQuickLoad()).toBe(true);
+    await targets.quickLoad();
+    await targets.saveMap("dropbox");
+    expect(quickLoad).toHaveBeenCalledWith();
+    expect(saveMap).toHaveBeenCalledWith("dropbox");
   });
 });
