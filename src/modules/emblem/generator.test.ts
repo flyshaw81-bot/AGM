@@ -1,6 +1,7 @@
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import type EmblemGeneratorModuleType from "./generator";
-import type { EmblemShapeTargets } from "./generator";
+import type { EmblemShapeDomTargets, EmblemShapeTargets } from "./generator";
+import { createEmblemShapeTargets } from "./generator";
 
 const originalPack = globalThis.pack;
 let EmblemGeneratorModule: typeof EmblemGeneratorModuleType;
@@ -31,6 +32,27 @@ describe("EmblemGeneratorModule", () => {
     });
 
     expect(generator.getShield(1, 1)).toBe("kite");
+  });
+
+  it("reads selected shield shape through injected DOM targets", () => {
+    const domTargets: EmblemShapeDomTargets = {
+      getElementById: () =>
+        ({
+          value: "lozenge",
+          selectedOptions: [
+            {
+              parentElement: {
+                getAttribute: () => "Modern",
+              },
+            },
+          ],
+        }) as unknown as Element,
+    };
+    const generator = createEmblemGenerator(
+      createEmblemShapeTargets(domTargets),
+    );
+
+    expect(generator.getShield(1, 1)).toBe("lozenge");
   });
 
   it("uses state shield fallback through injected shape selection", () => {

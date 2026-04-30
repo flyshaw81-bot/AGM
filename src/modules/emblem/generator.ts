@@ -17,14 +17,26 @@ export type EmblemShapeSelection = {
   group: string;
 };
 
+export type EmblemShapeDomTargets = {
+  getElementById: (id: string) => Element | null;
+};
+
 export type EmblemShapeTargets = {
   getSelectedShape: () => EmblemShapeSelection | null;
 };
 
-export function createGlobalEmblemShapeTargets(): EmblemShapeTargets {
+export function createGlobalEmblemShapeDomTargets(): EmblemShapeDomTargets {
+  return {
+    getElementById: (id) => document.getElementById(id),
+  };
+}
+
+export function createEmblemShapeTargets(
+  domTargets: EmblemShapeDomTargets,
+): EmblemShapeTargets {
   return {
     getSelectedShape: () => {
-      const emblemShape = document.getElementById(
+      const emblemShape = domTargets.getElementById(
         "emblemShape",
       ) as HTMLSelectElement | null;
       if (!emblemShape) return null;
@@ -38,6 +50,12 @@ export function createGlobalEmblemShapeTargets(): EmblemShapeTargets {
       };
     },
   };
+}
+
+export function createGlobalEmblemShapeTargets(
+  domTargets: EmblemShapeDomTargets = createGlobalEmblemShapeDomTargets(),
+): EmblemShapeTargets {
+  return createEmblemShapeTargets(domTargets);
 }
 
 export interface EmblemCharge {
