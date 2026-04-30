@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createGlobalEngineMapHostTargets } from "./engineMapHostTargets";
+import {
+  createEngineMapHostTargets,
+  createGlobalEngineMapHostTargets,
+} from "./engineMapHostTargets";
 
 type TestMapHostGlobals = typeof globalThis & {
   stylePreset?: { value?: string };
@@ -224,5 +227,80 @@ describe("createGlobalEngineMapHostTargets", () => {
     expect(scaleExtent).toHaveBeenCalledWith([1, 12]);
     expect(fitScaleBar).toHaveBeenCalledWith(scaleBar, 1440, 900);
     expect(fitLegendBox).toHaveBeenCalledWith();
+  });
+
+  it("composes map host targets from injected document, viewport, and runtime adapters", () => {
+    const baseline = {
+      mapId: "map-2",
+      name: "Injected Atlas",
+      documentWidth: 1200,
+      documentHeight: 800,
+      seed: "seed",
+      stylePreset: "default",
+    };
+    const frameScaler = { style: {} } as HTMLElement;
+    const frame = { dataset: {}, style: {} } as unknown as HTMLElement;
+    const stage = {} as HTMLElement;
+    const map = {} as SVGSVGElement;
+    const viewbox = {} as Element;
+    const setDocumentName = vi.fn();
+    const syncViewportSize = vi.fn();
+    const syncSvgCompatibility = vi.fn();
+    const applyFrameSize = vi.fn();
+    const targets = createEngineMapHostTargets(
+      {
+        getBaselineStore: () => ({}),
+        getDocumentBaselineCandidate: () => baseline,
+        setDocumentName,
+      },
+      {
+        getViewportElements: () => ({ frameScaler, frame, stage, map }),
+        getStageInnerSize: () => ({ width: 1000, height: 700 }),
+        applyFrameSize,
+        applyFrameScalerSize: vi.fn(),
+        applyMapSize: vi.fn(),
+        getContentFitTarget: () => ({
+          graphWidth: 1200,
+          graphHeight: 800,
+          viewbox,
+        }),
+        applyViewboxTransform: vi.fn(),
+      },
+      {
+        syncViewportSize,
+        syncSvgCompatibility,
+      },
+    );
+
+    expect(targets.getDocumentBaselineCandidate()).toBe(baseline);
+    targets.setDocumentName("Injected Atlas");
+    expect(setDocumentName).toHaveBeenCalledWith("Injected Atlas");
+    expect(targets.getViewportElements()).toEqual({
+      frameScaler,
+      frame,
+      stage,
+      map,
+    });
+    expect(targets.getStageInnerSize(stage)).toEqual({
+      width: 1000,
+      height: 700,
+    });
+    targets.syncViewportSize(1200, 800);
+    expect(syncViewportSize).toHaveBeenCalledWith(1200, 800);
+    targets.applyFrameSize(frame, 1200, 800, "landscape", "contain");
+    expect(applyFrameSize).toHaveBeenCalledWith(
+      frame,
+      1200,
+      800,
+      "landscape",
+      "contain",
+    );
+    expect(targets.getContentFitTarget()).toEqual({
+      graphWidth: 1200,
+      graphHeight: 800,
+      viewbox,
+    });
+    targets.syncSvgCompatibility(1200, 800);
+    expect(syncSvgCompatibility).toHaveBeenCalledWith(1200, 800);
   });
 });

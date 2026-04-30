@@ -87,6 +87,39 @@ export type EngineMapHostTargets = {
   syncSvgCompatibility: (width: number, height: number) => void;
 };
 
+export type EngineMapHostDocumentAdapter = {
+  getBaselineStore: () => EngineDocumentBaselineStore;
+  getDocumentBaselineCandidate: () => EngineDocumentBaseline;
+  setDocumentName: (name: string) => void;
+};
+
+export type EngineMapHostViewportAdapter = {
+  getViewportElements: () => EngineViewportElements | null;
+  getStageInnerSize: (stage: HTMLElement) => EngineStageInnerSize;
+  applyFrameSize: (
+    frame: HTMLElement,
+    width: number,
+    height: number,
+    orientation: string,
+    fitMode: string,
+  ) => void;
+  applyFrameScalerSize: (
+    frameScaler: HTMLElement,
+    frame: HTMLElement,
+    width: number,
+    height: number,
+    scale: number,
+  ) => void;
+  applyMapSize: (map: SVGSVGElement, width: number, height: number) => void;
+  getContentFitTarget: () => EngineMapContentFitTarget | null;
+  applyViewboxTransform: (viewbox: Element, transform: string) => void;
+};
+
+export type EngineMapHostRuntimeAdapter = {
+  syncViewportSize: (width: number, height: number) => void;
+  syncSvgCompatibility: (width: number, height: number) => void;
+};
+
 function getGlobalMapHostRuntime(): EngineMapHostRuntime {
   return ((globalThis as typeof globalThis & { window?: EngineMapHostRuntime })
     .window ?? globalThis) as EngineMapHostRuntime;
@@ -103,7 +136,7 @@ function getMapDimensionAttribute(
   return +(map?.getAttribute(attribute) || 0);
 }
 
-export function createGlobalEngineMapHostTargets(): EngineMapHostTargets {
+export function createGlobalEngineMapHostDocumentAdapter(): EngineMapHostDocumentAdapter {
   return {
     getBaselineStore: () => globalThis as EngineDocumentBaselineStore,
     getDocumentBaselineCandidate: () => {
@@ -150,6 +183,11 @@ export function createGlobalEngineMapHostTargets(): EngineMapHostTargets {
       mapName.dispatchEvent(new Event("input", { bubbles: true }));
       mapName.dispatchEvent(new Event("change", { bubbles: true }));
     },
+  };
+}
+
+export function createGlobalEngineMapHostViewportAdapter(): EngineMapHostViewportAdapter {
+  return {
     getViewportElements: () => {
       const frameScaler = getElement("studioCanvasFrameScaler");
       const frame = getElement("studioCanvasFrame");
@@ -172,15 +210,6 @@ export function createGlobalEngineMapHostTargets(): EngineMapHostTargets {
         width: Math.max(rect.width - paddingX, 1),
         height: Math.max(rect.height - paddingY, 1),
       };
-    },
-    syncViewportSize: (width, height) => {
-      const runtime = getGlobalMapHostRuntime();
-      runtime.svgWidth = width;
-      runtime.svgHeight = height;
-
-      if (typeof runtime.setStudioViewportSize === "function") {
-        runtime.setStudioViewportSize(width, height);
-      }
     },
     applyFrameSize: (frame, width, height, orientation, fitMode) => {
       frame.style.width = `${width}px`;
@@ -213,6 +242,20 @@ export function createGlobalEngineMapHostTargets(): EngineMapHostTargets {
     },
     applyViewboxTransform: (viewbox, transform) => {
       viewbox.setAttribute("transform", transform);
+    },
+  };
+}
+
+export function createGlobalEngineMapHostRuntimeAdapter(): EngineMapHostRuntimeAdapter {
+  return {
+    syncViewportSize: (width, height) => {
+      const runtime = getGlobalMapHostRuntime();
+      runtime.svgWidth = width;
+      runtime.svgHeight = height;
+
+      if (typeof runtime.setStudioViewportSize === "function") {
+        runtime.setStudioViewportSize(width, height);
+      }
     },
     syncSvgCompatibility: (width, height) => {
       const runtime = getGlobalMapHostRuntime();
@@ -247,4 +290,33 @@ export function createGlobalEngineMapHostTargets(): EngineMapHostTargets {
       if (runtime.fitLegendBox) runtime.fitLegendBox();
     },
   };
+}
+
+export function createEngineMapHostTargets(
+  documentAdapter: EngineMapHostDocumentAdapter,
+  viewportAdapter: EngineMapHostViewportAdapter,
+  runtimeAdapter: EngineMapHostRuntimeAdapter,
+): EngineMapHostTargets {
+  return {
+    getBaselineStore: documentAdapter.getBaselineStore,
+    getDocumentBaselineCandidate: documentAdapter.getDocumentBaselineCandidate,
+    setDocumentName: documentAdapter.setDocumentName,
+    getViewportElements: viewportAdapter.getViewportElements,
+    getStageInnerSize: viewportAdapter.getStageInnerSize,
+    syncViewportSize: runtimeAdapter.syncViewportSize,
+    applyFrameSize: viewportAdapter.applyFrameSize,
+    applyFrameScalerSize: viewportAdapter.applyFrameScalerSize,
+    applyMapSize: viewportAdapter.applyMapSize,
+    getContentFitTarget: viewportAdapter.getContentFitTarget,
+    applyViewboxTransform: viewportAdapter.applyViewboxTransform,
+    syncSvgCompatibility: runtimeAdapter.syncSvgCompatibility,
+  };
+}
+
+export function createGlobalEngineMapHostTargets(): EngineMapHostTargets {
+  return createEngineMapHostTargets(
+    createGlobalEngineMapHostDocumentAdapter(),
+    createGlobalEngineMapHostViewportAdapter(),
+    createGlobalEngineMapHostRuntimeAdapter(),
+  );
 }

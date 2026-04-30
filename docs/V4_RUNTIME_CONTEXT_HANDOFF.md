@@ -418,7 +418,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 124 test files, 401 tests.
+- `npm.cmd run test -- --run` passed: 124 test files, 402 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -976,9 +976,11 @@ services instead of reading `globalThis.Routes` inline:
 - `src/studio/app/engineHost.ts` now performs Studio host setup and dialog
   position clamping through injected targets instead of directly reading
   `document` inline.
-- `src/studio/bridge/engineMapHostTargets.ts` now owns the first map-host
-  document-state compatibility boundary for baseline storage, current
-  document/baseline candidate reads, and map-name writes.
+- `src/studio/bridge/engineMapHostTargets.ts` now owns the map-host
+  compatibility boundary through document, viewport, and runtime adapters:
+  baseline storage, current document/baseline candidate reads, map-name writes,
+  viewport sizing, content fitting, and SVG runtime compatibility can now be
+  composed independently.
 - `src/studio/bridge/engineMapHost.ts` now calculates document clean/dirty
   state and name updates through injected targets for this document-state
   slice. It also routes the first viewport sizing layer through targets:
@@ -1089,7 +1091,8 @@ services instead of reading `globalThis.Routes` inline:
   viewport global size forwarding, content graph/viewbox resolution, and
   viewbox transform writes including portrait rotation. The target tests also
   cover d3 SVG attr forwarding, zoom extent updates, scale bar fitting, and
-  legend fitting through the default compatibility adapter.
+  legend fitting through the default compatibility adapter, plus injected
+  document/viewport/runtime adapter composition.
 - `src/studio/app/studioEngineCommandHandlers.test.ts` covers app-level style,
   export, topbar, and data command handling through injected Studio engine
   command targets.
@@ -1144,11 +1147,10 @@ Data action functions behind a bridge-level adapter. `EngineEditorTargets` now
 splits public editor handlers from old jQuery UI dialog wrappers through
 dedicated bridge adapters. `EngineHostTargets` now splits app-level DOM host
 and old dialog wrapper queries through dedicated app-level adapters.
-`EngineMapHostTargets` now
-owns the document-state part of the map host plus the first viewport sizing
-adapter, content transform target, and SVG compatibility target. The map host
-still relies on old runtime objects behind the target adapter, but
-`engineMapHost.ts` no longer owns those direct global calls inline.
+`EngineMapHostTargets` now splits the map host into document, viewport, and
+runtime adapters. The map host still relies on old runtime objects behind the
+default adapters, but `engineMapHost.ts` no longer owns those direct global
+calls inline.
 `StudioEngineCommandTargets` is an app-level boundary and still delegates to the
 current bridge/project/generation-profile helpers by default, but
 `studioEngineCommandHandlers.ts` no longer owns those calls inline.
