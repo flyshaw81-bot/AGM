@@ -1,5 +1,9 @@
-import { describe, expect, it } from "vitest";
-import { resolveEngineSeed } from "./engine-seed-session";
+import { describe, expect, it, vi } from "vitest";
+import {
+  EngineSeedSessionModule,
+  type EngineSeedSessionTargets,
+  resolveEngineSeed,
+} from "./engine-seed-session";
 
 describe("resolveEngineSeed", () => {
   it("uses a precreated seed when provided", () => {
@@ -41,5 +45,40 @@ describe("resolveEngineSeed", () => {
     });
 
     expect(seed).toBe("generated");
+  });
+});
+
+function createTargets(
+  overrides: Partial<EngineSeedSessionTargets> = {},
+): EngineSeedSessionTargets {
+  return {
+    hasHistory: () => false,
+    getSearchParams: () => new URLSearchParams(),
+    setSeed: vi.fn(),
+    setOptionsSeed: vi.fn(),
+    setRandomGenerator: vi.fn(),
+    createSeed: () => "generated",
+    ...overrides,
+  };
+}
+
+describe("EngineSeedSessionModule", () => {
+  it("resolves seeds through injected targets", () => {
+    const targets = createTargets({
+      getSearchParams: () => new URLSearchParams("seed=url-seed"),
+    });
+
+    expect(new EngineSeedSessionModule(targets).resolve()).toBe("url-seed");
+  });
+
+  it("applies seeds through injected runtime targets", () => {
+    const targets = createTargets();
+
+    const seed = new EngineSeedSessionModule(targets).apply("fixed-seed");
+
+    expect(seed).toBe("fixed-seed");
+    expect(targets.setSeed).toHaveBeenCalledWith("fixed-seed");
+    expect(targets.setOptionsSeed).toHaveBeenCalledWith("fixed-seed");
+    expect(targets.setRandomGenerator).toHaveBeenCalledWith("fixed-seed");
   });
 });

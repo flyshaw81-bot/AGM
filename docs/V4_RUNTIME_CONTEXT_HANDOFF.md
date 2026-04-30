@@ -912,6 +912,10 @@ Completed:
   resolution now covers precreated seeds, first-load URL seeds, MFCG-compatible
   13-character seed trimming, and generated fallback in a tested TS module.
   `public/main.js` keeps `setSeed(precreatedSeed)` as a compatibility wrapper.
+- `EngineSeedSessionModule` now accepts explicit seed-session targets for
+  history checks, URL search params, seed writes, options seed input sync,
+  random generator replacement, and generated fallback seeds. The global module
+  mount still uses the current public runtime adapters.
 - `mapHistory` is now intentionally exposed as a global compatibility value so
   the runtime seed session can preserve first-map URL behavior. This is not a
   final state store design; it is an explicit adapter boundary for the current
