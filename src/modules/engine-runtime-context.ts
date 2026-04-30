@@ -92,6 +92,10 @@ import {
   createGlobalStateService,
   type EngineStateService,
 } from "./engine-state-service";
+import {
+  createGlobalWaterFeatureService,
+  type EngineWaterFeatureService,
+} from "./engine-water-feature-service";
 
 export type { EngineBurgService } from "./engine-burg-service";
 export type { EngineFeedbackService } from "./engine-feedback-service";
@@ -106,6 +110,7 @@ export type { EngineRandomService } from "./engine-random-service";
 export type { EngineRenderAdapter } from "./engine-render-adapter";
 export type { EngineRouteService } from "./engine-route-service";
 export type { EngineStateService } from "./engine-state-service";
+export type { EngineWaterFeatureService } from "./engine-water-feature-service";
 
 export type EngineBiomeData = {
   i: number[];
@@ -136,6 +141,7 @@ export type EngineRuntimeContext = {
   heraldry: EngineHeraldryService;
   mapStore: EngineMapStore;
   mapPlacement?: EngineMapPlacementService;
+  waterFeatures?: EngineWaterFeatureService;
   seedSession: EngineSeedSessionService;
   graphSession: EngineGraphSessionService;
   optionsSession: EngineOptionsSessionModule;
@@ -175,6 +181,7 @@ export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
     heraldry: createGlobalHeraldryService(),
     mapStore: undefined as never,
     mapPlacement: undefined,
+    waterFeatures: undefined,
     seedSession: undefined as never,
     graphSession: undefined as never,
     optionsSession: undefined as never,
@@ -196,6 +203,7 @@ export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
   context.routes = createRuntimeRouteService(context);
   context.mapStore = createRuntimeMapStore(context, () => context);
   context.mapPlacement = createGlobalMapPlacementService();
+  context.waterFeatures = createGlobalWaterFeatureService();
   context.worldSettingsStore = createRuntimeWorldSettingsStore(context);
   context.generationSettingsStore =
     createRuntimeGenerationSettingsStore(context);

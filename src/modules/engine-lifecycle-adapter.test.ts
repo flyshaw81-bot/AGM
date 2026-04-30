@@ -258,8 +258,16 @@ describe("createGlobalLifecycleAdapter", () => {
       defineMapSize: vi.fn(),
       calculateMapCoordinates: vi.fn(),
     };
-    const targets = createLifecycleTargets({ mapPlacement });
+    const waterFeatures = {
+      addLakesInDeepDepressions: vi.fn(),
+      openNearSeaLakes: vi.fn(),
+      drawOceanLayers: vi.fn(),
+    };
+    const targets = createLifecycleTargets({ mapPlacement, waterFeatures });
 
+    targets.addLakesInDeepDepressions(25);
+    targets.openNearSeaLakes("volcano");
+    targets.drawOceanLayers(createContext());
     targets.defineMapSize("peninsula");
     targets.calculateMapCoordinates({
       mapSizePercent: 50,
@@ -267,6 +275,9 @@ describe("createGlobalLifecycleAdapter", () => {
       longitudePercent: 30,
     });
 
+    expect(waterFeatures.addLakesInDeepDepressions).toHaveBeenCalledWith(25);
+    expect(waterFeatures.openNearSeaLakes).toHaveBeenCalledWith("volcano");
+    expect(waterFeatures.drawOceanLayers).toHaveBeenCalledWith(createContext());
     expect(mapPlacement.defineMapSize).toHaveBeenCalledWith("peninsula");
     expect(mapPlacement.calculateMapCoordinates).toHaveBeenCalledWith({
       mapSizePercent: 50,
@@ -300,5 +311,32 @@ describe("createGlobalLifecycleAdapter", () => {
     });
     expect(targets.defineMapSize).not.toHaveBeenCalled();
     expect(targets.calculateMapCoordinates).not.toHaveBeenCalled();
+  });
+
+  it("uses runtime water feature service from the context when available", () => {
+    const targets = createTargets();
+    const waterFeatures = {
+      addLakesInDeepDepressions: vi.fn(),
+      openNearSeaLakes: vi.fn(),
+      drawOceanLayers: vi.fn(),
+    };
+    const context = {
+      ...createContext(),
+      waterFeatures,
+    } as unknown as EngineRuntimeContext;
+    const adapter = createLifecycleAdapter(() => {
+      throw new Error("explicit context should be used");
+    }, targets);
+
+    adapter.addLakesInDeepDepressions(context);
+    adapter.openNearSeaLakes(context);
+    adapter.drawOceanLayers(context);
+
+    expect(waterFeatures.addLakesInDeepDepressions).toHaveBeenCalledWith(22);
+    expect(waterFeatures.openNearSeaLakes).toHaveBeenCalledWith("archipelago");
+    expect(waterFeatures.drawOceanLayers).toHaveBeenCalledWith(context);
+    expect(targets.addLakesInDeepDepressions).not.toHaveBeenCalled();
+    expect(targets.openNearSeaLakes).not.toHaveBeenCalled();
+    expect(targets.drawOceanLayers).not.toHaveBeenCalled();
   });
 });

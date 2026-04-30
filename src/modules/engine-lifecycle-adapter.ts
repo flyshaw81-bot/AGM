@@ -3,6 +3,10 @@ import {
   type EngineMapPlacementService,
 } from "./engine-map-placement-service";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
+import {
+  createGlobalWaterFeatureService,
+  type EngineWaterFeatureService,
+} from "./engine-water-feature-service";
 
 export type EngineLifecycleAdapter = {
   addLakesInDeepDepressions: (context?: EngineRuntimeContext) => void;
@@ -34,6 +38,7 @@ export type EngineLifecycleTargets = {
 
 export type EngineLifecycleRuntimeServices = {
   mapPlacement: EngineMapPlacementService;
+  waterFeatures: EngineWaterFeatureService;
 };
 
 export type EngineLifecycleSettingsSnapshot = {
@@ -64,6 +69,7 @@ export function createLifecycleSettingsSnapshot(
 export function createGlobalLifecycleTargets(): EngineLifecycleTargets {
   return createLifecycleTargets({
     mapPlacement: createGlobalMapPlacementService(),
+    waterFeatures: createGlobalWaterFeatureService(),
   });
 }
 
@@ -72,13 +78,13 @@ export function createLifecycleTargets(
 ): EngineLifecycleTargets {
   return {
     addLakesInDeepDepressions: (lakeElevationLimit) => {
-      addLakesInDeepDepressions(lakeElevationLimit);
+      services.waterFeatures.addLakesInDeepDepressions(lakeElevationLimit);
     },
     openNearSeaLakes: (heightmapTemplateId) => {
-      openNearSeaLakes(heightmapTemplateId);
+      services.waterFeatures.openNearSeaLakes(heightmapTemplateId);
     },
     drawOceanLayers: (context) => {
-      OceanLayers(context);
+      services.waterFeatures.drawOceanLayers(context);
     },
     defineMapSize: (heightmapTemplateId) => {
       services.mapPlacement.defineMapSize(heightmapTemplateId);
@@ -105,14 +111,28 @@ export function createLifecycleAdapter(
   return {
     addLakesInDeepDepressions: (context = getCurrentContext()) => {
       const settings = createLifecycleSettingsSnapshot(context);
-      targets.addLakesInDeepDepressions(settings.lakeElevationLimit);
+      if (context.waterFeatures) {
+        context.waterFeatures.addLakesInDeepDepressions(
+          settings.lakeElevationLimit,
+        );
+      } else {
+        targets.addLakesInDeepDepressions(settings.lakeElevationLimit);
+      }
     },
     openNearSeaLakes: (context = getCurrentContext()) => {
       const settings = createLifecycleSettingsSnapshot(context);
-      targets.openNearSeaLakes(settings.heightmapTemplateId);
+      if (context.waterFeatures) {
+        context.waterFeatures.openNearSeaLakes(settings.heightmapTemplateId);
+      } else {
+        targets.openNearSeaLakes(settings.heightmapTemplateId);
+      }
     },
     drawOceanLayers: (context = getCurrentContext()) => {
-      targets.drawOceanLayers(context);
+      if (context.waterFeatures) {
+        context.waterFeatures.drawOceanLayers(context);
+      } else {
+        targets.drawOceanLayers(context);
+      }
     },
     defineMapSize: (context = getCurrentContext()) => {
       const settings = createLifecycleSettingsSnapshot(context);
