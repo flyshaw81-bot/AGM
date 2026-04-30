@@ -1,3 +1,4 @@
+import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 import type {
   EngineAutoFixPreviewChange,
   EngineAutoFixWritebackResult,
@@ -11,6 +12,11 @@ import {
   getEngineProjectSummary,
   undoEngineAutoFixWriteback,
 } from "../bridge/engineActions";
+import { createRuntimeBiomeWritebackTargets } from "../bridge/engineAutoFixBiomeTargets";
+import { createRuntimeRouteWritebackTargets } from "../bridge/engineAutoFixRouteTargets";
+import { createRuntimeSettlementWritebackTargets } from "../bridge/engineAutoFixSettlementTargets";
+import { createRuntimeStateWritebackTargets } from "../bridge/engineAutoFixStateTargets";
+import { createRuntimeAutoFixUndoTargets } from "../bridge/engineAutoFixUndoTargets";
 import {
   createWorldDocumentDraft,
   type WorldDocumentDraft,
@@ -79,6 +85,38 @@ export function createGlobalAutoFixWritebackAdapter(): AutoFixWritebackAdapter {
   };
 }
 
+export function createRuntimeAutoFixWritebackAdapter(
+  context: EngineRuntimeContext,
+): AutoFixWritebackAdapter {
+  const stateTargets = createRuntimeStateWritebackTargets(context);
+  const settlementTargets = createRuntimeSettlementWritebackTargets(context);
+  const routeTargets = createRuntimeRouteWritebackTargets(context);
+  const biomeTargets = createRuntimeBiomeWritebackTargets(context);
+  const undoTargets = createRuntimeAutoFixUndoTargets(context);
+
+  return {
+    applyStatePreviewChanges: (changes) =>
+      applyEngineStatePreviewChanges(changes, stateTargets),
+    applySettlementPreviewChanges: (changes) =>
+      applyEngineSettlementPreviewChanges(
+        changes,
+        undefined,
+        settlementTargets,
+      ),
+    applyRoutePreviewChanges: (changes) =>
+      applyEngineRoutePreviewChanges(
+        changes,
+        undefined,
+        undefined,
+        routeTargets,
+      ),
+    applyBiomePreviewChanges: (changes) =>
+      applyEngineBiomePreviewChanges(changes, biomeTargets),
+    undoWriteback: (writeback) =>
+      undoEngineAutoFixWriteback(writeback, undefined, undefined, undoTargets),
+  };
+}
+
 export function createAutoFixPreviewTargets(
   projectAdapter: AutoFixProjectAdapter,
   draftAdapter: AutoFixDraftAdapter,
@@ -101,5 +139,15 @@ export function createGlobalAutoFixPreviewTargets(): AutoFixPreviewTargets {
     createGlobalAutoFixProjectAdapter(),
     createGlobalAutoFixDraftAdapter(),
     createGlobalAutoFixWritebackAdapter(),
+  );
+}
+
+export function createRuntimeAutoFixPreviewTargets(
+  context: EngineRuntimeContext,
+): AutoFixPreviewTargets {
+  return createAutoFixPreviewTargets(
+    createGlobalAutoFixProjectAdapter(),
+    createGlobalAutoFixDraftAdapter(),
+    createRuntimeAutoFixWritebackAdapter(context),
   );
 }
