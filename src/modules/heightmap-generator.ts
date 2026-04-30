@@ -18,6 +18,18 @@ function logEngineError(message: string) {
   globalThis.ERROR && console.error(message);
 }
 
+export type HeightmapImageTargets = {
+  createCanvas: () => HTMLCanvasElement;
+  createImage: () => HTMLImageElement;
+};
+
+export function createGlobalHeightmapImageTargets(): HeightmapImageTargets {
+  return {
+    createCanvas: () => document.createElement("canvas"),
+    createImage: () => new Image(),
+  };
+}
+
 type Tool =
   | "Hill"
   | "Pit"
@@ -36,6 +48,10 @@ export class HeightmapModule {
   blobPower: number = 0;
   linePower: number = 0;
   private randomSource?: EngineRandomService;
+
+  constructor(
+    private readonly imageTargets: HeightmapImageTargets = createGlobalHeightmapImageTargets(),
+  ) {}
 
   private clearData() {
     this.heights = null;
@@ -660,14 +676,14 @@ export class HeightmapModule {
   fromPrecreated(graph: any, id: string): Promise<Uint8Array> {
     return new Promise((resolve) => {
       // create canvas where 1px corresponds to a cell
-      const canvas = document.createElement("canvas");
+      const canvas = this.imageTargets.createCanvas();
       const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
       const { cellsX, cellsY } = graph;
       canvas.width = cellsX;
       canvas.height = cellsY;
 
       // load heightmap into image and render to canvas
-      const img = new Image();
+      const img = this.imageTargets.createImage();
       img.src = `./heightmaps/${id}.png`;
       img.onload = () => {
         if (!ctx) {

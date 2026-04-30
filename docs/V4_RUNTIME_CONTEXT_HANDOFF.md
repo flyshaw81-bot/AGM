@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 173 test files, 631 tests.
+- `npm.cmd run test -- --run` passed: 173 test files, 632 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1894,6 +1894,11 @@ are already in target/adapter factories (`engine-generation-settings`,
 `engine-render-adapter`, `fonts.ts`), while `heightmap-generator.ts` and
 `emblem/*` still contain real DOM-backed algorithm/rendering paths that should
 be isolated behind dedicated services in later slices.
+`heightmap-generator.ts` no longer directly creates the precreated-heightmap
+canvas/image in the algorithm path. The new `HeightmapImageTargets` boundary
+wraps canvas and image creation, `createGlobalHeightmapImageTargets()` keeps
+the browser compatibility behavior, and the precreated heightmap path now has
+test coverage through injected image targets.
 
 ## Next Recommended Slice
 
