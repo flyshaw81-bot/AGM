@@ -65,7 +65,7 @@ export class EngineGenerationPipelineModule {
 
   prepareGenerationSession(request: EngineGenerationRequest = {}) {
     const context = this.getCurrentContext();
-    context.generationSession.prepare(request, context);
+    context.generationSession.prepare(request);
     return this.getCurrentContext();
   }
 

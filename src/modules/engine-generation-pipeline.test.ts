@@ -124,8 +124,8 @@ describe("EngineGenerationPipelineModule", () => {
     const calls: string[] = [];
     const sessionContext = createPipelineContext("session");
     const preparedContext = createPipelineContext("prepared");
-    sessionContext.generationSession.prepare = (request, context) => {
-      calls.push(`prepare:${request?.seed}:${context?.seed}`);
+    sessionContext.generationSession.prepare = (request) => {
+      calls.push(`prepare:${request?.seed}`);
     };
 
     class TestPipeline extends EngineGenerationPipelineModule {
@@ -140,7 +140,7 @@ describe("EngineGenerationPipelineModule", () => {
     });
 
     expect(result).toBe(preparedContext);
-    expect(calls).toEqual(["context", "prepare:session:session", "context"]);
+    expect(calls).toEqual(["context", "prepare:session", "context"]);
   });
 
   it("generates the world through the expected runtime phases", async () => {

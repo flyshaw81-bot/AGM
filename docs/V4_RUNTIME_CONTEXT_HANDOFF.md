@@ -1789,6 +1789,8 @@ and `createRuntimeGenerationSessionServices(context)`. Runtime context wires
 session/lifecycle/seed/graph/options/grid services without requiring callers to
 pass the same context back as a second argument. The global adapter remains for
 compatibility entry points.
+`EngineGenerationPipeline.prepareGenerationSession()` now relies on that bound
+runtime adapter and no longer passes the context as a second argument.
 
 ## Next Recommended Slice
 
