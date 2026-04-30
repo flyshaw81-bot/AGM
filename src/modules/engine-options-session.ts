@@ -235,6 +235,83 @@ export function createGlobalOptionsWriterAdapter(): EngineOptionsWriterAdapter {
   };
 }
 
+export function createRuntimeOptionsWriterAdapter(
+  context: EngineRuntimeContext,
+  fallback: EngineOptionsWriterAdapter = createGlobalOptionsWriterAdapter(),
+): EngineOptionsWriterAdapter {
+  return {
+    setCellsDensity: fallback.setCellsDensity,
+    applyHeightmapTemplate: fallback.applyHeightmapTemplate,
+    setStatesCount: (value) => {
+      context.generationSettings.statesCount = value;
+      fallback.setStatesCount(value);
+    },
+    setProvincesRatio: (value) => {
+      context.generationSettings.provincesRatio = value;
+      fallback.setProvincesRatio(value);
+    },
+    setManorsAuto: fallback.setManorsAuto,
+    setReligionsCount: (value) => {
+      context.generationSettings.religionsCount = value;
+      fallback.setReligionsCount(value);
+    },
+    setSizeVariety: (value) => {
+      context.generationSettings.stateSizeVariety = value;
+      fallback.setSizeVariety(value);
+    },
+    setGrowthRate: (value) => {
+      context.generationSettings.globalGrowthRate = value;
+      fallback.setGrowthRate(value);
+    },
+    setCulturesCount: (value) => {
+      context.generationSettings.culturesCount = value;
+      fallback.setCulturesCount(value);
+    },
+    setCultureSet: (value) => {
+      context.generationSettings.cultureSet = value;
+      fallback.setCultureSet(value);
+    },
+    setTemperatureEquator: (value) => {
+      context.options.temperatureEquator = value;
+      fallback.setTemperatureEquator(value);
+    },
+    setTemperatureNorthPole: (value) => {
+      context.options.temperatureNorthPole = value;
+      fallback.setTemperatureNorthPole(value);
+    },
+    setTemperatureSouthPole: (value) => {
+      context.options.temperatureSouthPole = value;
+      fallback.setTemperatureSouthPole(value);
+    },
+    setPrecipitation: fallback.setPrecipitation,
+    setDistanceScale: fallback.setDistanceScale,
+    setDistanceUnit: fallback.setDistanceUnit,
+    setHeightUnit: (value) => {
+      context.units.height = value;
+      fallback.setHeightUnit(value);
+    },
+    setTemperatureScale: fallback.setTemperatureScale,
+    setYear: (value) => {
+      context.options.year = value;
+      fallback.setYear(value);
+    },
+    setEra: (value) => {
+      context.options.era = value;
+      fallback.setEra(value);
+    },
+    syncEraOptions: () => {
+      const era = context.options.era;
+      if (typeof era === "string") {
+        context.options.eraShort = era
+          .split(" ")
+          .map((word: string) => word[0].toUpperCase())
+          .join("");
+      }
+      fallback.syncEraOptions();
+    },
+  };
+}
+
 function syncEraOptions() {
   options.year = +(globalThis as any).yearInput.value;
   options.era = (globalThis as any).eraInput.value;
@@ -349,7 +426,9 @@ export class EngineOptionsSessionModule {
 export function createRuntimeOptionsSession(
   context: EngineRuntimeContext,
   controls: EngineOptionsControlAdapter = createGlobalOptionsControlAdapter(),
-  writer: EngineOptionsWriterAdapter = createGlobalOptionsWriterAdapter(),
+  writer: EngineOptionsWriterAdapter = createRuntimeOptionsWriterAdapter(
+    context,
+  ),
   reader: EngineOptionsReaderAdapter = createGlobalOptionsReaderAdapter(),
 ): EngineOptionsSessionModule {
   const random = createRuntimeOptionsRandomAdapter(context);

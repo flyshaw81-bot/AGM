@@ -3,6 +3,7 @@ import {
   createRuntimeOptionsNamingAdapter,
   createRuntimeOptionsRandomAdapter,
   createRuntimeOptionsSession,
+  createRuntimeOptionsWriterAdapter,
   type EngineOptionsControlAdapter,
   type EngineOptionsNamingAdapter,
   type EngineOptionsRandomAdapter,
@@ -90,6 +91,20 @@ function createRuntimeContext(
 ): EngineRuntimeContext {
   let index = 0;
   return {
+    options: {},
+    generationSettings: {
+      pointsCount: 0,
+      heightExponent: 1,
+      lakeElevationLimit: 0,
+      resolveDepressionsSteps: 0,
+      religionsCount: 0,
+      stateSizeVariety: 1,
+      globalGrowthRate: 1,
+      statesGrowthRate: 1,
+    },
+    units: {
+      height: "m",
+    },
     random: {
       next: () =>
         randomValues[index++] ?? randomValues[randomValues.length - 1],
@@ -295,5 +310,29 @@ describe("EngineOptionsSessionModule", () => {
 
     expect(writer.setEra).toHaveBeenCalledWith("Base 1 Era");
     expect(writer.syncEraOptions).toHaveBeenCalled();
+  });
+
+  it("writes runtime-owned options before delegating to the compatibility writer", () => {
+    const context = createRuntimeContext();
+    const fallback = createWriter();
+    const writer = createRuntimeOptionsWriterAdapter(context, fallback);
+
+    writer.setStatesCount(24);
+    writer.setCultureSet("highFantasy");
+    writer.setTemperatureEquator(31);
+    writer.setHeightUnit("ft");
+    writer.setEra("Copper Moon");
+    writer.syncEraOptions();
+
+    expect(context.generationSettings.statesCount).toBe(24);
+    expect(context.generationSettings.cultureSet).toBe("highFantasy");
+    expect(context.options.temperatureEquator).toBe(31);
+    expect(context.units.height).toBe("ft");
+    expect(context.options.eraShort).toBe("CM");
+    expect(fallback.setStatesCount).toHaveBeenCalledWith(24);
+    expect(fallback.setCultureSet).toHaveBeenCalledWith("highFantasy");
+    expect(fallback.setTemperatureEquator).toHaveBeenCalledWith(31);
+    expect(fallback.setHeightUnit).toHaveBeenCalledWith("ft");
+    expect(fallback.syncEraOptions).toHaveBeenCalled();
   });
 });

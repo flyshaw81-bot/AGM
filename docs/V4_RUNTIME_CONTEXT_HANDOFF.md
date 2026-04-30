@@ -1763,11 +1763,14 @@ those direct bridge calls inline. This checkpoint closes the first
 Options session now exposes `createRuntimeOptionsSession(context)`.
 `getGlobalEngineRuntimeContext()` wires `optionsSession` through that runtime
 factory instead of keeping the global singleton on the context. The runtime
-options session still uses the compatibility controls/writer/reader for DOM
-setting application, but era naming and random option generation are now sourced
-from `context.naming` and `context.random`. This keeps current UI behavior
-stable while making the next replacement step narrower: replace the
-compatibility options writer with a typed runtime settings writer.
+options session still uses the compatibility controls/reader for DOM setting
+application, but era naming and random option generation are now sourced from
+`context.naming` and `context.random`. `createRuntimeOptionsWriterAdapter`
+also writes runtime-owned values to `context.options`,
+`context.generationSettings`, and `context.units` before delegating to the
+compatibility writer. This keeps current UI behavior stable while making the
+next replacement step narrower: replace individual compatibility option writer
+methods with typed runtime settings commands.
 
 ## Next Recommended Slice
 
