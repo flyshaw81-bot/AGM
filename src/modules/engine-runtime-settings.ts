@@ -44,6 +44,10 @@ export type EngineTimingSettingsTargets = {
   getShouldTime: () => boolean;
 };
 
+export type EngineSettingsDomTargets = {
+  getInput: (id: string) => HTMLInputElement | null;
+};
+
 export type EngineWorldSettingsStore = {
   get: () => EngineWorldSettings;
   replace: (nextSettings: EngineWorldSettings) => EngineWorldSettings;
@@ -90,20 +94,26 @@ export function createTimingSettings(
   };
 }
 
-function getInput(id: string): HTMLInputElement | null {
-  return document.getElementById(id) as HTMLInputElement | null;
+export function createGlobalSettingsDomTargets(): EngineSettingsDomTargets {
+  return {
+    getInput: (id) => document.getElementById(id) as HTMLInputElement | null,
+  };
 }
 
-function getInputNumber(id: string, fallback: number): number {
-  return Number(getInput(id)?.value ?? fallback);
+export function createSettingsInputNumberReader(
+  domTargets: EngineSettingsDomTargets,
+): EngineWorldSettingsTargets["getInputNumber"] {
+  return (id, fallback) => Number(domTargets.getInput(id)?.value ?? fallback);
 }
 
-export function createGlobalWorldSettingsTargets(): EngineWorldSettingsTargets {
+export function createGlobalWorldSettingsTargets(
+  domTargets: EngineSettingsDomTargets = createGlobalSettingsDomTargets(),
+): EngineWorldSettingsTargets {
   return {
     getMapCoordinates: () => mapCoordinates,
     getGraphWidth: () => graphWidth,
     getGraphHeight: () => graphHeight,
-    getInputNumber,
+    getInputNumber: createSettingsInputNumberReader(domTargets),
   };
 }
 

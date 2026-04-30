@@ -5,12 +5,15 @@ import {
   createGlobalTimingSettings,
   createGlobalUnitSettings,
   createGlobalWorldSettings,
+  createGlobalWorldSettingsTargets,
   createPopulationSettings,
   createRuntimeWorldSettingsStore,
+  createSettingsInputNumberReader,
   createTimingSettings,
   createUnitSettings,
   createWorldSettings,
   createWorldSettingsStore,
+  type EngineSettingsDomTargets,
 } from "./engine-runtime-settings";
 
 const originalDocument = globalThis.document;
@@ -121,6 +124,38 @@ describe("runtime setting adapters", () => {
     });
     expect(createTimingSettings({ getShouldTime: () => false })).toEqual({
       shouldTime: false,
+    });
+  });
+
+  it("reads world setting inputs through injected DOM targets", () => {
+    const domTargets: EngineSettingsDomTargets = {
+      getInput: (id) =>
+        (({
+          mapSizeOutput: { value: "81" },
+          latitudeOutput: { value: "42" },
+        })[id] as HTMLInputElement | undefined) ?? null,
+    };
+
+    expect(
+      createSettingsInputNumberReader(domTargets)("mapSizeOutput", 0),
+    ).toBe(81);
+    expect(
+      createSettingsInputNumberReader(domTargets)("longitudeOutput", 12),
+    ).toBe(12);
+
+    globalThis.mapCoordinates = { latN: 15 } as typeof mapCoordinates;
+    globalThis.graphWidth = 320;
+    globalThis.graphHeight = 180;
+
+    expect(
+      createWorldSettings(createGlobalWorldSettingsTargets(domTargets)),
+    ).toEqual({
+      mapCoordinates: { latN: 15 },
+      graphWidth: 320,
+      graphHeight: 180,
+      mapSizePercent: 81,
+      latitudePercent: 42,
+      longitudePercent: 0,
     });
   });
 

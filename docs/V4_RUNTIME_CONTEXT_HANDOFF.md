@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 179 test files, 649 tests.
+- `npm.cmd run test -- --run` passed: 179 test files, 650 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1946,6 +1946,11 @@ inside option randomization controls. `engine-seed-session.ts` now routes the
 `#optionsSeed` DOM lookup through `EngineSeedDomTargets`. Default browser
 adapters still preserve the current runtime behavior, and focused tests cover
 both injected paths.
+
+`engine-runtime-settings.ts` now routes settings input lookups through
+`EngineSettingsDomTargets`, keeping the browser `document.getElementById`
+access inside the default adapter while allowing runtime world settings to be
+tested through injected DOM targets.
 
 ## Next Recommended Slice
 
