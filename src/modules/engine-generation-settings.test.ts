@@ -2,8 +2,11 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   createGenerationSettings,
   createGenerationSettingsStore,
+  createGenerationSettingsTargets,
   createGlobalGenerationSettings,
   createRuntimeGenerationSettingsStore,
+  type EngineGenerationDomTargets,
+  type EngineGenerationGlobalControlTargets,
   type EngineGenerationSettingsTargets,
 } from "./engine-generation-settings";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
@@ -159,6 +162,38 @@ describe("createGlobalGenerationSettings", () => {
       stateSizeVariety: 2.2,
       globalGrowthRate: 1.4,
       statesGrowthRate: 1.7,
+    });
+  });
+
+  it("composes browser generation settings targets from injected DOM and global controls", () => {
+    const domTargets: EngineGenerationDomTargets = {
+      getElementById: (id) =>
+        (({
+          templateInput: { value: "archipelago" },
+          culturesSet: {
+            selectedOptions: [{ dataset: { max: "10" } }],
+            value: "custom",
+          },
+        })[id] as Element | undefined) ?? null,
+    };
+    const globalControlTargets: EngineGenerationGlobalControlTargets = {
+      getGlobalInput: (name) =>
+        ({
+          pointsInput: { dataset: { cells: "4200" } },
+          heightExponentInput: { value: "1.4" },
+        })[name],
+    };
+
+    expect(
+      createGenerationSettings(
+        createGenerationSettingsTargets(domTargets, globalControlTargets),
+      ),
+    ).toMatchObject({
+      heightmapTemplateId: "archipelago",
+      pointsCount: 4200,
+      heightExponent: 1.4,
+      cultureSet: "custom",
+      cultureSetMax: 10,
     });
   });
 

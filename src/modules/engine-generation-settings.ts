@@ -36,6 +36,14 @@ export type EngineGenerationSettingsTargets = {
   getGlobalInput: (name: string) => EngineGenerationControlInput | undefined;
 };
 
+export type EngineGenerationDomTargets = {
+  getElementById: (id: string) => Element | null;
+};
+
+export type EngineGenerationGlobalControlTargets = {
+  getGlobalInput: (name: string) => EngineGenerationControlInput | undefined;
+};
+
 export type EngineGenerationSettingsStore = {
   get: () => EngineGenerationSettings;
   replace: (nextSettings: EngineGenerationSettings) => EngineGenerationSettings;
@@ -45,15 +53,39 @@ export type EngineGenerationSettingsStore = {
   ) => EngineGenerationSettings;
 };
 
-export function createGlobalGenerationSettingsTargets(): EngineGenerationSettingsTargets {
+export function createGlobalGenerationDomTargets(): EngineGenerationDomTargets {
   return {
-    getInput: (id) => document.getElementById(id) as HTMLInputElement | null,
-    getSelect: (id) => document.getElementById(id) as HTMLSelectElement | null,
+    getElementById: (id) => document.getElementById(id),
+  };
+}
+
+export function createGlobalGenerationControlTargets(): EngineGenerationGlobalControlTargets {
+  return {
     getGlobalInput: (name) =>
       globalThis[name as keyof typeof globalThis] as
         | HTMLInputElement
         | undefined,
   };
+}
+
+export function createGenerationSettingsTargets(
+  domTargets: EngineGenerationDomTargets,
+  globalControlTargets: EngineGenerationGlobalControlTargets,
+): EngineGenerationSettingsTargets {
+  return {
+    getInput: (id) =>
+      domTargets.getElementById(id) as EngineGenerationControlInput | null,
+    getSelect: (id) =>
+      domTargets.getElementById(id) as EngineGenerationControlSelect | null,
+    getGlobalInput: globalControlTargets.getGlobalInput,
+  };
+}
+
+export function createGlobalGenerationSettingsTargets(
+  domTargets: EngineGenerationDomTargets = createGlobalGenerationDomTargets(),
+  globalControlTargets: EngineGenerationGlobalControlTargets = createGlobalGenerationControlTargets(),
+): EngineGenerationSettingsTargets {
+  return createGenerationSettingsTargets(domTargets, globalControlTargets);
 }
 
 function getInputNumber(
