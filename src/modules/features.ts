@@ -101,59 +101,73 @@ export class FeatureModule {
    * mark Grid features (ocean, lakes, islands) and calculate distance field
    */
   markupGrid(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
-    context.timing.shouldTime && console.time("markupGrid");
-    Math.random = Alea(context.seed); // get the same result on heightmap edit in Erase mode
+    const shouldTime = context.timing.shouldTime;
+    shouldTime && console.time("markupGrid");
+    const previousRandom = Math.random;
 
-    const { h: heights, c: neighbors, b: borderCells, i } = context.grid.cells;
-    const cellsNumber = i.length;
-    const distanceField = new Int8Array(cellsNumber); // gird.cells.t
-    const featureIds = new Uint16Array(cellsNumber); // gird.cells.f
-    const features: GridFeature[] = [];
+    try {
+      Math.random = Alea(context.seed); // get the same result on heightmap edit in Erase mode
 
-    const queue = [0];
-    for (let featureId = 1; queue[0] !== -1; featureId++) {
-      const firstCell = queue[0];
-      featureIds[firstCell] = featureId;
+      const {
+        h: heights,
+        c: neighbors,
+        b: borderCells,
+        i,
+      } = context.grid.cells;
+      const cellsNumber = i.length;
+      const distanceField = new Int8Array(cellsNumber); // gird.cells.t
+      const featureIds = new Uint16Array(cellsNumber); // gird.cells.f
+      const features: GridFeature[] = [];
 
-      const land = heights[firstCell] >= 20;
-      let border = false; // set true if feature touches map edge
+      const queue = [0];
+      for (let featureId = 1; queue[0] !== -1; featureId++) {
+        const firstCell = queue[0];
+        featureIds[firstCell] = featureId;
 
-      while (queue.length) {
-        const cellId = queue.pop() as number;
-        if (!border && borderCells[cellId]) border = true;
+        const land = heights[firstCell] >= 20;
+        let border = false; // set true if feature touches map edge
 
-        for (const neighborId of neighbors[cellId]) {
-          const isNeibLand = heights[neighborId] >= 20;
+        while (queue.length) {
+          const cellId = queue.pop() as number;
+          if (!border && borderCells[cellId]) border = true;
 
-          if (land === isNeibLand && featureIds[neighborId] === this.UNMARKED) {
-            featureIds[neighborId] = featureId;
-            queue.push(neighborId);
-          } else if (land && !isNeibLand) {
-            distanceField[cellId] = this.LAND_COAST;
-            distanceField[neighborId] = this.WATER_COAST;
+          for (const neighborId of neighbors[cellId]) {
+            const isNeibLand = heights[neighborId] >= 20;
+
+            if (
+              land === isNeibLand &&
+              featureIds[neighborId] === this.UNMARKED
+            ) {
+              featureIds[neighborId] = featureId;
+              queue.push(neighborId);
+            } else if (land && !isNeibLand) {
+              distanceField[cellId] = this.LAND_COAST;
+              distanceField[neighborId] = this.WATER_COAST;
+            }
           }
         }
+
+        const type = land ? "island" : border ? "ocean" : "lake";
+        features.push({ i: featureId, land, border, type });
+
+        queue[0] = featureIds.indexOf(this.UNMARKED); // find unmarked cell
       }
 
-      const type = land ? "island" : border ? "ocean" : "lake";
-      features.push({ i: featureId, land, border, type });
-
-      queue[0] = featureIds.indexOf(this.UNMARKED); // find unmarked cell
+      // markup deep ocean cells
+      this.markup({
+        distanceField,
+        neighbors,
+        start: this.DEEP_WATER,
+        increment: -1,
+        limit: -10,
+      });
+      context.grid.cells.t = distanceField;
+      context.grid.cells.f = featureIds;
+      context.grid.features = [0, ...features];
+    } finally {
+      Math.random = previousRandom;
+      shouldTime && console.timeEnd("markupGrid");
     }
-
-    // markup deep ocean cells
-    this.markup({
-      distanceField,
-      neighbors,
-      start: this.DEEP_WATER,
-      increment: -1,
-      limit: -10,
-    });
-    context.grid.cells.t = distanceField;
-    context.grid.cells.f = featureIds;
-    context.grid.features = [0, ...features];
-
-    context.timing.shouldTime && console.timeEnd("markupGrid");
   }
 
   /**

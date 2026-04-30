@@ -93,6 +93,19 @@ describe("FeatureModule", () => {
     ]);
   });
 
+  it("restores global Math.random after grid feature markup", () => {
+    const originalRandom = Math.random;
+    const context = createFeatureContext();
+
+    try {
+      new FeatureModule().markupGrid(context);
+
+      expect(Math.random).toBe(originalRandom);
+    } finally {
+      Math.random = originalRandom;
+    }
+  });
+
   it("accepts an explicit context for empty packed graph markup", () => {
     const context = createFeatureContext();
 
