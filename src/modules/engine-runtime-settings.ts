@@ -27,7 +27,9 @@ export type EngineWorldSettingsTargets = {
   getMapCoordinates: () => typeof mapCoordinates;
   getGraphWidth: () => number;
   getGraphHeight: () => number;
-  getInputNumber: (id: string, fallback: number) => number;
+  getMapSizePercent: () => number;
+  getLatitudePercent: () => number;
+  getLongitudePercent: () => number;
 };
 
 export type EnginePopulationSettingsTargets = {
@@ -62,9 +64,9 @@ export function createWorldSettings(
     mapCoordinates: targets.getMapCoordinates(),
     graphWidth: targets.getGraphWidth(),
     graphHeight: targets.getGraphHeight(),
-    mapSizePercent: targets.getInputNumber("mapSizeOutput", 0),
-    latitudePercent: targets.getInputNumber("latitudeOutput", 0),
-    longitudePercent: targets.getInputNumber("longitudeOutput", 0),
+    mapSizePercent: targets.getMapSizePercent(),
+    latitudePercent: targets.getLatitudePercent(),
+    longitudePercent: targets.getLongitudePercent(),
   };
 }
 
@@ -102,18 +104,22 @@ export function createGlobalSettingsDomTargets(): EngineSettingsDomTargets {
 
 export function createSettingsInputNumberReader(
   domTargets: EngineSettingsDomTargets,
-): EngineWorldSettingsTargets["getInputNumber"] {
+): (id: string, fallback: number) => number {
   return (id, fallback) => Number(domTargets.getInput(id)?.value ?? fallback);
 }
 
 export function createGlobalWorldSettingsTargets(
   domTargets: EngineSettingsDomTargets = createGlobalSettingsDomTargets(),
 ): EngineWorldSettingsTargets {
+  const readInputNumber = createSettingsInputNumberReader(domTargets);
+
   return {
     getMapCoordinates: () => mapCoordinates,
     getGraphWidth: () => graphWidth,
     getGraphHeight: () => graphHeight,
-    getInputNumber: createSettingsInputNumberReader(domTargets),
+    getMapSizePercent: () => readInputNumber("mapSizeOutput", 0),
+    getLatitudePercent: () => readInputNumber("latitudeOutput", 0),
+    getLongitudePercent: () => readInputNumber("longitudeOutput", 0),
   };
 }
 

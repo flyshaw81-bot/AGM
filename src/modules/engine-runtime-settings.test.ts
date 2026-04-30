@@ -90,14 +90,9 @@ describe("runtime setting adapters", () => {
         getMapCoordinates: () => ({ latN: 50 }) as typeof mapCoordinates,
         getGraphWidth: () => 1024,
         getGraphHeight: () => 768,
-        getInputNumber: (id, fallback) =>
-          (
-            ({
-              mapSizeOutput: 70,
-              latitudeOutput: 35,
-              longitudeOutput: 55,
-            }) as Record<string, number>
-          )[id] ?? fallback,
+        getMapSizePercent: () => 70,
+        getLatitudePercent: () => 35,
+        getLongitudePercent: () => 55,
       }),
     ).toEqual({
       mapCoordinates: { latN: 50 },
@@ -165,7 +160,9 @@ describe("runtime setting adapters", () => {
         getMapCoordinates: () => ({ latN: 40 }) as typeof mapCoordinates,
         getGraphWidth: () => 800,
         getGraphHeight: () => 600,
-        getInputNumber: () => 0,
+        getMapSizePercent: () => 0,
+        getLatitudePercent: () => 0,
+        getLongitudePercent: () => 0,
       }),
     } as unknown as EngineRuntimeContext;
     const store = createRuntimeWorldSettingsStore(context);
@@ -179,13 +176,9 @@ describe("runtime setting adapters", () => {
       getMapCoordinates: () => ({ latN: 20 }) as typeof mapCoordinates,
       getGraphWidth: () => 1400,
       getGraphHeight: () => 900,
-      getInputNumber: (id, fallback) =>
-        (
-          ({
-            mapSizeOutput: 66,
-            latitudeOutput: 33,
-          }) as Record<string, number>
-        )[id] ?? fallback,
+      getMapSizePercent: () => 66,
+      getLatitudePercent: () => 33,
+      getLongitudePercent: () => 0,
     });
 
     expect(context.worldSettings.mapCoordinates).toEqual({ latN: 20 });
@@ -200,7 +193,9 @@ describe("runtime setting adapters", () => {
       getMapCoordinates: () => ({ latN: 1 }) as typeof mapCoordinates,
       getGraphWidth: () => 100,
       getGraphHeight: () => 100,
-      getInputNumber: () => 0,
+      getMapSizePercent: () => 0,
+      getLatitudePercent: () => 0,
+      getLongitudePercent: () => 0,
     });
     const store = createWorldSettingsStore(
       () => settings,
@@ -212,7 +207,9 @@ describe("runtime setting adapters", () => {
           getMapCoordinates: () => ({ latN: 2 }) as typeof mapCoordinates,
           getGraphWidth: () => 200,
           getGraphHeight: () => 300,
-          getInputNumber: () => 0,
+          getMapSizePercent: () => 0,
+          getLatitudePercent: () => 0,
+          getLongitudePercent: () => 0,
         }),
     );
 

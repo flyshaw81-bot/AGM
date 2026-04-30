@@ -949,6 +949,9 @@ Completed:
   population, unit, and timing settings. The global factories still read the
   current public controls/runtime globals, but the core settings builders consume
   explicit targets.
+- `engine-runtime-settings.ts` now routes world-setting DOM reads through
+  explicit map-size / latitude / longitude targets instead of a generic
+  string-keyed input-number getter.
 - Moved global climate-context construction into
   `src/modules/engine-climate-context.ts`. Both `getGlobalEngineRuntimeContext()`
   and `Climate.getGlobalClimateRuntimeContext()` now use the same adapter,
