@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 177 test files, 640 tests.
+- `npm.cmd run test -- --run` passed: 177 test files, 641 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1920,6 +1920,12 @@ Window compatibility assignments are still installed for browser builds, but
 `Node`/`document`. The utils barrel has a no-browser import regression test,
 and `emblem/generator.test.ts` no longer stubs browser globals just to import
 the module.
+`utils/commonUtils.ts` now has a `StudioInputPromptTargets` boundary around
+the Studio input prompt compatibility layer. Dialog creation, body insertion,
+keydown listeners, removal of the old `#prompt`, global request installation,
+and error-flag reads are injectable; the browser default remains in
+`createGlobalStudioInputPromptTargets()`. Focused tests cover installing and
+submitting the input prompt through fake targets.
 
 ## Next Recommended Slice
 

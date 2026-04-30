@@ -300,6 +300,17 @@ export type StudioInputRequest = (
   callback?: StudioInputCallback,
 ) => void;
 
+export type StudioInputPromptTargets = {
+  getElementById: (id: string) => HTMLElement | null;
+  createElement: (tagName: "div") => HTMLElement;
+  appendToBody: (element: HTMLElement) => void;
+  addKeydownListener: (listener: (event: KeyboardEvent) => void) => void;
+  removeKeydownListener: (listener: (event: KeyboardEvent) => void) => void;
+  removeElement: (id: string) => void;
+  installRequest: (request: StudioInputRequest) => void;
+  isErrorEnabled: () => boolean;
+};
+
 const studioInputDefaults: PromptOptions = {
   default: 1,
   step: 0.01,
@@ -308,11 +319,35 @@ const studioInputDefaults: PromptOptions = {
   required: true,
 };
 
-function createStudioInputDialog() {
-  const existing = document.getElementById("studioInputDialog");
+export function createGlobalStudioInputPromptTargets(): StudioInputPromptTargets {
+  return {
+    getElementById: (id) => document.getElementById(id),
+    createElement: (tagName) => document.createElement(tagName),
+    appendToBody: (element) => {
+      document.body.appendChild(element);
+    },
+    addKeydownListener: (listener) => {
+      document.addEventListener("keydown", listener);
+    },
+    removeKeydownListener: (listener) => {
+      document.removeEventListener("keydown", listener);
+    },
+    removeElement: (id) => {
+      document.getElementById(id)?.remove();
+    },
+    installRequest: (request) => {
+      window.requestStudioInput = request;
+      (window as any).prompt = request;
+    },
+    isErrorEnabled: () => Boolean(window.ERROR),
+  };
+}
+
+function createStudioInputDialog(targets: StudioInputPromptTargets) {
+  const existing = targets.getElementById("studioInputDialog");
   if (existing) return existing;
 
-  const host = document.createElement("div");
+  const host = targets.createElement("div");
   host.id = "studioInputDialog";
   host.className = "studio-input-dialog";
   host.setAttribute("role", "dialog");
@@ -330,7 +365,7 @@ function createStudioInputDialog() {
       </div>
     </form>
   `;
-  document.body.appendChild(host);
+  targets.appendToBody(host);
   return host;
 }
 
@@ -338,7 +373,9 @@ function createStudioInputDialog() {
  * Initialize Studio input dialog for old editor commands.
  * This should be called once when the DOM is ready
  */
-export const initializePrompt = (): void => {
+export const initializePrompt = (
+  targets: StudioInputPromptTargets = createGlobalStudioInputPromptTargets(),
+): void => {
   const defaultText = "Please provide an input";
 
   const requestStudioInput: StudioInputRequest = (
@@ -348,13 +385,13 @@ export const initializePrompt = (): void => {
   ) => {
     if (options.default === undefined)
       return (
-        window.ERROR &&
+        targets.isErrorEnabled() &&
         console.error(
           "Prompt: options object does not have default value defined",
         )
       );
 
-    const dialog = createStudioInputDialog();
+    const dialog = createStudioInputDialog(targets);
     const form = dialog.querySelector("#studioInputForm") as HTMLFormElement;
     const input = dialog.querySelector("#studioInputValue") as HTMLInputElement;
     const label = dialog.querySelector(
@@ -372,7 +409,7 @@ export const initializePrompt = (): void => {
 
     function close() {
       dialog.style.display = "none";
-      document.removeEventListener("keydown", onKeydown);
+      targets.removeKeydownListener(onKeydown);
     }
 
     function submit(event: Event) {
@@ -400,15 +437,14 @@ export const initializePrompt = (): void => {
     cancelButtons.forEach((button) => {
       button.addEventListener("click", close, { once: true });
     });
-    document.addEventListener("keydown", onKeydown);
+    targets.addKeydownListener(onKeydown);
     dialog.style.display = "block";
     input.focus();
     input.select();
   };
 
-  document.getElementById("prompt")?.remove();
-  window.requestStudioInput = requestStudioInput;
-  (window as any).prompt = requestStudioInput;
+  targets.removeElement("prompt");
+  targets.installRequest(requestStudioInput);
 };
 
 declare global {

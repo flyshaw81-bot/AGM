@@ -1,5 +1,12 @@
-import { describe, expect, it } from "vitest";
-import { getCoordinates, getLatitude, getLongitude } from "./commonUtils";
+import { describe, expect, it, vi } from "vitest";
+import {
+  getCoordinates,
+  getLatitude,
+  getLongitude,
+  initializePrompt,
+  type StudioInputPromptTargets,
+  type StudioInputRequest,
+} from "./commonUtils";
 
 describe("getLongitude", () => {
   const mapCoordinates = { lonW: -10, lonT: 20 };
@@ -134,5 +141,81 @@ describe("getCoordinates", () => {
       2,
     );
     expect(result).toEqual([0, 0]); // center of the world
+  });
+});
+
+describe("initializePrompt", () => {
+  it("installs Studio input through injected prompt targets", () => {
+    let installedRequest: StudioInputRequest | undefined;
+    const addKeydownListener = vi.fn();
+    const removeKeydownListener = vi.fn();
+    const appendToBody = vi.fn();
+    const removeElement = vi.fn();
+    const callback = vi.fn();
+
+    const form = {
+      onsubmit: undefined as ((event: Event) => void) | undefined,
+    } as unknown as HTMLFormElement;
+    const input = {
+      type: "",
+      step: "",
+      min: "",
+      max: "",
+      required: false,
+      placeholder: "",
+      value: "",
+      focus: vi.fn(),
+      select: vi.fn(),
+    } as unknown as HTMLInputElement;
+    const label = {
+      innerHTML: "",
+    } as HTMLElement;
+    const cancelButton = {
+      addEventListener: vi.fn(),
+    } as unknown as HTMLElement;
+    const dialog = {
+      id: "",
+      className: "",
+      style: { display: "" },
+      innerHTML: "",
+      setAttribute: vi.fn(),
+      querySelector: vi.fn((selector: string) => {
+        if (selector === "#studioInputForm") return form;
+        if (selector === "#studioInputValue") return input;
+        if (selector === "#studioInputDialogTitle") return label;
+        return null;
+      }),
+      querySelectorAll: vi.fn(() => [cancelButton]),
+    } as unknown as HTMLElement;
+
+    const targets: StudioInputPromptTargets = {
+      getElementById: vi.fn(() => null),
+      createElement: vi.fn(() => dialog),
+      appendToBody,
+      addKeydownListener,
+      removeKeydownListener,
+      removeElement,
+      installRequest: vi.fn((request) => {
+        installedRequest = request;
+      }),
+      isErrorEnabled: vi.fn(() => false),
+    };
+
+    initializePrompt(targets);
+    installedRequest?.("Scale value", { default: 2, min: 1, max: 5 }, callback);
+    form.onsubmit?.({ preventDefault: vi.fn() } as unknown as SubmitEvent);
+
+    expect(removeElement).toHaveBeenCalledWith("prompt");
+    expect(targets.createElement).toHaveBeenCalledWith("div");
+    expect(appendToBody).toHaveBeenCalledWith(dialog);
+    expect(label.innerHTML).toBe("Scale value");
+    expect(input.type).toBe("number");
+    expect(input.min).toBe("1");
+    expect(input.max).toBe("5");
+    expect(addKeydownListener).toHaveBeenCalledTimes(1);
+    expect(removeKeydownListener).toHaveBeenCalledTimes(1);
+    expect(input.focus).toHaveBeenCalled();
+    expect(input.select).toHaveBeenCalled();
+    expect(callback).toHaveBeenCalledWith(2);
   });
 });

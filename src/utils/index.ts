@@ -256,7 +256,7 @@ window.getCoordinates = (x: number, y: number, decimals?: number) =>
 // Initialize prompt when DOM is ready
 if (typeof document !== "undefined") {
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initializePrompt);
+    document.addEventListener("DOMContentLoaded", () => initializePrompt());
   } else {
     initializePrompt();
   }
