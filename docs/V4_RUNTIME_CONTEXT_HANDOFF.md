@@ -108,6 +108,10 @@
 > render orchestration no longer owns shell, canvas, document, project-center,
 > viewport, focus, dialog-position, or event-binding default adapter wiring
 > inline.
+> Canvas interaction default dependencies now live in `CanvasInteractionTargets`,
+> so canvas gesture handling no longer owns DOM frame/host lookup, viewport sync,
+> overlay sync, selection geometry, paint preview geometry, or paint-tool checks
+> inline.
 > Please review whether each remaining global dependency is behind an explicit
 > compatibility adapter, and keep treating AGM `window.*` module mounts
 > separately from old public UI debt.
@@ -511,7 +515,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 157 test files, 507 tests.
+- `npm.cmd run test -- --run` passed: 158 test files, 508 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1394,6 +1398,12 @@ focus resolution, shell event binding, project-summary sync, and viewport
 dimension updates. `studioRenderer.ts` continues to re-export the target
 type/factory while render orchestration no longer owns those default adapter
 imports inline.
+Canvas interaction default runtime access now has a dedicated
+`canvasInteractionTargets.ts` adapter for canvas frame/host lookup, control
+event detection, paint preview geometry, selection geometry, overlay/HUD sync,
+viewport sync, and paint-tool checks. `canvasController.ts` continues to
+re-export the target type/factory while pointer gesture handling no longer owns
+those default adapter imports inline.
 Direct editor targets can also compose focus, entity mutation, and biome
 mutation commands directly from an injected `EngineRuntimeContext`. The default
 adapters still delegate to current entity mutation/focus bridge helpers, but
