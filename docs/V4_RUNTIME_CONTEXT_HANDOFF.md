@@ -687,6 +687,11 @@ Completed:
   discovery are handled by `EngineFontResourceService`, so review remaining
   font debt as `window.*` caller migration rather than missing service
   creation.
+- Public font import/export/style callers now use the centralized
+  `AGMFontResources` runtime object instead of directly calling the loose
+  `declareFont`, `getUsedFonts`, `loadFontsAsDataURI`, `addGoogleFont`,
+  `addLocalFont`, or `addWebFont` globals. Those loose globals remain as
+  compatibility aliases for un-migrated public paths.
 - `EngineNoticeService` now depends on an injectable
   `EngineNoticeDialogHost`. The default `createJQueryNoticeDialogHost()` keeps
   the old `alertMessage` + jQuery dialog behavior for compatibility, but the
@@ -935,6 +940,10 @@ Completed:
   `src/modules/engine-font-resource-service.ts`. The module itself is the
   browser compatibility adapter that mounts the existing `window.*` font API
   and wires DOM/font-face/toast effects for old public UI callers.
+- `fonts.ts` also mounts `AGMFontResources` as the central runtime facade.
+  `public/modules/io/export.js`, `public/modules/io/load.js`,
+  `public/modules/io/save.js`, and `public/modules/ui/style.js` now call that
+  facade instead of the loose global font helper functions.
 - `Cultures.generate(context)` still falls back to global `nameBases` /
   `Names.*` where optional naming adapters are absent. Global name-base access
   is reduced but not removed from the compatibility path.
@@ -1616,8 +1625,8 @@ order:
 3. Defer `Rivers.remove(...)` until rendered river selection state is isolated
    behind a renderer/command adapter.
 4. Continue reducing module-level browser UI exits. `fonts.ts` now has a
-   formal `EngineFontResourceService`; the next high-value step is to move
-   public UI callers from the compatibility `window.*` font API onto injected
-   font-resource commands.
+   formal `EngineFontResourceService` and a centralized `AGMFontResources`
+   facade; the next high-value step is to replace that compatibility facade
+   with injected font-resource commands where Studio-owned flows call it.
 5. Defer manual Burgs editor methods (`add/remove/changeGroup`) until the
    editor command layer can own rendered icons, labels, routes, and COA updates.

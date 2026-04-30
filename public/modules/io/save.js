@@ -75,7 +75,7 @@ function prepareMapData() {
   const biomes = [biomesData.color, biomesData.habitability, biomesData.name].join("|");
   const notesData = JSON.stringify(notes);
   const rulersString = rulers.toString();
-  const fonts = JSON.stringify(getUsedFonts(svg.node()));
+  const fonts = JSON.stringify(AGMFontResources.getUsedFonts(svg.node()));
 
   // save svg
   const cloneEl = document.getElementById("map").cloneNode(true);

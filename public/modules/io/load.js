@@ -275,12 +275,12 @@ async function parseLoadedData(data, mapVersion) {
         const usedFonts = JSON.parse(data[34]);
         usedFonts.forEach(usedFont => {
           const {family: usedFamily, unicodeRange: usedRange, variant: usedVariant} = usedFont;
-          const defaultFont = fonts.find(
+          const defaultFont = AGMFontResources.fonts.find(
             ({family, unicodeRange, variant}) =>
               family === usedFamily && unicodeRange === usedRange && variant === usedVariant
           );
-          if (!defaultFont) fonts.push(usedFont);
-          declareFont(usedFont);
+          if (!defaultFont) AGMFontResources.fonts.push(usedFont);
+          AGMFontResources.declareFont(usedFont);
         });
       }
     }

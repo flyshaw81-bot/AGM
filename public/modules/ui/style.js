@@ -837,13 +837,13 @@ styleFontAdd.on("click", function () {
 
         const existingFont =
           method === "fontURL"
-            ? fonts.find(font => font.family === family && font.src === src)
-            : fonts.find(font => font.family === family);
+            ? AGMFontResources.fonts.find(font => font.family === family && font.src === src)
+            : AGMFontResources.fonts.find(font => font.family === family);
         if (existingFont) return tip("The font is already added", false, "error");
 
-        if (method === "fontURL") addWebFont(family, src);
-        else if (method === "googleFont") addGoogleFont(family);
-        else if (method === "localFont") addLocalFont(family);
+        if (method === "fontURL") AGMFontResources.addWebFont(family, src);
+        else if (method === "googleFont") AGMFontResources.addGoogleFont(family);
+        else if (method === "localFont") AGMFontResources.addLocalFont(family);
 
         addFontNameInput.value = "";
         addFontURLInput.value = "";

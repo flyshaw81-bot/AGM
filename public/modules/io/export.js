@@ -395,10 +395,10 @@ async function getMapURL(
   }
 
   // load fonts
-  const usedFonts = getUsedFonts(cloneEl);
+  const usedFonts = AGMFontResources.getUsedFonts(cloneEl);
   const fontsToLoad = usedFonts.filter(font => font.src);
   if (fontsToLoad.length) {
-    const dataURLfonts = await loadFontsAsDataURI(fontsToLoad);
+    const dataURLfonts = await AGMFontResources.loadFontsAsDataURI(fontsToLoad);
 
     const fontFaces = dataURLfonts
       .map(({family, src, unicodeRange = "", variant = "normal"}) => {

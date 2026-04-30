@@ -5,7 +5,18 @@ import {
   type FontDefinition,
 } from "./engine-font-resource-service";
 
+export type EngineFontResourceRuntime = {
+  fonts: FontDefinition[];
+  declareFont: (font: FontDefinition) => void;
+  getUsedFonts: (svg: SVGSVGElement) => FontDefinition[];
+  loadFontsAsDataURI: (fonts: FontDefinition[]) => Promise<FontDefinition[]>;
+  addGoogleFont: (family: string) => Promise<void>;
+  addLocalFont: (family: string) => void;
+  addWebFont: (family: string, src: string) => void;
+};
+
 declare global {
+  var AGMFontResources: EngineFontResourceRuntime;
   var declareFont: (font: FontDefinition) => void;
   var getUsedFonts: (svg: SVGSVGElement) => FontDefinition[];
   var loadFontsAsDataURI: (
@@ -335,15 +346,23 @@ const fontResourceService = new EngineFontResourceService(
   createBrowserFontResourceAdapter(),
 );
 
-globalThis.fonts = fontResourceService.getAllFonts();
-globalThis.declareFont = (font) => fontResourceService.declareFont(font);
-globalThis.getUsedFonts = (svg) => fontResourceService.getUsedFonts(svg);
-globalThis.loadFontsAsDataURI = (fonts) =>
-  fontResourceService.loadFontsAsDataURI(fonts);
-globalThis.addGoogleFont = (family) =>
-  fontResourceService.addGoogleFont(family);
-globalThis.addLocalFont = (family) => fontResourceService.addLocalFont(family);
-globalThis.addWebFont = (family, src) =>
-  fontResourceService.addWebFont(family, src);
+const fontResourceRuntime: EngineFontResourceRuntime = {
+  fonts: fontResourceService.getAllFonts(),
+  declareFont: (font) => fontResourceService.declareFont(font),
+  getUsedFonts: (svg) => fontResourceService.getUsedFonts(svg),
+  loadFontsAsDataURI: (fonts) => fontResourceService.loadFontsAsDataURI(fonts),
+  addGoogleFont: (family) => fontResourceService.addGoogleFont(family),
+  addLocalFont: (family) => fontResourceService.addLocalFont(family),
+  addWebFont: (family, src) => fontResourceService.addWebFont(family, src),
+};
+
+globalThis.AGMFontResources = fontResourceRuntime;
+globalThis.fonts = fontResourceRuntime.fonts;
+globalThis.declareFont = fontResourceRuntime.declareFont;
+globalThis.getUsedFonts = fontResourceRuntime.getUsedFonts;
+globalThis.loadFontsAsDataURI = fontResourceRuntime.loadFontsAsDataURI;
+globalThis.addGoogleFont = fontResourceRuntime.addGoogleFont;
+globalThis.addLocalFont = fontResourceRuntime.addLocalFont;
+globalThis.addWebFont = fontResourceRuntime.addWebFont;
 
 fontResourceService.declareDefaultFonts();
