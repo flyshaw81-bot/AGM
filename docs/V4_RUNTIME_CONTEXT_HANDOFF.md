@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 172 test files, 630 tests.
+- `npm.cmd run test -- --run` passed: 173 test files, 631 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1883,6 +1883,17 @@ declares the eight compatibility globals as TypeScript `var` globals; the
 existing public UI/export callers still receive the same runtime values through
 the centralized compatibility installer until those callers are migrated to
 injected font-resource commands.
+Voronoi now has direct coverage for constructing cells and circumcenter
+vertices from a real `Delaunator` graph. This closes the previous "zero direct
+test" audit gap for the base geometric graph module.
+Git status audit note: this branch is no longer at a single initial commit.
+`git rev-list --count HEAD` reported 164 commits before this Voronoi coverage
+slice, so any "only one commit" checklist item is stale for the current branch.
+The module-level `document.` reference audit was also rechecked. Several hits
+are already in target/adapter factories (`engine-generation-settings`,
+`engine-render-adapter`, `fonts.ts`), while `heightmap-generator.ts` and
+`emblem/*` still contain real DOM-backed algorithm/rendering paths that should
+be isolated behind dedicated services in later slices.
 
 ## Next Recommended Slice
 
