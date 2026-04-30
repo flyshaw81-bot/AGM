@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 180 test files, 683 tests.
+- `npm.cmd run test -- --run` passed: 180 test files, 684 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2014,6 +2014,10 @@ of calling the mounted `Routes.getLength()` / rendered SVG selector directly.
 and removes the rendered route through `context.rendering.removeElementById`
 when available; the old `viewbox.select(...).remove()` path is retained only as
 a compatibility fallback.
+`Rivers.remove(id, context)` now removes river and tributary data through
+`context.pack` / `context.grid` and removes rendered river paths through
+`context.rendering.removeElementById` when available; the old
+`rivers.select(...).remove()` path remains only as a compatibility fallback.
 `getEngineWorldDimensions(context)` now centralizes the compatibility fallback
 from runtime world settings to browser graph globals. Burgs, Cultures, and
 Rivers consume that helper instead of reading `globalThis.graphWidth` /
@@ -2072,12 +2076,10 @@ order:
    churn pass.
 2. Start a command-layer slice for route/editor/query helpers rather than
    mixing rendered editor state into pure generation migration.
-3. Defer `Rivers.remove(...)` until rendered river selection state is isolated
-   behind a renderer/command adapter.
-4. Continue reducing module-level browser UI exits. `fonts.ts` now has a
+3. Continue reducing module-level browser UI exits. `fonts.ts` now has a
    formal `EngineFontResourceService`, a typed runtime factory, and a
    centralized compatibility installer; the next high-value step is to replace
    public UI/export `AGMFontResources` callers with injected font-resource
    commands where Studio-owned flows call it.
-5. Defer manual Burgs editor methods (`add/remove/changeGroup`) until the
+4. Defer manual Burgs editor methods (`add/remove/changeGroup`) until the
    editor command layer can own rendered icons, labels, routes, and COA updates.

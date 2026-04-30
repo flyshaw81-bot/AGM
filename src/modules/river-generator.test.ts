@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { PackedGraph } from "../types/PackedGraph";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
 import { RiverModule } from "./river-generator";
@@ -10,7 +10,9 @@ import {
 function createRiverContext(): EngineRuntimeContext {
   return {
     grid: {
-      cells: {},
+      cells: {
+        prec: new Uint8Array([3, 5]),
+      },
     },
     pack: {
       cells: {
@@ -18,8 +20,11 @@ function createRiverContext(): EngineRuntimeContext {
           [10, 20],
           [90, 20],
         ],
+        g: new Uint16Array([0, 1]),
         h: new Uint8Array([40, 35]),
+        r: new Uint16Array([1, 2]),
         fl: new Uint16Array([12, 8]),
+        conf: new Uint16Array([4, 6]),
         culture: new Uint8Array([1, 1]),
       },
       rivers: [],
@@ -114,5 +119,28 @@ describe("RiverModule", () => {
     expect(new RiverModule().getName(1, createRiverContext())).toBe(
       "Culture 1",
     );
+  });
+
+  it("removes rivers through explicit data and rendering context", () => {
+    const context = createRiverContext();
+    context.pack.rivers = [
+      { i: 1, parent: 0, basin: 1 } as any,
+      { i: 2, parent: 1, basin: 1 } as any,
+      { i: 3, parent: 0, basin: 3 } as any,
+    ];
+    const removeElementById = vi.fn();
+    context.rendering = {
+      ...context.rendering!,
+      removeElementById,
+    };
+
+    new RiverModule().remove(1, context);
+
+    expect(context.pack.rivers).toEqual([{ i: 3, parent: 0, basin: 3 }]);
+    expect(context.pack.cells.r).toEqual(new Uint16Array([0, 0]));
+    expect(context.pack.cells.fl).toEqual(new Uint16Array([3, 5]));
+    expect(context.pack.cells.conf).toEqual(new Uint16Array([0, 0]));
+    expect(removeElementById).toHaveBeenCalledWith("river1");
+    expect(removeElementById).toHaveBeenCalledWith("river2");
   });
 });

@@ -643,13 +643,18 @@ export class RiverModule {
   }
 
   // remove river and all its tributaries
-  remove(id: number) {
+  remove(
+    id: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { grid, pack } = context;
     const cells = pack.cells;
     const riversToRemove = pack.rivers
       .filter((r) => r.i === id || r.parent === id || r.basin === id)
       .map((r) => r.i);
     riversToRemove.forEach((r) => {
-      rivers.select(`#river${r}`).remove();
+      if (context.rendering) context.rendering.removeElementById(`river${r}`);
+      else rivers.select(`#river${r}`).remove();
     });
     cells.r.forEach((r, i) => {
       if (!r || !riversToRemove.includes(r)) return;
