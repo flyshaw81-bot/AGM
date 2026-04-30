@@ -96,6 +96,10 @@
 > Project workspace changes now use `ProjectWorkspaceActionTargets`, so project
 > setting setters, document-name writes, canvas-size writes, autosave writes,
 > and project-summary sync are isolated from workspace action routing.
+> Initial Studio state default dependencies now live in
+> `InitialStateTargets`, so startup state construction no longer owns
+> engine-document, style-preset, viewport-preset, preference, or project-center
+> default adapter wiring inline.
 > Please review whether each remaining global dependency is behind an explicit
 > compatibility adapter, and keep treating AGM `window.*` module mounts
 > separately from old public UI debt.
@@ -499,7 +503,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 154 test files, 504 tests.
+- `npm.cmd run test -- --run` passed: 155 test files, 505 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1363,6 +1367,11 @@ Project workspace setting changes now have a dedicated
 name writes, canvas-size writes, autosave writes, and project-summary sync.
 `projectWorkspaceActions.ts` continues to re-export the target type/factory
 while its action routing logic no longer owns direct bridge setter maps inline.
+Initial Studio state default runtime access now has a dedicated
+`initialStateTargets.ts` adapter for engine document reads, style preset reads,
+viewport preset lookup, preference targets, and project-center storage targets.
+`initialState.ts` continues to re-export the target type/factory while startup
+state construction no longer owns those default adapter imports inline.
 Direct editor targets can also compose focus, entity mutation, and biome
 mutation commands directly from an injected `EngineRuntimeContext`. The default
 adapters still delegate to current entity mutation/focus bridge helpers, but

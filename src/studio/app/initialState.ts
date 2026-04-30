@@ -1,38 +1,20 @@
-import { getEngineDocumentState } from "../bridge/engineMapHost";
-import { getEngineStylePreset } from "../bridge/engineStyle";
-import { getPresetById } from "../canvas/presets";
 import type { StudioState } from "../types";
 import {
+  createGlobalInitialStateTargets,
+  type InitialStateTargets,
+} from "./initialStateTargets";
+import {
   applyDocumentPreferences,
-  createGlobalStudioPreferenceTargets,
   getInitialLanguage,
   getInitialNavigationCollapsed,
   getInitialTheme,
-  type StudioPreferenceTargets,
 } from "./preferences";
-import {
-  createGlobalProjectCenterTargets,
-  loadProjectCenterState,
-  type ProjectCenterTargets,
-} from "./projectCenter";
+import { loadProjectCenterState } from "./projectCenter";
 
-export type InitialStateTargets = {
-  getEngineDocumentState: typeof getEngineDocumentState;
-  getEngineStylePreset: typeof getEngineStylePreset;
-  getPresetById: typeof getPresetById;
-  preferences: StudioPreferenceTargets;
-  projectCenter: Pick<ProjectCenterTargets, "getStorageItem">;
-};
-
-export function createGlobalInitialStateTargets(): InitialStateTargets {
-  return {
-    getEngineDocumentState,
-    getEngineStylePreset,
-    getPresetById,
-    preferences: createGlobalStudioPreferenceTargets(),
-    projectCenter: createGlobalProjectCenterTargets(),
-  };
-}
+export {
+  createGlobalInitialStateTargets,
+  type InitialStateTargets,
+} from "./initialStateTargets";
 
 export function createInitialState(
   targets: InitialStateTargets = createGlobalInitialStateTargets(),
