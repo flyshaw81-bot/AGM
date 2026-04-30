@@ -1,3 +1,4 @@
+import type { EngineProjectSummary } from "../bridge/engineActions";
 import {
   getEngineProjectSummary,
   setEnginePendingBurgs,
@@ -6,6 +7,7 @@ import {
   setEnginePendingSizeVariety,
   setEnginePendingStates,
 } from "../bridge/engineActions";
+import type { WorldDocumentDraft } from "../state/worldDocumentDraft";
 import { createWorldDocumentDraft } from "../state/worldDocumentDraft";
 import type {
   GenerationProfileImpactChange,
@@ -13,6 +15,33 @@ import type {
   GenerationProfileOverrideKey,
   StudioState,
 } from "../types";
+
+export type GenerationProfileTargets = {
+  getProjectSummary: () => EngineProjectSummary;
+  createWorldDraft: (
+    state: StudioState,
+    projectSummary: EngineProjectSummary,
+  ) => WorldDocumentDraft;
+  setPendingStates: (value: number) => void;
+  setPendingBurgs: (value: number) => void;
+  setPendingGrowthRate: (value: number) => void;
+  setPendingSizeVariety: (value: number) => void;
+  setPendingProvincesRatio: (value: number) => void;
+  now: () => number;
+};
+
+export function createGlobalGenerationProfileTargets(): GenerationProfileTargets {
+  return {
+    getProjectSummary: getEngineProjectSummary,
+    createWorldDraft: createWorldDocumentDraft,
+    setPendingStates: setEnginePendingStates,
+    setPendingBurgs: setEnginePendingBurgs,
+    setPendingGrowthRate: setEnginePendingGrowthRate,
+    setPendingSizeVariety: setEnginePendingSizeVariety,
+    setPendingProvincesRatio: setEnginePendingProvincesRatio,
+    now: () => Date.now(),
+  };
+}
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
@@ -24,9 +53,12 @@ export function getExplicitGenerationProfileOverrides(state: StudioState) {
     : {};
 }
 
-export function getActiveGenerationProfileOverrides(state: StudioState) {
-  const projectSummary = getEngineProjectSummary();
-  const worldDraft = createWorldDocumentDraft(state, projectSummary);
+export function getActiveGenerationProfileOverrides(
+  state: StudioState,
+  targets: GenerationProfileTargets = createGlobalGenerationProfileTargets(),
+) {
+  const projectSummary = targets.getProjectSummary();
+  const worldDraft = targets.createWorldDraft(state, projectSummary);
   const profileDefaults: Partial<Record<GenerationProfileOverrideKey, number>> =
     {};
 
@@ -55,9 +87,12 @@ function recordGenerationProfileImpactChange(
   changes.push(change);
 }
 
-export function createGenerationProfileResultSample(state: StudioState) {
-  const projectSummary = getEngineProjectSummary();
-  const worldDraft = createWorldDocumentDraft(state, projectSummary);
+export function createGenerationProfileResultSample(
+  state: StudioState,
+  targets: GenerationProfileTargets = createGlobalGenerationProfileTargets(),
+) {
+  const projectSummary = targets.getProjectSummary();
+  const worldDraft = targets.createWorldDraft(state, projectSummary);
   const routePointCount = worldDraft.resources.routes.reduce(
     (total, route) => total + (route.pointCount || 0),
     0,
@@ -99,9 +134,10 @@ export function createGenerationProfileResultMetrics(
 
 export function applyGenerationProfileOverridesToEngineSettings(
   state: StudioState,
+  targets: GenerationProfileTargets = createGlobalGenerationProfileTargets(),
 ) {
-  const overrides = getActiveGenerationProfileOverrides(state);
-  const projectSummary = getEngineProjectSummary();
+  const overrides = getActiveGenerationProfileOverrides(state, targets);
+  const projectSummary = targets.getProjectSummary();
   const changes: GenerationProfileImpactChange[] = [];
 
   if (typeof overrides.spawnFairnessWeight === "number") {
@@ -112,7 +148,7 @@ export function applyGenerationProfileOverridesToEngineSettings(
       before: numberFromSummary(projectSummary.pendingStates),
       after,
     });
-    setEnginePendingStates(after);
+    targets.setPendingStates(after);
   }
   if (typeof overrides.settlementDensityTarget === "number") {
     const states = Number(projectSummary.pendingStates) || 1;
@@ -125,7 +161,7 @@ export function applyGenerationProfileOverridesToEngineSettings(
       before: numberFromSummary(projectSummary.pendingBurgs),
       after,
     });
-    setEnginePendingBurgs(after);
+    targets.setPendingBurgs(after);
   }
   if (typeof overrides.routeConnectivityScore === "number") {
     const after = clamp(overrides.routeConnectivityScore / 50, 0.1, 2);
@@ -135,7 +171,7 @@ export function applyGenerationProfileOverridesToEngineSettings(
       before: numberFromSummary(projectSummary.pendingGrowthRate),
       after,
     });
-    setEnginePendingGrowthRate(after);
+    targets.setPendingGrowthRate(after);
   }
   if (typeof overrides.biomeFrictionWeight === "number") {
     const after = clamp(overrides.biomeFrictionWeight * 5, 0, 10);
@@ -145,7 +181,7 @@ export function applyGenerationProfileOverridesToEngineSettings(
       before: numberFromSummary(projectSummary.pendingSizeVariety),
       after,
     });
-    setEnginePendingSizeVariety(after);
+    targets.setPendingSizeVariety(after);
   }
   if (typeof overrides.resourceCoverageTarget === "number") {
     const after = clamp(overrides.resourceCoverageTarget, 0, 100);
@@ -155,13 +191,13 @@ export function applyGenerationProfileOverridesToEngineSettings(
       before: numberFromSummary(projectSummary.pendingProvincesRatio),
       after,
     });
-    setEnginePendingProvincesRatio(after);
+    targets.setPendingProvincesRatio(after);
   }
 
   state.generationProfileImpact = changes.length
     ? {
         profile: state.document.gameProfile,
-        appliedAt: Date.now(),
+        appliedAt: targets.now(),
         changes,
         resultMetrics: [],
       }
