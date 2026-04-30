@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createGlobalEngineExportTargets } from "./engineExportTargets";
+import {
+  createEngineExportTargets,
+  createGlobalEngineExportTargets,
+} from "./engineExportTargets";
 
 type TestExportGlobals = typeof globalThis & {
   exportToSvg?: () => void;
@@ -59,5 +62,30 @@ describe("createGlobalEngineExportTargets", () => {
     targets.runExport("svg");
 
     expect(exportToSvg).toHaveBeenCalledWith();
+  });
+
+  it("composes export targets from injected settings and runtime adapters", () => {
+    const writeSetting = vi.fn();
+    const runExport = vi.fn();
+    const targets = createEngineExportTargets(
+      {
+        readSetting: (setting, fallback) =>
+          setting === "tile-scale" ? 4 : fallback,
+        writeSetting,
+      },
+      {
+        canExport: (format) => format === "jpeg",
+        runExport,
+      },
+    );
+
+    expect(targets.readSetting("tile-scale", 1)).toBe(4);
+    expect(targets.readSetting("tile-cols", 3)).toBe(3);
+    targets.writeSetting("tile-rows", 8);
+    expect(writeSetting).toHaveBeenCalledWith("tile-rows", 8);
+    expect(targets.canExport("jpeg")).toBe(true);
+    expect(targets.canExport("svg")).toBe(false);
+    targets.runExport("jpeg");
+    expect(runExport).toHaveBeenCalledWith("jpeg");
   });
 });

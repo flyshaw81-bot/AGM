@@ -18,6 +18,16 @@ export type EngineExportTargets = {
   runExport: (format: EngineExportFormat) => void;
 };
 
+export type EngineExportSettingsAdapter = {
+  readSetting: (setting: EngineExportSetting, fallback: number) => number;
+  writeSetting: (setting: EngineExportSetting, value: number) => void;
+};
+
+export type EngineExportRuntimeAdapter = {
+  canExport: (format: EngineExportFormat) => boolean;
+  runExport: (format: EngineExportFormat) => void;
+};
+
 const EXPORT_SETTING_INPUT_IDS: Record<EngineExportSetting, string> = {
   "png-resolution": "pngResolutionInput",
   "tile-cols": "tileColsOutput",
@@ -45,7 +55,7 @@ function getExportSettingInput(setting: EngineExportSetting) {
   ) as HTMLInputElement | null;
 }
 
-export function createGlobalEngineExportTargets(): EngineExportTargets {
+export function createGlobalEngineExportSettingsAdapter(): EngineExportSettingsAdapter {
   return {
     readSetting: (setting, fallback) => {
       const value = Number(getExportSettingInput(setting)?.value || fallback);
@@ -59,6 +69,11 @@ export function createGlobalEngineExportTargets(): EngineExportTargets {
       input.dispatchEvent(new Event("input", { bubbles: true }));
       input.dispatchEvent(new Event("change", { bubbles: true }));
     },
+  };
+}
+
+export function createGlobalEngineExportRuntimeAdapter(): EngineExportRuntimeAdapter {
+  return {
     canExport: (format) =>
       typeof getGlobalExportRuntime()[EXPORT_RUNTIME_KEYS[format]] ===
       "function",
@@ -68,4 +83,23 @@ export function createGlobalEngineExportTargets(): EngineExportTargets {
       if (typeof exportAction === "function") exportAction();
     },
   };
+}
+
+export function createEngineExportTargets(
+  settingsAdapter: EngineExportSettingsAdapter,
+  runtimeAdapter: EngineExportRuntimeAdapter,
+): EngineExportTargets {
+  return {
+    readSetting: settingsAdapter.readSetting,
+    writeSetting: settingsAdapter.writeSetting,
+    canExport: runtimeAdapter.canExport,
+    runExport: runtimeAdapter.runExport,
+  };
+}
+
+export function createGlobalEngineExportTargets(): EngineExportTargets {
+  return createEngineExportTargets(
+    createGlobalEngineExportSettingsAdapter(),
+    createGlobalEngineExportRuntimeAdapter(),
+  );
 }

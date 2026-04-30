@@ -418,7 +418,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 124 test files, 388 tests.
+- `npm.cmd run test -- --run` passed: 124 test files, 389 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -936,8 +936,9 @@ services instead of reading `globalThis.Routes` inline:
   Dropbox source labels, and summary store access. The default target remains a
   compatibility adapter over the current global runtime.
 - `src/studio/bridge/engineExportTargets.ts` now owns the Studio export
-  compatibility boundary for export setting inputs and SVG/PNG/JPEG runtime
-  export calls.
+  compatibility boundary through settings and runtime adapters. Export setting
+  inputs and SVG/PNG/JPEG runtime export calls are split into replaceable
+  adapters.
 - `src/studio/bridge/engineExport.ts` now reads/writes export settings and runs
   exports through injected targets instead of directly reading `document` or
   `window` inline.
@@ -1047,8 +1048,8 @@ services instead of reading `globalThis.Routes` inline:
   maps, and save targets through injected targets without browser globals.
 - `src/studio/bridge/engineExport.test.ts` and
   `src/studio/bridge/engineExportTargets.test.ts` cover export setting reads,
-  setting writes, format dispatch, default DOM setting access, and default
-  runtime export forwarding.
+  setting writes, format dispatch, injected adapter composition, default DOM
+  setting access, and default runtime export forwarding.
 - `src/studio/bridge/engineTopbarActions.test.ts` covers topbar availability
   composition and new/open/save command mapping through injected targets.
 - `src/studio/bridge/engineEditorActions.test.ts` and
@@ -1107,8 +1108,8 @@ adapters.
 `engineDocumentSource.ts` through dedicated bridge adapters. The document
 source default target still wraps current global runtime functions for
 compatibility, but the tracking logic is now testable through injected targets.
-`EngineExportTargets` still reads export setting DOM inputs and export runtime
-helpers behind a bridge-level adapter. `EngineTopbarTargets` still delegates to
+`EngineExportTargets` now splits export setting DOM inputs and export runtime
+helpers through dedicated bridge adapters. `EngineTopbarTargets` still delegates to
 Data action functions behind a bridge-level adapter. `EngineEditorTargets` now
 splits public editor handlers from old jQuery UI dialog wrappers through
 dedicated bridge adapters. `EngineHostTargets` now splits app-level DOM host
