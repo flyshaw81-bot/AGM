@@ -11,6 +11,38 @@ declare global {
   var COArenderer: EmblemRenderModule;
 }
 
+export type EmblemRendererTargets = {
+  fetchText: (url: string) => Promise<string>;
+  parseChargeGroup: (svgText: string, id: string) => string;
+  insertCoaSvg: (svg: string) => void;
+  getElementById: (id: string) => HTMLElement | SVGElement | null;
+  hasRenderedUses: () => boolean;
+  isLayerOn: (layer: string) => boolean;
+};
+
+export function createGlobalEmblemRendererTargets(): EmblemRendererTargets {
+  return {
+    fetchText: async (url) => {
+      const res = await fetch(url);
+      if (res.ok) return res.text();
+      throw new Error("Cannot fetch charge");
+    },
+    parseChargeGroup: (svgText, id) => {
+      const html = document.createElement("html");
+      html.innerHTML = svgText;
+      const g = html.querySelector("g") as SVGAElement;
+      g.setAttribute("id", id);
+      return g.outerHTML;
+    },
+    insertCoaSvg: (svg) => {
+      document.getElementById("coas")!.insertAdjacentHTML("beforeend", svg);
+    },
+    getElementById: (id) => document.getElementById(id),
+    hasRenderedUses: () => Boolean(emblems.selectAll("use").size()),
+    isLayerOn: (layer) => layerIsOn(layer),
+  };
+}
+
 interface Division {
   division: string;
   line?: string;
@@ -46,7 +78,11 @@ interface Emblem {
   custom?: boolean; // if true, coa will not be rendered
 }
 
-class EmblemRenderModule {
+export default class EmblemRenderModule {
+  constructor(
+    private readonly targets: EmblemRendererTargets = createGlobalEmblemRendererTargets(),
+  ) {}
+
   get shieldPaths() {
     return shieldPaths;
   }
@@ -69,17 +105,10 @@ class EmblemRenderModule {
   }
 
   private async fetchCharge(charge: string, id: string) {
-    const fetched = fetch(`./charges/${charge}.svg`)
-      .then((res) => {
-        if (res.ok) return res.text();
-        else throw new Error("Cannot fetch charge");
-      })
+    const fetched = this.targets
+      .fetchText(`./charges/${charge}.svg`)
       .then((text) => {
-        const html = document.createElement("html");
-        html.innerHTML = text;
-        const g: SVGAElement = html.querySelector("g") as SVGAElement;
-        g.setAttribute("id", `${charge}_${id}`);
-        return g.outerHTML;
+        return this.targets.parseChargeGroup(text, `${charge}_${id}`);
       })
       .catch((err) => {
         ERROR && console.error(err);
@@ -335,7 +364,7 @@ class EmblemRenderModule {
         ${overlay}</svg>`;
 
     // insert coa svg to defs
-    document.getElementById("coas")!.insertAdjacentHTML("beforeend", svg);
+    this.targets.insertCoaSvg(svg);
     return true;
   }
 
@@ -343,21 +372,21 @@ class EmblemRenderModule {
   async trigger(id: string, coa: Emblem) {
     if (!coa) return console.warn(`Emblem ${id} is undefined`);
     if (coa.custom) return console.warn("Cannot render custom emblem", coa);
-    if (!document.getElementById(id)) return this.draw(id, coa);
+    if (!this.targets.getElementById(id)) return this.draw(id, coa);
   }
 
   async add(type: string, i: number, coa: Emblem, x: number, y: number) {
     const id = `${type}COA${i}`;
-    const g: HTMLElement = document.getElementById(
-      `${type}Emblems`,
-    ) as HTMLElement;
+    const g = this.targets.getElementById(`${type}Emblems`) as HTMLElement;
 
-    if (emblems.selectAll("use").size()) {
+    if (this.targets.hasRenderedUses()) {
       const size = parseFloat(g.getAttribute("font-size") || "50");
       const use = `<use data-i="${i}" x="${x - size / 2}" y="${y - size / 2}" width="1em" height="1em" href="#${id}"/>`;
       g.insertAdjacentHTML("beforeend", use);
     }
-    if (layerIsOn("toggleEmblems")) this.trigger(id, coa);
+    if (this.targets.isLayerOn("toggleEmblems")) this.trigger(id, coa);
   }
 }
-window.COArenderer = new EmblemRenderModule();
+if (typeof window !== "undefined") {
+  window.COArenderer = new EmblemRenderModule();
+}

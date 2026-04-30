@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 174 test files, 635 tests.
+- `npm.cmd run test -- --run` passed: 175 test files, 638 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1892,8 +1892,8 @@ slice, so any "only one commit" checklist item is stale for the current branch.
 The module-level `document.` reference audit was also rechecked. Several hits
 are already in target/adapter factories (`engine-generation-settings`,
 `engine-render-adapter`, `fonts.ts`), while `heightmap-generator.ts` and
-`emblem/*` still contain real DOM-backed algorithm/rendering paths that should
-be isolated behind dedicated services in later slices.
+`emblem/*` had real DOM-backed algorithm/rendering paths that are being moved
+behind dedicated services slice by slice.
 `heightmap-generator.ts` no longer directly creates the precreated-heightmap
 canvas/image in the algorithm path. The new `HeightmapImageTargets` boundary
 wraps canvas and image creation, `createGlobalHeightmapImageTargets()` keeps
@@ -1904,6 +1904,12 @@ test coverage through injected image targets.
 shape lookup, default browser behavior remains in
 `createGlobalEmblemShapeTargets()`, and generator tests now cover fixed shape,
 state fallback, and culture fallback through injected targets.
+`emblem/renderer.ts` now uses `EmblemRendererTargets` for charge fetches, SVG
+charge parsing, `#coas` insertion, rendered element lookups, rendered-use
+checks, and emblem layer state. The default browser behavior remains in
+`createGlobalEmblemRendererTargets()`, `window.COArenderer` is guarded for
+non-browser imports, and renderer tests cover injected add, skip-existing, and
+draw-missing paths.
 
 ## Next Recommended Slice
 
