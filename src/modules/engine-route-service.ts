@@ -19,6 +19,7 @@ type EngineRouteModule = {
   ) => PackedGraph["cells"]["routes"];
   connect?: (cell: number, context?: EngineRuntimeContext) => any;
   remove?: (route: any) => void;
+  getLength?: (routeId: number) => number;
 };
 
 export type EngineRouteServiceTargets = {
@@ -36,6 +37,7 @@ export type EngineRouteService = {
   buildLinks: (routes: PackedGraph["routes"]) => PackedGraph["cells"]["routes"];
   connect: (cell: number) => any;
   remove: (route: unknown) => void;
+  getLength: (routeId: number) => number;
   findById: (routeId: number) => PackedGraph["routes"][number] | undefined;
 };
 
@@ -69,6 +71,8 @@ export function createEngineRouteService(
     remove: (route) => {
       targets.getRoutesModule()?.remove?.(route as any);
     },
+    getLength: (routeId) =>
+      targets.getRoutesModule()?.getLength?.(routeId) ?? 0,
     findById: (routeId) =>
       targets.getPackedRoutes()?.find((route) => route?.i === routeId),
   };

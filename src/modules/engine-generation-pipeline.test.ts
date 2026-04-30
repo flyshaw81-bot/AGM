@@ -44,6 +44,7 @@ function createPipelineContext(id: string): EngineRuntimeContext {
       buildLinks: () => [],
       connect: () => null,
       remove: () => {},
+      getLength: () => 0,
       findById: () => undefined,
     },
     states: {

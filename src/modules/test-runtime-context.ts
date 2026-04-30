@@ -57,6 +57,7 @@ export function createTestRuntimeAdapters(): Pick<
       buildLinks: () => [],
       connect: () => null,
       remove: () => {},
+      getLength: () => 0,
       findById: () => undefined,
     },
     states: {
