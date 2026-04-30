@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createGlobalRouteService } from "./engine-route-service";
+import {
+  createEngineRouteService,
+  createGlobalRouteService,
+} from "./engine-route-service";
 
 const originalRoutes = globalThis.Routes;
 const originalPack = globalThis.pack;
@@ -50,5 +53,36 @@ describe("createGlobalRouteService", () => {
     expect(Routes.buildLinks).toHaveBeenCalledWith([]);
     expect(Routes.connect).toHaveBeenCalledWith(14);
     expect(Routes.remove).toHaveBeenCalledWith(routeToRemove);
+  });
+
+  it("composes route service from injected runtime targets", () => {
+    const packedRoute = { i: 4, group: "roads" };
+    const links = { 4: { 5: 1 } };
+    const routesModule = {
+      isCrossroad: vi.fn(() => true),
+      isConnected: vi.fn(() => true),
+      hasRoad: vi.fn(() => false),
+      getRoute: vi.fn(() => ({ group: "roads" })),
+      getConnectivityRate: vi.fn(() => 0.5),
+      buildLinks: vi.fn(() => links),
+      connect: vi.fn(() => ({ group: "roads" })),
+      remove: vi.fn(),
+    };
+    const routes = createEngineRouteService({
+      getRoutesModule: () => routesModule,
+      getPackedRoutes: () => [packedRoute] as any,
+    });
+
+    expect(routes.isCrossroad(1)).toBe(true);
+    expect(routes.isConnected(2)).toBe(true);
+    expect(routes.hasRoad(3)).toBe(false);
+    expect(routes.getRoute(1, 2)).toEqual({ group: "roads" });
+    expect(routes.getConnectivityRate(5)).toBe(0.5);
+    expect(routes.buildLinks([] as any)).toBe(links);
+    expect(routes.connect(6)).toEqual({ group: "roads" });
+    routes.remove(packedRoute);
+    expect(routes.findById(4)).toBe(packedRoute);
+
+    expect(routesModule.remove).toHaveBeenCalledWith(packedRoute);
   });
 });

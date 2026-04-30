@@ -917,6 +917,11 @@ Completed:
   `src/modules/engine-route-service.ts`. The default adapters still forward to
   the compatibility-mounted AGM modules, but those calls are no longer inline in
   `engine-runtime-context.ts`. Added focused forwarding tests for both adapters.
+- `engine-route-service.ts` now separates service composition from the global
+  compatibility adapter via `createEngineRouteService(targets)`. The default
+  `createGlobalRouteService()` still reads the current AGM `Routes` module
+  mount and `pack.routes`, but the route service logic itself no longer owns
+  those `globalThis` reads.
 - Global `States.*` and `COA.*` service calls are now centralized in
   `src/modules/engine-state-service.ts` and
   `src/modules/engine-heraldry-service.ts`. The default adapters still forward
@@ -1000,7 +1005,9 @@ services instead of reading `globalThis.Routes` inline:
 
 - `src/modules/engine-route-service.ts` now owns the default route command
   adapter for `connect`, `remove`, and `findById`, in addition to route query
-  helpers.
+  helpers. Its core service is composed through explicit route targets, while
+  `createGlobalRouteService()` remains the compatibility factory for the
+  current AGM `Routes` module mount and `pack.routes`.
 - `src/studio/bridge/engineAutoFixRouteWriteback.ts` accepts injected
   `EngineRouteService` and `EngineRenderAdapter` dependencies. It still
   relies on the current runtime map for province/cell candidates through

@@ -1,5 +1,23 @@
 import type { PackedGraph } from "../types/PackedGraph";
 
+type EngineRouteModule = {
+  isCrossroad?: (cell: number) => boolean;
+  isConnected?: (cell: number) => boolean;
+  hasRoad?: (cell: number) => boolean;
+  getRoute?: (from: number, to: number) => { group?: string } | undefined;
+  getConnectivityRate?: (cell: number) => number;
+  buildLinks?: (
+    routes: PackedGraph["routes"],
+  ) => PackedGraph["cells"]["routes"];
+  connect?: (cell: number) => any;
+  remove?: (route: any) => void;
+};
+
+export type EngineRouteServiceTargets = {
+  getRoutesModule: () => EngineRouteModule | undefined;
+  getPackedRoutes: () => PackedGraph["routes"] | undefined;
+};
+
 export type EngineRouteService = {
   isCrossroad: (cell: number) => boolean;
   isConnected: (cell: number) => boolean;
@@ -12,20 +30,32 @@ export type EngineRouteService = {
   findById: (routeId: number) => PackedGraph["routes"][number] | undefined;
 };
 
-export function createGlobalRouteService(): EngineRouteService {
+export function createEngineRouteService(
+  targets: EngineRouteServiceTargets,
+): EngineRouteService {
   return {
-    isCrossroad: (cell) => globalThis.Routes?.isCrossroad?.(cell) ?? false,
-    isConnected: (cell) => globalThis.Routes?.isConnected?.(cell) ?? false,
-    hasRoad: (cell) => globalThis.Routes?.hasRoad?.(cell) ?? false,
-    getRoute: (from, to) => globalThis.Routes?.getRoute?.(from, to),
+    isCrossroad: (cell) =>
+      targets.getRoutesModule()?.isCrossroad?.(cell) ?? false,
+    isConnected: (cell) =>
+      targets.getRoutesModule()?.isConnected?.(cell) ?? false,
+    hasRoad: (cell) => targets.getRoutesModule()?.hasRoad?.(cell) ?? false,
+    getRoute: (from, to) => targets.getRoutesModule()?.getRoute?.(from, to),
     getConnectivityRate: (cell) =>
-      globalThis.Routes?.getConnectivityRate?.(cell) ?? 0,
-    buildLinks: (routes) => globalThis.Routes?.buildLinks?.(routes) ?? [],
-    connect: (cell) => globalThis.Routes?.connect?.(cell),
+      targets.getRoutesModule()?.getConnectivityRate?.(cell) ?? 0,
+    buildLinks: (routes) =>
+      targets.getRoutesModule()?.buildLinks?.(routes) ?? [],
+    connect: (cell) => targets.getRoutesModule()?.connect?.(cell),
     remove: (route) => {
-      globalThis.Routes?.remove?.(route as any);
+      targets.getRoutesModule()?.remove?.(route as any);
     },
     findById: (routeId) =>
-      globalThis.pack?.routes?.find((route) => route?.i === routeId),
+      targets.getPackedRoutes()?.find((route) => route?.i === routeId),
   };
+}
+
+export function createGlobalRouteService(): EngineRouteService {
+  return createEngineRouteService({
+    getRoutesModule: () => globalThis.Routes,
+    getPackedRoutes: () => globalThis.pack?.routes,
+  });
 }
