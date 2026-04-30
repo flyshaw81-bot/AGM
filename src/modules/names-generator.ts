@@ -23,43 +23,49 @@ export interface NameBase {
 type MarkovChain = string[][] & Record<string, string[]>;
 
 export type NamesRuntimeAdapters = {
-  logs?: {
+  logs: {
     warn: (message: string) => void;
     error: (message: string) => void;
   };
   random?: EngineRandomService;
-  showTip?: (message: string, isSuccess?: boolean, type?: string) => void;
+  showTip: (message: string, isSuccess?: boolean, type?: string) => void;
 };
+
+export function createGlobalNamesRuntimeAdapters(): NamesRuntimeAdapters {
+  return {
+    logs: {
+      warn: (message) => {
+        globalThis.WARN && console.warn(message);
+      },
+      error: (message) => {
+        globalThis.ERROR && console.error(message);
+      },
+    },
+    showTip: (message, isSuccess, type) => {
+      if (typeof globalThis.tip === "function") {
+        globalThis.tip(message, isSuccess, type as any);
+      }
+    },
+  };
+}
 
 export class NamesGenerator {
   chains: (MarkovChain | null)[] = []; // Markov chains for namebases
 
-  constructor(private readonly adapters: NamesRuntimeAdapters = {}) {}
+  constructor(
+    private readonly adapters: NamesRuntimeAdapters = createGlobalNamesRuntimeAdapters(),
+  ) {}
 
   private warn(message: string) {
-    if (this.adapters.logs) {
-      this.adapters.logs.warn(message);
-      return;
-    }
-    globalThis.WARN && console.warn(message);
+    this.adapters.logs.warn(message);
   }
 
   private error(message: string) {
-    if (this.adapters.logs) {
-      this.adapters.logs.error(message);
-      return;
-    }
-    globalThis.ERROR && console.error(message);
+    this.adapters.logs.error(message);
   }
 
   private showTip(message: string, isSuccess?: boolean, type?: string) {
-    if (this.adapters.showTip) {
-      this.adapters.showTip(message, isSuccess, type);
-      return;
-    }
-    if (typeof globalThis.tip === "function") {
-      globalThis.tip(message, isSuccess, type as any);
-    }
+    this.adapters.showTip(message, isSuccess, type);
   }
 
   private random() {

@@ -1,5 +1,22 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { NamesGenerator } from "./names-generator";
+import {
+  createGlobalNamesRuntimeAdapters,
+  NamesGenerator,
+  type NamesRuntimeAdapters,
+} from "./names-generator";
+
+function createAdapters(
+  overrides: Partial<NamesRuntimeAdapters> = {},
+): NamesRuntimeAdapters {
+  return {
+    logs: {
+      warn: vi.fn(),
+      error: vi.fn(),
+    },
+    showTip: vi.fn(),
+    ...overrides,
+  };
+}
 
 describe("NamesGenerator", () => {
   afterEach(() => {
@@ -17,14 +34,16 @@ describe("NamesGenerator", () => {
 
   it("routes validation errors through injected adapters", () => {
     const errors: string[] = [];
-    const names = new NamesGenerator({
-      logs: {
-        warn: () => {},
-        error: (message) => {
-          errors.push(message);
+    const names = new NamesGenerator(
+      createAdapters({
+        logs: {
+          warn: () => {},
+          error: (message) => {
+            errors.push(message);
+          },
         },
-      },
-    });
+      }),
+    );
 
     expect(names.getBase(undefined as unknown as number)).toBe("ERROR");
     expect(errors).toEqual(["Please define a base"]);
@@ -33,16 +52,26 @@ describe("NamesGenerator", () => {
   it("uses injected randomness for state suffix selection", () => {
     vi.spyOn(Math, "random").mockReturnValue(0.9);
     let randomCalls = 0;
-    const names = new NamesGenerator({
-      random: {
-        next: () => {
-          randomCalls++;
-          return 0.5;
+    const names = new NamesGenerator(
+      createAdapters({
+        random: {
+          next: () => {
+            randomCalls++;
+            return 0.5;
+          },
         },
-      },
-    });
+      }),
+    );
 
     expect(names.getState("Bud", 1, 16)).toBe("Budyurt");
     expect(randomCalls).toBe(1);
+  });
+
+  it("creates global runtime adapters without invoking globals eagerly", () => {
+    const adapters = createGlobalNamesRuntimeAdapters();
+
+    expect(adapters.logs.warn).toBeTypeOf("function");
+    expect(adapters.logs.error).toBeTypeOf("function");
+    expect(adapters.showTip).toBeTypeOf("function");
   });
 });

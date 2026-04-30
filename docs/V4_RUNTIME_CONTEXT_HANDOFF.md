@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 180 test files, 656 tests.
+- `npm.cmd run test -- --run` passed: 180 test files, 657 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1978,6 +1978,11 @@ globals.
 `HeightmapLogTargets`. The default target preserves the existing
 `globalThis.ERROR` behavior, and tests can assert diagnostics without reading
 browser globals.
+
+`names-generator.ts` now creates its default warning/error/tip behavior through
+`createGlobalNamesRuntimeAdapters()`. `NamesGenerator` itself uses injected
+runtime adapters for diagnostics, tips, and randomness instead of scattering
+global fallbacks across methods.
 
 ## Next Recommended Slice
 
