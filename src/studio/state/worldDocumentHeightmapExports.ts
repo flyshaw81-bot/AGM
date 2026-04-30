@@ -32,6 +32,23 @@ function clampHeight(value: number) {
 
 type HeightfieldExport = ReturnType<typeof createHeightfieldExport>;
 
+export type HeightmapPngCanvas = {
+  width: number;
+  height: number;
+  getContext: (contextId: "2d") => CanvasRenderingContext2D | null;
+  toBlob: (callback: BlobCallback, type?: string) => void;
+};
+
+export type HeightmapPngExportTargets = {
+  createCanvas: () => HeightmapPngCanvas;
+};
+
+export function createGlobalHeightmapPngExportTargets(): HeightmapPngExportTargets {
+  return {
+    createCanvas: () => document.createElement("canvas"),
+  };
+}
+
 export function createHeightfieldExport(packageDraft: WorldMapExportPackage) {
   const { resourceMap, provinceMap, biomeMap } = packageDraft.maps;
   const width = Math.max(
@@ -137,8 +154,11 @@ export function createHeightfieldExport(packageDraft: WorldMapExportPackage) {
   };
 }
 
-export function createHeightmapPngBlob(heightfield: HeightfieldExport) {
-  const canvas = document.createElement("canvas");
+export function createHeightmapPngBlob(
+  heightfield: HeightfieldExport,
+  targets: HeightmapPngExportTargets = createGlobalHeightmapPngExportTargets(),
+) {
+  const canvas = targets.createCanvas();
   canvas.width = heightfield.grid.width;
   canvas.height = heightfield.grid.height;
   const context = canvas.getContext("2d");

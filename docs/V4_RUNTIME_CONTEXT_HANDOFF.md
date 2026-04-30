@@ -30,6 +30,9 @@
 > World document and engine package default target factories now compose the
 > same `DraftFileIoTargets`, so project export tests can inject one file IO
 > boundary for JSON, blob, and zip package paths.
+> Heightmap PNG export now uses `HeightmapPngExportTargets`, isolating DOM
+> canvas creation from heightmap serialization while preserving the default
+> browser canvas path.
 > Please review whether each remaining global dependency is behind an explicit
 > compatibility adapter, and keep treating AGM `window.*` module mounts
 > separately from old public UI debt.
@@ -433,7 +436,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 133 test files, 442 tests.
+- `npm.cmd run test -- --run` passed: 134 test files, 444 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
