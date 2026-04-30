@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  createRuntimeOptionsNamingAdapter,
+  createRuntimeOptionsRandomAdapter,
+  createRuntimeOptionsSession,
   type EngineOptionsControlAdapter,
   type EngineOptionsNamingAdapter,
   type EngineOptionsRandomAdapter,
@@ -8,6 +11,7 @@ import {
   type EngineOptionsWriterAdapter,
   shouldForceDefaultOptions,
 } from "./engine-options-session";
+import type { EngineRuntimeContext } from "./engine-runtime-context";
 
 function createControls(
   overrides: Partial<EngineOptionsControlAdapter> = {},
@@ -79,6 +83,25 @@ function createRandom(
       Object.keys(weights)[0]) as EngineOptionsRandomAdapter["rw"],
     ...overrides,
   };
+}
+
+function createRuntimeContext(
+  randomValues: number[] = [0.25],
+): EngineRuntimeContext {
+  let index = 0;
+  return {
+    random: {
+      next: () =>
+        randomValues[index++] ?? randomValues[randomValues.length - 1],
+    },
+    naming: {
+      getCulture: () => "",
+      getCultureShort: () => "",
+      getState: () => "",
+      getBaseShort: (base: number) => `Base ${base}`,
+      getNameBases: () => [{}, {}, {}] as never,
+    },
+  } as unknown as EngineRuntimeContext;
 }
 
 describe("shouldForceDefaultOptions", () => {
@@ -237,6 +260,40 @@ describe("EngineOptionsSessionModule", () => {
     ).generateEra();
 
     expect(writer.setYear).toHaveBeenCalledWith(1492);
+    expect(writer.syncEraOptions).toHaveBeenCalled();
+  });
+
+  it("creates a runtime random adapter from the engine runtime context", () => {
+    const random = createRuntimeOptionsRandomAdapter(
+      createRuntimeContext([0.25, 0.9]),
+    );
+
+    expect(random.random()).toBe(0.25);
+    expect(random.rand(1, 3)).toBe(3);
+  });
+
+  it("creates runtime era names from the engine naming context", () => {
+    const naming = createRuntimeOptionsNamingAdapter(
+      createRuntimeContext([0.9, 0.5]),
+    );
+
+    expect(naming.generateEraName()).toBe("Base 2 Era");
+  });
+
+  it("creates a runtime options session without global random or naming lookups", () => {
+    const writer = createWriter();
+    const session = createRuntimeOptionsSession(
+      createRuntimeContext([0.2, 0.3, 0.4, 0.5]),
+      createControls({
+        isStored: (settingId) => settingId === "year",
+      }),
+      writer,
+      createReader(),
+    );
+
+    session.generateEra();
+
+    expect(writer.setEra).toHaveBeenCalledWith("Base 1 Era");
     expect(writer.syncEraOptions).toHaveBeenCalled();
   });
 });

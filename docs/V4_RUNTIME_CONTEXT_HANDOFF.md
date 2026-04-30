@@ -1760,6 +1760,14 @@ those direct bridge calls inline. This checkpoint closes the first
   app command handlers, app project action handlers, shell event handlers, direct
   editor handlers, autofix preview handlers, and target lookups plus the first Studio host/map
   document-state adapters, not the full command-layer plan.
+Options session now exposes `createRuntimeOptionsSession(context)`.
+`getGlobalEngineRuntimeContext()` wires `optionsSession` through that runtime
+factory instead of keeping the global singleton on the context. The runtime
+options session still uses the compatibility controls/writer/reader for DOM
+setting application, but era naming and random option generation are now sourced
+from `context.naming` and `context.random`. This keeps current UI behavior
+stable while making the next replacement step narrower: replace the
+compatibility options writer with a typed runtime settings writer.
 
 ## Next Recommended Slice
 

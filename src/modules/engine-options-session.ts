@@ -1,5 +1,7 @@
+import { randomNormal } from "d3";
 import { rn } from "../utils/numberUtils";
 import { gauss, P, rand, rw } from "../utils/probabilityUtils";
+import type { EngineRuntimeContext } from "./engine-runtime-context";
 
 export function shouldForceDefaultOptions(
   searchParams: URLSearchParams,
@@ -101,6 +103,63 @@ export function createGlobalOptionsRandomAdapter(): EngineOptionsRandomAdapter {
     gauss,
     rand,
     rw,
+  };
+}
+
+function createRuntimeRand(random: () => number): typeof rand {
+  return (min?: number, max?: number): number => {
+    if (min === undefined && max === undefined) return random();
+    if (max === undefined) {
+      max = min;
+      min = 0;
+    }
+    return Math.floor(random() * (max! - min! + 1)) + min!;
+  };
+}
+
+function createRuntimeRw(random: () => number): typeof rw {
+  return (weights: { [key: string]: number }): string => {
+    const weightedKeys = [];
+    for (const key in weights) {
+      for (let index = 0; index < weights[key]; index++) weightedKeys.push(key);
+    }
+    return weightedKeys[Math.floor(random() * weightedKeys.length)];
+  };
+}
+
+export function createRuntimeOptionsRandomAdapter(
+  context: EngineRuntimeContext,
+): EngineOptionsRandomAdapter {
+  const random = () => context.random.next();
+
+  return {
+    random,
+    gauss: (expected = 100, deviation = 30, min = 0, max = 300, round = 0) =>
+      rn(
+        Math.min(
+          Math.max(randomNormal.source(random)(expected, deviation)(), min),
+          max,
+        ),
+        round,
+      ),
+    rand: createRuntimeRand(random),
+    rw: createRuntimeRw(random),
+  };
+}
+
+export function createRuntimeOptionsNamingAdapter(
+  context: EngineRuntimeContext,
+  random: EngineOptionsRandomAdapter = createRuntimeOptionsRandomAdapter(
+    context,
+  ),
+): EngineOptionsNamingAdapter {
+  return {
+    generateEraName: () => {
+      const nameBases = context.naming.getNameBases?.() ?? [];
+      const base = random.random() < 0.7 ? 1 : random.rand(nameBases.length);
+      const name = context.naming.getBaseShort?.(base) ?? "AGM";
+      return `${name} Era`;
+    },
   };
 }
 
@@ -285,6 +344,22 @@ export class EngineOptionsSessionModule {
       this.generateEra();
     };
   }
+}
+
+export function createRuntimeOptionsSession(
+  context: EngineRuntimeContext,
+  controls: EngineOptionsControlAdapter = createGlobalOptionsControlAdapter(),
+  writer: EngineOptionsWriterAdapter = createGlobalOptionsWriterAdapter(),
+  reader: EngineOptionsReaderAdapter = createGlobalOptionsReaderAdapter(),
+): EngineOptionsSessionModule {
+  const random = createRuntimeOptionsRandomAdapter(context);
+  return new EngineOptionsSessionModule(
+    controls,
+    writer,
+    reader,
+    createRuntimeOptionsNamingAdapter(context, random),
+    random,
+  );
 }
 
 export const EngineOptionsSession = new EngineOptionsSessionModule();

@@ -47,7 +47,10 @@ import {
   createGlobalNoticeService,
   type EngineNoticeService,
 } from "./engine-notice-service";
-import type { EngineOptionsSessionModule } from "./engine-options-session";
+import {
+  createRuntimeOptionsSession,
+  type EngineOptionsSessionModule,
+} from "./engine-options-session";
 import {
   createGlobalRandomService,
   type EngineRandomService,
@@ -170,5 +173,6 @@ export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
   context.routes = createRuntimeRouteService(context);
   context.mapStore = createRuntimeMapStore(context, () => context);
   context.gridSession = createRuntimeGridSessionService(context);
+  context.optionsSession = createRuntimeOptionsSession(context);
   return context;
 }
