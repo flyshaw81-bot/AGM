@@ -1,10 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
+import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 import type {
   EngineFocusGeometry,
   EngineFocusTarget,
 } from "../bridge/engineActions";
 import type { StudioState } from "../types";
-import { createDirectEditorActionTargets } from "./directEditorActionTargets";
+import {
+  createDirectEditorActionTargets,
+  createRuntimeDirectEditorActionTargets,
+} from "./directEditorActionTargets";
 
 describe("createDirectEditorActionTargets", () => {
   it("composes direct editor targets from injected adapters", () => {
@@ -54,5 +58,45 @@ describe("createDirectEditorActionTargets", () => {
     expect(updateDiplomacy).toHaveBeenCalledWith(1, 2, {
       relation: "Ally",
     });
+  });
+
+  it("creates direct editor targets from an injected runtime context", () => {
+    const state = { i: 1, name: "Old", formName: "Duchy", fullName: "Old" };
+    const context = {
+      worldSettings: {
+        graphWidth: 1200,
+        graphHeight: 800,
+      },
+      pack: {
+        cells: {
+          i: [1],
+          p: { 1: [10, 20] },
+          state: { 1: 1 },
+        },
+        states: [undefined, state],
+      },
+      biomesData: {
+        i: [2],
+        habitability: { 2: 10 },
+      },
+    } as unknown as EngineRuntimeContext;
+    const targets = createRuntimeDirectEditorActionTargets(context);
+
+    expect(
+      targets.resolveFocusGeometry({
+        targetType: "state",
+        targetId: 1,
+        sourceLabel: "direct-states-workbench",
+      }),
+    ).toMatchObject({ targetId: 1, width: 1200, height: 800 });
+    targets.updateState(1, {
+      name: "New",
+      formName: "Duchy",
+      fullName: "Duchy of New",
+    });
+    targets.updateBiome(2, { habitability: 30 });
+
+    expect(state.name).toBe("New");
+    expect(context.biomesData.habitability[2]).toBe(30);
   });
 });

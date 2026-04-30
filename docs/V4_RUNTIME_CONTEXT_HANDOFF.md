@@ -418,7 +418,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 129 test files, 417 tests.
+- `npm.cmd run test -- --run` passed: 129 test files, 418 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1190,8 +1190,10 @@ bridge, focus geometry, draft import, autofix, canvas, workspace, and
 preference helpers, but `studioShellHandlers.ts` no longer owns those direct
 calls inline. `DirectEditorActionTargets` now splits document sync, focus
 geometry, and entity mutation commands through dedicated app-level adapters.
-The default adapters still delegate to current entity mutation/focus bridge
-helpers, but `directEditorActionHandlers.ts` and
+Direct editor targets can also compose focus, entity mutation, and biome
+mutation commands directly from an injected `EngineRuntimeContext`. The default
+adapters still delegate to current entity mutation/focus bridge helpers, but
+`directEditorActionHandlers.ts` and
 `directEditorEntityActionHandlers.ts` no longer own those direct bridge calls
 inline. `AutoFixPreviewTargets` now splits project summary, world draft, and
 engine writeback/undo commands through dedicated app-level adapters. The default

@@ -1,3 +1,4 @@
+import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 import type {
   EngineFocusGeometry,
   EngineFocusTarget,
@@ -14,6 +15,9 @@ import {
   updateEngineStateName,
   updateEngineZone,
 } from "../bridge/engineActions";
+import { createRuntimeBiomeWritebackTargets } from "../bridge/engineAutoFixBiomeTargets";
+import { createRuntimeEntityMutationTargets } from "../bridge/engineEntityMutationTargets";
+import { createRuntimeFocusGeometryTargets } from "../bridge/engineFocusGeometryTargets";
 import type { StudioShellEventHandlers } from "../layout/shellEvents";
 import type { StudioState } from "../types";
 import { syncDocumentState } from "./documentState";
@@ -96,6 +100,16 @@ export function createGlobalDirectEditorFocusAdapter(): DirectEditorFocusAdapter
   };
 }
 
+export function createRuntimeDirectEditorFocusAdapter(
+  context: EngineRuntimeContext,
+): DirectEditorFocusAdapter {
+  const focusTargets = createRuntimeFocusGeometryTargets(context);
+  return {
+    resolveFocusGeometry: (focus) =>
+      resolveEngineFocusGeometry(focus, focusTargets),
+  };
+}
+
 export function createGlobalDirectEditorMutationAdapter(): DirectEditorMutationAdapter {
   return {
     updateState: updateEngineStateName,
@@ -107,6 +121,26 @@ export function createGlobalDirectEditorMutationAdapter(): DirectEditorMutationA
     updateZone: updateEngineZone,
     updateBiome: updateEngineBiomeResource,
     updateDiplomacy: updateEngineDiplomacy,
+  };
+}
+
+export function createRuntimeDirectEditorMutationAdapter(
+  context: EngineRuntimeContext,
+): DirectEditorMutationAdapter {
+  const entityTargets = createRuntimeEntityMutationTargets(context);
+  const biomeTargets = createRuntimeBiomeWritebackTargets(context);
+  return {
+    updateState: (id, next) => updateEngineStateName(id, next, entityTargets),
+    updateBurg: (id, next) => updateEngineBurg(id, next, entityTargets),
+    updateCulture: (id, next) => updateEngineCulture(id, next, entityTargets),
+    updateReligion: (id, next) => updateEngineReligion(id, next, entityTargets),
+    updateProvince: (id, next) => updateEngineProvince(id, next, entityTargets),
+    updateRoute: (id, next) => updateEngineRoute(id, next, entityTargets),
+    updateZone: (id, next) => updateEngineZone(id, next, entityTargets),
+    updateBiome: (id, next) =>
+      updateEngineBiomeResource(id, next, biomeTargets),
+    updateDiplomacy: (subjectId, objectId, next) =>
+      updateEngineDiplomacy(subjectId, objectId, next, entityTargets),
   };
 }
 
@@ -135,5 +169,15 @@ export function createGlobalDirectEditorActionTargets(): DirectEditorActionTarge
     createGlobalDirectEditorDocumentAdapter(),
     createGlobalDirectEditorFocusAdapter(),
     createGlobalDirectEditorMutationAdapter(),
+  );
+}
+
+export function createRuntimeDirectEditorActionTargets(
+  context: EngineRuntimeContext,
+): DirectEditorActionTargets {
+  return createDirectEditorActionTargets(
+    createGlobalDirectEditorDocumentAdapter(),
+    createRuntimeDirectEditorFocusAdapter(context),
+    createRuntimeDirectEditorMutationAdapter(context),
   );
 }
