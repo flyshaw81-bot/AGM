@@ -10,6 +10,38 @@ import {
   redrawEngineCanvasEditLayers,
 } from "./engineCanvasAccess";
 
+type CanvasPaintPackCells = {
+  biome?: (ArrayLike<number> & Record<number, number>) | Record<number, number>;
+  g?: Record<number, number>;
+  h?: Record<number, number>;
+  p?: Record<number, unknown>;
+  state?: Record<number, number>;
+};
+
+type CanvasPaintGridCells = {
+  h?: Record<number, number>;
+};
+
+export type CanvasPaintEditingTargets = {
+  getGraphSize: typeof getEngineCanvasGraphSize;
+  getPackCells: () => CanvasPaintPackCells | undefined;
+  getGridCells: () => CanvasPaintGridCells | undefined;
+  redrawEditLayers: () => void;
+  now: () => number;
+};
+
+export function createGlobalCanvasPaintEditingTargets(): CanvasPaintEditingTargets {
+  return {
+    getGraphSize: getEngineCanvasGraphSize,
+    getPackCells: () =>
+      getEnginePackCells() as CanvasPaintPackCells | undefined,
+    getGridCells: () =>
+      getEngineGridCells() as CanvasPaintGridCells | undefined,
+    redrawEditLayers: redrawEngineCanvasEditLayers,
+    now: () => Date.now(),
+  };
+}
+
 export function isPaintCanvasTool(
   tool: StudioState["viewport"]["canvasTool"],
 ): tool is CanvasPaintPreviewState["tool"] {
@@ -19,17 +51,11 @@ export function isPaintCanvasTool(
 export function getCanvasPaintPreviewForCell(
   tool: CanvasPaintPreviewState["tool"],
   cellId: number,
+  targets: CanvasPaintEditingTargets = createGlobalCanvasPaintEditingTargets(),
 ): CanvasPaintPreviewState | null {
-  const cells = getEnginePackCells() as
-    | {
-        biome?: Record<number, number>;
-        h?: Record<number, number>;
-        p?: Record<number, unknown>;
-        state?: Record<number, number>;
-      }
-    | undefined;
+  const cells = targets.getPackCells();
   const point = cells?.p?.[cellId];
-  const { width: graphWidth, height: graphHeight } = getEngineCanvasGraphSize();
+  const { width: graphWidth, height: graphHeight } = targets.getGraphSize();
   if (!cells || !Array.isArray(point) || !graphWidth || !graphHeight)
     return null;
   const height = Number(cells.h?.[cellId]);
@@ -50,13 +76,9 @@ export function getCanvasPaintPreviewForCell(
 
 function getCanvasEditTarget(
   preview: CanvasPaintPreviewState,
+  targets: CanvasPaintEditingTargets,
 ): CanvasEditHistoryEntry | null {
-  const cells = getEnginePackCells() as
-    | {
-        biome?: Record<number, number>;
-        h?: Record<number, number>;
-      }
-    | undefined;
+  const cells = targets.getPackCells();
   if (!cells) return null;
   const beforeHeight = Number(cells.h?.[preview.cellId]);
   const beforeBiomeId = Number(cells.biome?.[preview.cellId]);
@@ -88,7 +110,7 @@ function getCanvasEditTarget(
         : null;
 
   return {
-    id: Date.now(),
+    id: targets.now(),
     tool: preview.tool,
     cellId: preview.cellId,
     beforeHeight: Number.isFinite(beforeHeight) ? beforeHeight : null,
@@ -104,17 +126,10 @@ function writeCanvasCellEdit(
   entry: CanvasEditHistoryEntry,
   height: number | null,
   biomeId: number | null,
+  targets: CanvasPaintEditingTargets,
 ) {
-  const cells = getEnginePackCells() as
-    | {
-        biome?: Record<number, number>;
-        g?: Record<number, number>;
-        h?: Record<number, number>;
-      }
-    | undefined;
-  const gridCells = getEngineGridCells() as
-    | { h?: Record<number, number> }
-    | undefined;
+  const cells = targets.getPackCells();
+  const gridCells = targets.getGridCells();
   if (!cells) return false;
   const biomeByCell = cells.biome;
   if (entry.batch?.length && biomeByCell) {
@@ -124,7 +139,7 @@ function writeCanvasCellEdit(
         ? change.afterBiomeId
         : change.beforeBiomeId;
     });
-    redrawEngineCanvasEditLayers();
+    targets.redrawEditLayers();
     return true;
   }
   if (height !== null && cells.h) cells.h[entry.cellId] = height;
@@ -132,51 +147,65 @@ function writeCanvasCellEdit(
   if (height !== null && gridCells?.h && Number.isFinite(gridCellId))
     gridCells.h[gridCellId] = height;
   if (biomeId !== null && biomeByCell) biomeByCell[entry.cellId] = biomeId;
-  redrawEngineCanvasEditLayers();
+  targets.redrawEditLayers();
   return true;
 }
 
-function applyCanvasEditEntry(entry: CanvasEditHistoryEntry) {
-  return writeCanvasCellEdit(entry, entry.afterHeight, entry.afterBiomeId);
+function applyCanvasEditEntry(
+  entry: CanvasEditHistoryEntry,
+  targets: CanvasPaintEditingTargets,
+) {
+  return writeCanvasCellEdit(
+    entry,
+    entry.afterHeight,
+    entry.afterBiomeId,
+    targets,
+  );
 }
 
 export function applyCanvasPaintPreview(
   state: StudioState,
   preview: CanvasPaintPreviewState,
+  targets: CanvasPaintEditingTargets = createGlobalCanvasPaintEditingTargets(),
 ) {
-  const entry = getCanvasEditTarget(preview);
+  const entry = getCanvasEditTarget(preview, targets);
   if (!entry) return false;
   if (
     entry.beforeHeight === entry.afterHeight &&
     entry.beforeBiomeId === entry.afterBiomeId
   )
     return false;
-  if (!applyCanvasEditEntry(entry)) return false;
+  if (!applyCanvasEditEntry(entry, targets)) return false;
   state.viewport.canvasEditHistory = [
     entry,
     ...state.viewport.canvasEditHistory,
   ].slice(0, 8);
   state.viewport.paintPreview =
-    getCanvasPaintPreviewForCell(preview.tool, preview.cellId) ?? preview;
+    getCanvasPaintPreviewForCell(preview.tool, preview.cellId, targets) ??
+    preview;
   state.document.source = "core";
   return true;
 }
 
-export function undoCanvasEditEntry(entry: CanvasEditHistoryEntry) {
-  return writeCanvasCellEdit(entry, entry.beforeHeight, entry.beforeBiomeId);
+export function undoCanvasEditEntry(
+  entry: CanvasEditHistoryEntry,
+  targets: CanvasPaintEditingTargets = createGlobalCanvasPaintEditingTargets(),
+) {
+  return writeCanvasCellEdit(
+    entry,
+    entry.beforeHeight,
+    entry.beforeBiomeId,
+    targets,
+  );
 }
 
 export function applyBiomeCoverageTarget(
   state: StudioState,
   biomeId: number,
   targetPercentage: number,
+  targets: CanvasPaintEditingTargets = createGlobalCanvasPaintEditingTargets(),
 ) {
-  const cells = getEnginePackCells() as
-    | {
-        biome?: ArrayLike<number> & Record<number, number>;
-        p?: Record<number, unknown>;
-      }
-    | undefined;
+  const cells = targets.getPackCells();
   if (
     !cells?.biome ||
     !Number.isFinite(biomeId) ||
@@ -263,7 +292,7 @@ export function applyBiomeCoverageTarget(
 
   if (!changes.length) return false;
   const entry: CanvasEditHistoryEntry = {
-    id: Date.now(),
+    id: targets.now(),
     tool: "biome-slider",
     cellId: changes[0].cellId,
     beforeHeight: null,
@@ -274,7 +303,7 @@ export function applyBiomeCoverageTarget(
     undone: false,
     batch: changes,
   };
-  if (!applyCanvasEditEntry(entry)) return false;
+  if (!applyCanvasEditEntry(entry, targets)) return false;
   state.viewport.canvasEditHistory = [
     entry,
     ...state.viewport.canvasEditHistory,

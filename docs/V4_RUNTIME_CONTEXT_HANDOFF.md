@@ -70,6 +70,9 @@
 > Canvas interaction geometry now uses `CanvasInteractionGeometryTargets`, so
 > frame lookup, graph dimensions, and pack reads are injected for selection and
 > paint-preview geometry.
+> Canvas paint editing now uses `CanvasPaintEditingTargets`, so graph size,
+> pack/grid cell access, edit-layer redraw, and edit-entry timestamps are
+> injectable across preview, paint apply, undo, and biome coverage paths.
 > Please review whether each remaining global dependency is behind an explicit
 > compatibility adapter, and keep treating AGM `window.*` module mounts
 > separately from old public UI debt.
@@ -473,7 +476,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 145 test files, 483 tests.
+- `npm.cmd run test -- --run` passed: 146 test files, 487 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1291,6 +1294,11 @@ Canvas interaction geometry now has a dedicated
 graph dimensions, and pack reads. The default adapter still composes current
 DOM and engine canvas access helpers, while focused tests resolve selected
 states with injected frame/graph/pack fakes and no browser document.
+Canvas paint editing now has a dedicated `CanvasPaintEditingTargets` boundary
+for graph dimensions, pack/grid cell access, edit-layer redraw, and timestamps.
+The default adapter still composes current engine canvas access helpers, while
+focused tests exercise preview creation, paint writes, undo, and biome coverage
+batch writes with injected cells, redraw, and clock fakes.
 Direct editor targets can also compose focus, entity mutation, and biome
 mutation commands directly from an injected `EngineRuntimeContext`. The default
 adapters still delegate to current entity mutation/focus bridge helpers, but
