@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 180 test files, 665 tests.
+- `npm.cmd run test -- --run` passed: 180 test files, 667 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1968,6 +1968,10 @@ inside option randomization controls. `engine-seed-session.ts` now routes the
 `#optionsSeed` DOM lookup through `EngineSeedDomTargets`. Default browser
 adapters still preserve the current runtime behavior, and focused tests cover
 both injected paths.
+`engine-seed-session.ts` now also separates seed runtime globals
+(`mapHistory`, `location.href`, `seed`, `aleaPRNG`) into
+`EngineSeedRuntimeTargets`, while `createGlobalSeedSessionTargets()` remains
+backward-compatible for the current public runtime.
 
 `engine-runtime-settings.ts` now routes settings input lookups through
 `EngineSettingsDomTargets`, keeping the browser `document.getElementById`

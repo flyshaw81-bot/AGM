@@ -21,6 +21,14 @@ export type EngineSeedSessionTargets = {
   createSeed: () => string;
 };
 
+export type EngineSeedRuntimeTargets = {
+  hasHistory: () => boolean;
+  getSearchParams: () => URLSearchParams;
+  setSeed: (seed: string) => void;
+  setRandomGenerator: (seed: string) => void;
+  createSeed: () => string;
+};
+
 export type EngineSeedDomTargets = {
   getOptionsSeedInput: () => HTMLInputElement | null;
 };
@@ -29,6 +37,20 @@ export function createGlobalSeedDomTargets(): EngineSeedDomTargets {
   return {
     getOptionsSeedInput: () =>
       document.getElementById("optionsSeed") as HTMLInputElement | null,
+  };
+}
+
+export function createGlobalSeedRuntimeTargets(): EngineSeedRuntimeTargets {
+  return {
+    hasHistory: () => Boolean(globalThis.mapHistory?.[0]),
+    getSearchParams: () => new URL(globalThis.location.href).searchParams,
+    setSeed: (nextSeed) => {
+      globalThis.seed = nextSeed;
+    },
+    setRandomGenerator: (nextSeed) => {
+      Math.random = aleaPRNG(nextSeed);
+    },
+    createSeed: generateSeed,
   };
 }
 
@@ -85,24 +107,28 @@ export class EngineSeedSessionModule {
   }
 }
 
-export function createGlobalSeedSessionTargets(
+export function createSeedSessionTargets(
+  runtimeTargets: EngineSeedRuntimeTargets,
   domTargets: EngineSeedDomTargets = createGlobalSeedDomTargets(),
 ): EngineSeedSessionTargets {
   return {
-    hasHistory: () => Boolean(globalThis.mapHistory?.[0]),
-    getSearchParams: () => new URL(globalThis.location.href).searchParams,
-    setSeed: (nextSeed) => {
-      globalThis.seed = nextSeed;
-    },
+    hasHistory: runtimeTargets.hasHistory,
+    getSearchParams: runtimeTargets.getSearchParams,
+    setSeed: runtimeTargets.setSeed,
     setOptionsSeed: (nextSeed) => {
       const optionsSeed = domTargets.getOptionsSeedInput();
       if (optionsSeed) optionsSeed.value = nextSeed;
     },
-    setRandomGenerator: (nextSeed) => {
-      Math.random = aleaPRNG(nextSeed);
-    },
-    createSeed: generateSeed,
+    setRandomGenerator: runtimeTargets.setRandomGenerator,
+    createSeed: runtimeTargets.createSeed,
   };
+}
+
+export function createGlobalSeedSessionTargets(
+  domTargets: EngineSeedDomTargets = createGlobalSeedDomTargets(),
+  runtimeTargets: EngineSeedRuntimeTargets = createGlobalSeedRuntimeTargets(),
+): EngineSeedSessionTargets {
+  return createSeedSessionTargets(runtimeTargets, domTargets);
 }
 
 export function createRuntimeSeedSessionTargets(

@@ -1,10 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
 import {
+  createGlobalSeedRuntimeTargets,
   createGlobalSeedSessionTargets,
   createRuntimeSeedSession,
   createRuntimeSeedSessionTargets,
+  createSeedSessionTargets,
   type EngineSeedDomTargets,
+  type EngineSeedRuntimeTargets,
   EngineSeedSessionModule,
   type EngineSeedSessionTargets,
   resolveEngineSeed,
@@ -107,6 +110,62 @@ describe("EngineSeedSessionModule", () => {
 
     expect(domTargets.getOptionsSeedInput).toHaveBeenCalled();
     expect(optionsSeed.value).toBe("dom-seed");
+  });
+
+  it("composes seed session targets from explicit runtime and DOM targets", () => {
+    const optionsSeed = { value: "" } as HTMLInputElement;
+    const runtimeTargets: EngineSeedRuntimeTargets = {
+      hasHistory: vi.fn(() => true),
+      getSearchParams: vi.fn(() => new URLSearchParams("seed=ignored")),
+      setSeed: vi.fn(),
+      setRandomGenerator: vi.fn(),
+      createSeed: vi.fn(() => "runtime-seed"),
+    };
+    const sessionTargets = createSeedSessionTargets(runtimeTargets, {
+      getOptionsSeedInput: () => optionsSeed,
+    });
+
+    const seed = new EngineSeedSessionModule(sessionTargets).apply();
+
+    expect(seed).toBe("runtime-seed");
+    expect(runtimeTargets.hasHistory).toHaveBeenCalled();
+    expect(runtimeTargets.setSeed).toHaveBeenCalledWith("runtime-seed");
+    expect(runtimeTargets.setRandomGenerator).toHaveBeenCalledWith(
+      "runtime-seed",
+    );
+    expect(optionsSeed.value).toBe("runtime-seed");
+  });
+
+  it("reads seed session environment through explicit global runtime targets", () => {
+    const originalMapHistory = globalThis.mapHistory;
+    const originalLocation = globalThis.location;
+    const originalSeed = globalThis.seed;
+    const originalRandom = Math.random;
+    const originalAleaPrng = globalThis.aleaPRNG;
+
+    try {
+      globalThis.mapHistory = [{ seed: "past" }];
+      globalThis.location = {
+        href: "https://agm.example/?seed=url-seed",
+      } as Location;
+      globalThis.aleaPRNG = vi.fn(() => () => 0.42) as typeof aleaPRNG;
+
+      const runtimeTargets = createGlobalSeedRuntimeTargets();
+      runtimeTargets.setSeed("global-seed");
+      runtimeTargets.setRandomGenerator("global-seed");
+
+      expect(runtimeTargets.hasHistory()).toBe(true);
+      expect(runtimeTargets.getSearchParams().get("seed")).toBe("url-seed");
+      expect(globalThis.seed).toBe("global-seed");
+      expect(globalThis.aleaPRNG).toHaveBeenCalledWith("global-seed");
+      expect(Math.random()).toBe(0.42);
+    } finally {
+      globalThis.mapHistory = originalMapHistory;
+      globalThis.location = originalLocation;
+      globalThis.seed = originalSeed;
+      globalThis.aleaPRNG = originalAleaPrng;
+      Math.random = originalRandom;
+    }
   });
 
   it("writes resolved seeds into the runtime context before delegating", () => {
