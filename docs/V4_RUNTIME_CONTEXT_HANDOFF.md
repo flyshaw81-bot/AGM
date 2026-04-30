@@ -39,6 +39,9 @@
 > Studio preference persistence now uses `StudioPreferenceTargets`, so
 > language/theme/navigation storage and document-element writes are isolated
 > behind an app-level preference adapter.
+> Project center persistence now uses `ProjectCenterTargets`, so recent-project
+> storage, project summary reads, and timestamp generation are isolated behind
+> app-level project center adapters.
 > Please review whether each remaining global dependency is behind an explicit
 > compatibility adapter, and keep treating AGM `window.*` module mounts
 > separately from old public UI debt.
@@ -442,7 +445,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 135 test files, 451 tests.
+- `npm.cmd run test -- --run` passed: 136 test files, 455 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1201,8 +1204,11 @@ default adapters, but `engineMapHost.ts` no longer owns those direct global
 calls inline.
 `StudioEngineCommandTargets` now splits style, export, bridge action,
 document/project, and generation-profile commands through dedicated app-level
-adapters. The default adapters still delegate to the current bridge/project
-helpers, but `studioEngineCommandHandlers.ts` no longer owns those calls inline.
+adapters. Project center persistence now flows through injected project center
+targets, so recent-project storage, project summary reads, and timestamp
+generation are no longer hard-wired into the app command/document adapters. The
+default adapters still delegate to the current bridge/project helpers, but
+`studioEngineCommandHandlers.ts` no longer owns those calls inline.
 `ProjectActionTargets` now splits project summary, draft, export,
 engine-action, and document commands through dedicated app-level adapters. The
 default adapters still delegate to the current engine project action bridge and

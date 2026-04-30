@@ -6,10 +6,12 @@ import type {
 } from "../state/worldDocumentDraft";
 import type { StudioState } from "../types";
 import {
+  createGlobalProjectDocumentAdapter,
   createProjectActionTargets,
   createProjectDraftAdapter,
   createProjectExportAdapter,
 } from "./projectActionTargets";
+import type { ProjectCenterTargets } from "./projectCenter";
 
 describe("createProjectActionTargets", () => {
   it("composes project action targets from injected project adapters", async () => {
@@ -100,5 +102,47 @@ describe("createProjectActionTargets", () => {
       draft.world.package,
       undefined,
     );
+  });
+
+  it("updates project center through injected project center targets", () => {
+    const state = {
+      document: {
+        name: "Northwatch",
+        seed: "42",
+        gameProfile: "balanced",
+        designIntent: "",
+        source: "draft",
+        dirty: false,
+      },
+      viewport: {
+        width: 1200,
+        height: 800,
+      },
+      projectCenter: {
+        activeProjectId: null,
+        lastSavedAt: null,
+        recentProjects: [],
+      },
+    } as unknown as StudioState;
+    const setStorageItem = vi.fn();
+    const targets: ProjectCenterTargets = {
+      getStorageItem: vi.fn(() => null),
+      setStorageItem,
+      getProjectSummary: vi.fn(
+        () =>
+          ({
+            pendingSeed: "42",
+            hasLocalSnapshot: true,
+          }) as EngineProjectSummary,
+      ),
+      now: vi.fn(() => 3000),
+    };
+
+    const adapter = createGlobalProjectDocumentAdapter(targets);
+    adapter.updateProjectCenter(state, { saved: true });
+
+    expect(state.projectCenter.activeProjectId).toBe("northwatch-42");
+    expect(state.projectCenter.lastSavedAt).toBe(3000);
+    expect(setStorageItem).toHaveBeenCalled();
   });
 });

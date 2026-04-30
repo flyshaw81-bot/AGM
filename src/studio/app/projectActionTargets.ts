@@ -32,7 +32,11 @@ import {
 } from "../state/worldDocumentDraft";
 import type { StudioState } from "../types";
 import { restoreAgmDocumentState, syncDocumentState } from "./documentState";
-import { updateProjectCenterState } from "./projectCenter";
+import {
+  createGlobalProjectCenterTargets,
+  type ProjectCenterTargets,
+  updateProjectCenterState,
+} from "./projectCenter";
 
 export type StudioProjectAction = Parameters<
   StudioShellEventHandlers["onProjectAction"]
@@ -268,9 +272,12 @@ export function createGlobalProjectEngineActionAdapter(): ProjectEngineActionAda
   };
 }
 
-export function createGlobalProjectDocumentAdapter(): ProjectDocumentAdapter {
+export function createGlobalProjectDocumentAdapter(
+  projectCenterTargets: ProjectCenterTargets = createGlobalProjectCenterTargets(),
+): ProjectDocumentAdapter {
   return {
-    updateProjectCenter: updateProjectCenterState,
+    updateProjectCenter: (state, options) =>
+      updateProjectCenterState(state, options, projectCenterTargets),
     syncDocument: syncDocumentState,
   };
 }

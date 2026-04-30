@@ -1,12 +1,29 @@
 import { getEngineProjectSummary } from "../bridge/engineActions";
+import type { EngineProjectSummary } from "../bridge/engineActionTypes";
 import type {
   ProjectCenterState,
   RecentProjectEntry,
   StudioState,
 } from "../types";
 
-const PROJECT_CENTER_STORAGE_KEY = "agm.projectCenter.recentProjects";
+export const PROJECT_CENTER_STORAGE_KEY = "agm.projectCenter.recentProjects";
 const PROJECT_CENTER_MAX_RECENT = 6;
+
+export type ProjectCenterTargets = {
+  getStorageItem: (key: string) => string | null;
+  setStorageItem: (key: string, value: string) => void;
+  getProjectSummary: () => EngineProjectSummary;
+  now: () => number;
+};
+
+export function createGlobalProjectCenterTargets(): ProjectCenterTargets {
+  return {
+    getStorageItem: (key) => localStorage.getItem(key),
+    setStorageItem: (key, value) => localStorage.setItem(key, value),
+    getProjectSummary: getEngineProjectSummary,
+    now: () => Date.now(),
+  };
+}
 
 function createProjectId(name: string, seed: string) {
   return (
@@ -40,9 +57,13 @@ function parseRecentProjectEntries(raw: string | null): RecentProjectEntry[] {
 
 export function loadProjectCenterState(
   documentState: StudioState["document"],
+  targets: Pick<
+    ProjectCenterTargets,
+    "getStorageItem"
+  > = createGlobalProjectCenterTargets(),
 ): ProjectCenterState {
   const recentProjects = parseRecentProjectEntries(
-    localStorage.getItem(PROJECT_CENTER_STORAGE_KEY),
+    targets.getStorageItem(PROJECT_CENTER_STORAGE_KEY),
   );
   return {
     recentProjects,
@@ -51,8 +72,11 @@ export function loadProjectCenterState(
   };
 }
 
-function persistProjectCenterState(projectCenter: ProjectCenterState) {
-  localStorage.setItem(
+function persistProjectCenterState(
+  projectCenter: ProjectCenterState,
+  targets: Pick<ProjectCenterTargets, "setStorageItem">,
+) {
+  targets.setStorageItem(
     PROJECT_CENTER_STORAGE_KEY,
     JSON.stringify(projectCenter.recentProjects),
   );
@@ -61,9 +85,10 @@ function persistProjectCenterState(projectCenter: ProjectCenterState) {
 export function updateProjectCenterState(
   state: StudioState,
   options: { saved?: boolean; exportReady?: boolean } = {},
+  targets: ProjectCenterTargets = createGlobalProjectCenterTargets(),
 ) {
-  const projectSummary = getEngineProjectSummary();
-  const now = Date.now();
+  const projectSummary = targets.getProjectSummary();
+  const now = targets.now();
   const activeProjectId = createProjectId(
     state.document.name,
     state.document.seed || projectSummary.pendingSeed,
@@ -98,5 +123,5 @@ export function updateProjectCenterState(
       ),
     ].slice(0, PROJECT_CENTER_MAX_RECENT),
   };
-  persistProjectCenterState(state.projectCenter);
+  persistProjectCenterState(state.projectCenter, targets);
 }

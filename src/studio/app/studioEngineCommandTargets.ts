@@ -32,7 +32,11 @@ import {
   createGlobalGenerationProfileTargets,
   type GenerationProfileTargets,
 } from "./generationProfile";
-import { updateProjectCenterState } from "./projectCenter";
+import {
+  createGlobalProjectCenterTargets,
+  type ProjectCenterTargets,
+  updateProjectCenterState,
+} from "./projectCenter";
 
 export type StudioStyleToggleAction = "hide-labels" | "rescale-labels";
 export type StudioLayersPresetAction = "save" | "remove";
@@ -115,10 +119,13 @@ export function createGlobalStudioBridgeActionCommandAdapter(): StudioBridgeActi
   };
 }
 
-export function createGlobalStudioDocumentCommandAdapter(): StudioDocumentCommandAdapter {
+export function createGlobalStudioDocumentCommandAdapter(
+  projectCenterTargets: ProjectCenterTargets = createGlobalProjectCenterTargets(),
+): StudioDocumentCommandAdapter {
   return {
     markDocumentClean: markEngineDocumentClean,
-    updateProjectCenter: updateProjectCenterState,
+    updateProjectCenter: (state, options) =>
+      updateProjectCenterState(state, options, projectCenterTargets),
     syncDocument: syncDocumentState,
   };
 }
