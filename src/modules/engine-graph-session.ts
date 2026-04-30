@@ -31,6 +31,21 @@ export type EngineGraphSessionTargets = {
   getWaterMaskRect: () => AttributeTarget;
 };
 
+export type EngineGraphRuntimeTargets = Pick<
+  EngineGraphSessionTargets,
+  "getMapWidth" | "getMapHeight" | "setGraphSize"
+>;
+
+export type EngineGraphSvgTargets = Pick<
+  EngineGraphSessionTargets,
+  | "getLandmassRect"
+  | "getOceanPatternRect"
+  | "getOceanLayersRect"
+  | "getFoggingRects"
+  | "getFogMaskRect"
+  | "getWaterMaskRect"
+>;
+
 export class EngineGraphSessionModule {
   applyGraphSize: () => void;
 
@@ -66,7 +81,7 @@ export class EngineGraphSessionModule {
   }
 }
 
-export function createGlobalGraphSessionTargets(): EngineGraphSessionTargets {
+export function createGlobalGraphRuntimeTargets(): EngineGraphRuntimeTargets {
   return {
     getMapWidth: () => Number((globalThis as any).mapWidthInput.value),
     getMapHeight: () => Number((globalThis as any).mapHeightInput.value),
@@ -74,7 +89,11 @@ export function createGlobalGraphSessionTargets(): EngineGraphSessionTargets {
       globalThis.graphWidth = width;
       globalThis.graphHeight = height;
     },
-    setRectBounds,
+  };
+}
+
+export function createGlobalGraphSvgTargets(): EngineGraphSvgTargets {
+  return {
     getLandmassRect: () => (globalThis as any).landmass.select("rect"),
     getOceanPatternRect: () => (globalThis as any).oceanPattern.select("rect"),
     getOceanLayersRect: () =>
@@ -83,6 +102,17 @@ export function createGlobalGraphSessionTargets(): EngineGraphSessionTargets {
     getFogMaskRect: () => (globalThis as any).defs.select("mask#fog > rect"),
     getWaterMaskRect: () =>
       (globalThis as any).defs.select("mask#water > rect"),
+  };
+}
+
+export function createGlobalGraphSessionTargets(
+  runtimeTargets: EngineGraphRuntimeTargets = createGlobalGraphRuntimeTargets(),
+  svgTargets: EngineGraphSvgTargets = createGlobalGraphSvgTargets(),
+): EngineGraphSessionTargets {
+  return {
+    ...runtimeTargets,
+    setRectBounds,
+    ...svgTargets,
   };
 }
 
