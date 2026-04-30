@@ -90,6 +90,9 @@
 > Engine editor targets now expose an explicit `createEngineEditorTargets`
 > composer, so injected handler runtimes and dialog adapters are distinct from
 > the global editor handler / jQuery-dialog compatibility factory.
+> Engine topbar targets now expose an explicit `createEngineTopbarTargets`
+> composer, so topbar actions depend on an injected data-action adapter instead
+> of importing the data-action bridge directly at the command call site.
 > Project center default storage/summary/clock access now uses
 > `ProjectCenterTargets` from a dedicated adapter module, so project-center
 > state logic no longer owns `localStorage`, engine summary, or clock calls.
@@ -556,7 +559,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 164 test files, 521 tests.
+- `npm.cmd run test -- --run` passed: 165 test files, 522 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1406,6 +1409,9 @@ Engine editor target composition now has an explicit `createEngineEditorTargets`
 composer for injected handler runtimes and dialog adapters, while
 `createGlobalEngineEditorTargets` remains the default editor handler and
 jQuery-dialog compatibility factory.
+Engine topbar target composition now has an explicit `createEngineTopbarTargets`
+composer and data-action adapter, while `createGlobalEngineTopbarTargets`
+remains the default bridge over current Data actions.
 Project center default browser/runtime access now has a dedicated
 `projectCenterTargets.ts` adapter for recent-project storage, engine project
 summary reads, and clock access. `projectCenter.ts` continues to re-export the

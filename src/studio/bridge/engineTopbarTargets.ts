@@ -11,9 +11,27 @@ export type EngineTopbarTargets = {
   runDataAction: (action: DataAction) => Promise<void>;
 };
 
-export function createGlobalEngineTopbarTargets(): EngineTopbarTargets {
+export type EngineTopbarDataActionAdapter = {
+  getActions: () => EngineTopbarDataActionSummary;
+  runAction: (action: DataAction) => Promise<void>;
+};
+
+export function createEngineTopbarDataActionAdapter(): EngineTopbarDataActionAdapter {
   return {
-    getDataActions: getEngineDataActions,
-    runDataAction: runEngineDataAction,
+    getActions: getEngineDataActions,
+    runAction: runEngineDataAction,
   };
+}
+
+export function createEngineTopbarTargets(
+  dataActions: EngineTopbarDataActionAdapter,
+): EngineTopbarTargets {
+  return {
+    getDataActions: dataActions.getActions,
+    runDataAction: dataActions.runAction,
+  };
+}
+
+export function createGlobalEngineTopbarTargets(): EngineTopbarTargets {
+  return createEngineTopbarTargets(createEngineTopbarDataActionAdapter());
 }
