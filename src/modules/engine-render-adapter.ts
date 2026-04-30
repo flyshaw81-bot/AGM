@@ -103,8 +103,8 @@ export function createEngineRenderAdapter(
   };
 }
 
-export function createGlobalRenderAdapter(): EngineRenderAdapter {
-  return createEngineRenderAdapter({
+export function createGlobalRenderTargets(): EngineRenderTargets {
+  return {
     findCell: (x, y, radius, graph) => window.findCell(x, y, radius, graph),
     getPack: () => pack,
     addCoa: (type, id, coa, x, y) => {
@@ -153,5 +153,11 @@ export function createGlobalRenderAdapter(): EngineRenderAdapter {
     invokeActiveZooming: () => {
       invokeActiveZooming();
     },
-  });
+  };
+}
+
+export function createGlobalRenderAdapter(
+  targets: EngineRenderTargets = createGlobalRenderTargets(),
+): EngineRenderAdapter {
+  return createEngineRenderAdapter(targets);
 }

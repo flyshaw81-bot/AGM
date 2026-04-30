@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createEngineRenderAdapter,
   createGlobalRenderAdapter,
+  createGlobalRenderTargets,
   type EngineRenderTargets,
 } from "./engine-render-adapter";
 
@@ -88,6 +89,23 @@ describe("createGlobalRenderAdapter", () => {
     expect(drawBurgLabel).toHaveBeenCalledWith(burg);
     expect(removeBurgIcon).toHaveBeenCalledWith(7);
     expect(removeBurgLabel).toHaveBeenCalledWith(7);
+  });
+
+  it("exposes default global render targets for explicit adapter composition", () => {
+    const findCell = vi.fn(() => 8);
+    const route = { id: "route-target" };
+    globalThis.window = { findCell } as unknown as Window & typeof globalThis;
+    globalThis.pack = { cells: { i: [1] } } as typeof pack;
+    globalThis.drawRoute = vi.fn();
+
+    const targets = createGlobalRenderTargets();
+    const rendering = createGlobalRenderAdapter(targets);
+
+    expect(rendering.findCell(1, 2)).toBe(8);
+    rendering.drawRoute(route);
+
+    expect(findCell).toHaveBeenCalledWith(1, 2, undefined, globalThis.pack);
+    expect(drawRoute).toHaveBeenCalledWith(route);
   });
 
   it("removes rendered COA and generic elements through current DOM helpers", () => {
