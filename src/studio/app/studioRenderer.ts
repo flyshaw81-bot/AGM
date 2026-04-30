@@ -8,6 +8,7 @@ import type { RenderStudioApp } from "./studioWorkflowWatcher";
 
 export {
   createGlobalStudioRendererTargets,
+  createStudioRendererTargets,
   type StudioRendererTargets,
 } from "./studioRendererTargets";
 

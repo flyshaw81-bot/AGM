@@ -1,7 +1,42 @@
 import { describe, expect, it, vi } from "vitest";
-import { createGlobalStudioRendererTargets } from "./studioRendererTargets";
+import type { StudioState } from "../types";
+import {
+  createGlobalStudioRendererTargets,
+  createStudioRendererTargets,
+  type StudioRendererTargets,
+} from "./studioRendererTargets";
 
-describe("createGlobalStudioRendererTargets", () => {
+function createTargets(): StudioRendererTargets {
+  return {
+    syncEditorWorkflow: vi.fn(() => false),
+    syncDocument: vi.fn(() => false),
+    updateProjectCenter: vi.fn(),
+    preserveEngineNode: vi.fn(),
+    renderShell: vi.fn(() => "<main>Studio</main>"),
+    setRootHtml: vi.fn(),
+    setRootTheme: vi.fn(),
+    setDocumentTheme: vi.fn(),
+    relocateEngineMapHost: vi.fn(),
+    syncOverlays: vi.fn(),
+    syncViewport: vi.fn(),
+    syncCanvasSelectionHighlight: vi.fn(),
+    syncDialogsPosition: vi.fn(),
+    bindCanvasToolInteractions: vi.fn(),
+    resolveFocusGeometry: vi.fn(),
+    applyCanvasPaintPreview: vi.fn(() => false),
+    bindShellEvents: vi.fn(),
+    syncProjectSummary: vi.fn(async () => undefined),
+    updateViewportDimensions: vi.fn((_state: StudioState) => undefined),
+  };
+}
+
+describe("studio renderer targets", () => {
+  it("composes renderer targets from injected adapters", () => {
+    const targets = createTargets();
+
+    expect(createStudioRendererTargets(targets)).toBe(targets);
+  });
+
   it("composes default renderer adapters", () => {
     const targets = createGlobalStudioRendererTargets();
     const root = {

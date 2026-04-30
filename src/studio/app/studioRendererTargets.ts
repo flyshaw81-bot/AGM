@@ -58,8 +58,14 @@ export type StudioRendererTargets = {
   updateViewportDimensions: (state: StudioState) => void;
 };
 
+export function createStudioRendererTargets(
+  targets: StudioRendererTargets,
+): StudioRendererTargets {
+  return targets;
+}
+
 export function createGlobalStudioRendererTargets(): StudioRendererTargets {
-  return {
+  return createStudioRendererTargets({
     syncEditorWorkflow: syncEditorWorkflowState,
     syncDocument: syncDocumentState,
     updateProjectCenter: updateProjectCenterState,
@@ -83,5 +89,5 @@ export function createGlobalStudioRendererTargets(): StudioRendererTargets {
     bindShellEvents: bindStudioShellEvents,
     syncProjectSummary: syncEngineProjectSummary,
     updateViewportDimensions,
-  };
+  });
 }

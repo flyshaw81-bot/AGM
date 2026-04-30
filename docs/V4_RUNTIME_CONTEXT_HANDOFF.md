@@ -126,6 +126,9 @@
 > render orchestration no longer owns shell, canvas, document, project-center,
 > viewport, focus, dialog-position, or event-binding default adapter wiring
 > inline.
+> `StudioRendererTargets` now also exposes an explicit
+> `createStudioRendererTargets` composer, so injected renderer dependency sets
+> stay separate from the global Studio/browser bridge factory.
 > Canvas interaction default dependencies now live in `CanvasInteractionTargets`,
 > so canvas gesture handling no longer owns DOM frame/host lookup, viewport sync,
 > overlay sync, selection geometry, paint preview geometry, or paint-tool checks
@@ -571,7 +574,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 165 test files, 526 tests.
+- `npm.cmd run test -- --run` passed: 165 test files, 527 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1475,6 +1478,9 @@ focus resolution, shell event binding, project-summary sync, and viewport
 dimension updates. `studioRenderer.ts` continues to re-export the target
 type/factory while render orchestration no longer owns those default adapter
 imports inline.
+`studioRendererTargets.ts` now also exposes `createStudioRendererTargets` for
+explicit renderer target composition, keeping injected renderer dependency sets
+separate from the global Studio/browser bridge factory.
 Canvas interaction default runtime access now has a dedicated
 `canvasInteractionTargets.ts` adapter for canvas frame/host lookup, control
 event detection, paint preview geometry, selection geometry, overlay/HUD sync,
