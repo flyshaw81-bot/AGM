@@ -1,17 +1,36 @@
 import type { Burg } from "./burgs-generator";
 
+type EngineBurgModule = {
+  add?: (point: [number, number]) => number | null;
+  remove?: (burgId: number) => void;
+};
+
+export type EngineBurgServiceTargets = {
+  getBurgModule: () => EngineBurgModule | undefined;
+  getBurgs: () => (Burg | undefined)[] | undefined;
+};
+
 export type EngineBurgService = {
   add: (point: [number, number]) => number | null;
   remove: (burgId: number) => void;
   findById: (burgId: number) => Burg | undefined;
 };
 
-export function createGlobalBurgService(): EngineBurgService {
+export function createEngineBurgService(
+  targets: EngineBurgServiceTargets,
+): EngineBurgService {
   return {
-    add: (point) => globalThis.Burgs?.add?.(point) ?? null,
+    add: (point) => targets.getBurgModule()?.add?.(point) ?? null,
     remove: (burgId) => {
-      globalThis.Burgs?.remove?.(burgId);
+      targets.getBurgModule()?.remove?.(burgId);
     },
-    findById: (burgId) => globalThis.pack?.burgs?.[burgId] as Burg | undefined,
+    findById: (burgId) => targets.getBurgs()?.[burgId],
   };
+}
+
+export function createGlobalBurgService(): EngineBurgService {
+  return createEngineBurgService({
+    getBurgModule: () => globalThis.Burgs,
+    getBurgs: () => globalThis.pack?.burgs as (Burg | undefined)[] | undefined,
+  });
 }

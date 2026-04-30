@@ -1028,7 +1028,10 @@ services instead of reading `globalThis.Routes` inline:
   the injected `EngineRouteService` instead of directly calling
   `globalThis.Routes.remove`.
 - `src/modules/engine-burg-service.ts` now owns the default burg command
-  adapter for `add`, `remove`, and `findById`.
+  adapter for `add`, `remove`, and `findById`. Its core service is now composed
+  through explicit burg targets, while `createGlobalBurgService()` remains the
+  compatibility factory for the current AGM `Burgs` module mount and
+  `pack.burgs`.
 - `src/studio/bridge/engineAutoFixSettlementWriteback.ts` now creates and
   updates preview burgs through the injected `EngineBurgService` instead of
   directly calling `globalThis.Burgs.add` and then reading

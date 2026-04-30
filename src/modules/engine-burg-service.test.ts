@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createGlobalBurgService } from "./engine-burg-service";
+import {
+  createEngineBurgService,
+  createGlobalBurgService,
+} from "./engine-burg-service";
 
 const originalBurgs = globalThis.Burgs;
 const originalPack = globalThis.pack;
@@ -29,6 +32,25 @@ describe("createGlobalBurgService", () => {
 
     expect(Burgs.add).toHaveBeenCalledWith([10, 20]);
     expect(Burgs.remove).toHaveBeenCalledWith(3);
+  });
+
+  it("composes burg service from injected runtime targets", () => {
+    const burg = { i: 2, name: "Southport" };
+    const burgModule = {
+      add: vi.fn(() => 2),
+      remove: vi.fn(),
+    };
+    const burgs = createEngineBurgService({
+      getBurgModule: () => burgModule,
+      getBurgs: () => [undefined, undefined, burg] as any,
+    });
+
+    expect(burgs.add([30, 40])).toBe(2);
+    burgs.remove(2);
+    expect(burgs.findById(2)).toBe(burg);
+
+    expect(burgModule.add).toHaveBeenCalledWith([30, 40]);
+    expect(burgModule.remove).toHaveBeenCalledWith(2);
   });
 
   it("keeps command calls safe when the burg module is not mounted", () => {
