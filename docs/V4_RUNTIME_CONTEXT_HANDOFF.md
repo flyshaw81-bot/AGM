@@ -112,6 +112,9 @@
 > so canvas gesture handling no longer owns DOM frame/host lookup, viewport sync,
 > overlay sync, selection geometry, paint preview geometry, or paint-tool checks
 > inline.
+> Canvas overlay default dependencies now live in `CanvasOverlayTargets`, so
+> overlay sync no longer owns paint-preview, tool-HUD, or canvas-frame DOM
+> lookup wiring inline.
 > Please review whether each remaining global dependency is behind an explicit
 > compatibility adapter, and keep treating AGM `window.*` module mounts
 > separately from old public UI debt.
@@ -515,7 +518,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 158 test files, 508 tests.
+- `npm.cmd run test -- --run` passed: 159 test files, 509 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1404,6 +1407,10 @@ event detection, paint preview geometry, selection geometry, overlay/HUD sync,
 viewport sync, and paint-tool checks. `canvasController.ts` continues to
 re-export the target type/factory while pointer gesture handling no longer owns
 those default adapter imports inline.
+Canvas overlay default DOM access now has a dedicated `canvasOverlayTargets.ts`
+adapter for paint preview overlay lookup, tool HUD lookup, and canvas frame
+lookup. `canvasOverlaySync.ts` continues to re-export the target type/factory
+while overlay state syncing no longer owns those document queries inline.
 Direct editor targets can also compose focus, entity mutation, and biome
 mutation commands directly from an injected `EngineRuntimeContext`. The default
 adapters still delegate to current entity mutation/focus bridge helpers, but
