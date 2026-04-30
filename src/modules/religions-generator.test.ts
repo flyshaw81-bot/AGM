@@ -23,14 +23,22 @@ function createReligionsContext(): EngineRuntimeContext {
           removed: false,
         },
       ],
-      states: [{ i: 0, name: "Neutrals" }],
+      states: [
+        { i: 0, name: "Neutrals" },
+        { i: 1, name: "Northland" },
+      ],
       burgs: [],
       cells: {
         i: [0, 1],
+        p: [
+          [0, 0],
+          [1, 1],
+        ],
         c: [[1], [0]],
+        s: new Float32Array([10, 10]),
         h: new Uint8Array([30, 30]),
         culture: new Uint16Array([1, 1]),
-        state: new Uint16Array([0, 0]),
+        state: new Uint16Array([1, 1]),
         burg: new Uint16Array([0, 0]),
         biome: new Uint8Array([1, 1]),
       },
@@ -89,5 +97,89 @@ describe("ReligionsModule", () => {
     expect(context.pack.religions[1].type).toBe("Folk");
     expect(context.pack.religions[1].culture).toBe(1);
     expect(Array.from(context.pack.cells.religion)).toEqual([1, 1]);
+  });
+
+  it("adds manual religions against an explicit runtime context", () => {
+    const context = createReligionsContext();
+    context.pack.religions = [
+      {
+        i: 0,
+        name: "No religion",
+        color: "#ffffff",
+        culture: 0,
+        type: "Folk",
+        form: "None",
+        deity: null,
+        expansion: "global",
+        expansionism: 0,
+        center: 0,
+      },
+      {
+        i: 1,
+        name: "Old Ways",
+        color: "#6688aa",
+        culture: 1,
+        type: "Folk",
+        form: "Shamanism",
+        deity: "North Star",
+        expansion: "culture",
+        expansionism: 0,
+        center: 0,
+      },
+    ];
+    context.pack.cells.religion = new Uint16Array([1, 1]);
+
+    new ReligionsModule().add(1, context);
+
+    expect(context.pack.religions).toHaveLength(3);
+    expect(context.pack.religions[2]).toMatchObject({
+      i: 2,
+      culture: 1,
+      center: 1,
+    });
+    expect(context.pack.cells.religion[1]).toBe(2);
+  });
+
+  it("recalculates religions against an explicit runtime context", () => {
+    const context = createReligionsContext();
+    context.pack.religions = [
+      {
+        i: 0,
+        name: "No religion",
+        color: "#ffffff",
+        culture: 0,
+        type: "Folk",
+        form: "None",
+        deity: null,
+        expansion: "global",
+        expansionism: 0,
+        center: 0,
+      },
+      {
+        i: 1,
+        name: "Old Ways",
+        color: "#6688aa",
+        culture: 1,
+        type: "Folk",
+        form: "Shamanism",
+        deity: "North Star",
+        expansion: "culture",
+        expansionism: 0,
+        center: 0,
+      },
+    ];
+    context.pack.cells.religion = new Uint16Array([0, 0]);
+
+    new ReligionsModule().recalculate(context);
+
+    expect(Array.from(context.pack.cells.religion)).toEqual([1, 1]);
+  });
+
+  it("gets deity names from the explicit runtime naming service", () => {
+    const context = createReligionsContext();
+
+    expect(new ReligionsModule().getDeityName(1, context)).toContain(
+      "Culture 1",
+    );
   });
 });

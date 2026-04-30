@@ -1856,6 +1856,11 @@ Route generation now accepts an explicit runtime context when regenerating from
 locked route data (`Routes.generate(lockedRoutes, context)`). The legacy
 single-argument locked-route call still falls back to the global context for
 compatibility, while Studio/runtime callers can avoid that global lookup.
+Religion manual operations now have explicit runtime context paths:
+`Religions.recalculate(context)`, `Religions.add(center, context)`, and
+`Religions.getDeityName(culture, context)`. The no-argument compatibility calls
+remain, but direct/runtime command callers can avoid global `pack` and global
+runtime lookups for these operations.
 
 ## Next Recommended Slice
 

@@ -1022,16 +1022,19 @@ export class ReligionsModule {
     });
   }
 
-  recalculate() {
-    const context = getGlobalEngineRuntimeContext();
+  recalculate(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+    const { pack } = context;
     const newReligionIds = this.expandReligions(pack.religions, context);
     pack.cells.religion = newReligionIds;
 
     this.checkCenters(context);
   }
 
-  add(center: number) {
-    const { cells, cultures, religions } = pack;
+  add(
+    center: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { cells, cultures, religions } = context.pack;
     const religionId = cells.religion[center];
     const i = religions.length;
 
@@ -1060,13 +1063,14 @@ export class ReligionsModule {
         ? religions[religionId].deity
         : form === "Non-theism" || form === "Animism"
           ? null
-          : this.getDeityName(cultureId);
+          : this.getDeityName(cultureId, context);
 
     const [name, expansion] = this.generateReligionName(
       type,
       form,
       deity!,
       center,
+      context,
     );
 
     const formName = type === "Heresy" ? religions[religionId].form : form;
@@ -1107,8 +1111,10 @@ export class ReligionsModule {
   }
 
   // get supreme deity name
-  getDeityName(culture: number): string | undefined {
-    const context = getGlobalEngineRuntimeContext();
+  getDeityName(
+    culture: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ): string | undefined {
     return this.getDeityNameForContext(culture, context);
   }
 
