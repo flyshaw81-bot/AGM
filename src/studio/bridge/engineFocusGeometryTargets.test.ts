@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest";
+import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 import {
   createFocusGeometryTargets,
   createGlobalFocusGeometryTargets,
+  createRuntimeFocusGeometryTargets,
 } from "./engineFocusGeometryTargets";
 
 const originalPack = globalThis.pack;
@@ -81,5 +83,34 @@ describe("createGlobalFocusGeometryTargets", () => {
     expect(targets.getCellPoint(1)).toEqual([10, 20]);
     expect(targets.getCellFieldValue("state", 1)).toBe(2);
     expect(targets.getState(2)).toBe(state);
+  });
+
+  it("creates focus geometry targets from an injected runtime context", () => {
+    const state = { i: 2 };
+    const zone = { i: 9 };
+    const context = {
+      worldSettings: {
+        graphWidth: 1200,
+        graphHeight: 800,
+      },
+      pack: {
+        cells: {
+          i: [1, 2],
+          p: { 1: [10, 20] },
+          state: { 1: 3 },
+        },
+        states: [undefined, undefined, state],
+        zones: [zone],
+      },
+    } as unknown as EngineRuntimeContext;
+    const targets = createRuntimeFocusGeometryTargets(context);
+
+    expect(targets.getWidth()).toBe(1200);
+    expect(targets.getHeight()).toBe(800);
+    expect(targets.getCellIds()).toEqual([1, 2]);
+    expect(targets.getCellPoint(1)).toEqual([10, 20]);
+    expect(targets.getCellFieldValue("state", 1)).toBe(3);
+    expect(targets.getState(2)).toBe(state);
+    expect(targets.getZone(9)).toBe(zone);
   });
 });

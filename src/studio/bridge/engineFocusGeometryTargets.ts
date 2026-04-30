@@ -1,3 +1,5 @@
+import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
+
 export type EngineFocusPoint = [number, number];
 
 export type EngineFocusGeometryTargets = {
@@ -49,6 +51,15 @@ export function createGlobalFocusDimensionAdapter(): EngineFocusDimensionAdapter
   };
 }
 
+export function createRuntimeFocusDimensionAdapter(
+  context: EngineRuntimeContext,
+): EngineFocusDimensionAdapter {
+  return {
+    getWidth: () => finiteNumberOrUndefined(context.worldSettings.graphWidth),
+    getHeight: () => finiteNumberOrUndefined(context.worldSettings.graphHeight),
+  };
+}
+
 export function createGlobalFocusCellAdapter(): EngineFocusCellAdapter {
   return {
     getCellIds: () => Array.from(globalThis.pack?.cells?.i || []),
@@ -58,6 +69,22 @@ export function createGlobalFocusCellAdapter(): EngineFocusCellAdapter {
     },
     getCellFieldValue: (field, cellId) =>
       (globalThis.pack?.cells as Record<string, any> | undefined)?.[field]?.[
+        cellId
+      ],
+  };
+}
+
+export function createRuntimeFocusCellAdapter(
+  context: EngineRuntimeContext,
+): EngineFocusCellAdapter {
+  return {
+    getCellIds: () => Array.from(context.pack?.cells?.i || []),
+    getCellPoint: (cellId) => {
+      const point = context.pack?.cells?.p?.[cellId];
+      return Array.isArray(point) ? point : undefined;
+    },
+    getCellFieldValue: (field, cellId) =>
+      (context.pack?.cells as Record<string, any> | undefined)?.[field]?.[
         cellId
       ],
   };
@@ -88,6 +115,33 @@ export function createGlobalFocusEntityAdapter(): EngineFocusEntityAdapter {
   };
 }
 
+export function createRuntimeFocusEntityAdapter(
+  context: EngineRuntimeContext,
+): EngineFocusEntityAdapter {
+  return {
+    getState: (stateId) =>
+      context.pack?.states?.[stateId] as unknown as
+        | Record<string, unknown>
+        | undefined,
+    getProvince: (provinceId) =>
+      context.pack?.provinces?.[provinceId] as unknown as
+        | Record<string, unknown>
+        | undefined,
+    getBurg: (burgId) =>
+      context.pack?.burgs?.[burgId] as unknown as
+        | Record<string, unknown>
+        | undefined,
+    getRoute: (routeId) =>
+      (context.pack?.routes as unknown[] | undefined)?.[routeId] as
+        | Record<string, unknown>
+        | undefined,
+    getZone: (zoneId) =>
+      (context.pack?.zones as unknown[] | undefined)?.find(
+        (item) => (item as Record<string, unknown> | undefined)?.i === zoneId,
+      ) as Record<string, unknown> | undefined,
+  };
+}
+
 export function createFocusGeometryTargets(
   dimensionAdapter: EngineFocusDimensionAdapter,
   cellAdapter: EngineFocusCellAdapter,
@@ -112,5 +166,15 @@ export function createGlobalFocusGeometryTargets(): EngineFocusGeometryTargets {
     createGlobalFocusDimensionAdapter(),
     createGlobalFocusCellAdapter(),
     createGlobalFocusEntityAdapter(),
+  );
+}
+
+export function createRuntimeFocusGeometryTargets(
+  context: EngineRuntimeContext,
+): EngineFocusGeometryTargets {
+  return createFocusGeometryTargets(
+    createRuntimeFocusDimensionAdapter(context),
+    createRuntimeFocusCellAdapter(context),
+    createRuntimeFocusEntityAdapter(context),
   );
 }
