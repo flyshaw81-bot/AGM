@@ -10,6 +10,7 @@ import {
 
 export {
   type CanvasPaintEditingTargets,
+  createCanvasPaintEditingTargets,
   createGlobalCanvasPaintEditingTargets,
 } from "./canvasPaintEditingTargets";
 

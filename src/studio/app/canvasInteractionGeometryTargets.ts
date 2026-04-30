@@ -20,10 +20,16 @@ export type CanvasInteractionGeometryTargets = {
   getPack: () => CanvasInteractionPack | undefined;
 };
 
+export function createCanvasInteractionGeometryTargets(
+  targets: CanvasInteractionGeometryTargets,
+): CanvasInteractionGeometryTargets {
+  return targets;
+}
+
 export function createGlobalCanvasInteractionGeometryTargets(): CanvasInteractionGeometryTargets {
-  return {
+  return createCanvasInteractionGeometryTargets({
     getCanvasFrame: () => document.getElementById("studioCanvasFrame"),
     getGraphSize: getEngineCanvasGraphSize,
     getPack: () => getEnginePack() as CanvasInteractionPack | undefined,
-  };
+  });
 }

@@ -19,6 +19,7 @@ import {
 
 export {
   type CanvasInteractionGeometryTargets,
+  createCanvasInteractionGeometryTargets,
   createGlobalCanvasInteractionGeometryTargets,
 } from "./canvasInteractionGeometryTargets";
 

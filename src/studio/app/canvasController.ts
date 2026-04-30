@@ -20,6 +20,7 @@ export { syncCanvasSelectionHighlight } from "./canvasSelectionHighlight";
 export { syncOverlays };
 export {
   type CanvasInteractionTargets,
+  createCanvasInteractionTargets,
   createGlobalCanvasInteractionTargets,
 } from "./canvasInteractionTargets";
 

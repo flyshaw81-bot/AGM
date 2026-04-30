@@ -136,9 +136,15 @@
 > so canvas gesture handling no longer owns DOM frame/host lookup, viewport sync,
 > overlay sync, selection geometry, paint preview geometry, or paint-tool checks
 > inline.
+> `CanvasInteractionTargets` now also exposes an explicit
+> `createCanvasInteractionTargets` composer, so injected canvas gesture
+> dependencies stay separate from the global Studio/browser bridge factory.
 > Canvas overlay default dependencies now live in `CanvasOverlayTargets`, so
 > overlay sync no longer owns paint-preview, tool-HUD, or canvas-frame DOM
 > lookup wiring inline.
+> `CanvasOverlayTargets` now also exposes an explicit
+> `createCanvasOverlayTargets` composer, so injected overlay DOM adapters stay
+> separate from the global browser document factory.
 > Canvas selection highlight default dependencies now live in
 > `CanvasSelectionHighlightTargets`, so highlight sync no longer owns selected
 > state queries, selected border queries, canvas host lookup, state path lookup,
@@ -146,10 +152,16 @@
 > Canvas interaction geometry default dependencies now live in
 > `CanvasInteractionGeometryTargets`, so geometry resolution no longer owns
 > canvas frame lookup, graph size reads, or pack reads inline.
+> `CanvasInteractionGeometryTargets` now also exposes an explicit
+> `createCanvasInteractionGeometryTargets` composer, so injected frame/graph/pack
+> adapters stay separate from the global Studio/browser bridge factory.
 > Canvas paint editing default dependencies now live in
 > `CanvasPaintEditingTargets`, so preview/apply/undo/biome coverage logic no
 > longer owns graph size reads, pack/grid cell reads, redraw calls, or timestamp
 > generation inline.
+> `CanvasPaintEditingTargets` now also exposes an explicit
+> `createCanvasPaintEditingTargets` composer, so injected paint editing
+> adapters stay separate from the global engine canvas factory.
 > Studio style injection default DOM dependencies now live in
 > `StudioStyleTargets`, so stylesheet composition no longer owns style-element
 > lookup, creation, or head insertion inline.
@@ -577,7 +589,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 165 test files, 528 tests.
+- `npm.cmd run test -- --run` passed: 165 test files, 532 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1493,10 +1505,16 @@ event detection, paint preview geometry, selection geometry, overlay/HUD sync,
 viewport sync, and paint-tool checks. `canvasController.ts` continues to
 re-export the target type/factory while pointer gesture handling no longer owns
 those default adapter imports inline.
+`canvasInteractionTargets.ts` now also exposes `createCanvasInteractionTargets`
+for explicit canvas gesture target composition, keeping injected targets
+separate from the global Studio/browser bridge factory.
 Canvas overlay default DOM access now has a dedicated `canvasOverlayTargets.ts`
 adapter for paint preview overlay lookup, tool HUD lookup, and canvas frame
 lookup. `canvasOverlaySync.ts` continues to re-export the target type/factory
 while overlay state syncing no longer owns those document queries inline.
+`canvasOverlayTargets.ts` now also exposes `createCanvasOverlayTargets` for
+explicit overlay target composition, keeping injected DOM targets separate from
+the global browser document factory.
 Canvas selection highlight default DOM access now has a dedicated
 `canvasSelectionHighlightTargets.ts` adapter for selected state queries,
 selected border queries, canvas frame/host lookup, state path lookup, state
@@ -1508,12 +1526,20 @@ Canvas interaction geometry default runtime access now has a dedicated
 size reads, and pack reads. `canvasInteractionGeometry.ts` continues to
 re-export the target type/factory while pointer geometry resolution no longer
 owns those default adapter imports inline.
+`canvasInteractionGeometryTargets.ts` now also exposes
+`createCanvasInteractionGeometryTargets` for explicit frame/graph/pack target
+composition, keeping injected targets separate from the global Studio/browser
+bridge factory.
 Canvas paint editing default runtime access now has a dedicated
 `canvasPaintEditingTargets.ts` adapter for graph size reads, pack/grid cell
 reads, edit-layer redraw, and timestamp generation. `canvasPaintEditing.ts`
 continues to re-export the target type/factory while preview, paint apply,
 undo, and biome coverage paths no longer own those default adapter imports
 inline.
+`canvasPaintEditingTargets.ts` now also exposes
+`createCanvasPaintEditingTargets` for explicit paint editing target
+composition, keeping injected targets separate from the global engine canvas
+factory.
 Studio style injection default DOM access now has a dedicated
 `stylesTargets.ts` adapter for style element lookup, creation, and head
 insertion. `styles.ts` continues to re-export the target type/factory while

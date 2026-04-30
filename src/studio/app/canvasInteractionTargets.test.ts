@@ -1,7 +1,29 @@
 import { describe, expect, it, vi } from "vitest";
-import { createGlobalCanvasInteractionTargets } from "./canvasInteractionTargets";
+import type { CanvasToolMode } from "../types";
+import {
+  createCanvasInteractionTargets,
+  createGlobalCanvasInteractionTargets,
+} from "./canvasInteractionTargets";
 
-describe("createGlobalCanvasInteractionTargets", () => {
+describe("canvas interaction targets", () => {
+  it("composes canvas interaction targets from injected adapters", () => {
+    const targets = {
+      getCanvasFrame: vi.fn(() => null),
+      getMapHost: vi.fn(() => null),
+      isControlEvent: vi.fn(() => false),
+      getPaintPreviewAt: vi.fn(),
+      getSelectionAt: vi.fn(),
+      syncPaintPreview: vi.fn(),
+      syncToolHud: vi.fn(),
+      syncViewport: vi.fn(),
+      isPaintTool: (
+        _tool: CanvasToolMode,
+      ): _tool is "terrain" | "water" | "brush" => false,
+    };
+
+    expect(createCanvasInteractionTargets(targets)).toBe(targets);
+  });
+
   it("composes default canvas interaction adapters", () => {
     const originalDocument = globalThis.document;
     globalThis.document = {

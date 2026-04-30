@@ -25,8 +25,14 @@ export type CanvasPaintEditingTargets = {
   now: () => number;
 };
 
+export function createCanvasPaintEditingTargets(
+  targets: CanvasPaintEditingTargets,
+): CanvasPaintEditingTargets {
+  return targets;
+}
+
 export function createGlobalCanvasPaintEditingTargets(): CanvasPaintEditingTargets {
-  return {
+  return createCanvasPaintEditingTargets({
     getGraphSize: getEngineCanvasGraphSize,
     getPackCells: () =>
       getEnginePackCells() as CanvasPaintPackCells | undefined,
@@ -34,5 +40,5 @@ export function createGlobalCanvasPaintEditingTargets(): CanvasPaintEditingTarge
       getEngineGridCells() as CanvasPaintGridCells | undefined,
     redrawEditLayers: redrawEngineCanvasEditLayers,
     now: () => Date.now(),
-  };
+  });
 }

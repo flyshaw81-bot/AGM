@@ -19,6 +19,12 @@ export type CanvasInteractionTargets = {
   isPaintTool: typeof isPaintCanvasTool;
 };
 
+export function createCanvasInteractionTargets(
+  targets: CanvasInteractionTargets,
+): CanvasInteractionTargets {
+  return targets;
+}
+
 function isCanvasControlEvent(event: Event) {
   return (
     event.target instanceof Element &&
@@ -31,7 +37,7 @@ function isCanvasControlEvent(event: Event) {
 }
 
 export function createGlobalCanvasInteractionTargets(): CanvasInteractionTargets {
-  return {
+  return createCanvasInteractionTargets({
     getCanvasFrame: () => document.getElementById("studioCanvasFrame"),
     getMapHost: () => document.getElementById("studioMapHost"),
     isControlEvent: isCanvasControlEvent,
@@ -41,5 +47,5 @@ export function createGlobalCanvasInteractionTargets(): CanvasInteractionTargets
     syncToolHud: syncCanvasToolHud,
     syncViewport: syncEngineViewport,
     isPaintTool: isPaintCanvasTool,
-  };
+  });
 }

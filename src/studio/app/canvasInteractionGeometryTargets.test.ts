@@ -1,7 +1,20 @@
 import { describe, expect, it, vi } from "vitest";
-import { createGlobalCanvasInteractionGeometryTargets } from "./canvasInteractionGeometryTargets";
+import {
+  createCanvasInteractionGeometryTargets,
+  createGlobalCanvasInteractionGeometryTargets,
+} from "./canvasInteractionGeometryTargets";
 
-describe("createGlobalCanvasInteractionGeometryTargets", () => {
+describe("canvas interaction geometry targets", () => {
+  it("composes geometry targets from injected adapters", () => {
+    const targets = {
+      getCanvasFrame: vi.fn(() => null),
+      getGraphSize: vi.fn(() => ({ width: 1000, height: 700 })),
+      getPack: vi.fn(() => undefined),
+    };
+
+    expect(createCanvasInteractionGeometryTargets(targets)).toBe(targets);
+  });
+
   it("composes default frame, graph, and pack adapters", () => {
     const frame = { id: "studioCanvasFrame" };
     const originalDocument = globalThis.document;

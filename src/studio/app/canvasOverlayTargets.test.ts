@@ -1,7 +1,20 @@
 import { describe, expect, it, vi } from "vitest";
-import { createGlobalCanvasOverlayTargets } from "./canvasOverlayTargets";
+import {
+  createCanvasOverlayTargets,
+  createGlobalCanvasOverlayTargets,
+} from "./canvasOverlayTargets";
 
-describe("createGlobalCanvasOverlayTargets", () => {
+describe("canvas overlay targets", () => {
+  it("composes overlay targets from injected DOM adapters", () => {
+    const targets = {
+      getPaintPreviewOverlay: vi.fn(() => null),
+      getToolHud: vi.fn(() => null),
+      getCanvasFrame: vi.fn(() => null),
+    };
+
+    expect(createCanvasOverlayTargets(targets)).toBe(targets);
+  });
+
   it("composes default overlay DOM lookups", () => {
     const preview = { id: "preview" };
     const hud = { id: "hud" };
