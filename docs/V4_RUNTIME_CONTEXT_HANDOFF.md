@@ -1843,6 +1843,11 @@ Generation statistics now has a formal `EngineGenerationStatisticsService` for
 `showStatistics`. `getGlobalEngineRuntimeContext()` wires
 `generationStatistics`, and lifecycle statistics display prefers the explicit
 context service before falling back to compatibility lifecycle targets.
+Pipeline context refreshes after generation-session preparation, pack reset,
+and map placement now go through `context.mapStore.getCurrentContext()` instead
+of direct `EngineGenerationPipeline.getCurrentContext()` calls. The behavior is
+unchanged for compatibility contexts, but the refresh boundary is now owned by
+the runtime map store instead of scattered through the pipeline.
 
 ## Next Recommended Slice
 

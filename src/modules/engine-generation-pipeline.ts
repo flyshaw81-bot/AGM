@@ -53,7 +53,7 @@ export class EngineGenerationPipelineModule {
     await this.generateHeightmap(context);
     context.mapStore.resetPackForGeneration();
 
-    let generationContext = this.getCurrentContext();
+    let generationContext = context.mapStore.getCurrentContext();
     this.prepareGridSurface(generationContext);
     generationContext = this.prepareMapPlacement(generationContext);
     this.preparePackGraph(generationContext);
@@ -66,7 +66,7 @@ export class EngineGenerationPipelineModule {
   prepareGenerationSession(request: EngineGenerationRequest = {}) {
     const context = this.getCurrentContext();
     context.generationSession.prepare(request);
-    return this.getCurrentContext();
+    return context.mapStore.getCurrentContext();
   }
 
   async generateFromRequest(request: EngineGenerationRequest = {}) {
@@ -105,7 +105,7 @@ export class EngineGenerationPipelineModule {
     context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
   ) {
     context.lifecycle.defineMapSize(context);
-    const placedContext = this.getCurrentContext();
+    const placedContext = context.mapStore.getCurrentContext();
     placedContext.lifecycle.calculateMapCoordinates(placedContext);
     this.calculateClimate(placedContext);
     return placedContext;

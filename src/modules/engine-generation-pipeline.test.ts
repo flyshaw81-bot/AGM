@@ -124,6 +124,10 @@ describe("EngineGenerationPipelineModule", () => {
     const calls: string[] = [];
     const sessionContext = createPipelineContext("session");
     const preparedContext = createPipelineContext("prepared");
+    sessionContext.mapStore.getCurrentContext = () => {
+      calls.push("refresh");
+      return preparedContext;
+    };
     sessionContext.generationSession.prepare = (request) => {
       calls.push(`prepare:${request?.seed}`);
     };
@@ -140,7 +144,7 @@ describe("EngineGenerationPipelineModule", () => {
     });
 
     expect(result).toBe(preparedContext);
-    expect(calls).toEqual(["context", "prepare:session", "context"]);
+    expect(calls).toEqual(["context", "prepare:session", "refresh"]);
   });
 
   it("generates the world through the expected runtime phases", async () => {
@@ -151,16 +155,15 @@ describe("EngineGenerationPipelineModule", () => {
     initialContext.mapStore.resetPackForGeneration = () => {
       calls.push("reset-pack");
     };
+    initialContext.mapStore.getCurrentContext = () => {
+      calls.push("refresh");
+      return refreshedContext;
+    };
 
     class TestPipeline extends EngineGenerationPipelineModule {
       override async generateHeightmap(context: EngineRuntimeContext) {
         calls.push(`heightmap:${context.seed}`);
         return [];
-      }
-
-      override getCurrentContext() {
-        calls.push("refresh");
-        return refreshedContext;
       }
 
       override prepareGridSurface(context: EngineRuntimeContext) {
@@ -225,5 +228,37 @@ describe("EngineGenerationPipelineModule", () => {
     new TestPipeline().handleGenerationError(new Error("boom"));
 
     expect(calls).toEqual(["log:Error: boom", "notice:Error: boom"]);
+  });
+
+  it("refreshes map placement through the runtime map store", () => {
+    const calls: string[] = [];
+    const context = createPipelineContext("placement-source");
+    const placedContext = createPipelineContext("placement-refreshed");
+    context.lifecycle.defineMapSize = (receivedContext) => {
+      calls.push(`define:${receivedContext?.seed}`);
+    };
+    context.mapStore.getCurrentContext = () => {
+      calls.push("refresh");
+      return placedContext;
+    };
+    placedContext.lifecycle.calculateMapCoordinates = (receivedContext) => {
+      calls.push(`coordinates:${receivedContext?.seed}`);
+    };
+
+    class TestPipeline extends EngineGenerationPipelineModule {
+      override calculateClimate(receivedContext: EngineRuntimeContext) {
+        calls.push(`climate:${receivedContext.seed}`);
+      }
+    }
+
+    const result = new TestPipeline().prepareMapPlacement(context);
+
+    expect(result).toBe(placedContext);
+    expect(calls).toEqual([
+      "define:placement-source",
+      "refresh",
+      "coordinates:placement-refreshed",
+      "climate:placement-refreshed",
+    ]);
   });
 });
