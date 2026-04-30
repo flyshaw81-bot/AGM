@@ -1,3 +1,5 @@
+import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
+
 export type EngineMutableEntity = Record<string, unknown>;
 
 export type EngineEntityMutationTargets = {
@@ -85,6 +87,41 @@ export function createGlobalEntityLookupAdapter(): EngineEntityLookupAdapter {
   };
 }
 
+export function createRuntimeEntityLookupAdapter(
+  context: EngineRuntimeContext,
+): EngineEntityLookupAdapter {
+  return {
+    getState: (stateId) =>
+      (context.pack?.states as unknown as EngineMutableEntity[] | undefined)?.[
+        stateId
+      ],
+    getCulture: (cultureId) =>
+      (
+        context.pack?.cultures as unknown as EngineMutableEntity[] | undefined
+      )?.[cultureId],
+    getReligion: (religionId) =>
+      (
+        context.pack?.religions as unknown as EngineMutableEntity[] | undefined
+      )?.[religionId],
+    getBurg: (burgId) =>
+      (context.pack?.burgs as unknown as EngineMutableEntity[] | undefined)?.[
+        burgId
+      ],
+    getProvince: (provinceId) =>
+      (
+        context.pack?.provinces as unknown as EngineMutableEntity[] | undefined
+      )?.[provinceId],
+    getRoute: (routeId) =>
+      (context.pack?.routes as unknown as EngineMutableEntity[] | undefined)?.[
+        routeId
+      ],
+    getZone: (zoneId) =>
+      (
+        context.pack?.zones as unknown as EngineMutableEntity[] | undefined
+      )?.find((zone) => zone?.i === zoneId),
+  };
+}
+
 export function createGlobalEntityRedrawAdapter(): EngineEntityRedrawAdapter {
   return {
     redrawStates: () => callGlobalDraw("drawStates"),
@@ -132,5 +169,15 @@ export function createGlobalEntityMutationTargets(): EngineEntityMutationTargets
   return createEntityMutationTargets(
     createGlobalEntityLookupAdapter(),
     createGlobalEntityRedrawAdapter(),
+  );
+}
+
+export function createRuntimeEntityMutationTargets(
+  context: EngineRuntimeContext,
+  redrawAdapter: EngineEntityRedrawAdapter = createGlobalEntityRedrawAdapter(),
+): EngineEntityMutationTargets {
+  return createEntityMutationTargets(
+    createRuntimeEntityLookupAdapter(context),
+    redrawAdapter,
   );
 }

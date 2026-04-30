@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 import {
   createEntityMutationTargets,
   createGlobalEntityMutationTargets,
+  createRuntimeEntityMutationTargets,
 } from "./engineEntityMutationTargets";
 
 const originalPack = globalThis.pack;
@@ -86,5 +88,37 @@ describe("createGlobalEntityMutationTargets", () => {
     targets.redrawRoute({ i: 4 });
     expect(redrawStates).toHaveBeenCalledWith();
     expect(redrawRoute).toHaveBeenCalledWith({ i: 4 });
+  });
+
+  it("creates entity mutation targets from an injected runtime context", () => {
+    const state = { i: 1 };
+    const burg = { i: 3 };
+    const zone = { i: 8 };
+    const redrawBurgs = vi.fn();
+    const context = {
+      pack: {
+        states: [undefined, state],
+        burgs: [undefined, undefined, undefined, burg],
+        zones: [zone],
+      },
+    } as unknown as EngineRuntimeContext;
+    const targets = createRuntimeEntityMutationTargets(context, {
+      redrawStates: vi.fn(),
+      redrawStateLabels: vi.fn(),
+      redrawCultures: vi.fn(),
+      redrawReligions: vi.fn(),
+      redrawBurgs,
+      redrawLabels: vi.fn(),
+      redrawProvinces: vi.fn(),
+      redrawRoute: vi.fn(),
+      redrawZones: vi.fn(),
+    });
+
+    expect(targets.getState(1)).toBe(state);
+    expect(targets.getBurg(3)).toBe(burg);
+    expect(targets.getZone(8)).toBe(zone);
+    expect(targets.getZone(99)).toBeUndefined();
+    targets.redrawBurgs();
+    expect(redrawBurgs).toHaveBeenCalledWith();
   });
 });

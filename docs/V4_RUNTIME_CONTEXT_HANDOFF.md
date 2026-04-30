@@ -418,7 +418,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 129 test files, 415 tests.
+- `npm.cmd run test -- --run` passed: 129 test files, 416 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1140,7 +1140,8 @@ directly from an injected `EngineRuntimeContext`. `EngineFocusGeometryTargets` n
 splits focus dimensions, cell geometry, and entity lookups through dedicated
 bridge adapters.
 `EngineEntityMutationTargets` now splits direct-editor entity lookup and redraw
-forwarding through dedicated bridge adapters. `EngineResourceSummaryTargets`
+forwarding through dedicated bridge adapters, and can also compose entity
+lookups directly from an injected `EngineRuntimeContext`. `EngineResourceSummaryTargets`
 now splits biome data and pack resources through dedicated bridge adapters, and
 can also compose targets directly from an injected `EngineRuntimeContext`.
 `EngineCanvasAccessTargets`
