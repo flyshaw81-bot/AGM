@@ -10,7 +10,10 @@ import { AGM_DRAFT_STORAGE_KEY } from "./worldDocumentConstants";
 import type { AgmDocumentDraft } from "./worldDocumentDraftBuilders";
 import { createAgmDocumentDraft } from "./worldDocumentDraftBuilders";
 import { createEngineManifestExport } from "./worldDocumentEngineExports";
-import { exportEnginePackageBundle } from "./worldDocumentEnginePackageDraft";
+import {
+  type EnginePackageBundleTargets,
+  exportEnginePackageBundle,
+} from "./worldDocumentEnginePackageDraft";
 import {
   createGeoJsonMapLayerExport,
   createHeightfieldExport,
@@ -34,21 +37,49 @@ export {
 } from "./worldDocumentDraftBuilders";
 export type { WorldRulesDraft } from "./worldDocumentDraftTypes";
 
+export type WorldDocumentDraftTargets = {
+  createDraft: (
+    state: StudioState,
+    projectSummary: EngineProjectSummary,
+  ) => AgmDocumentDraft;
+  setStorageItem: (key: string, value: string) => void;
+  downloadJson: (filename: string, draft: unknown) => void;
+  downloadBlob: (filename: string, blob: Blob) => void;
+  createPngBlob: typeof createHeightmapPngBlob;
+  createRaw16Blob: typeof createHeightmapRaw16Blob;
+  exportEnginePackage: typeof exportEnginePackageBundle;
+  enginePackageTargets?: EnginePackageBundleTargets;
+};
+
+export function createGlobalWorldDocumentDraftTargets(): WorldDocumentDraftTargets {
+  return {
+    createDraft: createAgmDocumentDraft,
+    setStorageItem: (key, value) => localStorage.setItem(key, value),
+    downloadJson: downloadJsonDraft,
+    downloadBlob: downloadBlobDraft,
+    createPngBlob: createHeightmapPngBlob,
+    createRaw16Blob: createHeightmapRaw16Blob,
+    exportEnginePackage: exportEnginePackageBundle,
+  };
+}
+
 export function saveAgmDocumentDraft(
   state: StudioState,
   projectSummary: EngineProjectSummary,
+  targets: WorldDocumentDraftTargets = createGlobalWorldDocumentDraftTargets(),
 ) {
-  const draft = createAgmDocumentDraft(state, projectSummary);
-  localStorage.setItem(AGM_DRAFT_STORAGE_KEY, JSON.stringify(draft));
+  const draft = targets.createDraft(state, projectSummary);
+  targets.setStorageItem(AGM_DRAFT_STORAGE_KEY, JSON.stringify(draft));
   return draft;
 }
 
 export function exportAgmDocumentDraft(
   state: StudioState,
   projectSummary: EngineProjectSummary,
+  targets: WorldDocumentDraftTargets = createGlobalWorldDocumentDraftTargets(),
 ) {
-  const draft = saveAgmDocumentDraft(state, projectSummary);
-  downloadJsonDraft(createSafeAgmFilename(draft.document.name), draft);
+  const draft = saveAgmDocumentDraft(state, projectSummary, targets);
+  targets.downloadJson(createSafeAgmFilename(draft.document.name), draft);
   return draft;
 }
 
@@ -57,10 +88,11 @@ function exportPackageJsonArtifact<T>(
   projectSummary: EngineProjectSummary,
   filenameSuffix: string,
   selectPayload: (draft: AgmDocumentDraft) => T,
+  targets: WorldDocumentDraftTargets,
 ) {
-  const draft = saveAgmDocumentDraft(state, projectSummary);
+  const draft = saveAgmDocumentDraft(state, projectSummary, targets);
   const payload = selectPayload(draft);
-  downloadJsonDraft(
+  targets.downloadJson(
     createSafeFilename(draft.document.name, filenameSuffix),
     payload,
   );
@@ -70,155 +102,182 @@ function exportPackageJsonArtifact<T>(
 export function exportWorldPackageDraft(
   state: StudioState,
   projectSummary: EngineProjectSummary,
+  targets: WorldDocumentDraftTargets = createGlobalWorldDocumentDraftTargets(),
 ) {
   return exportPackageJsonArtifact(
     state,
     projectSummary,
     "agm-world.json",
     (draft) => draft.world.package,
+    targets,
   );
 }
 
 export function exportResourceMapDraft(
   state: StudioState,
   projectSummary: EngineProjectSummary,
+  targets: WorldDocumentDraftTargets = createGlobalWorldDocumentDraftTargets(),
 ) {
   return exportPackageJsonArtifact(
     state,
     projectSummary,
     "agm-resource-map.json",
     (draft) => draft.world.package.maps.resourceMap,
+    targets,
   );
 }
 
 export function exportProvinceMapDraft(
   state: StudioState,
   projectSummary: EngineProjectSummary,
+  targets: WorldDocumentDraftTargets = createGlobalWorldDocumentDraftTargets(),
 ) {
   return exportPackageJsonArtifact(
     state,
     projectSummary,
     "agm-province-map.json",
     (draft) => draft.world.package.maps.provinceMap,
+    targets,
   );
 }
 
 export function exportBiomeMapDraft(
   state: StudioState,
   projectSummary: EngineProjectSummary,
+  targets: WorldDocumentDraftTargets = createGlobalWorldDocumentDraftTargets(),
 ) {
   return exportPackageJsonArtifact(
     state,
     projectSummary,
     "agm-biome-map.json",
     (draft) => draft.world.package.maps.biomeMap,
+    targets,
   );
 }
 
 export function exportTiledMapDraft(
   state: StudioState,
   projectSummary: EngineProjectSummary,
+  targets: WorldDocumentDraftTargets = createGlobalWorldDocumentDraftTargets(),
 ) {
   return exportPackageJsonArtifact(
     state,
     projectSummary,
     "agm-tiled-map.json",
     (draft) => createTiledMapExport(draft.world.package),
+    targets,
   );
 }
 
 export function exportGeoJsonMapLayersDraft(
   state: StudioState,
   projectSummary: EngineProjectSummary,
+  targets: WorldDocumentDraftTargets = createGlobalWorldDocumentDraftTargets(),
 ) {
   return exportPackageJsonArtifact(
     state,
     projectSummary,
     "agm-map-layers.geojson",
     (draft) => createGeoJsonMapLayerExport(draft.world.package),
+    targets,
   );
 }
 
 export function exportHeightmapMetadataDraft(
   state: StudioState,
   projectSummary: EngineProjectSummary,
+  targets: WorldDocumentDraftTargets = createGlobalWorldDocumentDraftTargets(),
 ) {
   return exportPackageJsonArtifact(
     state,
     projectSummary,
     "agm-heightmap.json",
     (draft) => createHeightmapMetadataExport(draft.world.package),
+    targets,
   );
 }
 
 export function exportHeightfieldDraft(
   state: StudioState,
   projectSummary: EngineProjectSummary,
+  targets: WorldDocumentDraftTargets = createGlobalWorldDocumentDraftTargets(),
 ) {
   return exportPackageJsonArtifact(
     state,
     projectSummary,
     "agm-heightfield.json",
     (draft) => createHeightfieldExport(draft.world.package),
+    targets,
   );
 }
 
 export async function exportHeightmapPngDraft(
   state: StudioState,
   projectSummary: EngineProjectSummary,
+  targets: WorldDocumentDraftTargets = createGlobalWorldDocumentDraftTargets(),
 ) {
-  const draft = saveAgmDocumentDraft(state, projectSummary);
+  const draft = saveAgmDocumentDraft(state, projectSummary, targets);
   const heightfield = createHeightfieldExport(draft.world.package);
   const filename = createSafeFilename(draft.document.name, "agm-heightmap.png");
-  const blob = await createHeightmapPngBlob(heightfield);
-  downloadBlobDraft(filename, blob);
+  const blob = await targets.createPngBlob(heightfield);
+  targets.downloadBlob(filename, blob);
   return { filename, heightfield };
 }
 
 export function exportHeightmapRaw16Draft(
   state: StudioState,
   projectSummary: EngineProjectSummary,
+  targets: WorldDocumentDraftTargets = createGlobalWorldDocumentDraftTargets(),
 ) {
-  const draft = saveAgmDocumentDraft(state, projectSummary);
+  const draft = saveAgmDocumentDraft(state, projectSummary, targets);
   const heightfield = createHeightfieldExport(draft.world.package);
   const filename = createSafeFilename(
     draft.document.name,
     "agm-heightmap-r16.raw",
   );
-  const blob = createHeightmapRaw16Blob(heightfield);
-  downloadBlobDraft(filename, blob);
+  const blob = targets.createRaw16Blob(heightfield);
+  targets.downloadBlob(filename, blob);
   return { filename, heightfield };
 }
 
 export function exportEngineManifestDraft(
   state: StudioState,
   projectSummary: EngineProjectSummary,
+  targets: WorldDocumentDraftTargets = createGlobalWorldDocumentDraftTargets(),
 ) {
   return exportPackageJsonArtifact(
     state,
     projectSummary,
     "agm-engine-manifest.json",
     (draft) => createEngineManifestExport(draft.world.package),
+    targets,
   );
 }
 
 export async function exportEnginePackageDraft(
   state: StudioState,
   projectSummary: EngineProjectSummary,
+  targets: WorldDocumentDraftTargets = createGlobalWorldDocumentDraftTargets(),
 ) {
-  const draft = saveAgmDocumentDraft(state, projectSummary);
-  return exportEnginePackageBundle(draft.document.name, draft.world.package);
+  const draft = saveAgmDocumentDraft(state, projectSummary, targets);
+  return targets.exportEnginePackage(
+    draft.document.name,
+    draft.world.package,
+    targets.enginePackageTargets,
+  );
 }
 
 export function exportAgmRulesPackDraft(
   state: StudioState,
   projectSummary: EngineProjectSummary,
+  targets: WorldDocumentDraftTargets = createGlobalWorldDocumentDraftTargets(),
 ) {
   return exportPackageJsonArtifact(
     state,
     projectSummary,
     "agm-rules.json",
     (draft) => draft.world.rules,
+    targets,
   );
 }
 
