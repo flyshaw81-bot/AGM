@@ -13,7 +13,13 @@ import type {
   StudioState,
 } from "../types";
 import {
+  STUDIO_LANGUAGE_STORAGE_KEY,
+  STUDIO_NAVIGATION_COLLAPSED_STORAGE_KEY,
+  STUDIO_THEME_STORAGE_KEY,
+} from "./preferences";
+import {
   createGlobalStudioShellDraftAdapter,
+  createGlobalStudioShellPreferenceAdapter,
   createStudioShellTargets,
 } from "./studioShellTargets";
 
@@ -147,5 +153,36 @@ describe("createGlobalStudioShellDraftAdapter", () => {
     });
     expect(readFileText).toHaveBeenNthCalledWith(1, draftFile);
     expect(readFileText).toHaveBeenNthCalledWith(2, rulesFile);
+  });
+});
+
+describe("createGlobalStudioShellPreferenceAdapter", () => {
+  it("persists shell preferences through injected preference targets", () => {
+    const preferenceTargets = {
+      getStorageItem: vi.fn(),
+      setStorageItem: vi.fn(),
+      setDocumentLanguage: vi.fn(),
+      setDocumentTheme: vi.fn(),
+    };
+    const adapter = createGlobalStudioShellPreferenceAdapter(preferenceTargets);
+
+    adapter.persistLanguage("en");
+    adapter.persistTheme("daylight");
+    adapter.persistNavigationCollapsed(true);
+
+    expect(preferenceTargets.setStorageItem).toHaveBeenCalledWith(
+      STUDIO_LANGUAGE_STORAGE_KEY,
+      "en",
+    );
+    expect(preferenceTargets.setDocumentLanguage).toHaveBeenCalledWith("en");
+    expect(preferenceTargets.setStorageItem).toHaveBeenCalledWith(
+      STUDIO_THEME_STORAGE_KEY,
+      "daylight",
+    );
+    expect(preferenceTargets.setDocumentTheme).toHaveBeenCalledWith("daylight");
+    expect(preferenceTargets.setStorageItem).toHaveBeenCalledWith(
+      STUDIO_NAVIGATION_COLLAPSED_STORAGE_KEY,
+      "true",
+    );
   });
 });

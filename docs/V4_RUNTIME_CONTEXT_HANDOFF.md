@@ -36,6 +36,9 @@
 > World document and engine package default target factories now compose the
 > same `HeightmapPngExportTargets`, so PNG exports and engine package heightmap
 > assets can share one injected canvas boundary.
+> Studio preference persistence now uses `StudioPreferenceTargets`, so
+> language/theme/navigation storage and document-element writes are isolated
+> behind an app-level preference adapter.
 > Please review whether each remaining global dependency is behind an explicit
 > compatibility adapter, and keep treating AGM `window.*` module mounts
 > separately from old public UI debt.
@@ -439,7 +442,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 134 test files, 447 tests.
+- `npm.cmd run test -- --run` passed: 135 test files, 451 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,

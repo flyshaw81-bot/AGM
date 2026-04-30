@@ -39,9 +39,11 @@ import {
   syncEditorWorkflowState,
 } from "./documentState";
 import {
+  createGlobalStudioPreferenceTargets,
   persistLanguage,
   persistNavigationCollapsed,
   persistTheme,
+  type StudioPreferenceTargets,
 } from "./preferences";
 import { applyProjectWorkspaceChange } from "./projectWorkspaceActions";
 
@@ -184,11 +186,14 @@ export function createGlobalStudioShellWorkspaceAdapter(): StudioShellWorkspaceA
   };
 }
 
-export function createGlobalStudioShellPreferenceAdapter(): StudioShellPreferenceAdapter {
+export function createGlobalStudioShellPreferenceAdapter(
+  preferenceTargets: StudioPreferenceTargets = createGlobalStudioPreferenceTargets(),
+): StudioShellPreferenceAdapter {
   return {
-    persistLanguage,
-    persistTheme,
-    persistNavigationCollapsed,
+    persistLanguage: (language) => persistLanguage(language, preferenceTargets),
+    persistTheme: (theme) => persistTheme(theme, preferenceTargets),
+    persistNavigationCollapsed: (collapsed) =>
+      persistNavigationCollapsed(collapsed, preferenceTargets),
   };
 }
 
