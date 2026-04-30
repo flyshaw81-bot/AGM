@@ -18,12 +18,18 @@ export type InitialStateTargets = {
   projectCenter: Pick<ProjectCenterTargets, "getStorageItem">;
 };
 
+export function createInitialStateTargets(
+  targets: InitialStateTargets,
+): InitialStateTargets {
+  return targets;
+}
+
 export function createGlobalInitialStateTargets(): InitialStateTargets {
-  return {
+  return createInitialStateTargets({
     getEngineDocumentState,
     getEngineStylePreset,
     getPresetById,
     preferences: createGlobalStudioPreferenceTargets(),
     projectCenter: createGlobalProjectCenterTargets(),
-  };
+  });
 }

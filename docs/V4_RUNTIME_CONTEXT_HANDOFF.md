@@ -112,6 +112,9 @@
 > `InitialStateTargets`, so startup state construction no longer owns
 > engine-document, style-preset, viewport-preset, preference, or project-center
 > default adapter wiring inline.
+> `InitialStateTargets` now also exposes an explicit `createInitialStateTargets`
+> composer, so tests and future startup flows can inject the complete startup
+> target set without going through the global default factory.
 > Studio bootstrap default dependencies now live in
 > `StudioBootstrapTargets`, so startup orchestration no longer owns style,
 > DOM, initial-state, workflow-watcher, project-summary, document-sync, root,
@@ -559,7 +562,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 165 test files, 522 tests.
+- `npm.cmd run test -- --run` passed: 165 test files, 523 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1443,6 +1446,9 @@ Initial Studio state default runtime access now has a dedicated
 viewport preset lookup, preference targets, and project-center storage targets.
 `initialState.ts` continues to re-export the target type/factory while startup
 state construction no longer owns those default adapter imports inline.
+`initialStateTargets.ts` now also exposes `createInitialStateTargets` for
+explicit startup target composition, keeping injected startup dependencies
+separate from the global default engine/browser factory.
 Studio bootstrap default runtime access now has a dedicated
 `studioBootstrapTargets.ts` adapter for style injection, DOM startup helpers,
 initial state creation, viewport dimension updates, root creation, project
