@@ -418,7 +418,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 124 test files, 402 tests.
+- `npm.cmd run test -- --run` passed: 125 test files, 403 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1096,6 +1096,9 @@ services instead of reading `globalThis.Routes` inline:
 - `src/studio/app/studioEngineCommandHandlers.test.ts` covers app-level style,
   export, topbar, and data command handling through injected Studio engine
   command targets.
+- `src/studio/app/studioEngineCommandTargets.test.ts` covers composition of
+  Studio style, export, bridge action, document/project, and generation-profile
+  command adapters into the app-level command target.
 - `src/studio/app/projectActionHandler.test.ts` covers app-level project draft,
   package export, draft restore, and engine project action forwarding through
   injected project action targets.
@@ -1151,9 +1154,10 @@ and old dialog wrapper queries through dedicated app-level adapters.
 runtime adapters. The map host still relies on old runtime objects behind the
 default adapters, but `engineMapHost.ts` no longer owns those direct global
 calls inline.
-`StudioEngineCommandTargets` is an app-level boundary and still delegates to the
-current bridge/project/generation-profile helpers by default, but
-`studioEngineCommandHandlers.ts` no longer owns those calls inline.
+`StudioEngineCommandTargets` now splits style, export, bridge action,
+document/project, and generation-profile commands through dedicated app-level
+adapters. The default adapters still delegate to the current bridge/project
+helpers, but `studioEngineCommandHandlers.ts` no longer owns those calls inline.
 `ProjectActionTargets` is an app-level boundary and still delegates to the
 current engine project action bridge plus world document draft import/export
 helpers by default, but `projectActionHandler.ts` no longer owns those direct

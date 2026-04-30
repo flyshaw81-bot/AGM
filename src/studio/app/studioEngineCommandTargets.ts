@@ -56,23 +56,115 @@ export type StudioEngineCommandTargets = {
   createGenerationProfileResultMetrics: typeof createGenerationProfileResultMetrics;
 };
 
-export function createGlobalStudioEngineCommandTargets(): StudioEngineCommandTargets {
+export type StudioStyleCommandAdapter = {
+  applyStylePreset: (preset: string) => void;
+  getStyleSettings: typeof getEngineStyleSettings;
+  setStyleToggle: (action: StudioStyleToggleAction, enabled: boolean) => void;
+};
+
+export type StudioExportCommandAdapter = {
+  setExportSetting: (setting: EngineExportSetting, value: number) => void;
+  exportWithEngine: (format: EngineExportFormat) => void;
+};
+
+export type StudioBridgeActionCommandAdapter = {
+  runTopbarAction: (action: TopbarAction) => Promise<void>;
+  toggleLayer: (action: LayerAction) => void;
+  runDataAction: (action: DataAction) => Promise<void>;
+  runLayersPresetAction: (action: StudioLayersPresetAction) => void;
+};
+
+export type StudioDocumentCommandAdapter = {
+  markDocumentClean: () => void;
+  updateProjectCenter: (
+    state: StudioState,
+    options?: { saved?: boolean; exportReady?: boolean },
+  ) => void;
+  syncDocument: (state: StudioState) => void;
+};
+
+export type StudioGenerationProfileCommandAdapter = {
+  applyGenerationProfileOverrides: (state: StudioState) => void;
+  createGenerationProfileResultSample: typeof createGenerationProfileResultSample;
+  createGenerationProfileResultMetrics: typeof createGenerationProfileResultMetrics;
+};
+
+export function createGlobalStudioStyleCommandAdapter(): StudioStyleCommandAdapter {
   return {
     applyStylePreset: applyEngineStylePreset,
     getStyleSettings: getEngineStyleSettings,
     setStyleToggle: setEngineStyleToggle,
+  };
+}
+
+export function createGlobalStudioExportCommandAdapter(): StudioExportCommandAdapter {
+  return {
     setExportSetting: setEngineExportSetting,
     exportWithEngine,
+  };
+}
+
+export function createGlobalStudioBridgeActionCommandAdapter(): StudioBridgeActionCommandAdapter {
+  return {
     runTopbarAction: runEngineTopbarAction,
     toggleLayer: toggleEngineLayer,
     runDataAction: runEngineDataAction,
     runLayersPresetAction: runEngineLayersPresetAction,
+  };
+}
+
+export function createGlobalStudioDocumentCommandAdapter(): StudioDocumentCommandAdapter {
+  return {
     markDocumentClean: markEngineDocumentClean,
     updateProjectCenter: updateProjectCenterState,
     syncDocument: syncDocumentState,
+  };
+}
+
+export function createGlobalStudioGenerationProfileCommandAdapter(): StudioGenerationProfileCommandAdapter {
+  return {
     applyGenerationProfileOverrides:
       applyGenerationProfileOverridesToEngineSettings,
     createGenerationProfileResultSample,
     createGenerationProfileResultMetrics,
   };
+}
+
+export function createStudioEngineCommandTargets(
+  styleAdapter: StudioStyleCommandAdapter,
+  exportAdapter: StudioExportCommandAdapter,
+  actionAdapter: StudioBridgeActionCommandAdapter,
+  documentAdapter: StudioDocumentCommandAdapter,
+  generationProfileAdapter: StudioGenerationProfileCommandAdapter,
+): StudioEngineCommandTargets {
+  return {
+    applyStylePreset: styleAdapter.applyStylePreset,
+    getStyleSettings: styleAdapter.getStyleSettings,
+    setStyleToggle: styleAdapter.setStyleToggle,
+    setExportSetting: exportAdapter.setExportSetting,
+    exportWithEngine: exportAdapter.exportWithEngine,
+    runTopbarAction: actionAdapter.runTopbarAction,
+    toggleLayer: actionAdapter.toggleLayer,
+    runDataAction: actionAdapter.runDataAction,
+    runLayersPresetAction: actionAdapter.runLayersPresetAction,
+    markDocumentClean: documentAdapter.markDocumentClean,
+    updateProjectCenter: documentAdapter.updateProjectCenter,
+    syncDocument: documentAdapter.syncDocument,
+    applyGenerationProfileOverrides:
+      generationProfileAdapter.applyGenerationProfileOverrides,
+    createGenerationProfileResultSample:
+      generationProfileAdapter.createGenerationProfileResultSample,
+    createGenerationProfileResultMetrics:
+      generationProfileAdapter.createGenerationProfileResultMetrics,
+  };
+}
+
+export function createGlobalStudioEngineCommandTargets(): StudioEngineCommandTargets {
+  return createStudioEngineCommandTargets(
+    createGlobalStudioStyleCommandAdapter(),
+    createGlobalStudioExportCommandAdapter(),
+    createGlobalStudioBridgeActionCommandAdapter(),
+    createGlobalStudioDocumentCommandAdapter(),
+    createGlobalStudioGenerationProfileCommandAdapter(),
+  );
 }
