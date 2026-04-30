@@ -54,6 +54,9 @@
 > Studio bootstrap now uses `StudioBootstrapTargets`, so body/loading setup,
 > DOMContentLoaded startup, resize viewport sync, and public viewport sync
 > mounting are isolated from the app entrypoint.
+> Studio rendering now uses `StudioRendererTargets`, so shell HTML writes,
+> theme writes, map/dialog host sync, canvas interaction binding, viewport
+> sync, and shell event binding are isolated from the app entrypoint.
 > Please review whether each remaining global dependency is behind an explicit
 > compatibility adapter, and keep treating AGM `window.*` module mounts
 > separately from old public UI debt.
@@ -457,7 +460,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 140 test files, 467 tests.
+- `npm.cmd run test -- --run` passed: 141 test files, 472 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1249,6 +1252,11 @@ style injection, body/loading setup, initial state creation, DOMContentLoaded
 startup, resize viewport sync, workflow watcher creation, and public
 `studioViewportSync` mounting; `index.ts` now only wires the render function
 into the bootstrap target factory.
+Studio rendering now has a dedicated `StudioRendererTargets` boundary for
+workflow/document/project-center sync, shell HTML writes, theme writes,
+map/dialog host sync, overlays, viewport sync, canvas selection/paint binding,
+and shell event binding; `index.ts` now only composes `createStudioRenderer()`
+with the bootstrap target factory.
 Direct editor targets can also compose focus, entity mutation, and biome
 mutation commands directly from an injected `EngineRuntimeContext`. The default
 adapters still delegate to current entity mutation/focus bridge helpers, but
