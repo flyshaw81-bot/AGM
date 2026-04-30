@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createGenerationSessionAdapter,
+  createGenerationSessionLifecycle,
   createGlobalGenerationSessionAdapter,
+  createGlobalGenerationSessionLifecycleTargets,
   createGlobalGenerationSessionServices,
   createGridSessionService,
 } from "./engine-generation-session-services";
@@ -78,6 +80,25 @@ describe("createGlobalGenerationSessionServices", () => {
     }).prepareGrid({ seed: "target-seed" });
 
     expect(currentGrid.cells.h).toBeUndefined();
+  });
+
+  it("composes session lifecycle from injected targets", () => {
+    const targets = {
+      invokeActiveZooming: vi.fn(),
+    };
+
+    createGenerationSessionLifecycle(targets).resetActiveView();
+
+    expect(targets.invokeActiveZooming).toHaveBeenCalledWith();
+  });
+
+  it("keeps active-view reset inside default lifecycle targets", () => {
+    const invokeActiveZooming = vi.fn();
+    vi.stubGlobal("invokeActiveZooming", invokeActiveZooming);
+
+    createGlobalGenerationSessionLifecycleTargets().invokeActiveZooming();
+
+    expect(invokeActiveZooming).toHaveBeenCalledWith();
   });
 });
 

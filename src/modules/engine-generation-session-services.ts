@@ -39,6 +39,10 @@ export type EngineGenerationSessionLifecycle = {
   resetActiveView: () => void;
 };
 
+export type EngineGenerationSessionLifecycleTargets = {
+  invokeActiveZooming: () => void;
+};
+
 export type EngineGenerationSessionServices = {
   sessionLifecycle: EngineGenerationSessionLifecycle;
   seedSession: EngineSeedSessionService;
@@ -99,12 +103,28 @@ export function createGlobalGridSessionService(): EngineGridSessionService {
   });
 }
 
-export function createGlobalGenerationSessionLifecycle(): EngineGenerationSessionLifecycle {
+export function createGlobalGenerationSessionLifecycleTargets(): EngineGenerationSessionLifecycleTargets {
   return {
-    resetActiveView: () => {
+    invokeActiveZooming: () => {
       invokeActiveZooming();
     },
   };
+}
+
+export function createGenerationSessionLifecycle(
+  targets: EngineGenerationSessionLifecycleTargets,
+): EngineGenerationSessionLifecycle {
+  return {
+    resetActiveView: () => {
+      targets.invokeActiveZooming();
+    },
+  };
+}
+
+export function createGlobalGenerationSessionLifecycle(
+  targets: EngineGenerationSessionLifecycleTargets = createGlobalGenerationSessionLifecycleTargets(),
+): EngineGenerationSessionLifecycle {
+  return createGenerationSessionLifecycle(targets);
 }
 
 export function createGlobalGenerationSessionServices(): EngineGenerationSessionServices {
