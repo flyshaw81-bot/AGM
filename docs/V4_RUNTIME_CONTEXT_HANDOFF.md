@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 180 test files, 682 tests.
+- `npm.cmd run test -- --run` passed: 180 test files, 683 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2010,6 +2010,10 @@ SVG length measurement remain deferred.
 `EngineRouteService` now also exposes a `getLength(routeId)` adapter method so
 future route-length consumers can depend on the route service boundary instead
 of calling the mounted `Routes.getLength()` / rendered SVG selector directly.
+`Routes.remove(route, context)` now updates route data through `context.pack`
+and removes the rendered route through `context.rendering.removeElementById`
+when available; the old `viewbox.select(...).remove()` path is retained only as
+a compatibility fallback.
 `getEngineWorldDimensions(context)` now centralizes the compatibility fallback
 from runtime world settings to browser graph globals. Burgs, Cultures, and
 Rivers consume that helper instead of reading `globalThis.graphWidth` /

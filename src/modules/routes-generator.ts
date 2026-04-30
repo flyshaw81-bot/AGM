@@ -754,7 +754,11 @@ export class RoutesModule {
     return roadConnections.length > 2;
   }
 
-  remove(route: Route) {
+  remove(
+    route: Route,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { pack } = context;
     const routes = pack.cells.routes;
 
     for (const point of route.points) {
@@ -770,7 +774,9 @@ export class RoutesModule {
     }
 
     pack.routes = pack.routes.filter((r) => r.i !== route.i);
-    viewbox.select(`#route${route.i}`).remove();
+    if (context.rendering)
+      context.rendering.removeElementById(`route${route.i}`);
+    else viewbox.select(`#route${route.i}`).remove();
   }
 
   getConnectivityRate(

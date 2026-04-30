@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { PackedGraph } from "../types/PackedGraph";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
 import { RoutesModule } from "./routes-generator";
@@ -179,5 +179,40 @@ describe("RoutesModule", () => {
 
     expect(name).toEqual(expect.any(String));
     expect(name.length).toBeGreaterThan(0);
+  });
+
+  it("removes routes from context data and rendering adapter", () => {
+    const context = createRoutesContext();
+    const route = {
+      i: 9,
+      group: "roads" as const,
+      feature: 1,
+      points: [
+        [0, 0, 0] as [number, number, number],
+        [1, 1, 1] as [number, number, number],
+        [2, 2, 2] as [number, number, number],
+      ],
+    };
+    context.pack.routes = [route];
+    context.pack.cells.routes = {
+      0: { 1: 9 },
+      1: { 0: 9, 2: 9 },
+      2: { 1: 9 },
+    };
+    const removeElementById = vi.fn();
+    context.rendering = {
+      ...context.rendering!,
+      removeElementById,
+    };
+
+    new RoutesModule().remove(route, context);
+
+    expect(context.pack.routes).toEqual([]);
+    expect(context.pack.cells.routes).toEqual({
+      0: {},
+      1: {},
+      2: {},
+    });
+    expect(removeElementById).toHaveBeenCalledWith("route9");
   });
 });

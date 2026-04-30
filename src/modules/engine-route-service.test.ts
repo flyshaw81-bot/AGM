@@ -56,7 +56,7 @@ describe("createGlobalRouteService", () => {
     expect(Routes.getConnectivityRate).toHaveBeenCalledWith(13, undefined);
     expect(Routes.buildLinks).toHaveBeenCalledWith([]);
     expect(Routes.connect).toHaveBeenCalledWith(14, undefined);
-    expect(Routes.remove).toHaveBeenCalledWith(routeToRemove);
+    expect(Routes.remove).toHaveBeenCalledWith(routeToRemove, undefined);
     expect(Routes.getLength).toHaveBeenCalledWith(8);
   });
 
@@ -96,7 +96,7 @@ describe("createGlobalRouteService", () => {
     expect(routesModule.getRoute).toHaveBeenCalledWith(1, 2, undefined);
     expect(routesModule.getConnectivityRate).toHaveBeenCalledWith(5, undefined);
     expect(routesModule.connect).toHaveBeenCalledWith(6, undefined);
-    expect(routesModule.remove).toHaveBeenCalledWith(packedRoute);
+    expect(routesModule.remove).toHaveBeenCalledWith(packedRoute, undefined);
     expect(routesModule.getLength).toHaveBeenCalledWith(4);
   });
 
@@ -123,7 +123,7 @@ describe("createGlobalRouteService", () => {
     expect(routes.hasRoad(4)).toBe(true);
     routes.remove(runtimeRoute);
     expect(routesModule.hasRoad).toHaveBeenCalledWith(4, context);
-    expect(routesModule.remove).toHaveBeenCalledWith(runtimeRoute);
+    expect(routesModule.remove).toHaveBeenCalledWith(runtimeRoute, context);
   });
 
   it("returns zero for rendered route length when the route module is unavailable", () => {
