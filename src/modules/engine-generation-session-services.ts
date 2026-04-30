@@ -160,6 +160,18 @@ export function createGlobalGenerationSessionServices(): EngineGenerationSession
   };
 }
 
+export function createRuntimeGenerationSessionServices(
+  context: EngineRuntimeContext,
+): EngineGenerationSessionServices {
+  return {
+    sessionLifecycle: context.sessionLifecycle,
+    seedSession: context.seedSession,
+    graphSession: context.graphSession,
+    optionsSession: context.optionsSession,
+    gridSession: context.gridSession,
+  };
+}
+
 export function createGenerationSessionAdapter(
   createFallbackServices: () => EngineGenerationSessionServices,
 ): EngineGenerationSessionAdapter {
@@ -187,6 +199,14 @@ export function createGenerationSessionAdapter(
       services.gridSession.prepareGrid(request);
     },
   };
+}
+
+export function createRuntimeGenerationSessionAdapter(
+  context: EngineRuntimeContext,
+): EngineGenerationSessionAdapter {
+  return createGenerationSessionAdapter(() =>
+    createRuntimeGenerationSessionServices(context),
+  );
 }
 
 export function createGlobalGenerationSessionAdapter(): EngineGenerationSessionAdapter {

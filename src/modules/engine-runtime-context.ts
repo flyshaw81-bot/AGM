@@ -12,6 +12,7 @@ import {
 import {
   createGlobalGenerationSessionAdapter,
   createGlobalGenerationSessionServices,
+  createRuntimeGenerationSessionAdapter,
   createRuntimeGridSessionService,
   type EngineGenerationSessionAdapter,
   type EngineGenerationSessionLifecycle,
@@ -182,5 +183,6 @@ export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
   context.graphSession = createRuntimeGraphSession(context);
   context.gridSession = createRuntimeGridSessionService(context);
   context.optionsSession = createRuntimeOptionsSession(context);
+  context.generationSession = createRuntimeGenerationSessionAdapter(context);
   return context;
 }

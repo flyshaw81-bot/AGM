@@ -6,6 +6,8 @@ import {
   createGlobalGenerationSessionLifecycleTargets,
   createGlobalGenerationSessionServices,
   createGridSessionService,
+  createRuntimeGenerationSessionAdapter,
+  createRuntimeGenerationSessionServices,
   createRuntimeGridSessionService,
 } from "./engine-generation-session-services";
 import { EngineOptionsSession } from "./engine-options-session";
@@ -180,6 +182,72 @@ describe("createGlobalGenerationSessionAdapter", () => {
       "graph",
       "options",
       "grid:runtime-seed",
+    ]);
+  });
+
+  it("composes runtime generation services from a runtime context", () => {
+    const context = {
+      sessionLifecycle: { resetActiveView: vi.fn() },
+      seedSession: {
+        apply: vi.fn(() => "seed"),
+        resolve: vi.fn(() => "seed"),
+      },
+      graphSession: { applyGraphSize: vi.fn() },
+      optionsSession: { randomizeOptions: vi.fn() },
+      gridSession: { prepareGrid: vi.fn() },
+    } as unknown as EngineRuntimeContext;
+
+    const services = createRuntimeGenerationSessionServices(context);
+
+    expect(services.sessionLifecycle).toBe(context.sessionLifecycle);
+    expect(services.seedSession).toBe(context.seedSession);
+    expect(services.graphSession).toBe(context.graphSession);
+    expect(services.optionsSession).toBe(context.optionsSession);
+    expect(services.gridSession).toBe(context.gridSession);
+  });
+
+  it("uses its bound runtime context when prepare is called without a context argument", () => {
+    const calls: string[] = [];
+    const context = {
+      sessionLifecycle: {
+        resetActiveView: () => {
+          calls.push("reset");
+        },
+      },
+      seedSession: {
+        apply: (seed?: string) => {
+          calls.push(`seed:${seed}`);
+          return seed || "";
+        },
+        resolve: (seed?: string) => seed || "",
+      },
+      graphSession: {
+        applyGraphSize: () => {
+          calls.push("graph");
+        },
+      },
+      optionsSession: {
+        randomizeOptions: () => {
+          calls.push("options");
+        },
+      },
+      gridSession: {
+        prepareGrid: (request?: { seed?: string }) => {
+          calls.push(`grid:${request?.seed}`);
+        },
+      },
+    } as unknown as EngineRuntimeContext;
+
+    createRuntimeGenerationSessionAdapter(context).prepare({
+      seed: "bound-seed",
+    });
+
+    expect(calls).toEqual([
+      "reset",
+      "seed:bound-seed",
+      "graph",
+      "options",
+      "grid:bound-seed",
     ]);
   });
 

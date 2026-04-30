@@ -1782,6 +1782,13 @@ targets that read/write graph dimensions through `context.worldSettings` before
 delegating SVG rect/mask updates to the compatibility graph targets. The
 remaining compatibility pieces are the map size DOM inputs and rendered SVG
 selection targets.
+Generation session now exposes `createRuntimeGenerationSessionAdapter(context)`
+and `createRuntimeGenerationSessionServices(context)`. Runtime context wires
+`generationSession` through the bound runtime adapter, so
+`context.generationSession.prepare(request)` can use the context-owned
+session/lifecycle/seed/graph/options/grid services without requiring callers to
+pass the same context back as a second argument. The global adapter remains for
+compatibility entry points.
 
 ## Next Recommended Slice
 
