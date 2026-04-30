@@ -111,6 +111,9 @@
 > Project workspace changes now use `ProjectWorkspaceActionTargets`, so project
 > setting setters, document-name writes, canvas-size writes, autosave writes,
 > and project-summary sync are isolated from workspace action routing.
+> `ProjectWorkspaceActionTargets` now also exposes
+> `createProjectWorkspaceActionTargets`, so injected project write targets stay
+> separate from the default engine bridge setter factory.
 > Initial Studio state default dependencies now live in
 > `InitialStateTargets`, so startup state construction no longer owns
 > engine-document, style-preset, viewport-preset, preference, or project-center
@@ -1474,6 +1477,10 @@ Project workspace setting changes now have a dedicated
 name writes, canvas-size writes, autosave writes, and project-summary sync.
 `projectWorkspaceActions.ts` continues to re-export the target type/factory
 while its action routing logic no longer owns direct bridge setter maps inline.
+`projectWorkspaceActionTargets.ts` now also exposes
+`createProjectWorkspaceActionTargets` for explicit project write target
+composition, keeping injected write targets separate from the default engine
+bridge setter factory.
 Initial Studio state default runtime access now has a dedicated
 `initialStateTargets.ts` adapter for engine document reads, style preset reads,
 viewport preset lookup, preference targets, and project-center storage targets.

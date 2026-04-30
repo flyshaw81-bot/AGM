@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { StudioState } from "../types";
 import {
   applyProjectWorkspaceChange,
+  createProjectWorkspaceActionTargets,
   type ProjectWorkspaceActionTargets,
 } from "./projectWorkspaceActions";
 
@@ -39,6 +40,12 @@ function createTargets(
 }
 
 describe("applyProjectWorkspaceChange", () => {
+  it("composes project workspace action targets from injected adapters", () => {
+    const targets = createTargets();
+
+    expect(createProjectWorkspaceActionTargets(targets)).toBe(targets);
+  });
+
   it("routes string settings through injected targets", async () => {
     const targets = createTargets();
 

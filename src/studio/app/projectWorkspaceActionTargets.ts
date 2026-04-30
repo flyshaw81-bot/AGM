@@ -43,8 +43,14 @@ export type ProjectWorkspaceActionTargets = {
   syncProjectSummary: () => Promise<unknown> | unknown;
 };
 
+export function createProjectWorkspaceActionTargets(
+  targets: ProjectWorkspaceActionTargets,
+): ProjectWorkspaceActionTargets {
+  return targets;
+}
+
 export function createGlobalProjectWorkspaceActionTargets(): ProjectWorkspaceActionTargets {
-  return {
+  return createProjectWorkspaceActionTargets({
     numberSetters: {
       burgs: setEnginePendingBurgs,
       cultures: setEnginePendingCultures,
@@ -79,5 +85,5 @@ export function createGlobalProjectWorkspaceActionTargets(): ProjectWorkspaceAct
     setCanvasSize: setEnginePendingCanvasSize,
     setAutosaveInterval: setEngineAutosaveInterval,
     syncProjectSummary: syncEngineProjectSummary,
-  };
+  });
 }

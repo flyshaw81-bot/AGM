@@ -6,6 +6,7 @@ import {
 
 export {
   createGlobalProjectWorkspaceActionTargets,
+  createProjectWorkspaceActionTargets,
   type ProjectWorkspaceActionTargets,
 } from "./projectWorkspaceActionTargets";
 
