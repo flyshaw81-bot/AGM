@@ -84,6 +84,9 @@
 > so parse/cleanup/regenerate runtime calls are isolated from the notice
 > service. The default jQuery dialog host remains a compatibility host until a
 > Pencil-aligned Studio modal replaces that UI path.
+> Engine editor dialog compatibility now uses `EngineEditorDialogDomAdapter`,
+> so dialog element lookup and computed-style reads are isolated from the
+> jQuery wrapper close/open-state adapter.
 > Studio style injection now uses `StudioStyleTargets`, so duplicate style
 > detection, style element creation, and head insertion are injectable.
 > Studio document theme sync now uses `StudioThemeSyncTargets`, so renderer

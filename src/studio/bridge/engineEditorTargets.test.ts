@@ -1,9 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createEngineEditorTargets,
+  createGlobalEngineEditorDialogDomAdapter,
   createGlobalEngineEditorTargets,
   createJQueryEngineEditorDialogAdapter,
   type EngineEditorDialogAdapter,
+  type EngineEditorDialogDomAdapter,
 } from "./engineEditorTargets";
 
 const originalDocument = globalThis.document;
@@ -90,21 +92,21 @@ describe("createEngineEditorTargets", () => {
       offsetParent: {},
       closest: vi.fn(() => wrapper),
     };
-    globalThis.document = {
-      getElementById: vi.fn(() => dialog),
-    } as unknown as Document;
-    globalThis.window = {
+    const domAdapter: EngineEditorDialogDomAdapter = {
+      getElementById: vi.fn(() => dialog as unknown as HTMLElement),
       getComputedStyle: vi.fn(() => ({
         display: "block",
         visibility: "visible",
       })),
-    } as unknown as Window & typeof globalThis;
+    };
 
-    const adapter = createJQueryEngineEditorDialogAdapter();
+    const adapter = createJQueryEngineEditorDialogAdapter(domAdapter);
 
     expect(adapter.isOpen("statesEditor")).toBe(true);
     adapter.close("statesEditor");
 
+    expect(domAdapter.getElementById).toHaveBeenCalledWith("statesEditor");
+    expect(domAdapter.getComputedStyle).toHaveBeenCalledWith(dialog);
     expect(closeButton.click).toHaveBeenCalledWith();
     expect(wrapper.setAttribute).not.toHaveBeenCalled();
   });
@@ -118,14 +120,38 @@ describe("createEngineEditorTargets", () => {
     const dialog = {
       closest: vi.fn(() => wrapper),
     };
-    globalThis.document = {
-      getElementById: vi.fn(() => dialog),
-    } as unknown as Document;
-
-    const adapter = createJQueryEngineEditorDialogAdapter();
+    const adapter = createJQueryEngineEditorDialogAdapter({
+      getElementById: vi.fn(() => dialog as unknown as HTMLElement),
+      getComputedStyle: vi.fn(() => null),
+    });
     adapter.close("statesEditor");
 
     expect(wrapper.setAttribute).toHaveBeenCalledWith("aria-hidden", "true");
     expect(wrapper.style.display).toBe("none");
+  });
+
+  it("keeps document and computed-style reads inside the default DOM adapter", () => {
+    const dialog = { id: "statesEditor" };
+    globalThis.document = {
+      getElementById: vi.fn(() => dialog),
+    } as unknown as Document;
+    globalThis.window = {
+      getComputedStyle: vi.fn(() => ({
+        display: "block",
+        visibility: "visible",
+      })),
+    } as unknown as Window & typeof globalThis;
+
+    const adapter = createGlobalEngineEditorDialogDomAdapter();
+
+    expect(adapter.getElementById("statesEditor")).toBe(dialog);
+    expect(adapter.getComputedStyle(dialog as unknown as HTMLElement)).toEqual({
+      display: "block",
+      visibility: "visible",
+    });
+    expect(globalThis.document.getElementById).toHaveBeenCalledWith(
+      "statesEditor",
+    );
+    expect(globalThis.window.getComputedStyle).toHaveBeenCalledWith(dialog);
   });
 });

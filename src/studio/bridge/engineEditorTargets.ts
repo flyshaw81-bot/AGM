@@ -11,6 +11,13 @@ export type EngineEditorDialogAdapter = {
   close: (dialogId: string) => void;
 };
 
+export type EngineEditorDialogDomAdapter = {
+  getElementById: (dialogId: string) => HTMLElement | null;
+  getComputedStyle: (
+    element: HTMLElement,
+  ) => Pick<CSSStyleDeclaration, "display" | "visibility"> | null;
+};
+
 export type EngineEditorTargets = {
   hasEditorHandler: (action: EditorAction) => boolean;
   runEditorHandler: (action: EditorAction) => Promise<void>;
@@ -32,26 +39,36 @@ export function createGlobalEngineEditorHandlerRuntime(): EngineEditorHandlerRun
   };
 }
 
-function isElementVisible(element: HTMLElement) {
+function isElementVisible(
+  element: HTMLElement,
+  domAdapter: EngineEditorDialogDomAdapter,
+) {
   if (element.hidden) return false;
   if (element.offsetParent === null) return false;
-  const style = globalThis.window?.getComputedStyle(element);
+  const style = domAdapter.getComputedStyle(element);
   return style?.display !== "none" && style?.visibility !== "hidden";
 }
 
-function getDialogElement(dialogId: string) {
-  return globalThis.document?.getElementById(dialogId) ?? null;
+export function createGlobalEngineEditorDialogDomAdapter(): EngineEditorDialogDomAdapter {
+  return {
+    getElementById: (dialogId) =>
+      globalThis.document?.getElementById(dialogId) ?? null,
+    getComputedStyle: (element) =>
+      globalThis.window?.getComputedStyle(element) ?? null,
+  };
 }
 
-export function createJQueryEngineEditorDialogAdapter(): EngineEditorDialogAdapter {
+export function createJQueryEngineEditorDialogAdapter(
+  domAdapter: EngineEditorDialogDomAdapter = createGlobalEngineEditorDialogDomAdapter(),
+): EngineEditorDialogAdapter {
   return {
     isOpen: (dialogId) => {
-      const dialog = getDialogElement(dialogId);
+      const dialog = domAdapter.getElementById(dialogId);
       if (!dialog) return false;
-      return isElementVisible(dialog);
+      return isElementVisible(dialog, domAdapter);
     },
     close: (dialogId) => {
-      const dialog = getDialogElement(dialogId);
+      const dialog = domAdapter.getElementById(dialogId);
       if (!dialog) return;
 
       const wrapper = dialog.closest(".ui-dialog");
