@@ -117,6 +117,43 @@ describe("createGlobalGenerationSessionServices", () => {
     expect(globalThis.grid).toBe(originalGrid);
   });
 
+  it("reads runtime grid dimensions from the world settings store when available", () => {
+    const currentGrid = {
+      seed: "runtime-seed",
+      cellsDesired: 100,
+      spacing: 10,
+      cellsX: 10,
+      cellsY: 10,
+      cells: {
+        h: new Uint8Array([1, 2, 3]),
+      },
+    } as typeof grid;
+    const context = {
+      grid: currentGrid,
+      seed: "runtime-seed",
+      worldSettings: {
+        graphWidth: 100,
+        graphHeight: 100,
+      },
+      worldSettingsStore: {
+        get: () => ({ graphWidth: 640, graphHeight: 480 }),
+      },
+    } as unknown as EngineRuntimeContext;
+    const shouldRegenerateGrid = vi.fn(() => false);
+
+    createRuntimeGridSessionService(context, {
+      generateGrid: vi.fn(),
+      shouldRegenerateGrid,
+    }).prepareGrid({ seed: "runtime-seed" });
+
+    expect(shouldRegenerateGrid).toHaveBeenCalledWith(
+      currentGrid,
+      Number.NaN,
+      640,
+      480,
+    );
+  });
+
   it("composes session lifecycle from injected targets", () => {
     const targets = {
       invokeActiveZooming: vi.fn(),

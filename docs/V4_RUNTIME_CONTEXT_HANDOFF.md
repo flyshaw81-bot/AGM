@@ -1810,6 +1810,9 @@ Runtime options and graph session writes now use those stores when available:
 generated counts/growth/culture settings, and `createRuntimeGraphSessionTargets`
 patches `worldSettingsStore` for graph dimensions. Lightweight contexts still
 fall back to direct context field updates.
+Runtime grid and graph sessions now also read graph dimensions through
+`worldSettingsStore.get()` when available, keeping session-level graph size
+reads and writes on the same runtime settings boundary.
 
 ## Next Recommended Slice
 

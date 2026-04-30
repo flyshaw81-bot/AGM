@@ -94,11 +94,14 @@ export function createRuntimeGraphSessionTargets(
   context: EngineRuntimeContext,
   fallback: EngineGraphSessionTargets = createGlobalGraphSessionTargets(),
 ): EngineGraphSessionTargets {
+  const getWorldSettings = () =>
+    context.worldSettingsStore?.get() ?? context.worldSettings;
+
   return {
     getMapWidth: () =>
-      Number(context.worldSettings.graphWidth) || fallback.getMapWidth(),
+      Number(getWorldSettings().graphWidth) || fallback.getMapWidth(),
     getMapHeight: () =>
-      Number(context.worldSettings.graphHeight) || fallback.getMapHeight(),
+      Number(getWorldSettings().graphHeight) || fallback.getMapHeight(),
     setGraphSize: (width, height) => {
       const patch = { graphWidth: width, graphHeight: height };
       if (context.worldSettingsStore) {

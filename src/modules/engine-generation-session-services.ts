@@ -113,14 +113,17 @@ export function createRuntimeGridSessionService(
     shouldRegenerateGrid,
   },
 ): EngineGridSessionService {
+  const getWorldSettings = () =>
+    context.worldSettingsStore?.get() ?? context.worldSettings;
+
   return createGridSessionService({
     getGrid: () => context.grid,
     setGrid: (nextGrid) => {
       context.grid = nextGrid;
     },
     getSeed: () => context.seed,
-    getGraphWidth: () => Number(context.worldSettings.graphWidth) || 0,
-    getGraphHeight: () => Number(context.worldSettings.graphHeight) || 0,
+    getGraphWidth: () => Number(getWorldSettings().graphWidth) || 0,
+    getGraphHeight: () => Number(getWorldSettings().graphHeight) || 0,
     generateGrid: utilities.generateGrid,
     shouldRegenerateGrid: utilities.shouldRegenerateGrid,
   });
