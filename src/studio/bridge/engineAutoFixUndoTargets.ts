@@ -17,28 +17,81 @@ export type EngineAutoFixUndoTargets = {
   getWritableBiomeData: () => AgmWritableBiomeData | undefined;
 };
 
-export function createGlobalAutoFixUndoTargets(): EngineAutoFixUndoTargets {
+export type EngineAutoFixUndoProvinceAdapter = {
+  getProvince: (provinceId: number) => AgmWritableProvince | undefined;
+};
+
+export type EngineAutoFixUndoStateAdapter = {
+  getState: (stateId: number) => AgmWritableState | undefined;
+};
+
+export type EngineAutoFixUndoBiomeAdapter = {
+  getBiomeData: () => AgmWritableBiomeData | undefined;
+};
+
+function writableProvinceOrUndefined(
+  province: AgmWritableProvince | undefined,
+) {
+  if (!province || province.removed) return undefined;
+  return province;
+}
+
+function writableStateOrUndefined(state: AgmWritableState | undefined) {
+  if (!state || state.removed) return undefined;
+  return state;
+}
+
+function writableBiomeDataOrUndefined(
+  biomeData: AgmWritableBiomeData | undefined,
+) {
+  if (!biomeData?.habitability) return undefined;
+  return biomeData;
+}
+
+export function createGlobalAutoFixUndoProvinceAdapter(): EngineAutoFixUndoProvinceAdapter {
   return {
-    getWritableProvince: (provinceId) => {
-      const province = globalThis.pack?.provinces?.[provinceId] as unknown as
+    getProvince: (provinceId) =>
+      globalThis.pack?.provinces?.[provinceId] as unknown as
         | AgmWritableProvince
-        | undefined;
-      if (!province || province.removed) return undefined;
-      return province;
-    },
-    getWritableState: (stateId) => {
-      const state = globalThis.pack?.states?.[stateId] as unknown as
-        | AgmWritableState
-        | undefined;
-      if (!state || state.removed) return undefined;
-      return state;
-    },
-    getWritableBiomeData: () => {
-      const biomeData = getEngineBiomeData() as
-        | AgmWritableBiomeData
-        | undefined;
-      if (!biomeData?.habitability) return undefined;
-      return biomeData;
-    },
+        | undefined,
   };
+}
+
+export function createGlobalAutoFixUndoStateAdapter(): EngineAutoFixUndoStateAdapter {
+  return {
+    getState: (stateId) =>
+      globalThis.pack?.states?.[stateId] as unknown as
+        | AgmWritableState
+        | undefined,
+  };
+}
+
+export function createGlobalAutoFixUndoBiomeAdapter(): EngineAutoFixUndoBiomeAdapter {
+  return {
+    getBiomeData: () =>
+      getEngineBiomeData() as AgmWritableBiomeData | undefined,
+  };
+}
+
+export function createAutoFixUndoTargets(
+  provinceAdapter: EngineAutoFixUndoProvinceAdapter,
+  stateAdapter: EngineAutoFixUndoStateAdapter,
+  biomeAdapter: EngineAutoFixUndoBiomeAdapter,
+): EngineAutoFixUndoTargets {
+  return {
+    getWritableProvince: (provinceId) =>
+      writableProvinceOrUndefined(provinceAdapter.getProvince(provinceId)),
+    getWritableState: (stateId) =>
+      writableStateOrUndefined(stateAdapter.getState(stateId)),
+    getWritableBiomeData: () =>
+      writableBiomeDataOrUndefined(biomeAdapter.getBiomeData()),
+  };
+}
+
+export function createGlobalAutoFixUndoTargets(): EngineAutoFixUndoTargets {
+  return createAutoFixUndoTargets(
+    createGlobalAutoFixUndoProvinceAdapter(),
+    createGlobalAutoFixUndoStateAdapter(),
+    createGlobalAutoFixUndoBiomeAdapter(),
+  );
 }

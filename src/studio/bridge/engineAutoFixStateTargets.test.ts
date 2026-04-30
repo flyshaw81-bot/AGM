@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { createGlobalStateWritebackTargets } from "./engineAutoFixStateTargets";
+import {
+  createGlobalStateWritebackTargets,
+  createStateWritebackTargets,
+} from "./engineAutoFixStateTargets";
 
 const originalPack = globalThis.pack;
 
@@ -22,5 +25,18 @@ describe("createGlobalStateWritebackTargets", () => {
     expect(targets.getWritableState(2)).toBe(state);
     expect(targets.getWritableState(3)).toBeUndefined();
     expect(targets.getWritableState(99)).toBeUndefined();
+  });
+
+  it("composes state writeback targets from an injected state lookup adapter", () => {
+    const state = { i: 2, agmPriority: "high" };
+    const targets = createStateWritebackTargets({
+      getState: (stateId) =>
+        stateId === 2
+          ? state
+          : ({ i: stateId, removed: true } as Record<string, unknown>),
+    });
+
+    expect(targets.getWritableState(2)).toBe(state);
+    expect(targets.getWritableState(3)).toBeUndefined();
   });
 });

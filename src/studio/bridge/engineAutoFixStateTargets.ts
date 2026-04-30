@@ -4,14 +4,33 @@ export type EngineStateWritebackTargets = {
   getWritableState: (stateId: number) => AgmWritableState | undefined;
 };
 
-export function createGlobalStateWritebackTargets(): EngineStateWritebackTargets {
+export type EngineStateLookupAdapter = {
+  getState: (stateId: number) => AgmWritableState | undefined;
+};
+
+function writableStateOrUndefined(state: AgmWritableState | undefined) {
+  if (!state || state.removed) return undefined;
+  return state;
+}
+
+export function createGlobalStateLookupAdapter(): EngineStateLookupAdapter {
   return {
-    getWritableState: (stateId) => {
-      const state = globalThis.pack?.states?.[stateId] as unknown as
+    getState: (stateId) =>
+      globalThis.pack?.states?.[stateId] as unknown as
         | AgmWritableState
-        | undefined;
-      if (!state || state.removed) return undefined;
-      return state;
-    },
+        | undefined,
   };
+}
+
+export function createStateWritebackTargets(
+  stateLookupAdapter: EngineStateLookupAdapter,
+): EngineStateWritebackTargets {
+  return {
+    getWritableState: (stateId) =>
+      writableStateOrUndefined(stateLookupAdapter.getState(stateId)),
+  };
+}
+
+export function createGlobalStateWritebackTargets(): EngineStateWritebackTargets {
+  return createStateWritebackTargets(createGlobalStateLookupAdapter());
 }

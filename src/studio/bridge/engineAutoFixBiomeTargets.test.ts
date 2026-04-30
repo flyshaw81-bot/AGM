@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createGlobalBiomeWritebackTargets } from "./engineAutoFixBiomeTargets";
+import {
+  createBiomeWritebackTargets,
+  createGlobalBiomeWritebackTargets,
+} from "./engineAutoFixBiomeTargets";
 
 const originalBiomesData = globalThis.biomesData;
 const originalDrawBiomes = (globalThis as any).drawBiomes;
@@ -33,5 +36,24 @@ describe("createGlobalBiomeWritebackTargets", () => {
     createGlobalBiomeWritebackTargets().redrawBiomes();
 
     expect(drawBiomes).toHaveBeenCalledWith();
+  });
+
+  it("composes biome writeback targets from injected biome data and redraw adapters", () => {
+    const biomeData = {
+      habitability: { 1: 20 },
+    };
+    const redrawBiomes = vi.fn();
+    const targets = createBiomeWritebackTargets(
+      {
+        getBiomeData: () => biomeData,
+      },
+      {
+        redrawBiomes,
+      },
+    );
+
+    expect(targets.getWritableBiomeData()).toBe(biomeData);
+    targets.redrawBiomes();
+    expect(redrawBiomes).toHaveBeenCalledWith();
   });
 });

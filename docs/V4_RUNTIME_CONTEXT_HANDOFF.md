@@ -418,7 +418,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 124 test files, 396 tests.
+- `npm.cmd run test -- --run` passed: 124 test files, 399 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -833,17 +833,19 @@ services instead of reading `globalThis.Routes` inline:
   the injected `EngineBurgService` instead of directly calling
   `globalThis.Burgs.remove`.
 - `src/studio/bridge/engineAutoFixUndoTargets.ts` now owns writable
-  province/state/biome lookup for undo. It is still a compatibility adapter over
-  `globalThis.pack` and `biomesData`, but `engineAutoFixUndo.ts` no longer
-  directly reads those globals for updated province/state/biome restoration.
+  province/state/biome lookup for undo through dedicated province, state, and
+  biome adapters. It is still a compatibility adapter over `globalThis.pack`
+  and `biomesData`, but `engineAutoFixUndo.ts` no longer directly reads those
+  globals for updated province/state/biome restoration.
 - `src/studio/bridge/engineAutoFixStateTargets.ts` now owns writable state
-  lookup for state autofix writeback. `engineAutoFixStateWriteback.ts` applies
-  state changes through injected targets instead of directly reading
-  `globalThis.pack.states`.
+  lookup through a dedicated state lookup adapter for state autofix writeback.
+  `engineAutoFixStateWriteback.ts` applies state changes through injected
+  targets instead of directly reading `globalThis.pack.states`.
 - `src/studio/bridge/engineAutoFixBiomeTargets.ts` now owns writable biome data
-  lookup and biome redraw forwarding. `engineAutoFixBiomeWriteback.ts` applies
-  preview and single-resource changes through injected targets instead of
-  directly reading `biomesData` or calling `drawBiomes`.
+  lookup and biome redraw forwarding through dedicated biome-data lookup and
+  redraw adapters. `engineAutoFixBiomeWriteback.ts` applies preview and
+  single-resource changes through injected targets instead of directly reading
+  `biomesData` or calling `drawBiomes`.
 - `src/studio/bridge/engineEntityMutationTargets.ts` now owns direct-editor
   entity lookup and redraw forwarding through dedicated lookup and redraw
   adapters for state, culture, religion, burg, province, route, zone, and
@@ -996,15 +998,17 @@ services instead of reading `globalThis.Routes` inline:
   remaining settlement target compatibility lookup while it still reads the
   active global map.
 - `src/studio/bridge/engineAutoFixUndoTargets.test.ts` covers undo lookup for
-  writable provinces, states, and biome data while those still come from the
-  active global map/resources.
+  writable provinces, states, and biome data, plus injected
+  province/state/biome adapter composition, while default adapters still come
+  from the active global map/resources.
 - `src/studio/bridge/engineAutoFixStateCommands.test.ts` and
   `src/studio/bridge/engineAutoFixStateTargets.test.ts` cover state autofix
-  writeback command execution and target lookup.
+  writeback command execution, target lookup, and injected state lookup adapter
+  composition.
 - `src/studio/bridge/engineAutoFixBiomeCommands.test.ts` and
   `src/studio/bridge/engineAutoFixBiomeTargets.test.ts` cover biome autofix
   writeback command execution, single-resource updates, target lookup, and
-  redraw forwarding.
+  redraw forwarding, plus injected biome-data/redraw adapter composition.
 - `src/studio/bridge/engineEntityMutations.test.ts` and
   `src/studio/bridge/engineEntityMutationTargets.test.ts` cover the first
   direct-editor entity mutation target adapter, injected lookup/redraw adapter
@@ -1102,10 +1106,10 @@ services instead of reading `globalThis.Routes` inline:
 Known remaining debt for this slice: `EngineRouteWritebackTargets` still reads
 `globalThis.pack`; `EngineSettlementWritebackTargets` still reads
 `globalThis.pack`; `EngineAutoFixUndoTargets`, `EngineStateWritebackTargets`,
-`EngineBiomeWritebackTargets` still reads the active global map/resources
-behind explicit adapters. `EngineFocusGeometryTargets` now splits focus
-dimensions, cell geometry, and entity lookups through dedicated bridge
-adapters.
+`EngineBiomeWritebackTargets` now splits biome-data lookup and redraw
+forwarding through dedicated bridge adapters. `EngineFocusGeometryTargets` now
+splits focus dimensions, cell geometry, and entity lookups through dedicated
+bridge adapters.
 `EngineEntityMutationTargets` now splits direct-editor entity lookup and redraw
 forwarding through dedicated bridge adapters. `EngineResourceSummaryTargets`
 now splits biome data and pack resources through dedicated bridge adapters.
