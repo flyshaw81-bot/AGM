@@ -71,6 +71,37 @@ describe("RoutesModule", () => {
     expect(context.pack.cells.routes).toEqual({});
   });
 
+  it("generates locked routes against an explicit runtime context", () => {
+    const context = createRoutesContext();
+    context.pack.cells.p = [
+      [0, 0],
+      [1, 1],
+      [2, 2],
+    ];
+    context.pack.cells.burg = new Uint16Array(3);
+    const lockedRoutes = [
+      {
+        i: 7,
+        group: "roads" as const,
+        feature: 1,
+        points: [
+          [0, 0, 0] as [number, number, number],
+          [1, 1, 1] as [number, number, number],
+          [2, 2, 2] as [number, number, number],
+        ],
+      },
+    ];
+
+    new RoutesModule().generate(lockedRoutes, context);
+
+    expect(context.pack.routes).toEqual(lockedRoutes);
+    expect(context.pack.cells.routes).toEqual({
+      0: { 1: 7 },
+      1: { 0: 7, 2: 7 },
+      2: { 1: 7 },
+    });
+  });
+
   it("builds bidirectional route links", () => {
     const routes = new RoutesModule().buildLinks([
       {

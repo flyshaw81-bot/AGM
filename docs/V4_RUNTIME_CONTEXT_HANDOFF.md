@@ -1852,6 +1852,10 @@ Culture extreme-climate warnings now use the explicit runtime context notice/log
 services only. The previous fallback to `getGlobalEngineRuntimeContext()` for
 notices was removed, so culture generation no longer reaches back into the
 global runtime just to display that warning.
+Route generation now accepts an explicit runtime context when regenerating from
+locked route data (`Routes.generate(lockedRoutes, context)`). The legacy
+single-argument locked-route call still falls back to the global context for
+compatibility, while Studio/runtime callers can avoid that global lookup.
 
 ## Next Recommended Slice
 

@@ -625,9 +625,10 @@ export class RoutesModule {
 
   generate(
     input: EngineRuntimeContext | Route[] = getGlobalEngineRuntimeContext(),
+    contextOverride?: EngineRuntimeContext,
   ) {
     const context = Array.isArray(input)
-      ? getGlobalEngineRuntimeContext()
+      ? (contextOverride ?? getGlobalEngineRuntimeContext())
       : input;
     const lockedRoutes = Array.isArray(input) ? input : [];
     const connections = new Map();
