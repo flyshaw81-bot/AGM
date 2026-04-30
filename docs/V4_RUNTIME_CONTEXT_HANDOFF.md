@@ -863,9 +863,11 @@ Completed:
   `EngineMapStore` now composes an injectable runtime adapter for grid/pack/note
   reads and writes. The default adapter still mutates global `grid`, `pack`, and
   `notes` for current generation/resample compatibility, but injected stores can
-  run without touching `globalThis.pack`. Added focused tests for structured
-  snapshots, generation pack reset, resample reset, injected current-context
-  access, and no-global injected adapter behavior.
+  run without touching `globalThis.pack`. Snapshot cloning now also flows through
+  the runtime adapter, so the core store no longer owns `structuredClone`
+  directly. Added focused tests for structured snapshots, generation pack reset,
+  resample reset, injected current-context access, clone injection, and
+  no-global injected adapter behavior.
 - Moved note persistence into `src/modules/engine-note-service.ts`.
   `EngineNoteService` now composes an injectable note storage adapter. The
   default adapter still backs onto global `notes`, but injected services can run

@@ -20,6 +20,7 @@ export type EngineMapStoreRuntimeAdapter = {
   getGrid: () => typeof grid;
   getPack: () => PackedGraph;
   getNotes: () => EngineNote[];
+  clone: <T>(value: T) => T;
   setGrid: (nextGrid: typeof grid) => void;
   setPack: (nextPack: PackedGraph) => void;
   setNotes: (nextNotes: EngineNote[]) => void;
@@ -31,6 +32,7 @@ export function createGlobalMapStoreRuntimeAdapter(): EngineMapStoreRuntimeAdapt
     getGrid: () => grid,
     getPack: () => pack,
     getNotes: () => notes,
+    clone: (value) => structuredClone(value),
     setGrid: (nextGrid) => {
       grid = nextGrid;
     },
@@ -50,9 +52,9 @@ export function createMapStore(
 ): EngineMapStore {
   return {
     createSnapshot: () => ({
-      grid: structuredClone(runtimeAdapter.getGrid()),
-      pack: structuredClone(runtimeAdapter.getPack()),
-      notes: structuredClone(runtimeAdapter.getNotes()),
+      grid: runtimeAdapter.clone(runtimeAdapter.getGrid()),
+      pack: runtimeAdapter.clone(runtimeAdapter.getPack()),
+      notes: runtimeAdapter.clone(runtimeAdapter.getNotes()),
     }),
     resetPackForGeneration: () => {
       runtimeAdapter.setPack({} as PackedGraph);

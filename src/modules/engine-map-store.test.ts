@@ -114,6 +114,7 @@ describe("createGlobalMapStore", () => {
         getGrid: () => adapterState.grid,
         getPack: () => adapterState.pack,
         getNotes: () => adapterState.notes,
+        clone: (value) => value,
         setGrid: (next) => {
           adapterState.grid = next;
         },
@@ -145,5 +146,31 @@ describe("createGlobalMapStore", () => {
     expect(adapterState.pack).toEqual({});
     expect(adapterState.notes).toBe(localNotes);
     expect(globalThis.pack).toBe(originalGlobalPack);
+  });
+
+  it("uses the injected clone adapter when creating snapshots", () => {
+    const clone = vi.fn((value) => ({ cloned: value }));
+    const store = createMapStore(
+      {
+        getGrid: () => ({ cells: { i: [1] } }) as typeof grid,
+        getPack: () => ({ cells: { i: [2] } }) as typeof pack,
+        getNotes: () => [{ id: "n4", name: "Note", legend: "Text" }],
+        clone: clone as never,
+        setGrid: vi.fn(),
+        setPack: vi.fn(),
+        setNotes: vi.fn(),
+        createGrid: vi.fn(),
+      },
+      () => ({}) as EngineRuntimeContext,
+    );
+
+    const snapshot = store.createSnapshot();
+
+    expect(snapshot.grid).toEqual({ cloned: { cells: { i: [1] } } });
+    expect(snapshot.pack).toEqual({ cloned: { cells: { i: [2] } } });
+    expect(snapshot.notes).toEqual({
+      cloned: [{ id: "n4", name: "Note", legend: "Text" }],
+    });
+    expect(clone).toHaveBeenCalledTimes(3);
   });
 });
