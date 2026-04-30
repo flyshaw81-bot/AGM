@@ -13,17 +13,40 @@ export type EngineNoteService = {
   splice: (start: number, deleteCount?: number) => EngineNote[];
 };
 
-export function createGlobalNoteService(): EngineNoteService {
+export type EngineNoteStorageAdapter = {
+  getNotes: () => EngineNote[];
+  setNotes: (nextNotes: EngineNote[]) => void;
+};
+
+export function createGlobalNoteStorageAdapter(): EngineNoteStorageAdapter {
   return {
-    all: () => notes,
-    push: (note) => {
-      notes.push(note);
+    getNotes: () => notes,
+    setNotes: (nextNotes) => {
+      notes = nextNotes;
     },
-    find: (predicate) => notes.find(predicate),
-    findIndex: (predicate) => notes.findIndex(predicate),
-    removeWhere: (predicate) => {
-      notes = notes.filter((note) => !predicate(note));
-    },
-    splice: (start, deleteCount) => notes.splice(start, deleteCount),
   };
+}
+
+export function createNoteService(
+  storageAdapter: EngineNoteStorageAdapter,
+): EngineNoteService {
+  return {
+    all: () => storageAdapter.getNotes(),
+    push: (note) => {
+      storageAdapter.getNotes().push(note);
+    },
+    find: (predicate) => storageAdapter.getNotes().find(predicate),
+    findIndex: (predicate) => storageAdapter.getNotes().findIndex(predicate),
+    removeWhere: (predicate) => {
+      storageAdapter.setNotes(
+        storageAdapter.getNotes().filter((note) => !predicate(note)),
+      );
+    },
+    splice: (start, deleteCount) =>
+      storageAdapter.getNotes().splice(start, deleteCount),
+  };
+}
+
+export function createGlobalNoteService(): EngineNoteService {
+  return createNoteService(createGlobalNoteStorageAdapter());
 }

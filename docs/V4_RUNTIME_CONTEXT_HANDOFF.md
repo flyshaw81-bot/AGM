@@ -418,7 +418,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 129 test files, 408 tests.
+- `npm.cmd run test -- --run` passed: 129 test files, 409 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -677,10 +677,10 @@ Completed:
   snapshots, generation pack reset, resample reset, injected current-context
   access, and no-global injected adapter behavior.
 - Moved note persistence into `src/modules/engine-note-service.ts`.
-  `EngineNoteService` still backs onto global `notes`, but `all`, `push`,
-  `find`, `findIndex`, `removeWhere`, and `splice` are no longer inline in
-  `engine-runtime-context.ts`. Added focused tests for note reads, writes,
-  filtering, and splice behavior.
+  `EngineNoteService` now composes an injectable note storage adapter. The
+  default adapter still backs onto global `notes`, but injected services can run
+  without touching global note state. Added focused tests for note reads, writes,
+  filtering, splice behavior, and injected no-global storage behavior.
 - Moved DOM/SVG render compatibility into
   `src/modules/engine-render-adapter.ts`. `EngineRenderAdapter` still delegates
   to existing `window.findCell`, COA renderer, route drawing, layer checks,
@@ -789,7 +789,8 @@ adapters with focused tests:
   graph, option, grid, and active-view session behavior.
 - `engine-map-store.ts` default adapter still mutates global `grid`, `pack`, and
   `notes`, but map-store callers can now inject a non-global runtime adapter.
-- `engine-note-service.ts` still backs note persistence with global `notes`.
+- `engine-note-service.ts` default adapter still backs note persistence with
+  global `notes`, but note-service callers can now inject non-global storage.
 - `engine-notice-service.ts` still delegates blocking/error modals to the
   current jQuery dialog host.
 - `engine-render-adapter.ts` still delegates map/SVG rendering side effects to
