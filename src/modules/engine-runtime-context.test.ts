@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { getGlobalEngineRuntimeContext } from "./engine-runtime-context";
+import {
+  getEngineWorldDimensions,
+  getGlobalEngineRuntimeContext,
+} from "./engine-runtime-context";
 
 describe("getGlobalEngineRuntimeContext", () => {
   it("assembles generation session services into the runtime context", () => {
@@ -108,5 +111,42 @@ describe("getGlobalEngineRuntimeContext", () => {
     expect(typeof context.generationSession.prepare).toBe("function");
 
     globalThis.document = originalDocument;
+  });
+});
+
+describe("getEngineWorldDimensions", () => {
+  it("prefers explicit runtime world dimensions", () => {
+    const context = {
+      worldSettings: {
+        graphWidth: 320,
+        graphHeight: 180,
+      },
+    } as ReturnType<typeof getGlobalEngineRuntimeContext>;
+
+    expect(getEngineWorldDimensions(context)).toEqual({
+      graphWidth: 320,
+      graphHeight: 180,
+    });
+  });
+
+  it("falls back to browser graph globals at the compatibility boundary", () => {
+    const originalGraphWidth = globalThis.graphWidth;
+    const originalGraphHeight = globalThis.graphHeight;
+
+    try {
+      globalThis.graphWidth = 960;
+      globalThis.graphHeight = 540;
+      const context = {
+        worldSettings: {},
+      } as ReturnType<typeof getGlobalEngineRuntimeContext>;
+
+      expect(getEngineWorldDimensions(context)).toEqual({
+        graphWidth: 960,
+        graphHeight: 540,
+      });
+    } finally {
+      globalThis.graphWidth = originalGraphWidth;
+      globalThis.graphHeight = originalGraphHeight;
+    }
   });
 });

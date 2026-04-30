@@ -6,6 +6,7 @@ import { PriorityQueue } from "../utils/priorityQueue";
 import { biased, P, rand } from "../utils/probabilityUtils";
 import {
   type EngineRuntimeContext,
+  getEngineWorldDimensions,
   getGlobalEngineRuntimeContext,
 } from "./engine-runtime-context";
 import type { NameBase } from "./names-generator";
@@ -1067,7 +1068,7 @@ export class CulturesModule {
 
   generate(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
     context.timing.shouldTime && console.time("generateCultures");
-    const { pack, worldSettings } = context;
+    const { pack } = context;
     this.cells = pack.cells;
     const cultureIds = new Uint16Array(this.cells.i.length); // cell cultures
 
@@ -1144,8 +1145,7 @@ export class CulturesModule {
     const codes: string[] = [];
 
     const placeCenter = (sortingFn: (i: number) => number) => {
-      const graphWidth = worldSettings.graphWidth ?? globalThis.graphWidth;
-      const graphHeight = worldSettings.graphHeight ?? globalThis.graphHeight;
+      const { graphWidth, graphHeight } = getEngineWorldDimensions(context);
       let spacing = (graphWidth + graphHeight) / 2 / count;
       const MAX_ATTEMPTS = 100;
 

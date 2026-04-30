@@ -173,6 +173,16 @@ export type EngineRuntimeContext = {
   biomesData: EngineBiomeData;
 };
 
+export function getEngineWorldDimensions(context: EngineRuntimeContext): {
+  graphWidth: number;
+  graphHeight: number;
+} {
+  return {
+    graphWidth: context.worldSettings.graphWidth ?? globalThis.graphWidth,
+    graphHeight: context.worldSettings.graphHeight ?? globalThis.graphHeight,
+  };
+}
+
 export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
   const feedback = createGlobalFeedbackService();
   const context = {

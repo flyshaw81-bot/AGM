@@ -3,6 +3,7 @@ import { minmax, normalize, rn } from "../utils/numberUtils";
 import { each, gauss, P } from "../utils/probabilityUtils";
 import {
   type EngineRuntimeContext,
+  getEngineWorldDimensions,
   getGlobalEngineRuntimeContext,
 } from "./engine-runtime-context";
 
@@ -108,10 +109,7 @@ export class BurgModule {
   generate(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
     context.timing.shouldTime && console.time("generateBurgs");
     const { cells } = context.pack;
-    const {
-      graphWidth = globalThis.graphWidth,
-      graphHeight = globalThis.graphHeight,
-    } = context.worldSettings;
+    const { graphWidth, graphHeight } = getEngineWorldDimensions(context);
 
     let burgs: Burg[] = [0 as any]; // burgs array
     cells.burg = new Uint16Array(cells.i.length);

@@ -5,6 +5,7 @@ import { each, rw } from "../utils/probabilityUtils";
 import { round } from "../utils/stringUtils";
 import {
   type EngineRuntimeContext,
+  getEngineWorldDimensions,
   getGlobalEngineRuntimeContext,
 } from "./engine-runtime-context";
 import type { Point } from "./voronoi";
@@ -516,10 +517,7 @@ export class RiverModule {
     context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
   ) {
     const [x, y] = context.pack.cells.p[i];
-    const {
-      graphWidth = globalThis.graphWidth,
-      graphHeight = globalThis.graphHeight,
-    } = context.worldSettings;
+    const { graphWidth, graphHeight } = getEngineWorldDimensions(context);
     const min = Math.min(y, graphHeight - y, x, graphWidth - x);
     if (min === y) return [x, 0];
     else if (min === graphHeight - y) return [x, graphHeight];
