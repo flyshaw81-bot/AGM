@@ -87,6 +87,9 @@
 > Studio preference default storage/document writes now use
 > `StudioPreferenceTargets` from a dedicated adapter module, so preference
 > state logic no longer owns `localStorage` or document-element writes.
+> Generation profile default engine/draft/clock access now uses
+> `GenerationProfileTargets` from a dedicated adapter module, so profile logic
+> no longer owns engine pending-setting bridge calls or timestamps inline.
 > Please review whether each remaining global dependency is behind an explicit
 > compatibility adapter, and keep treating AGM `window.*` module mounts
 > separately from old public UI debt.
@@ -490,7 +493,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 151 test files, 493 tests.
+- `npm.cmd run test -- --run` passed: 152 test files, 494 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1338,6 +1341,12 @@ Studio preference default browser access now has a dedicated
 document language/theme writes. `preferences.ts` continues to re-export the
 target type/factory for existing call sites, while the preference read/persist
 logic no longer owns those direct browser calls inline.
+Generation profile default runtime access now has a dedicated
+`generationProfileTargets.ts` adapter for engine project summary reads, world
+draft creation, pending generation setting writes, and clock access.
+`generationProfile.ts` continues to re-export the target type/factory for
+existing call sites, while profile override and impact logic no longer owns
+those direct bridge/timestamp calls inline.
 Direct editor targets can also compose focus, entity mutation, and biome
 mutation commands directly from an injected `EngineRuntimeContext`. The default
 adapters still delegate to current entity mutation/focus bridge helpers, but
