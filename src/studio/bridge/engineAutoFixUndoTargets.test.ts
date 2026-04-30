@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest";
+import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 import {
   createAutoFixUndoTargets,
   createGlobalAutoFixUndoTargets,
+  createRuntimeAutoFixUndoTargets,
 } from "./engineAutoFixUndoTargets";
 
 const originalPack = globalThis.pack;
@@ -85,6 +87,34 @@ describe("createGlobalAutoFixUndoTargets", () => {
         getBiomeData: () => biomeData,
       },
     );
+
+    expect(targets.getWritableProvince(4)).toBe(province);
+    expect(targets.getWritableProvince(5)).toBeUndefined();
+    expect(targets.getWritableState(2)).toBe(state);
+    expect(targets.getWritableState(3)).toBeUndefined();
+    expect(targets.getWritableBiomeData()).toBe(biomeData);
+  });
+
+  it("creates undo targets from an injected runtime context", () => {
+    const province = { i: 4, agmConnectorTarget: 8 };
+    const state = { i: 2, agmPriority: "frontier" };
+    const biomeData = {
+      habitability: { 1: 20 },
+    };
+    const context = {
+      biomesData: biomeData,
+      pack: {
+        provinces: {
+          4: province,
+          5: { i: 5, removed: true },
+        },
+        states: {
+          2: state,
+          3: { i: 3, removed: true },
+        },
+      },
+    } as unknown as EngineRuntimeContext;
+    const targets = createRuntimeAutoFixUndoTargets(context);
 
     expect(targets.getWritableProvince(4)).toBe(province);
     expect(targets.getWritableProvince(5)).toBeUndefined();

@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it } from "vitest";
+import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 import {
   createGlobalStateWritebackTargets,
+  createRuntimeStateWritebackTargets,
   createStateWritebackTargets,
 } from "./engineAutoFixStateTargets";
 
@@ -35,6 +37,22 @@ describe("createGlobalStateWritebackTargets", () => {
           ? state
           : ({ i: stateId, removed: true } as Record<string, unknown>),
     });
+
+    expect(targets.getWritableState(2)).toBe(state);
+    expect(targets.getWritableState(3)).toBeUndefined();
+  });
+
+  it("creates state writeback targets from an injected runtime context", () => {
+    const state = { i: 2, agmPriority: "high" };
+    const context = {
+      pack: {
+        states: {
+          2: state,
+          3: { i: 3, removed: true },
+        },
+      },
+    } as unknown as EngineRuntimeContext;
+    const targets = createRuntimeStateWritebackTargets(context);
 
     expect(targets.getWritableState(2)).toBe(state);
     expect(targets.getWritableState(3)).toBeUndefined();

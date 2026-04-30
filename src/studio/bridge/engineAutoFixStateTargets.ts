@@ -1,3 +1,4 @@
+import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 import type { AgmWritableState } from "./engineAutoFixUndoTargets";
 
 export type EngineStateWritebackTargets = {
@@ -22,6 +23,17 @@ export function createGlobalStateLookupAdapter(): EngineStateLookupAdapter {
   };
 }
 
+export function createRuntimeStateLookupAdapter(
+  context: EngineRuntimeContext,
+): EngineStateLookupAdapter {
+  return {
+    getState: (stateId) =>
+      context.pack?.states?.[stateId] as unknown as
+        | AgmWritableState
+        | undefined,
+  };
+}
+
 export function createStateWritebackTargets(
   stateLookupAdapter: EngineStateLookupAdapter,
 ): EngineStateWritebackTargets {
@@ -33,4 +45,10 @@ export function createStateWritebackTargets(
 
 export function createGlobalStateWritebackTargets(): EngineStateWritebackTargets {
   return createStateWritebackTargets(createGlobalStateLookupAdapter());
+}
+
+export function createRuntimeStateWritebackTargets(
+  context: EngineRuntimeContext,
+): EngineStateWritebackTargets {
+  return createStateWritebackTargets(createRuntimeStateLookupAdapter(context));
 }

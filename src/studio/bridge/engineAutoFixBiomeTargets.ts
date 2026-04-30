@@ -1,3 +1,4 @@
+import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 import type { AgmWritableBiomeData } from "./engineActionTypes";
 import { getEngineBiomeData } from "./engineResourceSummary";
 
@@ -28,6 +29,15 @@ export function createGlobalBiomeDataLookupAdapter(): EngineBiomeDataLookupAdapt
   };
 }
 
+export function createRuntimeBiomeDataLookupAdapter(
+  context: EngineRuntimeContext,
+): EngineBiomeDataLookupAdapter {
+  return {
+    getBiomeData: () =>
+      context.biomesData as unknown as AgmWritableBiomeData | undefined,
+  };
+}
+
 export function createGlobalBiomeRedrawAdapter(): EngineBiomeRedrawAdapter {
   return {
     redrawBiomes: () => {
@@ -52,5 +62,15 @@ export function createGlobalBiomeWritebackTargets(): EngineBiomeWritebackTargets
   return createBiomeWritebackTargets(
     createGlobalBiomeDataLookupAdapter(),
     createGlobalBiomeRedrawAdapter(),
+  );
+}
+
+export function createRuntimeBiomeWritebackTargets(
+  context: EngineRuntimeContext,
+  redrawAdapter: EngineBiomeRedrawAdapter = createGlobalBiomeRedrawAdapter(),
+): EngineBiomeWritebackTargets {
+  return createBiomeWritebackTargets(
+    createRuntimeBiomeDataLookupAdapter(context),
+    redrawAdapter,
   );
 }

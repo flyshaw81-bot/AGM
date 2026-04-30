@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 import {
   createBiomeWritebackTargets,
   createGlobalBiomeWritebackTargets,
+  createRuntimeBiomeWritebackTargets,
 } from "./engineAutoFixBiomeTargets";
 
 const originalBiomesData = globalThis.biomesData;
@@ -51,6 +53,23 @@ describe("createGlobalBiomeWritebackTargets", () => {
         redrawBiomes,
       },
     );
+
+    expect(targets.getWritableBiomeData()).toBe(biomeData);
+    targets.redrawBiomes();
+    expect(redrawBiomes).toHaveBeenCalledWith();
+  });
+
+  it("creates biome writeback targets from an injected runtime context", () => {
+    const biomeData = {
+      habitability: { 1: 20 },
+    };
+    const redrawBiomes = vi.fn();
+    const context = {
+      biomesData: biomeData,
+    } as unknown as EngineRuntimeContext;
+    const targets = createRuntimeBiomeWritebackTargets(context, {
+      redrawBiomes,
+    });
 
     expect(targets.getWritableBiomeData()).toBe(biomeData);
     targets.redrawBiomes();

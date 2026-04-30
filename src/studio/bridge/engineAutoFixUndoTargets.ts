@@ -1,3 +1,4 @@
+import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 import type {
   AgmWritableBiomeData,
   AgmWritableProvince,
@@ -57,6 +58,17 @@ export function createGlobalAutoFixUndoProvinceAdapter(): EngineAutoFixUndoProvi
   };
 }
 
+export function createRuntimeAutoFixUndoProvinceAdapter(
+  context: EngineRuntimeContext,
+): EngineAutoFixUndoProvinceAdapter {
+  return {
+    getProvince: (provinceId) =>
+      context.pack?.provinces?.[provinceId] as unknown as
+        | AgmWritableProvince
+        | undefined,
+  };
+}
+
 export function createGlobalAutoFixUndoStateAdapter(): EngineAutoFixUndoStateAdapter {
   return {
     getState: (stateId) =>
@@ -66,10 +78,30 @@ export function createGlobalAutoFixUndoStateAdapter(): EngineAutoFixUndoStateAda
   };
 }
 
+export function createRuntimeAutoFixUndoStateAdapter(
+  context: EngineRuntimeContext,
+): EngineAutoFixUndoStateAdapter {
+  return {
+    getState: (stateId) =>
+      context.pack?.states?.[stateId] as unknown as
+        | AgmWritableState
+        | undefined,
+  };
+}
+
 export function createGlobalAutoFixUndoBiomeAdapter(): EngineAutoFixUndoBiomeAdapter {
   return {
     getBiomeData: () =>
       getEngineBiomeData() as AgmWritableBiomeData | undefined,
+  };
+}
+
+export function createRuntimeAutoFixUndoBiomeAdapter(
+  context: EngineRuntimeContext,
+): EngineAutoFixUndoBiomeAdapter {
+  return {
+    getBiomeData: () =>
+      context.biomesData as unknown as AgmWritableBiomeData | undefined,
   };
 }
 
@@ -93,5 +125,15 @@ export function createGlobalAutoFixUndoTargets(): EngineAutoFixUndoTargets {
     createGlobalAutoFixUndoProvinceAdapter(),
     createGlobalAutoFixUndoStateAdapter(),
     createGlobalAutoFixUndoBiomeAdapter(),
+  );
+}
+
+export function createRuntimeAutoFixUndoTargets(
+  context: EngineRuntimeContext,
+): EngineAutoFixUndoTargets {
+  return createAutoFixUndoTargets(
+    createRuntimeAutoFixUndoProvinceAdapter(context),
+    createRuntimeAutoFixUndoStateAdapter(context),
+    createRuntimeAutoFixUndoBiomeAdapter(context),
   );
 }
