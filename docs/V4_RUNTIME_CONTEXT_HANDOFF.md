@@ -1795,6 +1795,12 @@ runtime adapter and no longer passes the context as a second argument.
 session service set just to overwrite it. Runtime-owned session services
 (`seedSession`, `graphSession`, `gridSession`, `optionsSession`, and
 `generationSession`) are initialized after the context object exists.
+Generation settings now have an optional `EngineGenerationSettingsStore`
+runtime capability. The global runtime context wires
+`generationSettingsStore` for `get/replace/patch/refresh`, while lightweight
+algorithm test contexts can omit it. `refresh` still reads through the existing
+generation settings targets by default, so DOM compatibility remains isolated
+behind the settings adapter.
 
 ## Next Recommended Slice
 

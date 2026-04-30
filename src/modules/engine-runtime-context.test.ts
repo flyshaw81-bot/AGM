@@ -65,6 +65,11 @@ describe("getGlobalEngineRuntimeContext", () => {
     expect(typeof context.burgs.add).toBe("function");
     expect(context.burgs.findById(2)).toBe(burg);
     expect(context.routes.findById(3)).toBe(route);
+    expect(context.generationSettingsStore?.get()).toBe(
+      context.generationSettings,
+    );
+    context.generationSettingsStore?.patch({ statesCount: 18 });
+    expect(context.generationSettings.statesCount).toBe(18);
     const snapshot = context.mapStore.createSnapshot();
     expect(snapshot.grid).toEqual(globalThis.grid);
     expect(snapshot.pack).toEqual(globalThis.pack);

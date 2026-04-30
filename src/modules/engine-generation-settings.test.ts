@@ -1,9 +1,12 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
   createGenerationSettings,
+  createGenerationSettingsStore,
   createGlobalGenerationSettings,
+  createRuntimeGenerationSettingsStore,
   type EngineGenerationSettingsTargets,
 } from "./engine-generation-settings";
+import type { EngineRuntimeContext } from "./engine-runtime-context";
 
 const originalDocument = globalThis.document;
 const originalPointsInput = globalThis.pointsInput;
@@ -157,5 +160,63 @@ describe("createGlobalGenerationSettings", () => {
       globalGrowthRate: 1.4,
       statesGrowthRate: 1.7,
     });
+  });
+
+  it("stores, patches, and refreshes generation settings through a runtime store", () => {
+    const context = {
+      generationSettings: createGenerationSettings(
+        createTargets(
+          {},
+          {
+            pointsInput: { dataset: { cells: "1000" } },
+          },
+        ),
+      ),
+    } as unknown as EngineRuntimeContext;
+    const store = createRuntimeGenerationSettingsStore(context);
+
+    store.patch({ statesCount: 23, cultureSet: "world" });
+
+    expect(context.generationSettings.statesCount).toBe(23);
+    expect(store.get().cultureSet).toBe("world");
+
+    store.refresh(
+      createTargets(
+        {
+          religionsNumber: { value: "8" },
+          culturesSet: { value: "darkFantasy" },
+        },
+        {
+          pointsInput: { dataset: { cells: "24000" } },
+          heightExponentInput: { value: "1.6" },
+        },
+      ),
+    );
+
+    expect(context.generationSettings.pointsCount).toBe(24000);
+    expect(context.generationSettings.heightExponent).toBe(1.6);
+    expect(context.generationSettings.religionsCount).toBe(8);
+    expect(context.generationSettings.cultureSet).toBe("darkFantasy");
+  });
+
+  it("can compose a generation settings store from explicit getters and setters", () => {
+    let settings = createGenerationSettings(createTargets({}));
+    const store = createGenerationSettingsStore(
+      () => settings,
+      (nextSettings) => {
+        settings = nextSettings;
+      },
+      () =>
+        createGenerationSettings(
+          createTargets(
+            { statesNumber: { value: "31" } },
+            { pointsInput: { dataset: { cells: "9000" } } },
+          ),
+        ),
+    );
+
+    expect(store.patch({ culturesCount: 12 }).culturesCount).toBe(12);
+    expect(store.refresh().statesCount).toBe(31);
+    expect(settings.pointsCount).toBe(9000);
   });
 });

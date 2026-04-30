@@ -19,7 +19,9 @@ import {
 } from "./engine-generation-session-services";
 import {
   createGlobalGenerationSettings,
+  createRuntimeGenerationSettingsStore,
   type EngineGenerationSettings,
+  type EngineGenerationSettingsStore,
 } from "./engine-generation-settings";
 import {
   createRuntimeGraphSession,
@@ -116,6 +118,7 @@ export type EngineRuntimeContext = {
   seed: typeof seed;
   worldSettings: EngineWorldSettings;
   generationSettings: EngineGenerationSettings;
+  generationSettingsStore?: EngineGenerationSettingsStore;
   populationSettings: EnginePopulationSettings;
   naming: EngineNamingService;
   burgs: EngineBurgService;
@@ -152,6 +155,7 @@ export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
     seed,
     worldSettings: createGlobalWorldSettings(),
     generationSettings: createGlobalGenerationSettings(),
+    generationSettingsStore: undefined as never,
     populationSettings: createGlobalPopulationSettings(),
     naming: createGlobalNamingService(),
     burgs: undefined as never,
@@ -180,6 +184,8 @@ export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
   context.burgs = createRuntimeBurgService(context);
   context.routes = createRuntimeRouteService(context);
   context.mapStore = createRuntimeMapStore(context, () => context);
+  context.generationSettingsStore =
+    createRuntimeGenerationSettingsStore(context);
   context.seedSession = createRuntimeSeedSession(context);
   context.graphSession = createRuntimeGraphSession(context);
   context.gridSession = createRuntimeGridSessionService(context);

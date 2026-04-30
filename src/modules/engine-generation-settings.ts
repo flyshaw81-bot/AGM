@@ -1,3 +1,5 @@
+import type { EngineRuntimeContext } from "./engine-runtime-context";
+
 export type EngineGenerationSettings = {
   heightmapTemplateId?: string;
   pointsCount: number;
@@ -32,6 +34,15 @@ export type EngineGenerationSettingsTargets = {
   getInput: (id: string) => EngineGenerationControlInput | null;
   getSelect: (id: string) => EngineGenerationControlSelect | null;
   getGlobalInput: (name: string) => EngineGenerationControlInput | undefined;
+};
+
+export type EngineGenerationSettingsStore = {
+  get: () => EngineGenerationSettings;
+  replace: (nextSettings: EngineGenerationSettings) => EngineGenerationSettings;
+  patch: (patch: Partial<EngineGenerationSettings>) => EngineGenerationSettings;
+  refresh: (
+    targets?: EngineGenerationSettingsTargets,
+  ) => EngineGenerationSettings;
 };
 
 export function createGlobalGenerationSettingsTargets(): EngineGenerationSettingsTargets {
@@ -99,4 +110,43 @@ export function createGenerationSettings(
 
 export function createGlobalGenerationSettings(): EngineGenerationSettings {
   return createGenerationSettings(createGlobalGenerationSettingsTargets());
+}
+
+export function createGenerationSettingsStore(
+  getSettings: () => EngineGenerationSettings,
+  setSettings: (nextSettings: EngineGenerationSettings) => void,
+  readSettings: (
+    targets?: EngineGenerationSettingsTargets,
+  ) => EngineGenerationSettings = (
+    targets = createGlobalGenerationSettingsTargets(),
+  ) => createGenerationSettings(targets),
+): EngineGenerationSettingsStore {
+  return {
+    get: getSettings,
+    replace: (nextSettings) => {
+      setSettings(nextSettings);
+      return nextSettings;
+    },
+    patch: (patch) => {
+      const nextSettings = { ...getSettings(), ...patch };
+      setSettings(nextSettings);
+      return nextSettings;
+    },
+    refresh: (targets) => {
+      const nextSettings = readSettings(targets);
+      setSettings(nextSettings);
+      return nextSettings;
+    },
+  };
+}
+
+export function createRuntimeGenerationSettingsStore(
+  context: EngineRuntimeContext,
+): EngineGenerationSettingsStore {
+  return createGenerationSettingsStore(
+    () => context.generationSettings,
+    (nextSettings) => {
+      context.generationSettings = nextSettings;
+    },
+  );
 }
