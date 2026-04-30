@@ -29,6 +29,11 @@ function createPipelineContext(id: string): EngineRuntimeContext {
       getCultureShort: () => "",
       getState: () => "",
     },
+    burgs: {
+      add: () => null,
+      remove: () => {},
+      findById: () => undefined,
+    },
     routes: {
       isCrossroad: () => false,
       isConnected: () => false,

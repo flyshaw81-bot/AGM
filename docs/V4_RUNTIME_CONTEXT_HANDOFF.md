@@ -825,6 +825,10 @@ Completed:
   expansionism randomness through `context.random.next()`. The default service
   still preserves current seeded `Math.random()` behavior, but context-routed
   culture generation no longer calls it directly on that path.
+- Added `EngineBurgService` to `EngineRuntimeContext`. The service remains a
+  compatibility-backed command/query boundary over the current AGM `Burgs`
+  module mount, but runtime callers can now depend on `context.burgs` instead
+  of constructing the global service directly.
 - Routed state expansionism randomness through the same runtime random service.
   This keeps the seeded default behavior while moving another context-aware
   generation step off direct `Math.random()` calls.

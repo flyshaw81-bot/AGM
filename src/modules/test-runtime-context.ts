@@ -24,6 +24,7 @@ export function createTestNoteService(
 
 export function createTestRuntimeAdapters(): Pick<
   EngineRuntimeContext,
+  | "burgs"
   | "routes"
   | "states"
   | "units"
@@ -41,6 +42,11 @@ export function createTestRuntimeAdapters(): Pick<
   | "rendering"
 > {
   return {
+    burgs: {
+      add: () => null,
+      remove: () => {},
+      findById: () => undefined,
+    },
     routes: {
       isCrossroad: () => false,
       isConnected: () => false,

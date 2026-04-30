@@ -1,5 +1,9 @@
 import type { PackedGraph } from "../types/PackedGraph";
 import type { ClimateRuntimeContext } from "./climate";
+import {
+  createGlobalBurgService,
+  type EngineBurgService,
+} from "./engine-burg-service";
 import { createGlobalClimateContext } from "./engine-climate-context";
 import {
   createGlobalFeedbackService,
@@ -71,6 +75,7 @@ import {
   type EngineStateService,
 } from "./engine-state-service";
 
+export type { EngineBurgService } from "./engine-burg-service";
 export type { EngineFeedbackService } from "./engine-feedback-service";
 export type { EngineHeraldryService } from "./engine-heraldry-service";
 export type { EngineLogService } from "./engine-log-service";
@@ -103,6 +108,7 @@ export type EngineRuntimeContext = {
   generationSettings: EngineGenerationSettings;
   populationSettings: EnginePopulationSettings;
   naming: EngineNamingService;
+  burgs: EngineBurgService;
   routes: EngineRouteService;
   states: EngineStateService;
   units: EngineUnitSettings;
@@ -140,6 +146,7 @@ export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
     generationSettings: createGlobalGenerationSettings(),
     populationSettings: createGlobalPopulationSettings(),
     naming: createGlobalNamingService(),
+    burgs: createGlobalBurgService(),
     routes: createGlobalRouteService(),
     states: createGlobalStateService(),
     units: createGlobalUnitSettings(),

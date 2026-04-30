@@ -49,9 +49,14 @@ describe("getGlobalEngineRuntimeContext", () => {
     globalThis.EngineGraphSession = {
       applyGraphSize: () => {},
     };
+    globalThis.Burgs = {
+      add: () => null,
+      remove: () => {},
+    } as unknown as typeof Burgs;
 
     const context = getGlobalEngineRuntimeContext();
 
+    expect(typeof context.burgs.add).toBe("function");
     expect(context.seedSession).toBe(globalThis.EngineSeedSession);
     expect(context.graphSession).toBe(globalThis.EngineGraphSession);
     expect(typeof context.optionsSession.randomizeOptions).toBe("function");
