@@ -4,7 +4,12 @@ import {
   getEngineLayerStates,
   getEngineWorldResourceSummary,
 } from "../bridge/engineActions";
-import type { EngineProjectSummary } from "../bridge/engineActionTypes";
+import type {
+  EngineEntitySummary,
+  EngineProjectSummary,
+  EngineWorldResourceSummary,
+  LayerAction,
+} from "../bridge/engineActionTypes";
 import type { DocumentState, StudioState } from "../types";
 import { GAME_WORLD_PROFILE_LABELS } from "./worldDocumentConstants";
 import {
@@ -22,12 +27,29 @@ function numberOrNull(value: string) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+export type WorldDocumentDraftTargets = {
+  getEntities: () => EngineEntitySummary;
+  getResources: () => EngineWorldResourceSummary;
+  getLayerStates: () => Record<LayerAction, boolean>;
+  getLayerDetails: () => ReturnType<typeof getEngineLayerDetails>;
+};
+
+export function createGlobalWorldDocumentDraftBuilderTargets(): WorldDocumentDraftTargets {
+  return {
+    getEntities: getEngineEntitySummary,
+    getResources: getEngineWorldResourceSummary,
+    getLayerStates: getEngineLayerStates,
+    getLayerDetails: getEngineLayerDetails,
+  };
+}
+
 export function createWorldDocumentDraft(
   state: StudioState,
   projectSummary: EngineProjectSummary,
+  targets: WorldDocumentDraftTargets = createGlobalWorldDocumentDraftBuilderTargets(),
 ) {
-  const entities = getEngineEntitySummary();
-  const resources = getEngineWorldResourceSummary();
+  const entities = targets.getEntities();
+  const resources = targets.getResources();
   const playability = createWorldPlayabilityHints(entities, resources, state);
   const effectiveProfileParameters = createEffectiveProfileParameters(
     state.document.gameProfile,
@@ -109,8 +131,8 @@ export function createWorldDocumentDraft(
     },
     layers: {
       preset: projectSummary.lastLayersPreset,
-      visible: getEngineLayerStates(),
-      details: getEngineLayerDetails(),
+      visible: targets.getLayerStates(),
+      details: targets.getLayerDetails(),
     },
     entities,
     resources,
@@ -147,6 +169,7 @@ export type AgmDocumentDraft = {
 export function createAgmDocumentDraft(
   state: StudioState,
   projectSummary: EngineProjectSummary,
+  targets: WorldDocumentDraftTargets = createGlobalWorldDocumentDraftBuilderTargets(),
 ): AgmDocumentDraft {
   return {
     schema: "agm.document.v0",
@@ -155,6 +178,6 @@ export function createAgmDocumentDraft(
       gameProfile: state.document.gameProfile,
       designIntent: state.document.designIntent,
     },
-    world: createWorldDocumentDraft(state, projectSummary),
+    world: createWorldDocumentDraft(state, projectSummary, targets),
   };
 }
