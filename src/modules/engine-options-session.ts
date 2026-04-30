@@ -26,6 +26,9 @@ export type EngineOptionsBrowserControlTargets = {
   setDistanceUnit: (value: string) => void;
   setHeightUnit: (value: string) => void;
   setTemperatureScale: (value: string) => void;
+  setYear: (value: number) => void;
+  setEra: (value: string) => void;
+  syncEraOptions: () => void;
 };
 
 export function createGlobalOptionsLocaleTargets(): EngineOptionsLocaleTargets {
@@ -51,6 +54,20 @@ export function createGlobalOptionsBrowserControlTargets(): EngineOptionsBrowser
     },
     setTemperatureScale: (value) => {
       (globalThis as any).temperatureScale.value = value;
+    },
+    setYear: (value) => {
+      (globalThis as any).yearInput.value = value;
+    },
+    setEra: (value) => {
+      (globalThis as any).eraInput.value = value;
+    },
+    syncEraOptions: () => {
+      options.year = +(globalThis as any).yearInput.value;
+      options.era = (globalThis as any).eraInput.value;
+      options.eraShort = options.era
+        .split(" ")
+        .map((word: string) => word[0].toUpperCase())
+        .join("");
     },
   };
 }
@@ -257,13 +274,9 @@ export function createGlobalOptionsWriterAdapter(
     setDistanceUnit: (value) => browserTargets.setDistanceUnit(value),
     setHeightUnit: (value) => browserTargets.setHeightUnit(value),
     setTemperatureScale: (value) => browserTargets.setTemperatureScale(value),
-    setYear: (value) => {
-      (globalThis as any).yearInput.value = value;
-    },
-    setEra: (value) => {
-      (globalThis as any).eraInput.value = value;
-    },
-    syncEraOptions,
+    setYear: (value) => browserTargets.setYear(value),
+    setEra: (value) => browserTargets.setEra(value),
+    syncEraOptions: () => browserTargets.syncEraOptions(),
   };
 }
 
@@ -352,15 +365,6 @@ export function createRuntimeOptionsWriterAdapter(
       fallback.syncEraOptions();
     },
   };
-}
-
-function syncEraOptions() {
-  options.year = +(globalThis as any).yearInput.value;
-  options.era = (globalThis as any).eraInput.value;
-  options.eraShort = options.era
-    .split(" ")
-    .map((word: string) => word[0].toUpperCase())
-    .join("");
 }
 
 export class EngineOptionsSessionModule {

@@ -235,6 +235,9 @@ describe("EngineOptionsSessionModule", () => {
       setDistanceUnit: vi.fn(),
       setHeightUnit: vi.fn(),
       setTemperatureScale: vi.fn(),
+      setYear: vi.fn(),
+      setEra: vi.fn(),
+      syncEraOptions: vi.fn(),
     };
     const writer = createGlobalOptionsWriterAdapter(targets);
 
@@ -243,12 +246,18 @@ describe("EngineOptionsSessionModule", () => {
     writer.setDistanceUnit("mi");
     writer.setHeightUnit("ft");
     writer.setTemperatureScale("\u00b0F");
+    writer.setYear(1492);
+    writer.setEra("Copper Moon");
+    writer.syncEraOptions();
 
     expect(targets.setPrecipitation).toHaveBeenCalledWith(120);
     expect(targets.setDistanceScale).toHaveBeenCalledWith(2.5);
     expect(targets.setDistanceUnit).toHaveBeenCalledWith("mi");
     expect(targets.setHeightUnit).toHaveBeenCalledWith("ft");
     expect(targets.setTemperatureScale).toHaveBeenCalledWith("\u00b0F");
+    expect(targets.setYear).toHaveBeenCalledWith(1492);
+    expect(targets.setEra).toHaveBeenCalledWith("Copper Moon");
+    expect(targets.syncEraOptions).toHaveBeenCalled();
   });
 
   it("routes era generation through the naming adapter", () => {
