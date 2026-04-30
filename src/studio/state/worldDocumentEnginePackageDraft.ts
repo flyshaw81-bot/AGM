@@ -1,5 +1,7 @@
 import {
+  createGlobalDraftFileIoTargets,
   createSafeFilename,
+  type DraftFileIoTargets,
   downloadBlobDraft,
   loadJsZip,
   stringifyPackageFile,
@@ -36,10 +38,20 @@ export type EnginePackageBundleTargets = {
   createRaw16Blob: typeof createHeightmapRaw16Blob;
 };
 
-export function createGlobalEnginePackageBundleTargets(): EnginePackageBundleTargets {
+export type GlobalEnginePackageBundleTargetOptions = {
+  fileIoTargets?: DraftFileIoTargets;
+};
+
+export function createGlobalEnginePackageBundleTargets(
+  options: GlobalEnginePackageBundleTargetOptions = {},
+): EnginePackageBundleTargets {
+  const fileIoTargets =
+    options.fileIoTargets ?? createGlobalDraftFileIoTargets();
+
   return {
-    loadZip: loadJsZip,
-    downloadBlob: downloadBlobDraft,
+    loadZip: () => loadJsZip(fileIoTargets),
+    downloadBlob: (filename, blob) =>
+      downloadBlobDraft(filename, blob, fileIoTargets),
     createPngBlob: createHeightmapPngBlob,
     createRaw16Blob: createHeightmapRaw16Blob,
   };

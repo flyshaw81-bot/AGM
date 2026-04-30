@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { EngineProjectSummary } from "../bridge/engineActionTypes";
 import type { StudioState } from "../types";
+import type { DraftFileIoTargets } from "./draftFileIo";
 import {
   AGM_DRAFT_STORAGE_KEY,
   createGlobalWorldDocumentDraftTargets,
@@ -176,6 +177,23 @@ function createBuilderTargets(): WorldDocumentDraftBuilderTargets {
   };
 }
 
+function createFileIoTargets(): DraftFileIoTargets {
+  const link = {
+    href: "",
+    download: "",
+    click: vi.fn(),
+    remove: vi.fn(),
+  };
+  return {
+    createObjectUrl: vi.fn(() => "blob:agm"),
+    revokeObjectUrl: vi.fn(),
+    createDownloadLink: vi.fn(() => link),
+    appendToBody: vi.fn(),
+    getJsZip: vi.fn(),
+    loadJsZipScript: vi.fn(async () => undefined),
+  };
+}
+
 describe("worldDocumentDraft", () => {
   it("saves AGM drafts through injected storage targets", () => {
     const draft = createDraft();
@@ -236,5 +254,42 @@ describe("worldDocumentDraft", () => {
     expect(draft.world.layers.visible.toggleBorders).toBe(true);
     expect(builderTargets.getEntities).toHaveBeenCalledWith();
     expect(builderTargets.getLayerStates).toHaveBeenCalledWith();
+  });
+
+  it("composes default export targets from injected file IO targets", () => {
+    const fileIoTargets = createFileIoTargets();
+    const targets = createGlobalWorldDocumentDraftTargets({ fileIoTargets });
+
+    targets.downloadJson("world.json", { name: "Northwatch" });
+
+    expect(fileIoTargets.createObjectUrl).toHaveBeenCalledWith(
+      expect.any(Blob),
+    );
+    expect(fileIoTargets.revokeObjectUrl).toHaveBeenCalledWith("blob:agm");
+  });
+
+  it("composes engine package defaults from injected file IO targets", async () => {
+    class FakeZip {
+      file() {}
+      async generateAsync() {
+        return new Blob(["zip"]);
+      }
+    }
+    const fileIoTargets = createFileIoTargets();
+    vi.mocked(fileIoTargets.getJsZip)
+      .mockReturnValueOnce(undefined)
+      .mockReturnValueOnce(FakeZip);
+    const targets = createGlobalWorldDocumentDraftTargets({ fileIoTargets });
+
+    await targets.enginePackageTargets?.loadZip();
+    targets.enginePackageTargets?.downloadBlob(
+      "package.zip",
+      new Blob(["zip"]),
+    );
+
+    expect(fileIoTargets.loadJsZipScript).toHaveBeenCalledWith();
+    expect(fileIoTargets.createObjectUrl).toHaveBeenCalledWith(
+      expect.any(Blob),
+    );
   });
 });

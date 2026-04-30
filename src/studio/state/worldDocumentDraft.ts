@@ -1,8 +1,10 @@
 import type { EngineProjectSummary } from "../bridge/engineActionTypes";
 import type { StudioState } from "../types";
 import {
+  createGlobalDraftFileIoTargets,
   createSafeAgmFilename,
   createSafeFilename,
+  type DraftFileIoTargets,
   downloadBlobDraft,
   downloadJsonDraft,
 } from "./draftFileIo";
@@ -16,6 +18,7 @@ import {
 import type { WorldDocumentDraftImportTargets } from "./worldDocumentDraftImport";
 import { createEngineManifestExport } from "./worldDocumentEngineExports";
 import {
+  createGlobalEnginePackageBundleTargets,
   type EnginePackageBundleTargets,
   exportEnginePackageBundle,
 } from "./worldDocumentEnginePackageDraft";
@@ -58,6 +61,7 @@ export type WorldDocumentDraftTargets = WorldDocumentDraftImportTargets & {
 
 export type GlobalWorldDocumentDraftTargetOptions = {
   builderTargets?: WorldDocumentDraftBuilderTargets;
+  fileIoTargets?: DraftFileIoTargets;
   enginePackageTargets?: EnginePackageBundleTargets;
 };
 
@@ -66,6 +70,8 @@ export function createGlobalWorldDocumentDraftTargets(
 ): WorldDocumentDraftTargets {
   const builderTargets =
     options.builderTargets ?? createGlobalWorldDocumentDraftBuilderTargets();
+  const fileIoTargets =
+    options.fileIoTargets ?? createGlobalDraftFileIoTargets();
 
   return {
     createDraft: (state, projectSummary) =>
@@ -73,12 +79,16 @@ export function createGlobalWorldDocumentDraftTargets(
     setStorageItem: (key, value) => localStorage.setItem(key, value),
     getStorageItem: (key) => localStorage.getItem(key),
     readFileText: (file) => file.text(),
-    downloadJson: downloadJsonDraft,
-    downloadBlob: downloadBlobDraft,
+    downloadJson: (filename, draft) =>
+      downloadJsonDraft(filename, draft, fileIoTargets),
+    downloadBlob: (filename, blob) =>
+      downloadBlobDraft(filename, blob, fileIoTargets),
     createPngBlob: createHeightmapPngBlob,
     createRaw16Blob: createHeightmapRaw16Blob,
     exportEnginePackage: exportEnginePackageBundle,
-    enginePackageTargets: options.enginePackageTargets,
+    enginePackageTargets:
+      options.enginePackageTargets ??
+      createGlobalEnginePackageBundleTargets({ fileIoTargets }),
   };
 }
 

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { WorldDocumentDraft } from "./worldDocumentDraft";
 import {
+  createGlobalEnginePackageBundleTargets,
   type EnginePackageZipInstance,
   exportEnginePackageBundle,
 } from "./worldDocumentEnginePackageDraft";
@@ -109,5 +110,44 @@ describe("exportEnginePackageBundle", () => {
         "handoff/README.md",
       ]),
     );
+  });
+
+  it("composes global package targets from injected file IO targets", async () => {
+    class FakeZip implements EnginePackageZipInstance {
+      file() {}
+
+      async generateAsync() {
+        return new Blob(["zip"]);
+      }
+    }
+    const link = {
+      href: "",
+      download: "",
+      click: vi.fn(),
+      remove: vi.fn(),
+    };
+    const getJsZip = vi
+      .fn()
+      .mockReturnValueOnce(undefined)
+      .mockReturnValueOnce(FakeZip);
+    const fileIoTargets = {
+      createObjectUrl: vi.fn(() => "blob:agm"),
+      revokeObjectUrl: vi.fn(),
+      createDownloadLink: vi.fn(() => link),
+      appendToBody: vi.fn(),
+      getJsZip,
+      loadJsZipScript: vi.fn(async () => undefined),
+    };
+
+    const targets = createGlobalEnginePackageBundleTargets({ fileIoTargets });
+
+    await expect(targets.loadZip()).resolves.toBe(FakeZip);
+    targets.downloadBlob("package.zip", new Blob(["zip"]));
+
+    expect(fileIoTargets.loadJsZipScript).toHaveBeenCalledWith();
+    expect(fileIoTargets.createObjectUrl).toHaveBeenCalledWith(
+      expect.any(Blob),
+    );
+    expect(fileIoTargets.revokeObjectUrl).toHaveBeenCalledWith("blob:agm");
   });
 });

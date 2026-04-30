@@ -27,6 +27,9 @@
 > Draft file export and JSZip loading are now behind `DraftFileIoTargets`, so
 > Blob URL, download-anchor, and script injection browser APIs are isolated from
 > the draft/export call sites.
+> World document and engine package default target factories now compose the
+> same `DraftFileIoTargets`, so project export tests can inject one file IO
+> boundary for JSON, blob, and zip package paths.
 > Please review whether each remaining global dependency is behind an explicit
 > compatibility adapter, and keep treating AGM `window.*` module mounts
 > separately from old public UI debt.
@@ -430,7 +433,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 133 test files, 439 tests.
+- `npm.cmd run test -- --run` passed: 133 test files, 442 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
