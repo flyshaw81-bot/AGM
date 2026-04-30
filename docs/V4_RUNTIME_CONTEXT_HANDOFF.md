@@ -916,6 +916,9 @@ Completed:
   history checks, URL search params, seed writes, options seed input sync,
   random generator replacement, and generated fallback seeds. The global module
   mount still uses the current public runtime adapters.
+- `EngineGraphSessionModule` now accepts explicit graph-session targets for map
+  size reads, graph size writes, rect bound writes, and fog/water mask updates.
+  The global module mount still uses the current public SVG/d3 adapters.
 - `mapHistory` is now intentionally exposed as a global compatibility value so
   the runtime seed session can preserve first-map URL behavior. This is not a
   final state store design; it is an explicit adapter boundary for the current

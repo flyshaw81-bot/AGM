@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { EngineGraphSessionModule } from "./engine-graph-session";
+import {
+  EngineGraphSessionModule,
+  type EngineGraphSessionTargets,
+} from "./engine-graph-session";
 
 type Call = {
   selector: string;
@@ -45,6 +48,45 @@ describe("EngineGraphSessionModule", () => {
       selector: "mask#water > rect",
       name: "height",
       value: 800,
+    });
+  });
+
+  it("applies graph dimensions through injected targets", () => {
+    const calls: Call[] = [];
+    const root = createSelection(calls, "root");
+    const targets: EngineGraphSessionTargets = {
+      getMapWidth: () => 1400,
+      getMapHeight: () => 900,
+      setGraphSize: (width, height) => {
+        calls.push({ selector: "graph", name: "width", value: width });
+        calls.push({ selector: "graph", name: "height", value: height });
+      },
+      setRectBounds: (target, width, height) => {
+        target
+          .attr("x", 0)
+          .attr("y", 0)
+          .attr("width", width)
+          .attr("height", height);
+      },
+      getLandmassRect: () => root.select("landmass"),
+      getOceanPatternRect: () => root.select("oceanPattern"),
+      getOceanLayersRect: () => root.select("oceanLayers"),
+      getFoggingRects: () => root.selectAll("fogging"),
+      getFogMaskRect: () => root.select("mask#fog > rect"),
+      getWaterMaskRect: () => root.select("mask#water > rect"),
+    };
+
+    new EngineGraphSessionModule(targets).applyGraphSize();
+
+    expect(calls).toContainEqual({
+      selector: "graph",
+      name: "width",
+      value: 1400,
+    });
+    expect(calls).toContainEqual({
+      selector: "mask#water > rect",
+      name: "height",
+      value: 900,
     });
   });
 });
