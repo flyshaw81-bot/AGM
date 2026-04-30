@@ -41,6 +41,31 @@ export function createJQueryEngineHostDialogAdapter(
   };
 }
 
+export function createStudioEngineHostDialogAdapter(
+  domAdapter: EngineHostDialogDomAdapter = createGlobalEngineHostDialogDomAdapter(),
+): EngineHostDialogAdapter {
+  return {
+    queryDialogs: () =>
+      domAdapter.querySelectorAll(
+        "#dialogs > [data-agm-engine-dialog], #dialogs > [data-studio-engine-dialog]",
+      ),
+  };
+}
+
+export function createCompositeEngineHostDialogAdapter(
+  adapters: EngineHostDialogAdapter[],
+): EngineHostDialogAdapter {
+  return {
+    queryDialogs: () => {
+      const dialogs = new Set<HTMLElement>();
+      for (const adapter of adapters) {
+        for (const dialog of adapter.queryDialogs()) dialogs.add(dialog);
+      }
+      return Array.from(dialogs);
+    },
+  };
+}
+
 export function createEngineHostTargets(
   domAdapter: EngineHostDomAdapter,
   dialogAdapter: EngineHostDialogAdapter,
@@ -53,7 +78,12 @@ export function createEngineHostTargets(
 
 export function createGlobalEngineHostTargets(
   domAdapter: EngineHostDomAdapter = createGlobalEngineHostDomAdapter(),
-  dialogAdapter: EngineHostDialogAdapter = createJQueryEngineHostDialogAdapter(),
+  dialogAdapter: EngineHostDialogAdapter = createCompositeEngineHostDialogAdapter(
+    [
+      createStudioEngineHostDialogAdapter(),
+      createJQueryEngineHostDialogAdapter(),
+    ],
+  ),
 ): EngineHostTargets {
   return createEngineHostTargets(domAdapter, dialogAdapter);
 }

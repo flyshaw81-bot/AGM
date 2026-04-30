@@ -88,6 +88,51 @@ export function createJQueryEngineEditorDialogAdapter(
   };
 }
 
+export function createStudioEngineEditorDialogAdapter(
+  domAdapter: EngineEditorDialogDomAdapter = createGlobalEngineEditorDialogDomAdapter(),
+): EngineEditorDialogAdapter {
+  return {
+    isOpen: (dialogId) => {
+      const dialog = domAdapter.getElementById(dialogId);
+      if (!dialog) return false;
+      return isElementVisible(dialog, domAdapter);
+    },
+    close: (dialogId) => {
+      const dialog = domAdapter.getElementById(dialogId);
+      if (!dialog) return;
+
+      if ("close" in dialog && typeof dialog.close === "function") {
+        dialog.close();
+        return;
+      }
+
+      const closeButton = dialog.querySelector<HTMLButtonElement>(
+        "[data-agm-dialog-close], [data-studio-dialog-close], [data-dialog-close]",
+      );
+      if (closeButton) {
+        closeButton.click();
+        return;
+      }
+
+      dialog.setAttribute("aria-hidden", "true");
+      dialog.hidden = true;
+    },
+  };
+}
+
+export function createCompositeEngineEditorDialogAdapter(
+  adapters: EngineEditorDialogAdapter[],
+): EngineEditorDialogAdapter {
+  return {
+    isOpen: (dialogId) => adapters.some((adapter) => adapter.isOpen(dialogId)),
+    close: (dialogId) => {
+      for (const adapter of adapters) {
+        if (adapter.isOpen(dialogId)) adapter.close(dialogId);
+      }
+    },
+  };
+}
+
 export function createEngineEditorTargets(
   handlerRuntime: EngineEditorHandlerRuntime,
   dialogAdapter: EngineEditorDialogAdapter,
@@ -105,7 +150,12 @@ export function createEngineEditorTargets(
 
 export function createGlobalEngineEditorTargets(
   handlerRuntime: EngineEditorHandlerRuntime = createGlobalEngineEditorHandlerRuntime(),
-  dialogAdapter: EngineEditorDialogAdapter = createJQueryEngineEditorDialogAdapter(),
+  dialogAdapter: EngineEditorDialogAdapter = createCompositeEngineEditorDialogAdapter(
+    [
+      createStudioEngineEditorDialogAdapter(),
+      createJQueryEngineEditorDialogAdapter(),
+    ],
+  ),
 ): EngineEditorTargets {
   return createEngineEditorTargets(handlerRuntime, dialogAdapter);
 }

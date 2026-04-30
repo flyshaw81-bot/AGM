@@ -7,10 +7,12 @@ import {
   syncEngineDialogsPosition,
 } from "./engineHost";
 import {
+  createCompositeEngineHostDialogAdapter,
   createEngineHostTargets,
   createGlobalEngineHostDialogDomAdapter,
   createGlobalEngineHostTargets,
   createJQueryEngineHostDialogAdapter,
+  createStudioEngineHostDialogAdapter,
   type EngineHostTargets,
 } from "./engineHostTargets";
 
@@ -176,6 +178,31 @@ describe("engine host", () => {
     expect(domAdapter.querySelectorAll).toHaveBeenCalledWith(
       "#dialogs > .ui-dialog",
     );
+  });
+
+  it("queries Studio-owned engine dialogs without jQuery UI selectors", () => {
+    const { element: dialog } = createElement("dialog");
+    const domAdapter = {
+      querySelectorAll: vi.fn(() => [dialog]),
+    };
+
+    const adapter = createStudioEngineHostDialogAdapter(domAdapter);
+
+    expect(adapter.queryDialogs()).toEqual([dialog]);
+    expect(domAdapter.querySelectorAll).toHaveBeenCalledWith(
+      "#dialogs > [data-agm-engine-dialog], #dialogs > [data-studio-engine-dialog]",
+    );
+  });
+
+  it("deduplicates Studio and compatibility dialog query results", () => {
+    const { element: studioDialog } = createElement("studio");
+    const { element: compatibilityDialog } = createElement("compat");
+    const adapter = createCompositeEngineHostDialogAdapter([
+      { queryDialogs: () => [studioDialog, compatibilityDialog] },
+      { queryDialogs: () => [compatibilityDialog] },
+    ]);
+
+    expect(adapter.queryDialogs()).toEqual([studioDialog, compatibilityDialog]);
   });
 
   it("keeps host dialog DOM queries inside the default DOM adapter", () => {

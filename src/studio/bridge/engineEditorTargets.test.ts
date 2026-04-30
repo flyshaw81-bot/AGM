@@ -1,9 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  createCompositeEngineEditorDialogAdapter,
   createEngineEditorTargets,
   createGlobalEngineEditorDialogDomAdapter,
   createGlobalEngineEditorTargets,
   createJQueryEngineEditorDialogAdapter,
+  createStudioEngineEditorDialogAdapter,
   type EngineEditorDialogAdapter,
   type EngineEditorDialogDomAdapter,
 } from "./engineEditorTargets";
@@ -128,6 +130,52 @@ describe("createEngineEditorTargets", () => {
 
     expect(wrapper.setAttribute).toHaveBeenCalledWith("aria-hidden", "true");
     expect(wrapper.style.display).toBe("none");
+  });
+
+  it("closes Studio-owned dialogs without jQuery UI wrappers", () => {
+    const closeButton = { click: vi.fn() };
+    const dialog = {
+      hidden: false,
+      offsetParent: {},
+      querySelector: vi.fn(() => closeButton),
+      setAttribute: vi.fn(),
+    };
+    const adapter = createStudioEngineEditorDialogAdapter({
+      getElementById: vi.fn(() => dialog as unknown as HTMLElement),
+      getComputedStyle: vi.fn(() => ({
+        display: "block",
+        visibility: "visible",
+      })),
+    });
+
+    expect(adapter.isOpen("statesEditor")).toBe(true);
+    adapter.close("statesEditor");
+
+    expect(dialog.querySelector).toHaveBeenCalledWith(
+      "[data-agm-dialog-close], [data-studio-dialog-close], [data-dialog-close]",
+    );
+    expect(closeButton.click).toHaveBeenCalledWith();
+  });
+
+  it("combines Studio and compatibility dialog adapters", () => {
+    const studioAdapter: EngineEditorDialogAdapter = {
+      isOpen: vi.fn(() => false),
+      close: vi.fn(),
+    };
+    const compatibilityAdapter: EngineEditorDialogAdapter = {
+      isOpen: vi.fn(() => true),
+      close: vi.fn(),
+    };
+    const adapter = createCompositeEngineEditorDialogAdapter([
+      studioAdapter,
+      compatibilityAdapter,
+    ]);
+
+    expect(adapter.isOpen("statesEditor")).toBe(true);
+    adapter.close("statesEditor");
+
+    expect(studioAdapter.close).not.toHaveBeenCalled();
+    expect(compatibilityAdapter.close).toHaveBeenCalledWith("statesEditor");
   });
 
   it("keeps document and computed-style reads inside the default DOM adapter", () => {

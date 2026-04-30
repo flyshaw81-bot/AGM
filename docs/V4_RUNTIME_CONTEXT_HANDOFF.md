@@ -1861,6 +1861,11 @@ Religion manual operations now have explicit runtime context paths:
 `Religions.getDeityName(culture, context)`. The no-argument compatibility calls
 remain, but direct/runtime command callers can avoid global `pack` and global
 runtime lookups for these operations.
+Engine editor and host dialog targets now use Studio-first composite dialog
+adapters. Default wiring checks Studio-owned dialog selectors/data attributes
+before falling back to the jQuery UI compatibility adapters. This does not
+remove old public dialogs yet, but it gives new Studio dialogs a non-jQuery
+path through the existing target factories.
 
 ## Next Recommended Slice
 
