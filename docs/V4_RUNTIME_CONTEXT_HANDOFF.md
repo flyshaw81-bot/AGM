@@ -418,7 +418,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 128 test files, 406 tests.
+- `npm.cmd run test -- --run` passed: 129 test files, 407 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1120,6 +1120,8 @@ services instead of reading `globalThis.Routes` inline:
 - `src/studio/app/autoFixPreview.test.ts` covers autofix preview apply, manual
   biome rule writeback, rules-pack import writeback, and undo/redo through
   injected autofix preview targets.
+- `src/studio/app/autoFixPreviewTargets.test.ts` covers composition of project,
+  draft, and writeback adapters into the app-level autofix preview target.
 
 Known remaining debt for this slice: `EngineRouteWritebackTargets` now splits
 route cell/province lookup through a dedicated map adapter.
@@ -1181,10 +1183,11 @@ geometry, and entity mutation commands through dedicated app-level adapters.
 The default adapters still delegate to current entity mutation/focus bridge
 helpers, but `directEditorActionHandlers.ts` and
 `directEditorEntityActionHandlers.ts` no longer own those direct bridge calls
-inline. `AutoFixPreviewTargets` is an app-level boundary and still delegates
-  to current project summary, world draft, engine writeback, and writeback undo
-  helpers by default, but `autoFixPreview.ts` no longer owns those direct bridge
-  calls inline. This checkpoint closes the first
+inline. `AutoFixPreviewTargets` now splits project summary, world draft, and
+engine writeback/undo commands through dedicated app-level adapters. The default
+adapters still delegate to the current project summary, world draft, engine
+writeback, and writeback undo helpers, but `autoFixPreview.ts` no longer owns
+those direct bridge calls inline. This checkpoint closes the first
   autofix/direct-editor/canvas access/project control/project form/project
   summary/project action/layer/style/data/export/topbar/editor command entries,
   app command handlers, app project action handlers, shell event handlers, direct
