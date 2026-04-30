@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { createStudioEngineCommandTargets } from "./studioEngineCommandTargets";
+import type { EngineProjectSummary } from "../bridge/engineActions";
+import type { WorldDocumentDraft } from "../state/worldDocumentDraft";
+import type { StudioState } from "../types";
+import {
+  createStudioEngineCommandTargets,
+  createStudioGenerationProfileCommandAdapter,
+} from "./studioEngineCommandTargets";
 
 describe("createStudioEngineCommandTargets", () => {
   it("composes Studio engine command targets from injected command adapters", async () => {
@@ -61,5 +67,63 @@ describe("createStudioEngineCommandTargets", () => {
     expect(runTopbarAction).toHaveBeenCalledWith("save");
     expect(markDocumentClean).toHaveBeenCalledWith();
     expect(applyGenerationProfileOverrides).toHaveBeenCalledWith({});
+  });
+
+  it("composes generation profile commands from injected targets", () => {
+    const state = {
+      document: {
+        gameProfile: "balanced",
+      },
+      generationProfileOverrides: {
+        profile: "balanced",
+        values: {
+          spawnFairnessWeight: 3,
+        },
+      },
+      generationProfileImpact: null,
+    } as unknown as StudioState;
+    const summary = {
+      pendingStates: "10",
+      pendingBurgs: "20",
+      pendingGrowthRate: "1",
+      pendingSizeVariety: "5",
+      pendingProvincesRatio: "50",
+    } as EngineProjectSummary;
+    const worldDraft = {
+      playability: {
+        spawnCandidates: [],
+        generatorProfileSuggestions: [],
+      },
+      entities: {
+        states: [],
+        burgs: [],
+      },
+      resources: {
+        provinces: [],
+        routes: [],
+        biomes: [],
+      },
+    } as unknown as WorldDocumentDraft;
+    const setPendingStates = vi.fn();
+    const adapter = createStudioGenerationProfileCommandAdapter({
+      getProjectSummary: vi.fn(() => summary),
+      createWorldDraft: vi.fn(() => worldDraft),
+      setPendingStates,
+      setPendingBurgs: vi.fn(),
+      setPendingGrowthRate: vi.fn(),
+      setPendingSizeVariety: vi.fn(),
+      setPendingProvincesRatio: vi.fn(),
+      now: vi.fn(() => 2000),
+    });
+
+    adapter.applyGenerationProfileOverrides(state);
+    const sample = adapter.createGenerationProfileResultSample(state);
+
+    expect(setPendingStates).toHaveBeenCalledWith(30);
+    expect(sample.spawnCandidates).toBe(0);
+    expect(state.generationProfileImpact).toMatchObject({
+      profile: "balanced",
+      appliedAt: 2000,
+    });
   });
 });

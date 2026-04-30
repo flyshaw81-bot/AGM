@@ -29,6 +29,8 @@ import {
   applyGenerationProfileOverridesToEngineSettings,
   createGenerationProfileResultMetrics,
   createGenerationProfileResultSample,
+  createGlobalGenerationProfileTargets,
+  type GenerationProfileTargets,
 } from "./generationProfile";
 import { updateProjectCenterState } from "./projectCenter";
 
@@ -122,10 +124,19 @@ export function createGlobalStudioDocumentCommandAdapter(): StudioDocumentComman
 }
 
 export function createGlobalStudioGenerationProfileCommandAdapter(): StudioGenerationProfileCommandAdapter {
+  return createStudioGenerationProfileCommandAdapter(
+    createGlobalGenerationProfileTargets(),
+  );
+}
+
+export function createStudioGenerationProfileCommandAdapter(
+  targets: GenerationProfileTargets,
+): StudioGenerationProfileCommandAdapter {
   return {
-    applyGenerationProfileOverrides:
-      applyGenerationProfileOverridesToEngineSettings,
-    createGenerationProfileResultSample,
+    applyGenerationProfileOverrides: (state) =>
+      applyGenerationProfileOverridesToEngineSettings(state, targets),
+    createGenerationProfileResultSample: (state) =>
+      createGenerationProfileResultSample(state, targets),
     createGenerationProfileResultMetrics,
   };
 }
