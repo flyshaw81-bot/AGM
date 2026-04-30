@@ -724,6 +724,10 @@ Completed:
   `createGlobalNoticeService()`, `createGlobalFeedbackService()`, and
   `createGlobalLogService()`. The jQuery alert dialog dependency is centralized
   in `createGlobalNoticeService()` as isolated compatibility debt.
+- `engine-feedback-service.ts` and `engine-log-service.ts` now also separate
+  core service composition from global `tip(...)`, `WARN`, `ERROR`, and console
+  reads through `createEngineFeedbackService(targets)` and
+  `createEngineLogService(targets)`.
 - Generation settings DOM reads are now centralized in
   `createGlobalGenerationSettings()`. It still reads legacy public controls, but
   the dependency is isolated behind one settings adapter factory.
@@ -922,6 +926,10 @@ Completed:
   `src/modules/engine-route-service.ts`. The default adapters still forward to
   the compatibility-mounted AGM modules, but those calls are no longer inline in
   `engine-runtime-context.ts`. Added focused forwarding tests for both adapters.
+- `engine-naming-service.ts` now separates service composition from the global
+  compatibility adapter via `createEngineNamingService(targets)`. The default
+  `createGlobalNamingService()` still reads the current AGM `Names` module
+  mount, but the naming service logic itself no longer owns that global read.
 - `engine-route-service.ts` now separates service composition from the global
   compatibility adapter via `createEngineRouteService(targets)`. The default
   `createGlobalRouteService()` still reads the current AGM `Routes` module
@@ -1004,7 +1012,8 @@ adapters with focused tests:
   adapter now consumes explicit render targets.
 - `engine-naming-service.ts`, `engine-route-service.ts`,
   `engine-state-service.ts`, and `engine-heraldry-service.ts` still forward to
-  compatibility-mounted AGM services.
+  compatibility-mounted AGM services through their global factories, but their
+  core services now consume explicit targets.
 
 V4 should therefore judge this slice as boundary isolation, not full purity.
 The correct finding is "compatibility adapters remain", not "runtime context

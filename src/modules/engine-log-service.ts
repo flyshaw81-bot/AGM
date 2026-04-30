@@ -3,13 +3,31 @@ export type EngineLogService = {
   error: (message: string) => void;
 };
 
-export function createGlobalLogService(): EngineLogService {
+export type EngineLogServiceTargets = {
+  shouldWarn: () => boolean;
+  shouldError: () => boolean;
+  warn: (message: string) => void;
+  error: (message: string) => void;
+};
+
+export function createEngineLogService(
+  targets: EngineLogServiceTargets,
+): EngineLogService {
   return {
     warn: (message) => {
-      globalThis.WARN && console.warn(message);
+      if (targets.shouldWarn()) targets.warn(message);
     },
     error: (message) => {
-      globalThis.ERROR && console.error(message);
+      if (targets.shouldError()) targets.error(message);
     },
   };
+}
+
+export function createGlobalLogService(): EngineLogService {
+  return createEngineLogService({
+    shouldWarn: () => Boolean(globalThis.WARN),
+    shouldError: () => Boolean(globalThis.ERROR),
+    warn: (message) => console.warn(message),
+    error: (message) => console.error(message),
+  });
 }

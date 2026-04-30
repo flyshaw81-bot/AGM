@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createGlobalLogService } from "./engine-log-service";
+import {
+  createEngineLogService,
+  createGlobalLogService,
+} from "./engine-log-service";
 
 const originalWarnFlag = globalThis.WARN;
 const originalErrorFlag = globalThis.ERROR;
@@ -40,5 +43,22 @@ describe("createGlobalLogService", () => {
 
     expect(console.warn).not.toHaveBeenCalled();
     expect(console.error).not.toHaveBeenCalled();
+  });
+
+  it("composes log service from injected console targets", () => {
+    const warn = vi.fn();
+    const error = vi.fn();
+    const logs = createEngineLogService({
+      shouldWarn: () => true,
+      shouldError: () => false,
+      warn,
+      error,
+    });
+
+    logs.warn("Visible");
+    logs.error("Hidden");
+
+    expect(warn).toHaveBeenCalledWith("Visible");
+    expect(error).not.toHaveBeenCalled();
   });
 });

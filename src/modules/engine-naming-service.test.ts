@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createGlobalNamingService } from "./engine-naming-service";
+import {
+  createEngineNamingService,
+  createGlobalNamingService,
+} from "./engine-naming-service";
 
 const originalNames = globalThis.Names;
 
@@ -37,5 +40,32 @@ describe("createGlobalNamingService", () => {
     expect(Names.getBaseShort).toHaveBeenCalledWith(1);
     expect(Names.getNameBases).toHaveBeenCalledWith();
     expect(Names.getMapName).toHaveBeenCalledWith(false);
+  });
+
+  it("composes naming service from injected runtime targets", () => {
+    const nameBases = [{ name: "Injected Base" }] as any;
+    const namesModule = {
+      getCulture: vi.fn(() => "Injected Culture"),
+      getCultureShort: vi.fn(() => "Injected"),
+      getState: vi.fn(() => "Injected State"),
+      getBase: vi.fn(() => "Injected Base"),
+      getBaseShort: vi.fn(() => "Base"),
+      getNameBases: vi.fn(() => nameBases),
+      getMapName: vi.fn(),
+    };
+
+    const naming = createEngineNamingService({
+      getNamesModule: () => namesModule,
+    });
+
+    expect(naming.getCulture(1)).toBe("Injected Culture");
+    expect(naming.getCultureShort(1)).toBe("Injected");
+    expect(naming.getState("Root", 2)).toBe("Injected State");
+    expect(naming.getBase?.(3)).toBe("Injected Base");
+    expect(naming.getBaseShort?.(3)).toBe("Base");
+    expect(naming.getNameBases?.()).toBe(nameBases);
+    naming.getMapName?.();
+
+    expect(namesModule.getMapName).toHaveBeenCalledWith(false);
   });
 });
