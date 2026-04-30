@@ -15,6 +15,13 @@ export type EngineNoticeDialogHost = {
   close: (dialog: unknown) => void;
 };
 
+export type EngineNoticeActionTargets = {
+  parseError: (error: Error) => string;
+  clearMainTip: () => void;
+  cleanupData: () => void;
+  regenerateMap: (reason: string) => void;
+};
+
 export type EngineNoticeService = {
   showModal: (notice: EngineNoticeModal) => void;
   showGenerationError: (error: unknown) => void;
@@ -34,8 +41,18 @@ export function createJQueryNoticeDialogHost(): EngineNoticeDialogHost {
   };
 }
 
+export function createGlobalNoticeActionTargets(): EngineNoticeActionTargets {
+  return {
+    parseError: (error) => parseError(error),
+    clearMainTip: () => clearMainTip(),
+    cleanupData: () => cleanupData(),
+    regenerateMap: (reason) => regenerateMap(reason),
+  };
+}
+
 export function createEngineNoticeService(
   dialogHost: EngineNoticeDialogHost,
+  actionTargets: EngineNoticeActionTargets = createGlobalNoticeActionTargets(),
 ): EngineNoticeService {
   return {
     showModal: ({
@@ -60,8 +77,8 @@ export function createEngineNoticeService(
       });
     },
     showGenerationError: (error) => {
-      const parsedError = parseError(error as Error);
-      clearMainTip();
+      const parsedError = actionTargets.parseError(error as Error);
+      actionTargets.clearMainTip();
 
       dialogHost.setHtml(/* html */ `An error has occurred on map generation. Please retry. <br />If error is critical, clear the stored data and try again.
       <p id="errorBox">${parsedError}</p>`);
@@ -70,9 +87,9 @@ export function createEngineNoticeService(
         title: "Generation error",
         width: "32em",
         buttons: {
-          "Cleanup data": () => cleanupData(),
+          "Cleanup data": () => actionTargets.cleanupData(),
           Regenerate: function () {
-            regenerateMap("generation error");
+            actionTargets.regenerateMap("generation error");
             dialogHost.close(this);
           },
           Ignore: function () {
@@ -87,6 +104,7 @@ export function createEngineNoticeService(
 
 export function createGlobalNoticeService(
   dialogHost: EngineNoticeDialogHost = createJQueryNoticeDialogHost(),
+  actionTargets: EngineNoticeActionTargets = createGlobalNoticeActionTargets(),
 ): EngineNoticeService {
-  return createEngineNoticeService(dialogHost);
+  return createEngineNoticeService(dialogHost, actionTargets);
 }

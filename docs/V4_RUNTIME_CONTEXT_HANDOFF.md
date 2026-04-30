@@ -80,6 +80,10 @@
 > variants, so paint preview and selection hit-testing can read graph/pack data
 > from `EngineRuntimeContext` instead of splitting preview reads from paint
 > writes.
+> Engine notice generation-error actions now use `EngineNoticeActionTargets`,
+> so parse/cleanup/regenerate runtime calls are isolated from the notice
+> service. The default jQuery dialog host remains a compatibility host until a
+> Pencil-aligned Studio modal replaces that UI path.
 > Studio style injection now uses `StudioStyleTargets`, so duplicate style
 > detection, style element creation, and head insertion are injectable.
 > Studio document theme sync now uses `StudioThemeSyncTargets`, so renderer

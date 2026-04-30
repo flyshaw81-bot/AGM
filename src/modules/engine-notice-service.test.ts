@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createEngineNoticeService,
+  createGlobalNoticeActionTargets,
   createGlobalNoticeService,
   createJQueryNoticeDialogHost,
+  type EngineNoticeActionTargets,
   type EngineNoticeDialogHost,
 } from "./engine-notice-service";
 
@@ -28,6 +30,15 @@ function installGenerationGlobals() {
   globalThis.clearMainTip = vi.fn();
   globalThis.cleanupData = vi.fn();
   globalThis.regenerateMap = vi.fn();
+}
+
+function createActionTargets(): EngineNoticeActionTargets {
+  return {
+    parseError: vi.fn(() => "Parsed failure"),
+    clearMainTip: vi.fn(),
+    cleanupData: vi.fn(),
+    regenerateMap: vi.fn(),
+  };
 }
 
 describe("createGlobalNoticeService", () => {
@@ -77,14 +88,14 @@ describe("createGlobalNoticeService", () => {
   });
 
   it("routes generation errors through cleanup, regenerate, and ignore dialog actions", () => {
-    installGenerationGlobals();
     const host = createDialogHost();
+    const actionTargets = createActionTargets();
     const error = new Error("Boom");
 
-    createEngineNoticeService(host).showGenerationError(error);
+    createEngineNoticeService(host, actionTargets).showGenerationError(error);
 
-    expect(globalThis.parseError).toHaveBeenCalledWith(error);
-    expect(globalThis.clearMainTip).toHaveBeenCalledWith();
+    expect(actionTargets.parseError).toHaveBeenCalledWith(error);
+    expect(actionTargets.clearMainTip).toHaveBeenCalledWith();
     expect(host.setHtml).toHaveBeenCalledWith(
       expect.stringContaining("Parsed failure"),
     );
@@ -101,10 +112,28 @@ describe("createGlobalNoticeService", () => {
     options.buttons?.Regenerate.call("dialog-node");
     options.buttons?.Ignore.call("dialog-node");
 
-    expect(globalThis.cleanupData).toHaveBeenCalledWith();
-    expect(globalThis.regenerateMap).toHaveBeenCalledWith("generation error");
+    expect(actionTargets.cleanupData).toHaveBeenCalledWith();
+    expect(actionTargets.regenerateMap).toHaveBeenCalledWith(
+      "generation error",
+    );
     expect(host.close).toHaveBeenCalledTimes(2);
     expect(host.close).toHaveBeenCalledWith("dialog-node");
+  });
+
+  it("keeps generation action globals inside the default compatibility targets", () => {
+    installGenerationGlobals();
+    const targets = createGlobalNoticeActionTargets();
+    const error = new Error("Boom");
+
+    expect(targets.parseError(error)).toBe("Parsed failure");
+    targets.clearMainTip();
+    targets.cleanupData();
+    targets.regenerateMap("generation error");
+
+    expect(globalThis.parseError).toHaveBeenCalledWith(error);
+    expect(globalThis.clearMainTip).toHaveBeenCalledWith();
+    expect(globalThis.cleanupData).toHaveBeenCalledWith();
+    expect(globalThis.regenerateMap).toHaveBeenCalledWith("generation error");
   });
 
   it("keeps jQuery UI access inside the default compatibility host", () => {
@@ -130,8 +159,9 @@ describe("createGlobalNoticeService", () => {
 
   it("composes the global service through the default compatibility host", () => {
     const host = createDialogHost();
+    const actionTargets = createActionTargets();
 
-    createGlobalNoticeService(host).showModal({
+    createGlobalNoticeService(host, actionTargets).showModal({
       title: "Global notice",
       html: "Body",
     });
