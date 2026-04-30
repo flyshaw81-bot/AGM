@@ -1813,6 +1813,10 @@ fall back to direct context field updates.
 Runtime grid and graph sessions now also read graph dimensions through
 `worldSettingsStore.get()` when available, keeping session-level graph size
 reads and writes on the same runtime settings boundary.
+Lifecycle adapter now creates a `EngineLifecycleSettingsSnapshot` from the
+runtime context, preferring `generationSettingsStore.get()` and
+`worldSettingsStore.get()` when available. Lifecycle methods read that snapshot
+instead of scattering direct settings field access through each method.
 
 ## Next Recommended Slice
 

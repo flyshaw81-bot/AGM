@@ -3,6 +3,7 @@ import {
   createGlobalLifecycleAdapter,
   createGlobalLifecycleTargets,
   createLifecycleAdapter,
+  createLifecycleSettingsSnapshot,
   type EngineLifecycleAdapter,
   type EngineLifecycleTargets,
 } from "./engine-lifecycle-adapter";
@@ -134,6 +135,58 @@ describe("createGlobalLifecycleAdapter", () => {
     expect(targets.rebuildGraph).toHaveBeenCalledWith();
     expect(targets.createDefaultRuler).toHaveBeenCalledWith();
     expect(targets.showStatistics).toHaveBeenCalledWith("archipelago");
+  });
+
+  it("reads lifecycle settings from runtime stores when available", () => {
+    const targets = createTargets();
+    const context = {
+      ...createContext(),
+      generationSettingsStore: {
+        get: () => ({
+          heightmapTemplateId: "volcano",
+          lakeElevationLimit: 31,
+          pointsCount: 0,
+          heightExponent: 1,
+          resolveDepressionsSteps: 0,
+          religionsCount: 0,
+          stateSizeVariety: 1,
+          globalGrowthRate: 1,
+          statesGrowthRate: 1,
+        }),
+      },
+      worldSettingsStore: {
+        get: () => ({
+          mapSizePercent: 60,
+          latitudePercent: 25,
+          longitudePercent: 75,
+        }),
+      },
+    } as unknown as EngineRuntimeContext;
+    const adapter = createLifecycleAdapter(() => {
+      throw new Error("explicit context should be used");
+    }, targets);
+
+    adapter.addLakesInDeepDepressions(context);
+    adapter.defineMapSize(context);
+    adapter.calculateMapCoordinates(context);
+
+    expect(targets.addLakesInDeepDepressions).toHaveBeenCalledWith(31);
+    expect(targets.defineMapSize).toHaveBeenCalledWith("volcano");
+    expect(targets.calculateMapCoordinates).toHaveBeenCalledWith({
+      mapSizePercent: 60,
+      latitudePercent: 25,
+      longitudePercent: 75,
+    });
+  });
+
+  it("creates a lifecycle settings snapshot from runtime context settings", () => {
+    expect(createLifecycleSettingsSnapshot(createContext())).toEqual({
+      heightmapTemplateId: "archipelago",
+      lakeElevationLimit: 22,
+      mapSizePercent: 80,
+      latitudePercent: 45,
+      longitudePercent: 55,
+    });
   });
 
   it("falls back to the injected current-context provider", () => {

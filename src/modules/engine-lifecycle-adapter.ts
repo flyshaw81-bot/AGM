@@ -26,6 +26,31 @@ export type EngineLifecycleTargets = {
   showStatistics: (heightmapTemplateId: string | undefined) => void;
 };
 
+export type EngineLifecycleSettingsSnapshot = {
+  heightmapTemplateId?: string;
+  lakeElevationLimit: number;
+  mapSizePercent?: number;
+  latitudePercent?: number;
+  longitudePercent?: number;
+};
+
+export function createLifecycleSettingsSnapshot(
+  context: EngineRuntimeContext,
+): EngineLifecycleSettingsSnapshot {
+  const generationSettings =
+    context.generationSettingsStore?.get() ?? context.generationSettings;
+  const worldSettings =
+    context.worldSettingsStore?.get() ?? context.worldSettings;
+
+  return {
+    heightmapTemplateId: generationSettings.heightmapTemplateId,
+    lakeElevationLimit: generationSettings.lakeElevationLimit,
+    mapSizePercent: worldSettings.mapSizePercent,
+    latitudePercent: worldSettings.latitudePercent,
+    longitudePercent: worldSettings.longitudePercent,
+  };
+}
+
 export function createGlobalLifecycleTargets(): EngineLifecycleTargets {
   return {
     addLakesInDeepDepressions: (lakeElevationLimit) => {
@@ -61,24 +86,26 @@ export function createLifecycleAdapter(
 ): EngineLifecycleAdapter {
   return {
     addLakesInDeepDepressions: (context = getCurrentContext()) => {
-      targets.addLakesInDeepDepressions(
-        context.generationSettings.lakeElevationLimit,
-      );
+      const settings = createLifecycleSettingsSnapshot(context);
+      targets.addLakesInDeepDepressions(settings.lakeElevationLimit);
     },
     openNearSeaLakes: (context = getCurrentContext()) => {
-      targets.openNearSeaLakes(context.generationSettings.heightmapTemplateId);
+      const settings = createLifecycleSettingsSnapshot(context);
+      targets.openNearSeaLakes(settings.heightmapTemplateId);
     },
     drawOceanLayers: (context = getCurrentContext()) => {
       targets.drawOceanLayers(context);
     },
     defineMapSize: (context = getCurrentContext()) => {
-      targets.defineMapSize(context.generationSettings.heightmapTemplateId);
+      const settings = createLifecycleSettingsSnapshot(context);
+      targets.defineMapSize(settings.heightmapTemplateId);
     },
     calculateMapCoordinates: (context = getCurrentContext()) => {
+      const settings = createLifecycleSettingsSnapshot(context);
       targets.calculateMapCoordinates({
-        mapSizePercent: context.worldSettings.mapSizePercent,
-        latitudePercent: context.worldSettings.latitudePercent,
-        longitudePercent: context.worldSettings.longitudePercent,
+        mapSizePercent: settings.mapSizePercent,
+        latitudePercent: settings.latitudePercent,
+        longitudePercent: settings.longitudePercent,
       });
     },
     rebuildGraph: () => {
@@ -88,7 +115,8 @@ export function createLifecycleAdapter(
       targets.createDefaultRuler();
     },
     showStatistics: (context = getCurrentContext()) => {
-      targets.showStatistics(context.generationSettings.heightmapTemplateId);
+      const settings = createLifecycleSettingsSnapshot(context);
+      targets.showStatistics(settings.heightmapTemplateId);
     },
   };
 }
