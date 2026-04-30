@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import type { StudioState } from "../types";
 import {
+  createStudioWorkflowRenderAdapter,
+  createStudioWorkflowWatcherTargets,
   type StudioWorkflowWatcherTargets,
   syncStudioWorkflowAndRender,
   watchStudioWorkflow,
@@ -23,6 +25,29 @@ function createTargets(
 }
 
 describe("studio workflow watcher", () => {
+  it("composes sync, render, and browser workflow adapters", () => {
+    const sync = {
+      syncEditorWorkflow: vi.fn(() => false),
+      syncProjectSummary: vi.fn(async () => true),
+      syncDocument: vi.fn(() => false),
+    };
+    const render = vi.fn();
+    const renderer = createStudioWorkflowRenderAdapter(render);
+    const browser = {
+      setInterval: vi.fn(),
+      addWindowEventListener: vi.fn(),
+      addDocumentEventListener: vi.fn(),
+      getDocumentVisibilityState: vi.fn(() => "visible" as const),
+    };
+
+    const targets = createStudioWorkflowWatcherTargets(sync, renderer, browser);
+
+    expect(targets.syncProjectSummary).toBe(sync.syncProjectSummary);
+    expect(targets.render).toBe(render);
+    targets.setInterval(vi.fn(), 500);
+    expect(browser.setInterval).toHaveBeenCalledWith(expect.any(Function), 500);
+  });
+
   it("renders when any workflow sync target reports a change", async () => {
     const root = {} as HTMLElement;
     const state = {} as StudioState;

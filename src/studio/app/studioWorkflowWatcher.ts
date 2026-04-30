@@ -4,11 +4,17 @@ import { syncDocumentState, syncEditorWorkflowState } from "./documentState";
 
 export type RenderStudioApp = (root: HTMLElement, state: StudioState) => void;
 
-export type StudioWorkflowWatcherTargets = {
+export type StudioWorkflowSyncAdapter = {
   syncEditorWorkflow: (state: StudioState) => boolean;
   syncProjectSummary: () => Promise<boolean>;
   syncDocument: (state: StudioState) => boolean;
+};
+
+export type StudioWorkflowRenderAdapter = {
   render: RenderStudioApp;
+};
+
+export type StudioWorkflowBrowserAdapter = {
   setInterval: (callback: () => void, delay: number) => unknown;
   addWindowEventListener: (type: "focus", callback: () => void) => void;
   addDocumentEventListener: (
@@ -18,15 +24,28 @@ export type StudioWorkflowWatcherTargets = {
   getDocumentVisibilityState: () => DocumentVisibilityState;
 };
 
-export function createGlobalStudioWorkflowWatcherTargets(
-  render: RenderStudioApp,
+export type StudioWorkflowWatcherTargets = StudioWorkflowSyncAdapter &
+  StudioWorkflowRenderAdapter &
+  StudioWorkflowBrowserAdapter;
+
+export function createGlobalStudioWorkflowSyncAdapter(
   syncProjectSummary: () => Promise<boolean> = syncEngineProjectSummary,
-): StudioWorkflowWatcherTargets {
+): StudioWorkflowSyncAdapter {
   return {
     syncEditorWorkflow: syncEditorWorkflowState,
     syncProjectSummary,
     syncDocument: syncDocumentState,
-    render,
+  };
+}
+
+export function createStudioWorkflowRenderAdapter(
+  render: RenderStudioApp,
+): StudioWorkflowRenderAdapter {
+  return { render };
+}
+
+export function createGlobalStudioWorkflowBrowserAdapter(): StudioWorkflowBrowserAdapter {
+  return {
     setInterval: (callback, delay) => window.setInterval(callback, delay),
     addWindowEventListener: (type, callback) =>
       window.addEventListener(type, callback),
@@ -34,6 +53,34 @@ export function createGlobalStudioWorkflowWatcherTargets(
       document.addEventListener(type, callback),
     getDocumentVisibilityState: () => document.visibilityState,
   };
+}
+
+export function createStudioWorkflowWatcherTargets(
+  sync: StudioWorkflowSyncAdapter,
+  renderer: StudioWorkflowRenderAdapter,
+  browser: StudioWorkflowBrowserAdapter,
+): StudioWorkflowWatcherTargets {
+  return {
+    syncEditorWorkflow: sync.syncEditorWorkflow,
+    syncProjectSummary: sync.syncProjectSummary,
+    syncDocument: sync.syncDocument,
+    render: renderer.render,
+    setInterval: browser.setInterval,
+    addWindowEventListener: browser.addWindowEventListener,
+    addDocumentEventListener: browser.addDocumentEventListener,
+    getDocumentVisibilityState: browser.getDocumentVisibilityState,
+  };
+}
+
+export function createGlobalStudioWorkflowWatcherTargets(
+  render: RenderStudioApp,
+  syncProjectSummary: () => Promise<boolean> = syncEngineProjectSummary,
+): StudioWorkflowWatcherTargets {
+  return createStudioWorkflowWatcherTargets(
+    createGlobalStudioWorkflowSyncAdapter(syncProjectSummary),
+    createStudioWorkflowRenderAdapter(render),
+    createGlobalStudioWorkflowBrowserAdapter(),
+  );
 }
 
 export async function syncStudioWorkflowAndRender(

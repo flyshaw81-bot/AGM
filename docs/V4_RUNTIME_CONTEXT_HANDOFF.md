@@ -141,6 +141,9 @@
 > Generation profile targets now compose explicit summary, draft, settings, and
 > clock adapters, so profile suggestion reads can evolve separately from engine
 > setting writes and impact timestamps.
+> Studio workflow watcher targets now compose explicit sync, render, and
+> browser lifecycle adapters, so interval/focus/visibility wiring can evolve
+> separately from workflow sync services and render callbacks.
 > Please review whether each remaining global dependency is behind an explicit
 > compatibility adapter, and keep treating AGM `window.*` module mounts
 > separately from old public UI debt.
@@ -544,7 +547,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 164 test files, 517 tests.
+- `npm.cmd run test -- --run` passed: 164 test files, 518 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1476,6 +1479,11 @@ draft, settings, and clock adapters inside `generationProfileTargets.ts`;
 `createGenerationProfileTargets` composes those adapters for profile defaults,
 result sampling, engine setting writes, and impact timestamps while keeping the
 existing global factory compatible with current call sites.
+Studio workflow watcher default runtime access is now split into explicit sync,
+render, and browser lifecycle adapters inside `studioWorkflowWatcher.ts`;
+`createStudioWorkflowWatcherTargets` composes those adapters for workflow sync,
+render callbacks, interval scheduling, focus events, and visibility events
+while keeping the existing global factory compatible with current call sites.
 Direct editor targets can also compose focus, entity mutation, and biome
 mutation commands directly from an injected `EngineRuntimeContext`. The default
 adapters still delegate to current entity mutation/focus bridge helpers, but
