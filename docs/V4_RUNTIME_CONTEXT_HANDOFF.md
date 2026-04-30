@@ -67,6 +67,9 @@
 > Canvas selection highlighting now uses `CanvasSelectionHighlightTargets`, so
 > stale highlight queries, frame/map selected-state attributes, state path
 > lookup, border lookup, and parent reordering are injectable.
+> Canvas interaction geometry now uses `CanvasInteractionGeometryTargets`, so
+> frame lookup, graph dimensions, and pack reads are injected for selection and
+> paint-preview geometry.
 > Please review whether each remaining global dependency is behind an explicit
 > compatibility adapter, and keep treating AGM `window.*` module mounts
 > separately from old public UI debt.
@@ -470,7 +473,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 144 test files, 481 tests.
+- `npm.cmd run test -- --run` passed: 145 test files, 483 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1283,6 +1286,11 @@ frame/map selected-state attributes, selected state path/border lookup, and
 parent reordering. The default adapter still queries the current Studio DOM/SVG,
 while focused tests exercise highlight cleanup and selected-state application
 with injected fake elements.
+Canvas interaction geometry now has a dedicated
+`CanvasInteractionGeometryTargets` boundary for canvas frame lookup, engine
+graph dimensions, and pack reads. The default adapter still composes current
+DOM and engine canvas access helpers, while focused tests resolve selected
+states with injected frame/graph/pack fakes and no browser document.
 Direct editor targets can also compose focus, entity mutation, and biome
 mutation commands directly from an injected `EngineRuntimeContext`. The default
 adapters still delegate to current entity mutation/focus bridge helpers, but

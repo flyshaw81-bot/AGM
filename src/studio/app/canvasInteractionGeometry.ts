@@ -14,8 +14,39 @@ import {
 } from "./canvasPaintEditing";
 import { getEngineCanvasGraphSize, getEnginePack } from "./engineCanvasAccess";
 
-function getCanvasFramePoint(event: PointerEvent) {
-  const frame = document.getElementById("studioCanvasFrame");
+type CanvasInteractionFrame = Pick<
+  HTMLElement,
+  "getBoundingClientRect" | "offsetHeight" | "offsetWidth"
+>;
+
+type CanvasInteractionPack = {
+  cells?: {
+    i?: ArrayLike<number>;
+    p?: Record<number, unknown>;
+    state?: Record<number, number>;
+  };
+  states?: Record<number, { name?: string; removed?: boolean }>;
+};
+
+export type CanvasInteractionGeometryTargets = {
+  getCanvasFrame: () => CanvasInteractionFrame | null;
+  getGraphSize: typeof getEngineCanvasGraphSize;
+  getPack: () => CanvasInteractionPack | undefined;
+};
+
+export function createGlobalCanvasInteractionGeometryTargets(): CanvasInteractionGeometryTargets {
+  return {
+    getCanvasFrame: () => document.getElementById("studioCanvasFrame"),
+    getGraphSize: getEngineCanvasGraphSize,
+    getPack: () => getEnginePack() as CanvasInteractionPack | undefined,
+  };
+}
+
+function getCanvasFramePoint(
+  event: PointerEvent,
+  targets: CanvasInteractionGeometryTargets,
+) {
+  const frame = targets.getCanvasFrame();
   if (!frame) return null;
   const rect = frame.getBoundingClientRect();
   const scaleX = frame.offsetWidth / Math.max(rect.width, 1);
@@ -27,10 +58,14 @@ function getCanvasFramePoint(event: PointerEvent) {
   };
 }
 
-function getCanvasWorldPoint(event: PointerEvent, state: StudioState) {
-  const point = getCanvasFramePoint(event);
+function getCanvasWorldPoint(
+  event: PointerEvent,
+  state: StudioState,
+  targets: CanvasInteractionGeometryTargets,
+) {
+  const point = getCanvasFramePoint(event, targets);
   if (!point) return null;
-  const { width: graphWidth, height: graphHeight } = getEngineCanvasGraphSize();
+  const { width: graphWidth, height: graphHeight } = targets.getGraphSize();
   if (!graphWidth || !graphHeight) return null;
 
   return calculateCanvasWorldPoint(
@@ -41,11 +76,13 @@ function getCanvasWorldPoint(event: PointerEvent, state: StudioState) {
   );
 }
 
-function getNearestCanvasCell(event: PointerEvent, state: StudioState) {
-  const point = getCanvasWorldPoint(event, state);
-  const cells = getEnginePack()?.cells as
-    | { i?: ArrayLike<number>; p?: Record<number, unknown> }
-    | undefined;
+function getNearestCanvasCell(
+  event: PointerEvent,
+  state: StudioState,
+  targets: CanvasInteractionGeometryTargets,
+) {
+  const point = getCanvasWorldPoint(event, state, targets);
+  const cells = targets.getPack()?.cells;
   if (!point || !cells) return null;
   const nearestCell = findNearestCanvasCell(cells.i, cells.p, point);
   if (!nearestCell) return null;
@@ -59,9 +96,10 @@ function getNearestCanvasCell(event: PointerEvent, state: StudioState) {
 export function getCanvasPaintPreviewAt(
   event: PointerEvent,
   state: StudioState,
+  targets: CanvasInteractionGeometryTargets = createGlobalCanvasInteractionGeometryTargets(),
 ): CanvasPaintPreviewState | null {
   if (!isPaintCanvasTool(state.viewport.canvasTool)) return null;
-  const nearest = getNearestCanvasCell(event, state);
+  const nearest = getNearestCanvasCell(event, state, targets);
   if (!nearest) return null;
   return getCanvasPaintPreviewForCell(
     state.viewport.canvasTool,
@@ -72,18 +110,10 @@ export function getCanvasPaintPreviewAt(
 export function getCanvasSelectionAt(
   event: PointerEvent,
   state: StudioState,
+  targets: CanvasInteractionGeometryTargets = createGlobalCanvasInteractionGeometryTargets(),
 ): CanvasSelectionState | null {
-  const point = getCanvasWorldPoint(event, state);
-  const pack = getEnginePack() as
-    | {
-        cells?: {
-          i?: ArrayLike<number>;
-          p?: Record<number, unknown>;
-          state?: Record<number, number>;
-        };
-        states?: Record<number, { name?: string; removed?: boolean }>;
-      }
-    | undefined;
+  const point = getCanvasWorldPoint(event, state, targets);
+  const pack = targets.getPack();
   if (!point || !pack) return null;
 
   const cells = pack.cells;
