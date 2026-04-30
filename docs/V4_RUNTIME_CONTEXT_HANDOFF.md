@@ -837,6 +837,10 @@ Completed:
 - Added a random adapter slot to `NamesGenerator` and routed state suffix
   selection through it. Other probability helpers in names remain compatible
   with the existing seeded random behavior for now.
+- Added a heightmap-module random source shim and routed heightmap template
+  randomness through it during `generate(context)`. The public seeded Alea
+  behavior is preserved because the default runtime random service still reads
+  the active `Math.random()` function.
 - Added `EngineRuntimeContext.optionsSession`. Generation session preparation
   now receives the active context and uses `context.optionsSession` for option
   randomization when available, instead of always reaching for the global

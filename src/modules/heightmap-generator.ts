@@ -4,6 +4,7 @@ import { createTypedArray } from "../utils/arrayUtils";
 import { findGridCell } from "../utils/graphUtils";
 import { lim, minmax } from "../utils/numberUtils";
 import { getNumberInRange, P, rand } from "../utils/probabilityUtils";
+import type { EngineRandomService } from "./engine-random-service";
 import {
   type EngineRuntimeContext,
   getGlobalEngineRuntimeContext,
@@ -34,10 +35,15 @@ export class HeightmapModule {
   heights: Uint8Array | null = null;
   blobPower: number = 0;
   linePower: number = 0;
+  private randomSource?: EngineRandomService;
 
   private clearData() {
     this.heights = null;
     this.grid = null;
+  }
+
+  private random(): number {
+    return this.randomSource?.next() ?? Math.random();
   }
 
   private getBlobPower(cells: number): number {
@@ -125,7 +131,7 @@ export class HeightmapModule {
 
         for (const c of this.grid.cells.c[q]) {
           if (change[c]) continue;
-          change[c] = change[q] ** this.blobPower * (Math.random() * 0.2 + 0.9);
+          change[c] = change[q] ** this.blobPower * (this.random() * 0.2 + 0.9);
           if (change[c] > 1) queue.push(c);
         }
       }
@@ -158,13 +164,13 @@ export class HeightmapModule {
       const queue = [start];
       while (queue.length) {
         const q = queue.shift() as number;
-        h = h ** this.blobPower * (Math.random() * 0.2 + 0.9);
+        h = h ** this.blobPower * (this.random() * 0.2 + 0.9);
         if (h < 1) return;
 
         this.grid.cells.c[q].forEach((c: number) => {
           if (used[c] || this.heights === null) return;
           this.heights[c] = lim(
-            this.heights[c] - h * (Math.random() * 0.2 + 0.9),
+            this.heights[c] - h * (this.random() * 0.2 + 0.9),
           );
           used[c] = 1;
           queue.push(c);
@@ -202,7 +208,7 @@ export class HeightmapModule {
           this.grid.cells.c[cur].forEach((e: number) => {
             if (used[e]) return;
             let diff = (p[end][0] - p[e][0]) ** 2 + (p[end][1] - p[e][1]) ** 2;
-            if (Math.random() > 0.85) diff = diff / 2;
+            if (this.random() > 0.85) diff = diff / 2;
             if (diff < min) {
               min = diff;
               cur = e;
@@ -230,8 +236,8 @@ export class HeightmapModule {
         let endX: number;
 
         do {
-          endX = Math.random() * graphWidth * 0.8 + graphWidth * 0.1;
-          endY = Math.random() * graphHeight * 0.7 + graphHeight * 0.15;
+          endX = this.random() * graphWidth * 0.8 + graphWidth * 0.1;
+          endY = this.random() * graphHeight * 0.7 + graphHeight * 0.15;
           dist = Math.abs(endY - startY) + Math.abs(endX - startX);
           limit++;
         } while (
@@ -255,7 +261,7 @@ export class HeightmapModule {
         frontier.forEach((i: number) => {
           if (!this.heights) return;
           this.heights[i] = lim(
-            this.heights[i] + h * (Math.random() * 0.3 + 0.85),
+            this.heights[i] + h * (this.random() * 0.3 + 0.85),
           );
         });
         h = h ** this.linePower - 1;
@@ -315,7 +321,7 @@ export class HeightmapModule {
           this.grid.cells.c[cur].forEach((e: number) => {
             if (used[e]) return;
             let diff = (p[end][0] - p[e][0]) ** 2 + (p[end][1] - p[e][1]) ** 2;
-            if (Math.random() > 0.8) diff = diff / 2;
+            if (this.random() > 0.8) diff = diff / 2;
             if (diff < min) {
               min = diff;
               cur = e;
@@ -349,8 +355,8 @@ export class HeightmapModule {
 
         limit = 0;
         do {
-          endX = Math.random() * graphWidth * 0.8 + graphWidth * 0.1;
-          endY = Math.random() * graphHeight * 0.7 + graphHeight * 0.15;
+          endX = this.random() * graphWidth * 0.8 + graphWidth * 0.1;
+          endY = this.random() * graphHeight * 0.7 + graphHeight * 0.15;
           dist = Math.abs(endY - startY) + Math.abs(endX - startX);
           limit++;
         } while (
@@ -372,7 +378,7 @@ export class HeightmapModule {
         i++;
         frontier.forEach((i: number) => {
           this.heights![i] = lim(
-            this.heights![i] - h * (Math.random() * 0.3 + 0.85),
+            this.heights![i] - h * (this.random() * 0.3 + 0.85),
           );
         });
         h = h ** this.linePower - 1;
@@ -421,17 +427,17 @@ export class HeightmapModule {
     const used = new Uint8Array(this.heights.length);
     const vert = direction === "vertical";
     const startX = vert
-      ? Math.floor(Math.random() * graphWidth * 0.4 + graphWidth * 0.3)
+      ? Math.floor(this.random() * graphWidth * 0.4 + graphWidth * 0.3)
       : 5;
     const startY = vert
       ? 5
-      : Math.floor(Math.random() * graphHeight * 0.4 + graphHeight * 0.3);
+      : Math.floor(this.random() * graphHeight * 0.4 + graphHeight * 0.3);
     const endX = vert
       ? Math.floor(
           graphWidth -
             startX -
             graphWidth * 0.1 +
-            Math.random() * graphWidth * 0.2,
+            this.random() * graphWidth * 0.2,
         )
       : graphWidth - 5;
     const endY = vert
@@ -440,7 +446,7 @@ export class HeightmapModule {
           graphHeight -
             startY -
             graphHeight * 0.1 +
-            Math.random() * graphHeight * 0.2,
+            this.random() * graphHeight * 0.2,
         );
 
     const start = findGridCell(startX, startY, this.grid);
@@ -454,7 +460,7 @@ export class HeightmapModule {
         let min = Infinity;
         this.grid.cells.c[cur].forEach((e: number) => {
           let diff = (p[end][0] - p[e][0]) ** 2 + (p[end][1] - p[e][1]) ** 2;
-          if (Math.random() > 0.8) diff = diff / 2;
+          if (this.random() > 0.8) diff = diff / 2;
           if (diff < min) {
             min = diff;
             cur = e;
@@ -601,16 +607,22 @@ export class HeightmapModule {
     const shouldTime = context.timing.shouldTime;
     shouldTime && console.time("defineHeightmap");
     const id = context.generationSettings.heightmapTemplateId ?? "";
+    const previousRandomSource = this.randomSource;
+    this.randomSource = context.random;
     Math.random = Alea(context.seed);
     const isTemplate = id in heightmapTemplates;
 
-    const heights = isTemplate
-      ? this.fromTemplate(graph, id)
-      : await this.fromPrecreated(graph, id);
-    shouldTime && console.timeEnd("defineHeightmap");
+    try {
+      const heights = isTemplate
+        ? this.fromTemplate(graph, id)
+        : await this.fromPrecreated(graph, id);
+      shouldTime && console.timeEnd("defineHeightmap");
 
-    this.clearData();
-    return heights as Uint8Array;
+      this.clearData();
+      return heights as Uint8Array;
+    } finally {
+      this.randomSource = previousRandomSource;
+    }
   }
 
   fromTemplate(graph: any, id: string): Uint8Array | null {
