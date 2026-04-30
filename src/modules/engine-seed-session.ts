@@ -1,4 +1,5 @@
 import { generateSeed } from "../utils/probabilityUtils";
+import type { EngineRuntimeContext } from "./engine-runtime-context";
 
 export type EngineSeedHistoryEntry = {
   seed?: string;
@@ -91,6 +92,33 @@ export function createGlobalSeedSessionTargets(): EngineSeedSessionTargets {
     },
     createSeed: generateSeed,
   };
+}
+
+export function createRuntimeSeedSessionTargets(
+  context: EngineRuntimeContext,
+  fallback: EngineSeedSessionTargets = createGlobalSeedSessionTargets(),
+): EngineSeedSessionTargets {
+  return {
+    hasHistory: fallback.hasHistory,
+    getSearchParams: fallback.getSearchParams,
+    setSeed: (nextSeed) => {
+      context.seed = nextSeed;
+      fallback.setSeed(nextSeed);
+    },
+    setOptionsSeed: (nextSeed) => {
+      context.options.seed = nextSeed;
+      fallback.setOptionsSeed(nextSeed);
+    },
+    setRandomGenerator: fallback.setRandomGenerator,
+    createSeed: () => String(Math.floor(context.random.next() * 1e9)),
+  };
+}
+
+export function createRuntimeSeedSession(
+  context: EngineRuntimeContext,
+  targets: EngineSeedSessionTargets = createRuntimeSeedSessionTargets(context),
+): EngineSeedSessionModule {
+  return new EngineSeedSessionModule(targets);
 }
 
 if (typeof window !== "undefined") {

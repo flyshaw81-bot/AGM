@@ -1771,6 +1771,12 @@ also writes runtime-owned values to `context.options`,
 compatibility writer. This keeps current UI behavior stable while making the
 next replacement step narrower: replace individual compatibility option writer
 methods with typed runtime settings commands.
+Seed session now exposes `createRuntimeSeedSession(context)` and runtime
+targets that write resolved seeds to `context.seed` and `context.options.seed`
+before delegating to the compatibility seed targets. Runtime-generated seeds
+use `context.random.next()`. The remaining compatibility pieces are the URL /
+history reads, `optionsSeed` input synchronization, and seeded `Math.random`
+installation.
 
 ## Next Recommended Slice
 

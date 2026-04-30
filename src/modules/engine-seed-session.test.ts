@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
+import type { EngineRuntimeContext } from "./engine-runtime-context";
 import {
+  createRuntimeSeedSession,
+  createRuntimeSeedSessionTargets,
   EngineSeedSessionModule,
   type EngineSeedSessionTargets,
   resolveEngineSeed,
@@ -62,6 +65,16 @@ function createTargets(
   };
 }
 
+function createRuntimeContext(): EngineRuntimeContext {
+  return {
+    seed: "initial",
+    options: {},
+    random: {
+      next: () => 0.123456789,
+    },
+  } as unknown as EngineRuntimeContext;
+}
+
 describe("EngineSeedSessionModule", () => {
   it("resolves seeds through injected targets", () => {
     const targets = createTargets({
@@ -80,5 +93,23 @@ describe("EngineSeedSessionModule", () => {
     expect(targets.setSeed).toHaveBeenCalledWith("fixed-seed");
     expect(targets.setOptionsSeed).toHaveBeenCalledWith("fixed-seed");
     expect(targets.setRandomGenerator).toHaveBeenCalledWith("fixed-seed");
+  });
+
+  it("writes resolved seeds into the runtime context before delegating", () => {
+    const context = createRuntimeContext();
+    const fallback = createTargets();
+    const session = createRuntimeSeedSession(
+      context,
+      createRuntimeSeedSessionTargets(context, fallback),
+    );
+
+    const seed = session.apply();
+
+    expect(seed).toBe("123456789");
+    expect(context.seed).toBe("123456789");
+    expect(context.options.seed).toBe("123456789");
+    expect(fallback.setSeed).toHaveBeenCalledWith("123456789");
+    expect(fallback.setOptionsSeed).toHaveBeenCalledWith("123456789");
+    expect(fallback.setRandomGenerator).toHaveBeenCalledWith("123456789");
   });
 });

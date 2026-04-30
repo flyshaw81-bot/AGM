@@ -73,7 +73,10 @@ import {
   type EngineUnitSettings,
   type EngineWorldSettings,
 } from "./engine-runtime-settings";
-import type { EngineSeedSessionModule as EngineSeedSessionService } from "./engine-seed-session";
+import {
+  createRuntimeSeedSession,
+  type EngineSeedSessionModule as EngineSeedSessionService,
+} from "./engine-seed-session";
 import {
   createGlobalStateService,
   type EngineStateService,
@@ -172,6 +175,7 @@ export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
   context.burgs = createRuntimeBurgService(context);
   context.routes = createRuntimeRouteService(context);
   context.mapStore = createRuntimeMapStore(context, () => context);
+  context.seedSession = createRuntimeSeedSession(context);
   context.gridSession = createRuntimeGridSessionService(context);
   context.optionsSession = createRuntimeOptionsSession(context);
   return context;
