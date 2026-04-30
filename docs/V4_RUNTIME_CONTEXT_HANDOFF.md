@@ -824,6 +824,10 @@ Completed:
   creation, request-provided graph selection, and stale heightmap cleanup now
   live behind this runtime service. The default service still mutates
   `globalThis.grid` as compatibility debt.
+- `engine-generation-session-services.ts` now also exposes
+  `createGridSessionService(targets)`, so grid regeneration checks, grid
+  creation, seed/dimension reads, and global grid writes are separated from the
+  core grid-session behavior.
 - Added `EngineRuntimeContext.sessionLifecycle`. Active-view reset during
   generation preparation now flows through `context.sessionLifecycle`, with the
   default implementation still delegating to `invokeActiveZooming()` as
@@ -832,6 +836,9 @@ Completed:
   factory for session preparation. This keeps fallback seed/graph/options/grid
   services centralized instead of creating them piecemeal inside
   `prepare(...)`.
+- Added `createGenerationSessionAdapter(createFallbackServices)`, so session
+  preparation orchestration can be tested with injected fallback services while
+  `createGlobalGenerationSessionAdapter()` remains the compatibility factory.
 - Moved generation-session service types and factories into
   `src/modules/engine-generation-session-services.ts`. V4 should review this
   module as the session-preparation compatibility boundary.
@@ -1002,7 +1009,9 @@ adapters with focused tests:
 - `engine-climate-context.ts` still reads climate controls and public runtime
   climate globals.
 - `engine-generation-session-services.ts` still wraps public-compatible seed,
-  graph, option, grid, and active-view session behavior.
+  graph, option, grid, and active-view session behavior through global
+  factories, but the grid session and session adapter core now consume explicit
+  injected targets/factories.
 - `engine-map-store.ts` default adapter still mutates global `grid`, `pack`, and
   `notes`, but map-store callers can now inject a non-global runtime adapter.
 - `engine-note-service.ts` default adapter still backs note persistence with

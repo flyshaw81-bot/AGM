@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  createGenerationSessionAdapter,
   createGlobalGenerationSessionAdapter,
   createGlobalGenerationSessionServices,
+  createGridSessionService,
 } from "./engine-generation-session-services";
 import { EngineOptionsSession } from "./engine-options-session";
 
@@ -29,6 +31,53 @@ describe("createGlobalGenerationSessionServices", () => {
     expect(services.optionsSession).toBe(EngineOptionsSession);
     expect(typeof services.gridSession.prepareGrid).toBe("function");
     expect(typeof services.sessionLifecycle.resetActiveView).toBe("function");
+  });
+
+  it("composes grid session service from injected targets", () => {
+    const currentGrid = {
+      cells: { h: new Uint8Array([1]) },
+    } as typeof grid;
+    const generatedGrid = {
+      cells: { i: [1] },
+    } as typeof grid;
+    const targets = {
+      getGrid: vi.fn(() => currentGrid),
+      setGrid: vi.fn(),
+      getSeed: vi.fn(() => "target-seed"),
+      getGraphWidth: vi.fn(() => 900),
+      getGraphHeight: vi.fn(() => 600),
+      generateGrid: vi.fn(() => generatedGrid),
+      shouldRegenerateGrid: vi.fn(() => true),
+    };
+
+    createGridSessionService(targets).prepareGrid();
+
+    expect(targets.shouldRegenerateGrid).toHaveBeenCalledWith(
+      currentGrid,
+      Number.NaN,
+      900,
+      600,
+    );
+    expect(targets.generateGrid).toHaveBeenCalledWith("target-seed", 900, 600);
+    expect(targets.setGrid).toHaveBeenCalledWith(generatedGrid);
+  });
+
+  it("clears injected heightmap cells when grid regeneration is not required", () => {
+    const currentGrid = {
+      cells: { h: new Uint8Array([1]) },
+    } as typeof grid;
+
+    createGridSessionService({
+      getGrid: () => currentGrid,
+      setGrid: vi.fn(),
+      getSeed: () => "target-seed",
+      getGraphWidth: () => 900,
+      getGraphHeight: () => 600,
+      generateGrid: vi.fn(),
+      shouldRegenerateGrid: () => false,
+    }).prepareGrid({ seed: "target-seed" });
+
+    expect(currentGrid.cells.h).toBeUndefined();
   });
 });
 
@@ -78,6 +127,52 @@ describe("createGlobalGenerationSessionAdapter", () => {
       "options",
       "grid:runtime-seed",
     ]);
+  });
+
+  it("composes generation session adapter with an injected fallback factory", () => {
+    const calls: string[] = [];
+    const createFallbackServices = vi.fn(() => ({
+      sessionLifecycle: {
+        resetActiveView: () => {
+          calls.push("reset");
+        },
+      },
+      seedSession: {
+        apply: (seed?: string) => {
+          calls.push(`seed:${seed}`);
+          return seed || "";
+        },
+        resolve: (seed?: string) => seed || "",
+      },
+      graphSession: {
+        applyGraphSize: () => {
+          calls.push("graph");
+        },
+      },
+      optionsSession: {
+        randomizeOptions: () => {
+          calls.push("options");
+        },
+      },
+      gridSession: {
+        prepareGrid: (request?: { seed?: string }) => {
+          calls.push(`grid:${request?.seed}`);
+        },
+      },
+    }));
+
+    createGenerationSessionAdapter(createFallbackServices as never).prepare({
+      seed: "fallback-seed",
+    });
+
+    expect(calls).toEqual([
+      "reset",
+      "seed:fallback-seed",
+      "graph",
+      "options",
+      "grid:fallback-seed",
+    ]);
+    expect(createFallbackServices).toHaveBeenCalledTimes(1);
   });
 
   it("falls back to compatibility services and clears stale heightmap cells", () => {

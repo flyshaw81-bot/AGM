@@ -16,6 +16,25 @@ export type EngineGridSessionService = {
   prepareGrid: (request?: EngineGenerationSessionRequest) => void;
 };
 
+export type EngineGridSessionTargets = {
+  getGrid: () => typeof grid;
+  setGrid: (nextGrid: typeof grid) => void;
+  getSeed: () => string;
+  getGraphWidth: () => number;
+  getGraphHeight: () => number;
+  generateGrid: (
+    seed: string,
+    graphWidth: number,
+    graphHeight: number,
+  ) => typeof grid;
+  shouldRegenerateGrid: (
+    currentGrid: typeof grid,
+    seed: number,
+    graphWidth: number,
+    graphHeight: number,
+  ) => boolean;
+};
+
 export type EngineGenerationSessionLifecycle = {
   resetActiveView: () => void;
 };
@@ -35,31 +54,49 @@ export type EngineGenerationSessionAdapter = {
   ) => void;
 };
 
-export function createGlobalGridSessionService(): EngineGridSessionService {
+export function createGridSessionService(
+  targets: EngineGridSessionTargets,
+): EngineGridSessionService {
   return {
     prepareGrid: (request = {}) => {
       const precreatedSeed = request.seed;
+      const expectedSeed = Number(precreatedSeed);
 
       if (
-        shouldRegenerateGrid(
-          globalThis.grid,
-          precreatedSeed as any,
-          globalThis.graphWidth,
-          globalThis.graphHeight,
+        targets.shouldRegenerateGrid(
+          targets.getGrid(),
+          expectedSeed,
+          targets.getGraphWidth(),
+          targets.getGraphHeight(),
         )
       ) {
-        globalThis.grid =
+        targets.setGrid(
           request.graph ||
-          generateGrid(
-            globalThis.seed,
-            globalThis.graphWidth,
-            globalThis.graphHeight,
-          );
+            targets.generateGrid(
+              targets.getSeed(),
+              targets.getGraphWidth(),
+              targets.getGraphHeight(),
+            ),
+        );
       } else {
-        delete globalThis.grid.cells.h;
+        delete targets.getGrid().cells.h;
       }
     },
   };
+}
+
+export function createGlobalGridSessionService(): EngineGridSessionService {
+  return createGridSessionService({
+    getGrid: () => globalThis.grid,
+    setGrid: (nextGrid) => {
+      globalThis.grid = nextGrid;
+    },
+    getSeed: () => globalThis.seed,
+    getGraphWidth: () => globalThis.graphWidth,
+    getGraphHeight: () => globalThis.graphHeight,
+    generateGrid,
+    shouldRegenerateGrid,
+  });
 }
 
 export function createGlobalGenerationSessionLifecycle(): EngineGenerationSessionLifecycle {
@@ -80,13 +117,15 @@ export function createGlobalGenerationSessionServices(): EngineGenerationSession
   };
 }
 
-export function createGlobalGenerationSessionAdapter(): EngineGenerationSessionAdapter {
+export function createGenerationSessionAdapter(
+  createFallbackServices: () => EngineGenerationSessionServices,
+): EngineGenerationSessionAdapter {
   return {
     prepare: (request = {}, context) => {
       const precreatedSeed = request.seed;
       let fallback: EngineGenerationSessionServices | undefined;
       const getFallback = () => {
-        fallback ??= createGlobalGenerationSessionServices();
+        fallback ??= createFallbackServices();
         return fallback;
       };
       const services = {
@@ -105,4 +144,8 @@ export function createGlobalGenerationSessionAdapter(): EngineGenerationSessionA
       services.gridSession.prepareGrid(request);
     },
   };
+}
+
+export function createGlobalGenerationSessionAdapter(): EngineGenerationSessionAdapter {
+  return createGenerationSessionAdapter(createGlobalGenerationSessionServices);
 }
