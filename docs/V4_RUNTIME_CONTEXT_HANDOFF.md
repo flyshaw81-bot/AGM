@@ -21,6 +21,9 @@
 > compose injected runtime summaries without touching the default global bridge.
 > Draft load/import now also uses injected storage and file-text targets instead
 > of direct `localStorage`/`File.text()` access on the project adapter path.
+> Studio shell import targets now pass AGM draft/rules file reads through the
+> same injected file-text boundary instead of binding shell imports directly to
+> browser `File.text()`.
 > Please review whether each remaining global dependency is behind an explicit
 > compatibility adapter, and keep treating AGM `window.*` module mounts
 > separately from old public UI debt.
@@ -424,7 +427,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 133 test files, 434 tests.
+- `npm.cmd run test -- --run` passed: 133 test files, 435 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,

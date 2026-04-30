@@ -13,8 +13,10 @@ import type {
   WorldDocumentDraft,
 } from "../state/worldDocumentDraft";
 import {
+  createGlobalWorldDocumentDraftImportTargets,
   importAgmDocumentDraft,
   importAgmRulesPackDraft,
+  type WorldDocumentDraftImportTargets,
 } from "../state/worldDocumentDraft";
 import type { CanvasPaintPreviewState, StudioState } from "../types";
 import {
@@ -147,10 +149,12 @@ export function createGlobalStudioShellEditorAdapter(): StudioShellEditorAdapter
   };
 }
 
-export function createGlobalStudioShellDraftAdapter(): StudioShellDraftAdapter {
+export function createGlobalStudioShellDraftAdapter(
+  importTargets: WorldDocumentDraftImportTargets = createGlobalWorldDocumentDraftImportTargets(),
+): StudioShellDraftAdapter {
   return {
-    importAgmDraft: importAgmDocumentDraft,
-    importRulesPack: importAgmRulesPackDraft,
+    importAgmDraft: (file) => importAgmDocumentDraft(file, importTargets),
+    importRulesPack: (file) => importAgmRulesPackDraft(file, importTargets),
     applyRulesPack: applyRulesPackDraft,
   };
 }

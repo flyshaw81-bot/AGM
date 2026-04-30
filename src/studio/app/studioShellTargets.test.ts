@@ -12,7 +12,10 @@ import type {
   CanvasToolMode,
   StudioState,
 } from "../types";
-import { createStudioShellTargets } from "./studioShellTargets";
+import {
+  createGlobalStudioShellDraftAdapter,
+  createStudioShellTargets,
+} from "./studioShellTargets";
 
 describe("createStudioShellTargets", () => {
   it("composes shell targets from injected app adapters", async () => {
@@ -88,5 +91,61 @@ describe("createStudioShellTargets", () => {
     expect(applyCanvasPaintPreview).toHaveBeenCalledWith(state, preview);
     targets.persistTheme("night");
     expect(persistTheme).toHaveBeenCalledWith("night");
+  });
+});
+
+describe("createGlobalStudioShellDraftAdapter", () => {
+  it("imports AGM drafts and rules through injected file text targets", async () => {
+    const draftFile = new File(["ignored"], "world.agm");
+    const rulesFile = new File(["ignored"], "rules.agm-rules.json");
+    const readFileText = vi
+      .fn()
+      .mockResolvedValueOnce(
+        JSON.stringify({
+          schema: "agm.document.v0",
+          document: {
+            name: "Northwatch",
+            gameProfile: "strategy",
+            designIntent: "",
+          },
+          world: {},
+        }),
+      )
+      .mockResolvedValueOnce(
+        JSON.stringify({
+          schema: "agm.rules.v0",
+          version: 1,
+          source: "agm-biome-summary",
+          biomeRules: [],
+          resourceTags: [],
+          provinceStructure: [],
+          resourceRules: [],
+          profileRules: {
+            profile: "rpg",
+            profileLabel: "RPG world",
+            priorities: [],
+            sourceFields: [],
+          },
+          weights: {
+            defaultRuleWeight: 1,
+            ruleWeightRange: { min: 0, max: 5 },
+            sourceFields: [],
+          },
+        }),
+      );
+
+    const adapter = createGlobalStudioShellDraftAdapter({
+      getStorageItem: vi.fn(),
+      readFileText,
+    });
+
+    await expect(adapter.importAgmDraft(draftFile)).resolves.toMatchObject({
+      document: { name: "Northwatch" },
+    });
+    await expect(adapter.importRulesPack(rulesFile)).resolves.toMatchObject({
+      schema: "agm.rules.v0",
+    });
+    expect(readFileText).toHaveBeenNthCalledWith(1, draftFile);
+    expect(readFileText).toHaveBeenNthCalledWith(2, rulesFile);
   });
 });

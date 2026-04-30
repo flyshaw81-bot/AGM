@@ -300,7 +300,9 @@ export function exportAgmRulesPackDraft(
   );
 }
 
+export type { WorldDocumentDraftImportTargets } from "./worldDocumentDraftImport";
 export {
+  createGlobalWorldDocumentDraftImportTargets,
   importAgmDocumentDraft,
   importAgmRulesPackDraft,
   loadAgmDocumentDraft,
