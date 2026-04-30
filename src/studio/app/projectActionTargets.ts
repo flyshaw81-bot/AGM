@@ -7,8 +7,12 @@ import {
   runEngineProjectAction,
 } from "../bridge/engineActions";
 import type { StudioShellEventHandlers } from "../layout/shellEvents";
-import type { AgmDocumentDraft } from "../state/worldDocumentDraft";
+import type {
+  AgmDocumentDraft,
+  WorldDocumentDraftTargets,
+} from "../state/worldDocumentDraft";
 import {
+  createGlobalWorldDocumentDraftTargets,
   exportAgmDocumentDraft,
   exportAgmRulesPackDraft,
   exportBiomeMapDraft,
@@ -205,29 +209,56 @@ export function createGlobalProjectSummaryAdapter(): ProjectSummaryAdapter {
 }
 
 export function createGlobalProjectDraftAdapter(): ProjectDraftAdapter {
+  return createProjectDraftAdapter(createGlobalWorldDocumentDraftTargets());
+}
+
+export function createProjectDraftAdapter(
+  targets: WorldDocumentDraftTargets,
+): ProjectDraftAdapter {
   return {
-    saveAgmDraft: saveAgmDocumentDraft,
-    exportAgmDraft: exportAgmDocumentDraft,
+    saveAgmDraft: (state, projectSummary) =>
+      saveAgmDocumentDraft(state, projectSummary, targets),
+    exportAgmDraft: (state, projectSummary) =>
+      exportAgmDocumentDraft(state, projectSummary, targets),
     loadAgmDraft: loadAgmDocumentDraft,
     restoreAgmDraft: restoreAgmDocumentState,
   };
 }
 
 export function createGlobalProjectExportAdapter(): ProjectExportAdapter {
+  return createProjectExportAdapter(createGlobalWorldDocumentDraftTargets());
+}
+
+export function createProjectExportAdapter(
+  targets: WorldDocumentDraftTargets,
+): ProjectExportAdapter {
   return {
-    exportWorldPackage: exportWorldPackageDraft,
-    exportResourceMap: exportResourceMapDraft,
-    exportProvinceMap: exportProvinceMapDraft,
-    exportBiomeMap: exportBiomeMapDraft,
-    exportTiledMap: exportTiledMapDraft,
-    exportGeoJsonMapLayers: exportGeoJsonMapLayersDraft,
-    exportHeightmapMetadata: exportHeightmapMetadataDraft,
-    exportHeightfield: exportHeightfieldDraft,
-    exportHeightmapPng: exportHeightmapPngDraft,
-    exportHeightmapRaw16: exportHeightmapRaw16Draft,
-    exportEngineManifest: exportEngineManifestDraft,
-    exportEnginePackage: exportEnginePackageDraft,
-    exportRulesPack: exportAgmRulesPackDraft,
+    exportWorldPackage: (state, projectSummary) =>
+      exportWorldPackageDraft(state, projectSummary, targets),
+    exportResourceMap: (state, projectSummary) =>
+      exportResourceMapDraft(state, projectSummary, targets),
+    exportProvinceMap: (state, projectSummary) =>
+      exportProvinceMapDraft(state, projectSummary, targets),
+    exportBiomeMap: (state, projectSummary) =>
+      exportBiomeMapDraft(state, projectSummary, targets),
+    exportTiledMap: (state, projectSummary) =>
+      exportTiledMapDraft(state, projectSummary, targets),
+    exportGeoJsonMapLayers: (state, projectSummary) =>
+      exportGeoJsonMapLayersDraft(state, projectSummary, targets),
+    exportHeightmapMetadata: (state, projectSummary) =>
+      exportHeightmapMetadataDraft(state, projectSummary, targets),
+    exportHeightfield: (state, projectSummary) =>
+      exportHeightfieldDraft(state, projectSummary, targets),
+    exportHeightmapPng: (state, projectSummary) =>
+      exportHeightmapPngDraft(state, projectSummary, targets),
+    exportHeightmapRaw16: (state, projectSummary) =>
+      exportHeightmapRaw16Draft(state, projectSummary, targets),
+    exportEngineManifest: (state, projectSummary) =>
+      exportEngineManifestDraft(state, projectSummary, targets),
+    exportEnginePackage: (state, projectSummary) =>
+      exportEnginePackageDraft(state, projectSummary, targets),
+    exportRulesPack: (state, projectSummary) =>
+      exportAgmRulesPackDraft(state, projectSummary, targets),
   };
 }
 
