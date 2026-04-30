@@ -59,6 +59,33 @@ function createStatesContext(): EngineRuntimeContext {
 }
 
 describe("StatesModule", () => {
+  it("uses the runtime random service for state expansionism", () => {
+    const context = createStatesContext();
+    context.random = {
+      next: () => 0,
+    };
+    context.generationSettings.stateSizeVariety = 2;
+    context.pack.burgs = [
+      { i: 0 },
+      { i: 1, capital: true, cell: 0, name: "Northreach", culture: 1 },
+    ] as any;
+    context.pack.cultures = [
+      { i: 0, type: "Generic" },
+      { i: 1, type: "Generic" },
+    ] as any;
+
+    const states = (
+      new StatesModule() as unknown as {
+        createStates: (context: EngineRuntimeContext) => State[];
+      }
+    ).createStates(context);
+
+    expect(states[1]).toMatchObject({
+      expansionism: 1,
+      name: "C1 State 1",
+    });
+  });
+
   it("generates campaign names from the runtime naming service", () => {
     const context = createStatesContext();
     const state = {

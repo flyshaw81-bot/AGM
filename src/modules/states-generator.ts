@@ -60,7 +60,7 @@ export class StatesModule {
     pack.burgs.forEach((burg) => {
       if (!burg.i || !burg.capital) return;
 
-      const expansionism = rn(Math.random() * sizeVariety + 1, 1);
+      const expansionism = rn(context.random.next() * sizeVariety + 1, 1);
       const basename =
         burg.name!.length < 9 && each5th(burg.cell)
           ? burg.name!

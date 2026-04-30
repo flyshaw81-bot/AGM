@@ -825,6 +825,9 @@ Completed:
   expansionism randomness through `context.random.next()`. The default service
   still preserves current seeded `Math.random()` behavior, but context-routed
   culture generation no longer calls it directly on that path.
+- Routed state expansionism randomness through the same runtime random service.
+  This keeps the seeded default behavior while moving another context-aware
+  generation step off direct `Math.random()` calls.
 - Added `EngineRuntimeContext.optionsSession`. Generation session preparation
   now receives the active context and uses `context.optionsSession` for option
   randomization when available, instead of always reaching for the global
