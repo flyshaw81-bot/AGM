@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createGlobalMapStore } from "./engine-map-store";
+import { createGlobalMapStore, createMapStore } from "./engine-map-store";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
 
 const originalStructuredClone = globalThis.structuredClone;
@@ -95,5 +95,55 @@ describe("createGlobalMapStore", () => {
     const store = createGlobalMapStore(() => context);
 
     expect(store.getCurrentContext()).toBe(context);
+  });
+
+  it("can run against an injected runtime adapter without mutating map globals", () => {
+    const originalGlobalPack = { cells: { i: [99] } } as typeof pack;
+    const localGrid = { cells: { i: [1] } } as typeof grid;
+    const localPack = { cells: { i: [2] } } as typeof pack;
+    const localNotes = [{ id: "n3", name: "Note", legend: "Text" }];
+    const nextGrid = { cells: { i: [3] } } as typeof grid;
+    const adapterState = {
+      grid: localGrid,
+      pack: localPack,
+      notes: localNotes,
+    };
+    globalThis.pack = originalGlobalPack;
+    const store = createMapStore(
+      {
+        getGrid: () => adapterState.grid,
+        getPack: () => adapterState.pack,
+        getNotes: () => adapterState.notes,
+        setGrid: (next) => {
+          adapterState.grid = next;
+        },
+        setPack: (next) => {
+          adapterState.pack = next;
+        },
+        setNotes: (next) => {
+          adapterState.notes = next;
+        },
+        createGrid: () => nextGrid,
+      },
+      () => ({}) as EngineRuntimeContext,
+    );
+
+    expect(store.createSnapshot()).toEqual({
+      grid: localGrid,
+      pack: localPack,
+      notes: localNotes,
+    });
+    store.resetPackForGeneration();
+    expect(adapterState.pack).toEqual({});
+    expect(globalThis.pack).toBe(originalGlobalPack);
+    store.resetForResample({
+      grid: localGrid,
+      pack: localPack,
+      notes: localNotes,
+    });
+    expect(adapterState.grid).toBe(nextGrid);
+    expect(adapterState.pack).toEqual({});
+    expect(adapterState.notes).toBe(localNotes);
+    expect(globalThis.pack).toBe(originalGlobalPack);
   });
 });

@@ -418,7 +418,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 129 test files, 407 tests.
+- `npm.cmd run test -- --run` passed: 129 test files, 408 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -670,10 +670,12 @@ Completed:
   tests for explicit runtime context forwarding, fallback current-context
   forwarding, and no-argument graph/ruler public calls.
 - Moved map snapshot/reset behavior into `src/modules/engine-map-store.ts`.
-  `EngineMapStore` still mutates global `grid`, `pack`, and `notes` for current
-  generation/resample compatibility, but those writes are no longer inline in
-  `engine-runtime-context.ts`. Added focused tests for structured snapshots,
-  generation pack reset, resample reset, and injected current-context access.
+  `EngineMapStore` now composes an injectable runtime adapter for grid/pack/note
+  reads and writes. The default adapter still mutates global `grid`, `pack`, and
+  `notes` for current generation/resample compatibility, but injected stores can
+  run without touching `globalThis.pack`. Added focused tests for structured
+  snapshots, generation pack reset, resample reset, injected current-context
+  access, and no-global injected adapter behavior.
 - Moved note persistence into `src/modules/engine-note-service.ts`.
   `EngineNoteService` still backs onto global `notes`, but `all`, `push`,
   `find`, `findIndex`, `removeWhere`, and `splice` are no longer inline in
@@ -785,7 +787,8 @@ adapters with focused tests:
   climate globals.
 - `engine-generation-session-services.ts` still wraps public-compatible seed,
   graph, option, grid, and active-view session behavior.
-- `engine-map-store.ts` still mutates global `grid`, `pack`, and `notes`.
+- `engine-map-store.ts` default adapter still mutates global `grid`, `pack`, and
+  `notes`, but map-store callers can now inject a non-global runtime adapter.
 - `engine-note-service.ts` still backs note persistence with global `notes`.
 - `engine-notice-service.ts` still delegates blocking/error modals to the
   current jQuery dialog host.

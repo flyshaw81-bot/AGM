@@ -16,23 +16,61 @@ export type EngineMapStore = {
   getCurrentContext: () => EngineRuntimeContext;
 };
 
-export function createGlobalMapStore(
+export type EngineMapStoreRuntimeAdapter = {
+  getGrid: () => typeof grid;
+  getPack: () => PackedGraph;
+  getNotes: () => EngineNote[];
+  setGrid: (nextGrid: typeof grid) => void;
+  setPack: (nextPack: PackedGraph) => void;
+  setNotes: (nextNotes: EngineNote[]) => void;
+  createGrid: () => typeof grid;
+};
+
+export function createGlobalMapStoreRuntimeAdapter(): EngineMapStoreRuntimeAdapter {
+  return {
+    getGrid: () => grid,
+    getPack: () => pack,
+    getNotes: () => notes,
+    setGrid: (nextGrid) => {
+      grid = nextGrid;
+    },
+    setPack: (nextPack) => {
+      pack = nextPack;
+    },
+    setNotes: (nextNotes) => {
+      notes = nextNotes;
+    },
+    createGrid: () => generateGrid(seed, graphWidth, graphHeight),
+  };
+}
+
+export function createMapStore(
+  runtimeAdapter: EngineMapStoreRuntimeAdapter,
   getCurrentContext: () => EngineRuntimeContext,
 ): EngineMapStore {
   return {
     createSnapshot: () => ({
-      grid: structuredClone(grid),
-      pack: structuredClone(pack),
-      notes: structuredClone(notes),
+      grid: structuredClone(runtimeAdapter.getGrid()),
+      pack: structuredClone(runtimeAdapter.getPack()),
+      notes: structuredClone(runtimeAdapter.getNotes()),
     }),
     resetPackForGeneration: () => {
-      pack = {} as PackedGraph;
+      runtimeAdapter.setPack({} as PackedGraph);
     },
     resetForResample: (snapshot) => {
-      grid = generateGrid(seed, graphWidth, graphHeight);
-      pack = {} as PackedGraph;
-      notes = snapshot.notes;
+      runtimeAdapter.setGrid(runtimeAdapter.createGrid());
+      runtimeAdapter.setPack({} as PackedGraph);
+      runtimeAdapter.setNotes(snapshot.notes);
     },
     getCurrentContext,
   };
+}
+
+export function createGlobalMapStore(
+  getCurrentContext: () => EngineRuntimeContext,
+): EngineMapStore {
+  return createMapStore(
+    createGlobalMapStoreRuntimeAdapter(),
+    getCurrentContext,
+  );
 }
