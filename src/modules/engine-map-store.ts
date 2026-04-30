@@ -101,3 +101,19 @@ export function createGlobalMapStore(
     getCurrentContext,
   );
 }
+
+export function createRuntimeMapStore(
+  context: EngineRuntimeContext,
+  getCurrentContext: () => EngineRuntimeContext,
+  createGrid: RuntimeMapStoreGridFactory = () =>
+    generateGrid(
+      context.seed,
+      Number(context.worldSettings.graphWidth) || 0,
+      Number(context.worldSettings.graphHeight) || 0,
+    ),
+): EngineMapStore {
+  return createMapStore(
+    createRuntimeMapStoreRuntimeAdapter(context, createGrid),
+    getCurrentContext,
+  );
+}

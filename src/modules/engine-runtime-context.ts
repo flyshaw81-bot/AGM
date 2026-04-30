@@ -34,7 +34,11 @@ import {
   createGlobalLogService,
   type EngineLogService,
 } from "./engine-log-service";
-import { createGlobalMapStore, type EngineMapStore } from "./engine-map-store";
+import {
+  createGlobalMapStore,
+  createRuntimeMapStore,
+  type EngineMapStore,
+} from "./engine-map-store";
 import {
   createGlobalNamingService,
   type EngineNamingService,
@@ -172,5 +176,6 @@ export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
   };
   context.burgs = createRuntimeBurgService(context);
   context.routes = createRuntimeRouteService(context);
+  context.mapStore = createRuntimeMapStore(context, () => context);
   return context;
 }

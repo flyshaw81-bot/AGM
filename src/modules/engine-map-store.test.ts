@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createGlobalMapStore,
   createMapStore,
+  createRuntimeMapStore,
   createRuntimeMapStoreRuntimeAdapter,
 } from "./engine-map-store";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
@@ -211,5 +212,43 @@ describe("createGlobalMapStore", () => {
     expect(context.pack).toEqual({ cells: { i: [3] } });
     expect(notes).toEqual([{ id: "n7", name: "Replacement", legend: "Note" }]);
     expect(adapter.createGrid()).toBe(nextGrid);
+  });
+
+  it("creates a map store over an injected runtime context", () => {
+    const clone = vi.fn((value) => ({ cloned: value }));
+    globalThis.structuredClone = clone as typeof structuredClone;
+    const notes = [{ id: "n8", name: "Runtime", legend: "Note" }];
+    const nextGrid = { cells: { i: [8] } } as typeof grid;
+    const context = {
+      grid: { cells: { i: [1] } } as typeof grid,
+      pack: { cells: { i: [2] } } as typeof pack,
+      notes: {
+        all: () => notes,
+      },
+      seed: "runtime-map-store",
+      worldSettings: { graphWidth: 100, graphHeight: 80 },
+    } as unknown as EngineRuntimeContext;
+    const store = createRuntimeMapStore(
+      context,
+      () => context,
+      () => nextGrid,
+    );
+
+    expect(store.getCurrentContext()).toBe(context);
+    expect(store.createSnapshot()).toEqual({
+      grid: { cloned: context.grid },
+      pack: { cloned: context.pack },
+      notes: { cloned: notes },
+    });
+
+    store.resetForResample({
+      grid: context.grid,
+      pack: context.pack,
+      notes: [{ id: "n9", name: "Restored", legend: "Note" }],
+    });
+
+    expect(context.grid).toBe(nextGrid);
+    expect(context.pack).toEqual({});
+    expect(notes).toEqual([{ id: "n9", name: "Restored", legend: "Note" }]);
   });
 });

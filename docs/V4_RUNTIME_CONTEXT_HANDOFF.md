@@ -97,6 +97,9 @@
 > Engine map store now exposes `createRuntimeMapStoreRuntimeAdapter()`, so
 > snapshot/reset flows can read and write context `grid`/`pack` and context
 > note service state instead of requiring the global map variables.
+> `getGlobalEngineRuntimeContext()` now wires its `mapStore` through
+> `createRuntimeMapStore()`, so context snapshots and resample resets can stay
+> on the runtime context path after the initial global compatibility bootstrap.
 > Studio style injection now uses `StudioStyleTargets`, so duplicate style
 > detection, style element creation, and head insertion are injectable.
 > Studio document theme sync now uses `StudioThemeSyncTargets`, so renderer

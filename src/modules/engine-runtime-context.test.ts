@@ -64,6 +64,9 @@ describe("getGlobalEngineRuntimeContext", () => {
     expect(typeof context.burgs.add).toBe("function");
     expect(context.burgs.findById(2)).toBe(burg);
     expect(context.routes.findById(3)).toBe(route);
+    const snapshot = context.mapStore.createSnapshot();
+    expect(snapshot.grid).toEqual(globalThis.grid);
+    expect(snapshot.pack).toEqual(globalThis.pack);
     expect(context.seedSession).toBe(globalThis.EngineSeedSession);
     expect(context.graphSession).toBe(globalThis.EngineGraphSession);
     expect(typeof context.optionsSession.randomizeOptions).toBe("function");
