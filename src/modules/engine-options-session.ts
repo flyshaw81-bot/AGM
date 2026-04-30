@@ -16,6 +16,16 @@ export type EngineOptionsControlAdapter = {
   usesUsUnits: () => boolean;
 };
 
+export type EngineOptionsLocaleTargets = {
+  getLanguage: () => string;
+};
+
+export function createGlobalOptionsLocaleTargets(): EngineOptionsLocaleTargets {
+  return {
+    getLanguage: () => navigator.language,
+  };
+}
+
 export type EngineOptionsWriterAdapter = {
   setCellsDensity: (density: number) => void;
   applyHeightmapTemplate: (template: string, name: string) => void;
@@ -57,12 +67,14 @@ export type EngineOptionsRandomAdapter = {
   rw: typeof rw;
 };
 
-export function createGlobalOptionsControlAdapter(): EngineOptionsControlAdapter {
+export function createGlobalOptionsControlAdapter(
+  localeTargets: EngineOptionsLocaleTargets = createGlobalOptionsLocaleTargets(),
+): EngineOptionsControlAdapter {
   return {
     getSearchParams: () => new URL(location.href).searchParams,
     isLocked: (settingId) => locked(settingId),
     isStored: (settingId) => (globalThis as any).stored(settingId),
-    usesUsUnits: () => navigator.language === "en-US",
+    usesUsUnits: () => localeTargets.getLanguage() === "en-US",
   };
 }
 

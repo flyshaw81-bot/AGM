@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  createGlobalOptionsControlAdapter,
   createRuntimeOptionsNamingAdapter,
   createRuntimeOptionsRandomAdapter,
   createRuntimeOptionsSession,
@@ -215,6 +216,14 @@ describe("EngineOptionsSessionModule", () => {
     expect(writer.setDistanceUnit).toHaveBeenCalledWith("mi");
     expect(writer.setHeightUnit).toHaveBeenCalledWith("ft");
     expect(writer.setTemperatureScale).toHaveBeenCalledWith("\u00b0F");
+  });
+
+  it("reads US unit preference through injected locale targets", () => {
+    const controls = createGlobalOptionsControlAdapter({
+      getLanguage: vi.fn(() => "en-US"),
+    });
+
+    expect(controls.usesUsUnits()).toBe(true);
   });
 
   it("routes era generation through the naming adapter", () => {

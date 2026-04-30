@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 179 test files, 647 tests.
+- `npm.cmd run test -- --run` passed: 179 test files, 649 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1940,6 +1940,12 @@ global lookups through small injectable targets. Default behavior still reads
 the current browser `window.ERROR` / `document.getElementById`, while focused
 tests cover undefined-point warnings, unique ID lookup, and shorthand DOM
 lookup through fakes.
+`engine-options-session.ts` now routes locale reads through
+`EngineOptionsLocaleTargets` instead of reading `navigator.language` directly
+inside option randomization controls. `engine-seed-session.ts` now routes the
+`#optionsSeed` DOM lookup through `EngineSeedDomTargets`. Default browser
+adapters still preserve the current runtime behavior, and focused tests cover
+both injected paths.
 
 ## Next Recommended Slice
 

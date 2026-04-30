@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
 import {
+  createGlobalSeedSessionTargets,
   createRuntimeSeedSession,
   createRuntimeSeedSessionTargets,
+  type EngineSeedDomTargets,
   EngineSeedSessionModule,
   type EngineSeedSessionTargets,
   resolveEngineSeed,
@@ -93,6 +95,18 @@ describe("EngineSeedSessionModule", () => {
     expect(targets.setSeed).toHaveBeenCalledWith("fixed-seed");
     expect(targets.setOptionsSeed).toHaveBeenCalledWith("fixed-seed");
     expect(targets.setRandomGenerator).toHaveBeenCalledWith("fixed-seed");
+  });
+
+  it("writes options seed through injected DOM targets", () => {
+    const optionsSeed = { value: "" } as HTMLInputElement;
+    const domTargets: EngineSeedDomTargets = {
+      getOptionsSeedInput: vi.fn(() => optionsSeed),
+    };
+
+    createGlobalSeedSessionTargets(domTargets).setOptionsSeed("dom-seed");
+
+    expect(domTargets.getOptionsSeedInput).toHaveBeenCalled();
+    expect(optionsSeed.value).toBe("dom-seed");
   });
 
   it("writes resolved seeds into the runtime context before delegating", () => {

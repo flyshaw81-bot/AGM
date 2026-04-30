@@ -21,6 +21,17 @@ export type EngineSeedSessionTargets = {
   createSeed: () => string;
 };
 
+export type EngineSeedDomTargets = {
+  getOptionsSeedInput: () => HTMLInputElement | null;
+};
+
+export function createGlobalSeedDomTargets(): EngineSeedDomTargets {
+  return {
+    getOptionsSeedInput: () =>
+      document.getElementById("optionsSeed") as HTMLInputElement | null,
+  };
+}
+
 declare global {
   var EngineSeedSession: EngineSeedSessionModule;
 }
@@ -74,7 +85,9 @@ export class EngineSeedSessionModule {
   }
 }
 
-export function createGlobalSeedSessionTargets(): EngineSeedSessionTargets {
+export function createGlobalSeedSessionTargets(
+  domTargets: EngineSeedDomTargets = createGlobalSeedDomTargets(),
+): EngineSeedSessionTargets {
   return {
     hasHistory: () => Boolean(globalThis.mapHistory?.[0]),
     getSearchParams: () => new URL(globalThis.location.href).searchParams,
@@ -82,9 +95,7 @@ export function createGlobalSeedSessionTargets(): EngineSeedSessionTargets {
       globalThis.seed = nextSeed;
     },
     setOptionsSeed: (nextSeed) => {
-      const optionsSeed = document.getElementById(
-        "optionsSeed",
-      ) as HTMLInputElement | null;
+      const optionsSeed = domTargets.getOptionsSeedInput();
       if (optionsSeed) optionsSeed.value = nextSeed;
     },
     setRandomGenerator: (nextSeed) => {
