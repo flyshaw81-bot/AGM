@@ -115,6 +115,10 @@
 > Canvas overlay default dependencies now live in `CanvasOverlayTargets`, so
 > overlay sync no longer owns paint-preview, tool-HUD, or canvas-frame DOM
 > lookup wiring inline.
+> Canvas selection highlight default dependencies now live in
+> `CanvasSelectionHighlightTargets`, so highlight sync no longer owns selected
+> state queries, selected border queries, canvas host lookup, state path lookup,
+> state border lookup, or parent reordering wiring inline.
 > Please review whether each remaining global dependency is behind an explicit
 > compatibility adapter, and keep treating AGM `window.*` module mounts
 > separately from old public UI debt.
@@ -518,7 +522,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 159 test files, 509 tests.
+- `npm.cmd run test -- --run` passed: 160 test files, 510 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1411,6 +1415,12 @@ Canvas overlay default DOM access now has a dedicated `canvasOverlayTargets.ts`
 adapter for paint preview overlay lookup, tool HUD lookup, and canvas frame
 lookup. `canvasOverlaySync.ts` continues to re-export the target type/factory
 while overlay state syncing no longer owns those document queries inline.
+Canvas selection highlight default DOM access now has a dedicated
+`canvasSelectionHighlightTargets.ts` adapter for selected state queries,
+selected border queries, canvas frame/host lookup, state path lookup, state
+border lookup, and parent reordering. `canvasSelectionHighlight.ts` continues
+to re-export the target type/factory while selection highlight syncing no longer
+owns those document queries inline.
 Direct editor targets can also compose focus, entity mutation, and biome
 mutation commands directly from an injected `EngineRuntimeContext`. The default
 adapters still delegate to current entity mutation/focus bridge helpers, but
