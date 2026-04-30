@@ -11,28 +11,37 @@ export type EngineLifecycleAdapter = {
   showStatistics: (context?: EngineRuntimeContext) => void;
 };
 
-export function createGlobalLifecycleAdapter(
-  getCurrentContext: () => EngineRuntimeContext,
-): EngineLifecycleAdapter {
+export type EngineLifecycleTargets = {
+  addLakesInDeepDepressions: (lakeElevationLimit: number) => void;
+  openNearSeaLakes: (heightmapTemplateId: string | undefined) => void;
+  drawOceanLayers: (context: EngineRuntimeContext) => void;
+  defineMapSize: (heightmapTemplateId: string | undefined) => void;
+  calculateMapCoordinates: (settings: {
+    mapSizePercent?: number;
+    latitudePercent?: number;
+    longitudePercent?: number;
+  }) => void;
+  rebuildGraph: () => void;
+  createDefaultRuler: () => void;
+  showStatistics: (heightmapTemplateId: string | undefined) => void;
+};
+
+export function createGlobalLifecycleTargets(): EngineLifecycleTargets {
   return {
-    addLakesInDeepDepressions: (context = getCurrentContext()) => {
-      addLakesInDeepDepressions(context.generationSettings.lakeElevationLimit);
+    addLakesInDeepDepressions: (lakeElevationLimit) => {
+      addLakesInDeepDepressions(lakeElevationLimit);
     },
-    openNearSeaLakes: (context = getCurrentContext()) => {
-      openNearSeaLakes(context.generationSettings.heightmapTemplateId);
+    openNearSeaLakes: (heightmapTemplateId) => {
+      openNearSeaLakes(heightmapTemplateId);
     },
-    drawOceanLayers: (context = getCurrentContext()) => {
+    drawOceanLayers: (context) => {
       OceanLayers(context);
     },
-    defineMapSize: (context = getCurrentContext()) => {
-      defineMapSize(context.generationSettings.heightmapTemplateId);
+    defineMapSize: (heightmapTemplateId) => {
+      defineMapSize(heightmapTemplateId);
     },
-    calculateMapCoordinates: (context = getCurrentContext()) => {
-      calculateMapCoordinates({
-        mapSizePercent: context.worldSettings.mapSizePercent,
-        latitudePercent: context.worldSettings.latitudePercent,
-        longitudePercent: context.worldSettings.longitudePercent,
-      });
+    calculateMapCoordinates: (settings) => {
+      calculateMapCoordinates(settings);
     },
     rebuildGraph: () => {
       reGraph();
@@ -40,8 +49,53 @@ export function createGlobalLifecycleAdapter(
     createDefaultRuler: () => {
       createDefaultRuler();
     },
-    showStatistics: (context = getCurrentContext()) => {
-      showStatistics(context.generationSettings.heightmapTemplateId);
+    showStatistics: (heightmapTemplateId) => {
+      showStatistics(heightmapTemplateId);
     },
   };
+}
+
+export function createLifecycleAdapter(
+  getCurrentContext: () => EngineRuntimeContext,
+  targets: EngineLifecycleTargets,
+): EngineLifecycleAdapter {
+  return {
+    addLakesInDeepDepressions: (context = getCurrentContext()) => {
+      targets.addLakesInDeepDepressions(
+        context.generationSettings.lakeElevationLimit,
+      );
+    },
+    openNearSeaLakes: (context = getCurrentContext()) => {
+      targets.openNearSeaLakes(context.generationSettings.heightmapTemplateId);
+    },
+    drawOceanLayers: (context = getCurrentContext()) => {
+      targets.drawOceanLayers(context);
+    },
+    defineMapSize: (context = getCurrentContext()) => {
+      targets.defineMapSize(context.generationSettings.heightmapTemplateId);
+    },
+    calculateMapCoordinates: (context = getCurrentContext()) => {
+      targets.calculateMapCoordinates({
+        mapSizePercent: context.worldSettings.mapSizePercent,
+        latitudePercent: context.worldSettings.latitudePercent,
+        longitudePercent: context.worldSettings.longitudePercent,
+      });
+    },
+    rebuildGraph: () => {
+      targets.rebuildGraph();
+    },
+    createDefaultRuler: () => {
+      targets.createDefaultRuler();
+    },
+    showStatistics: (context = getCurrentContext()) => {
+      targets.showStatistics(context.generationSettings.heightmapTemplateId);
+    },
+  };
+}
+
+export function createGlobalLifecycleAdapter(
+  getCurrentContext: () => EngineRuntimeContext,
+  targets: EngineLifecycleTargets = createGlobalLifecycleTargets(),
+): EngineLifecycleAdapter {
+  return createLifecycleAdapter(getCurrentContext, targets);
 }

@@ -107,6 +107,10 @@
 > Runtime context construction no longer creates global burg/route/mapStore/note
 > services before overriding them; these context-owned services now initialize
 > directly on the runtime path after compatibility bootstrap values are captured.
+> Engine lifecycle orchestration now uses `EngineLifecycleTargets`, so context
+> value mapping is separated from the default public helper calls. The old
+> lifecycle helpers remain compatibility targets, but pipeline calls no longer
+> need to know where those helpers live.
 > Studio style injection now uses `StudioStyleTargets`, so duplicate style
 > detection, style element creation, and head insertion are injectable.
 > Studio document theme sync now uses `StudioThemeSyncTargets`, so renderer
