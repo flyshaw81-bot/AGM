@@ -6,6 +6,7 @@ import {
 } from "./documentStateTargets";
 
 export {
+  createDocumentStateTargets,
   createGlobalDocumentStateTargets,
   type DocumentStateTargets,
 } from "./documentStateTargets";

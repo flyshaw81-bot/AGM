@@ -20,8 +20,14 @@ export type DocumentStateTargets = {
   toggleLayer: typeof toggleEngineLayer;
 };
 
+export function createDocumentStateTargets(
+  targets: DocumentStateTargets,
+): DocumentStateTargets {
+  return targets;
+}
+
 export function createGlobalDocumentStateTargets(): DocumentStateTargets {
-  return {
+  return createDocumentStateTargets({
     syncEditorState: syncEngineEditorState,
     getDocumentState: getEngineDocumentState,
     getStylePreset: getEngineStylePreset,
@@ -29,5 +35,5 @@ export function createGlobalDocumentStateTargets(): DocumentStateTargets {
     setLayersPreset: setEngineLayersPreset,
     getLayerStates: getEngineLayerStates,
     toggleLayer: toggleEngineLayer,
-  };
+  });
 }

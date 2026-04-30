@@ -105,6 +105,9 @@
 > Document state sync/restore now uses `DocumentStateTargets`, so editor
 > workflow reads, document/style reads, document-name writes, and layer restore
 > writes are isolated from document state logic.
+> `DocumentStateTargets` now also exposes an explicit `createDocumentStateTargets`
+> composer, so injected document/editor/layer adapters stay separate from the
+> global bridge factory.
 > Project workspace changes now use `ProjectWorkspaceActionTargets`, so project
 > setting setters, document-name writes, canvas-size writes, autosave writes,
 > and project-summary sync are isolated from workspace action routing.
@@ -562,7 +565,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 165 test files, 523 tests.
+- `npm.cmd run test -- --run` passed: 165 test files, 524 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1436,6 +1439,9 @@ boundary for editor workflow reads, engine document/style reads, document name
 writes, and layer restore operations. `documentState.ts` continues to re-export
 the target type/factory while its sync/restore logic no longer owns direct
 bridge calls inline.
+`documentStateTargets.ts` now also exposes `createDocumentStateTargets` for
+explicit document/editor/layer target composition, keeping injected target sets
+separate from the global default bridge factory.
 Project workspace setting changes now have a dedicated
 `ProjectWorkspaceActionTargets` boundary for project setting setters, document
 name writes, canvas-size writes, autosave writes, and project-summary sync.

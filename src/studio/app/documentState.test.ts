@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { WorldDocumentDraft } from "../state/worldDocumentDraft";
 import type { StudioState } from "../types";
 import {
+  createDocumentStateTargets,
   type DocumentStateTargets,
   restoreAgmDocumentState,
   syncDocumentState,
@@ -70,6 +71,12 @@ function createTargets(
 }
 
 describe("documentState", () => {
+  it("composes document state targets from injected adapters", () => {
+    const targets = createTargets();
+
+    expect(createDocumentStateTargets(targets)).toBe(targets);
+  });
+
   it("syncs editor workflow through injected targets", () => {
     const state = createState();
     const targets = createTargets();
