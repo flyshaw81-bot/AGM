@@ -21,6 +21,14 @@ export type EngineOptionsLocaleTargets = {
 };
 
 export type EngineOptionsBrowserControlTargets = {
+  setStatesCount: (value: number) => void;
+  setProvincesRatio: (value: number) => void;
+  setManorsAuto: () => void;
+  setReligionsCount: (value: number) => void;
+  setSizeVariety: (value: number) => void;
+  setGrowthRate: (value: number) => void;
+  setCulturesCount: (value: number) => void;
+  setCultureSet: (value: string) => void;
   setPrecipitation: (value: number) => void;
   setDistanceScale: (value: number) => void;
   setDistanceUnit: (value: string) => void;
@@ -39,6 +47,33 @@ export function createGlobalOptionsLocaleTargets(): EngineOptionsLocaleTargets {
 
 export function createGlobalOptionsBrowserControlTargets(): EngineOptionsBrowserControlTargets {
   return {
+    setStatesCount: (value) => {
+      (globalThis as any).statesNumber.value = value;
+    },
+    setProvincesRatio: (value) => {
+      (globalThis as any).provincesRatio.value = value;
+    },
+    setManorsAuto: () => {
+      (globalThis as any).manorsInput.value = 1000;
+      (globalThis as any).manorsOutput.value = "auto";
+    },
+    setReligionsCount: (value) => {
+      religionsNumber.value = String(value);
+    },
+    setSizeVariety: (value) => {
+      (globalThis as any).sizeVariety.value = value;
+    },
+    setGrowthRate: (value) => {
+      (globalThis as any).growthRate.value = value;
+    },
+    setCulturesCount: (value) => {
+      culturesInput.value = (globalThis as any).culturesOutput.value =
+        String(value);
+    },
+    setCultureSet: (value) => {
+      culturesSet.value = value;
+      (globalThis as any).changeCultureSet();
+    },
     setPrecipitation: (value) => {
       precInput.value = (globalThis as any).precOutput.value = String(value);
     },
@@ -233,33 +268,14 @@ export function createGlobalOptionsWriterAdapter(
         template,
         name,
       ),
-    setStatesCount: (value) => {
-      (globalThis as any).statesNumber.value = value;
-    },
-    setProvincesRatio: (value) => {
-      (globalThis as any).provincesRatio.value = value;
-    },
-    setManorsAuto: () => {
-      (globalThis as any).manorsInput.value = 1000;
-      (globalThis as any).manorsOutput.value = "auto";
-    },
-    setReligionsCount: (value) => {
-      religionsNumber.value = String(value);
-    },
-    setSizeVariety: (value) => {
-      (globalThis as any).sizeVariety.value = value;
-    },
-    setGrowthRate: (value) => {
-      (globalThis as any).growthRate.value = value;
-    },
-    setCulturesCount: (value) => {
-      culturesInput.value = (globalThis as any).culturesOutput.value =
-        String(value);
-    },
-    setCultureSet: (value) => {
-      culturesSet.value = value;
-      (globalThis as any).changeCultureSet();
-    },
+    setStatesCount: (value) => browserTargets.setStatesCount(value),
+    setProvincesRatio: (value) => browserTargets.setProvincesRatio(value),
+    setManorsAuto: () => browserTargets.setManorsAuto(),
+    setReligionsCount: (value) => browserTargets.setReligionsCount(value),
+    setSizeVariety: (value) => browserTargets.setSizeVariety(value),
+    setGrowthRate: (value) => browserTargets.setGrowthRate(value),
+    setCulturesCount: (value) => browserTargets.setCulturesCount(value),
+    setCultureSet: (value) => browserTargets.setCultureSet(value),
     setTemperatureEquator: (value) => {
       options.temperatureEquator = value;
     },

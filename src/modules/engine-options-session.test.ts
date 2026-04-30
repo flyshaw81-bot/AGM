@@ -230,6 +230,14 @@ describe("EngineOptionsSessionModule", () => {
 
   it("writes unit and climate controls through injected browser targets", () => {
     const targets: EngineOptionsBrowserControlTargets = {
+      setStatesCount: vi.fn(),
+      setProvincesRatio: vi.fn(),
+      setManorsAuto: vi.fn(),
+      setReligionsCount: vi.fn(),
+      setSizeVariety: vi.fn(),
+      setGrowthRate: vi.fn(),
+      setCulturesCount: vi.fn(),
+      setCultureSet: vi.fn(),
       setPrecipitation: vi.fn(),
       setDistanceScale: vi.fn(),
       setDistanceUnit: vi.fn(),
@@ -241,6 +249,14 @@ describe("EngineOptionsSessionModule", () => {
     };
     const writer = createGlobalOptionsWriterAdapter(targets);
 
+    writer.setStatesCount(24);
+    writer.setProvincesRatio(60);
+    writer.setManorsAuto();
+    writer.setReligionsCount(8);
+    writer.setSizeVariety(4.5);
+    writer.setGrowthRate(1.2);
+    writer.setCulturesCount(14);
+    writer.setCultureSet("highFantasy");
     writer.setPrecipitation(120);
     writer.setDistanceScale(2.5);
     writer.setDistanceUnit("mi");
@@ -250,6 +266,14 @@ describe("EngineOptionsSessionModule", () => {
     writer.setEra("Copper Moon");
     writer.syncEraOptions();
 
+    expect(targets.setStatesCount).toHaveBeenCalledWith(24);
+    expect(targets.setProvincesRatio).toHaveBeenCalledWith(60);
+    expect(targets.setManorsAuto).toHaveBeenCalled();
+    expect(targets.setReligionsCount).toHaveBeenCalledWith(8);
+    expect(targets.setSizeVariety).toHaveBeenCalledWith(4.5);
+    expect(targets.setGrowthRate).toHaveBeenCalledWith(1.2);
+    expect(targets.setCulturesCount).toHaveBeenCalledWith(14);
+    expect(targets.setCultureSet).toHaveBeenCalledWith("highFantasy");
     expect(targets.setPrecipitation).toHaveBeenCalledWith(120);
     expect(targets.setDistanceScale).toHaveBeenCalledWith(2.5);
     expect(targets.setDistanceUnit).toHaveBeenCalledWith("mi");
