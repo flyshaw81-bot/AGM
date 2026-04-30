@@ -99,6 +99,17 @@ describe("RiverModule", () => {
     expect(new RiverModule().getBasin(3, context)).toBe(1);
   });
 
+  it("restores global Math.random after failed river generation", () => {
+    const originalRandom = Math.random;
+
+    try {
+      expect(() => new RiverModule().generate(createRiverContext())).toThrow();
+      expect(Math.random).toBe(originalRandom);
+    } finally {
+      Math.random = originalRandom;
+    }
+  });
+
   it("gets river names from the runtime naming service", () => {
     expect(new RiverModule().getName(1, createRiverContext())).toBe(
       "Culture 1",
