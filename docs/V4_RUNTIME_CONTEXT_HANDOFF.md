@@ -418,7 +418,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 125 test files, 403 tests.
+- `npm.cmd run test -- --run` passed: 126 test files, 404 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1102,6 +1102,9 @@ services instead of reading `globalThis.Routes` inline:
 - `src/studio/app/projectActionHandler.test.ts` covers app-level project draft,
   package export, draft restore, and engine project action forwarding through
   injected project action targets.
+- `src/studio/app/projectActionTargets.test.ts` covers composition of project
+  summary, draft, export, engine-action, and document adapters into the
+  app-level project action target.
 - `src/studio/app/studioShellHandlers.test.ts` covers shell-level editor entry,
   AGM/rules import, balance focus resolution, and language/theme/navigation
   preference persistence through injected shell targets.
@@ -1158,11 +1161,12 @@ calls inline.
 document/project, and generation-profile commands through dedicated app-level
 adapters. The default adapters still delegate to the current bridge/project
 helpers, but `studioEngineCommandHandlers.ts` no longer owns those calls inline.
-`ProjectActionTargets` is an app-level boundary and still delegates to the
-current engine project action bridge plus world document draft import/export
-helpers by default, but `projectActionHandler.ts` no longer owns those direct
-calls inline. `StudioShellTargets` is an app-level boundary and still delegates
-to current editor bridge, focus geometry, draft import, autofix, canvas,
+`ProjectActionTargets` now splits project summary, draft, export,
+engine-action, and document commands through dedicated app-level adapters. The
+default adapters still delegate to the current engine project action bridge and
+world document draft helpers, but `projectActionHandler.ts` no longer owns
+those direct calls inline. `StudioShellTargets` is an app-level boundary and
+still delegates to current editor bridge, focus geometry, draft import, autofix, canvas,
 workspace, and preference helpers by default, but `studioShellHandlers.ts` no
   longer owns those direct calls inline. `DirectEditorActionTargets` is an
   app-level boundary and still delegates to current entity mutation/focus bridge
