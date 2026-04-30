@@ -84,6 +84,9 @@
 > Studio bootstrap DOM targets now compose explicit body, browser event, and
 > viewport sync adapters, so startup DOM setup can evolve separately from
 > resize/DOMContentLoaded wiring and public viewport sync mounting.
+> Engine host targets now expose an explicit `createEngineHostTargets`
+> composer, so injected DOM and dialog adapters are distinct from the global
+> default host factory.
 > Project center default storage/summary/clock access now uses
 > `ProjectCenterTargets` from a dedicated adapter module, so project-center
 > state logic no longer owns `localStorage`, engine summary, or clock calls.
@@ -550,7 +553,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 164 test files, 519 tests.
+- `npm.cmd run test -- --run` passed: 164 test files, 520 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1392,6 +1395,10 @@ browser calls inline.
 viewport sync adapters via `createStudioBootstrapDomTargets`, keeping the
 existing global factory compatible while separating body/loading setup from
 resize/DOMContentLoaded wiring and public viewport sync mounting.
+Engine host target composition now has an explicit `createEngineHostTargets`
+composer for injected DOM and dialog adapters, while
+`createGlobalEngineHostTargets` remains the default browser/jQuery-dialog
+compatibility factory.
 Project center default browser/runtime access now has a dedicated
 `projectCenterTargets.ts` adapter for recent-project storage, engine project
 summary reads, and clock access. `projectCenter.ts` continues to re-export the

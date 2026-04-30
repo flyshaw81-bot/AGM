@@ -31,12 +31,19 @@ export function createJQueryEngineHostDialogAdapter(): EngineHostDialogAdapter {
   };
 }
 
-export function createGlobalEngineHostTargets(
-  domAdapter: EngineHostDomAdapter = createGlobalEngineHostDomAdapter(),
-  dialogAdapter: EngineHostDialogAdapter = createJQueryEngineHostDialogAdapter(),
+export function createEngineHostTargets(
+  domAdapter: EngineHostDomAdapter,
+  dialogAdapter: EngineHostDialogAdapter,
 ): EngineHostTargets {
   return {
     ...domAdapter,
     ...dialogAdapter,
   };
+}
+
+export function createGlobalEngineHostTargets(
+  domAdapter: EngineHostDomAdapter = createGlobalEngineHostDomAdapter(),
+  dialogAdapter: EngineHostDialogAdapter = createJQueryEngineHostDialogAdapter(),
+): EngineHostTargets {
+  return createEngineHostTargets(domAdapter, dialogAdapter);
 }

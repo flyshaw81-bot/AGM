@@ -7,6 +7,7 @@ import {
   syncEngineDialogsPosition,
 } from "./engineHost";
 import {
+  createEngineHostTargets,
   createGlobalEngineHostTargets,
   createJQueryEngineHostDialogAdapter,
   type EngineHostTargets,
@@ -125,6 +126,25 @@ describe("engine host", () => {
   });
 
   it("combines injected DOM and dialog adapters for global host targets", () => {
+    const { element: root } = createElement("studioRoot");
+    const { element: dialog } = createElement("dialog");
+
+    const targets = createEngineHostTargets(
+      {
+        getElementById: vi.fn(() => root),
+        createElement: vi.fn(),
+        appendToBody: vi.fn(),
+      },
+      {
+        queryDialogs: vi.fn(() => [dialog]),
+      },
+    );
+
+    expect(targets.getElementById("studioRoot")).toBe(root);
+    expect(targets.queryDialogs()).toEqual([dialog]);
+  });
+
+  it("keeps the global host target factory compatible with injected adapters", () => {
     const { element: root } = createElement("studioRoot");
     const { element: dialog } = createElement("dialog");
 
