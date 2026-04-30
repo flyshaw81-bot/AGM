@@ -4,6 +4,7 @@ import type { FitMode, Orientation, StudioState } from "../types";
 import { syncDocumentState } from "./documentState";
 import { ensureStudioRoot } from "./engineHost";
 import { createInitialState } from "./initialState";
+import { createGlobalStudioBootstrapDomTargets } from "./studioBootstrapDom";
 import {
   createGlobalStudioWorkflowWatcherTargets,
   type RenderStudioApp,
@@ -48,14 +49,11 @@ export type StudioBootstrapTargets = {
 export function createGlobalStudioBootstrapTargets(
   render: RenderStudioApp,
 ): StudioBootstrapTargets {
+  const domTargets = createGlobalStudioBootstrapDomTargets();
   return {
     injectStyles: injectStudioStyles,
-    enableStudioBody: () => {
-      document.body.classList.add("studio-enabled");
-    },
-    removeLoadingIndicator: () => {
-      document.getElementById("loading")?.remove();
-    },
+    enableStudioBody: domTargets.enableStudioBody,
+    removeLoadingIndicator: domTargets.removeLoadingIndicator,
     createInitialState,
     updateViewportDimensions,
     ensureRoot: ensureStudioRoot,
@@ -64,17 +62,11 @@ export function createGlobalStudioBootstrapTargets(
     render,
     createWorkflowWatcherTargets: createGlobalStudioWorkflowWatcherTargets,
     watchWorkflow: watchStudioWorkflow,
-    addResizeListener: (callback) => {
-      window.addEventListener("resize", callback);
-    },
+    addResizeListener: domTargets.addResizeListener,
     syncViewport: syncEngineViewport,
-    getDocumentReadyState: () => document.readyState,
-    addDomContentLoadedListener: (callback) => {
-      document.addEventListener("DOMContentLoaded", callback, { once: true });
-    },
-    setViewportSync: (sync) => {
-      window.studioViewportSync = sync;
-    },
+    getDocumentReadyState: domTargets.getDocumentReadyState,
+    addDomContentLoadedListener: domTargets.addDomContentLoadedListener,
+    setViewportSync: domTargets.setViewportSync,
   };
 }
 
