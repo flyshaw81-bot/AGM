@@ -1,6 +1,12 @@
 import Alea from "alea";
 import { curveBasis, curveCatmullRom, line, mean, min, sum } from "d3";
-import { each, rn, round, rw } from "../utils";
+import { rn } from "../utils/numberUtils";
+import { each, rw } from "../utils/probabilityUtils";
+import { round } from "../utils/stringUtils";
+import {
+  type EngineRuntimeContext,
+  getGlobalEngineRuntimeContext,
+} from "./engine-runtime-context";
 import type { Point } from "./voronoi";
 
 declare global {
@@ -24,7 +30,7 @@ export interface River {
   points?: Point[]; // river points (for meandering)
 }
 
-class RiverModule {
+export class RiverModule {
   private FLUX_FACTOR = 500;
   private MAX_FLUX_WIDTH = 1;
   private LENGTH_FACTOR = 200;
@@ -47,10 +53,18 @@ class RiverModule {
 
   smallLength: number | null = null;
 
-  generate(allowErosion = true) {
-    TIME && console.time("generateRivers");
-    Math.random = Alea(seed);
-    const { cells, features } = pack;
+  generate(
+    input: EngineRuntimeContext | boolean = getGlobalEngineRuntimeContext(),
+    allowErosionOverride = true,
+  ) {
+    const context =
+      typeof input === "boolean" ? getGlobalEngineRuntimeContext() : input;
+    const allowErosion =
+      typeof input === "boolean" ? input : allowErosionOverride;
+
+    context.timing.shouldTime && console.time("generateRivers");
+    Math.random = Alea(context.seed);
+    const { cells, features } = context.pack;
 
     const riversData: { [riverId: number]: number[] } = {};
     const riverParents: { [key: number]: number } = {};
@@ -63,13 +77,13 @@ class RiverModule {
     const drainWater = () => {
       const MIN_FLUX_TO_FORM_RIVER = 30;
       const cellsNumberModifier =
-        ((pointsInput.dataset.cells as any) / 10000) ** 0.25;
+        (context.generationSettings.pointsCount / 10000) ** 0.25;
 
-      const prec = grid.cells.prec;
+      const prec = context.grid.cells.prec;
       const land = cells.i
         .filter((i: number) => h[i] >= 20)
         .sort((a: number, b: number) => h[b] - h[a]);
-      const lakeOutCells = Lakes.defineClimateData(h);
+      const lakeOutCells = Lakes.defineClimateData(h, context);
 
       for (const i of land) {
         cells.fl[i] += prec[cells.g[i]] / cellsNumberModifier; // add flux from precipitation
@@ -208,10 +222,10 @@ class RiverModule {
       // re-initialize rivers and confluence arrays
       cells.r = new Uint16Array(cells.i.length);
       cells.conf = new Uint16Array(cells.i.length);
-      pack.rivers = [];
+      context.pack.rivers = [];
 
       const defaultWidthFactor = rn(
-        1 / ((pointsInput.dataset.cells as any) / 10000) ** 0.25,
+        1 / (context.generationSettings.pointsCount / 10000) ** 0.25,
         2,
       );
       const mainStemWidthFactor = defaultWidthFactor * 1.2;
@@ -237,7 +251,12 @@ class RiverModule {
           !parent || parent === riverId
             ? mainStemWidthFactor
             : defaultWidthFactor;
-        const meanderedPoints = this.addMeandering(riverCells);
+        const meanderedPoints = this.addMeandering(
+          riverCells,
+          null,
+          0.5,
+          context,
+        );
         const discharge = cells.fl[mouth]; // m3 in second
         const length = this.getApproximateLength(
           meanderedPoints.map(([x, y]) => [x, y]),
@@ -252,7 +271,7 @@ class RiverModule {
           }),
         );
 
-        pack.rivers.push({
+        context.pack.rivers.push({
           i: riverId,
           source,
           mouth,
@@ -270,7 +289,7 @@ class RiverModule {
     const downcutRivers = () => {
       const MAX_DOWNCUT = 5;
 
-      for (const i of pack.cells.i) {
+      for (const i of context.pack.cells.i) {
         if (cells.h[i] < 35) continue; // don't donwcut lowlands
         if (!cells.fl[i]) continue;
 
@@ -308,25 +327,27 @@ class RiverModule {
     cells.conf = new Uint8Array(cells.i.length); // confluences array
     let riverNext = 1; // first river id is 1
 
-    const h = this.alterHeights();
-    Lakes.detectCloseLakes(h);
-    this.resolveDepressions(h);
+    const h = this.alterHeights(context);
+    Lakes.detectCloseLakes(h, context);
+    this.resolveDepressions(h, context);
     drainWater();
     defineRivers();
 
     calculateConfluenceFlux();
-    Lakes.cleanupLakeData();
+    Lakes.cleanupLakeData(context);
 
     if (allowErosion) {
       cells.h = Uint8Array.from(h); // apply gradient
       downcutRivers(); // downcut river beds
     }
 
-    TIME && console.timeEnd("generateRivers");
+    context.timing.shouldTime && console.timeEnd("generateRivers");
   }
 
-  alterHeights(): number[] {
-    const { h, c, t } = pack.cells as {
+  alterHeights(
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ): number[] {
+    const { h, c, t } = context.pack.cells as {
       h: Uint8Array;
       c: number[][];
       t: Uint8Array;
@@ -338,13 +359,12 @@ class RiverModule {
   }
 
   // depression filling algorithm (for a correct water flux modeling)
-  resolveDepressions(h: number[]) {
-    const { cells, features } = pack;
-    const maxIterations = +(
-      document.getElementById(
-        "resolveDepressionsStepsOutput",
-      ) as HTMLInputElement
-    )?.value;
+  resolveDepressions(
+    h: number[],
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { cells, features } = context.pack;
+    const maxIterations = context.generationSettings.resolveDepressionsSteps;
     const checkLakeMaxIteration = maxIterations * 0.85;
     const elevateLakeMaxIteration = maxIterations * 0.75;
 
@@ -364,7 +384,7 @@ class RiverModule {
     ) {
       if (progress.length > 5 && sum(progress) > 0) {
         // bad progress, abort and set heights back
-        h = this.alterHeights();
+        h = this.alterHeights(context);
         depressions = progress[0];
         break;
       }
@@ -406,21 +426,22 @@ class RiverModule {
       prevDepressions = depressions;
     }
 
-    depressions &&
-      WARN &&
-      console.warn(
+    if (depressions) {
+      context.logs?.warn(
         `Unresolved depressions: ${depressions}. Edit heightmap to fix`,
       );
+    }
   }
 
   addMeandering(
     riverCells: number[],
     riverPoints: Point[] | null = null,
     meandering = 0.5,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
   ): [number, number, number][] {
-    const { fl, h } = pack.cells;
+    const { fl, h } = context.pack.cells;
     const meandered = [];
-    const points = this.getRiverPoints(riverCells, riverPoints);
+    const points = this.getRiverPoints(riverCells, riverPoints, context);
     const lastStep = points.length - 1;
     let step = h[riverCells[0]] < 20 ? 1 : 10;
 
@@ -468,18 +489,29 @@ class RiverModule {
     return meandered as [number, number, number][];
   }
 
-  getRiverPoints(riverCells: number[], riverPoints: [number, number][] | null) {
+  getRiverPoints(
+    riverCells: number[],
+    riverPoints: [number, number][] | null,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
     if (riverPoints) return riverPoints;
 
-    const { p } = pack.cells;
+    const { p } = context.pack.cells;
     return riverCells.map((cell, i) => {
-      if (cell === -1) return this.getBorderPoint(riverCells[i - 1]);
+      if (cell === -1) return this.getBorderPoint(riverCells[i - 1], context);
       return p[cell];
     });
   }
 
-  getBorderPoint(i: number) {
-    const [x, y] = pack.cells.p[i];
+  getBorderPoint(
+    i: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const [x, y] = context.pack.cells.p[i];
+    const {
+      graphWidth = globalThis.graphWidth,
+      graphHeight = globalThis.graphHeight,
+    } = context.worldSettings;
     const min = Math.min(y, graphHeight - y, x, graphWidth - x);
     if (min === y) return [x, 0];
     else if (min === graphHeight - y) return [x, graphHeight];
@@ -553,25 +585,31 @@ class RiverModule {
     return round(right + left, 1);
   }
 
-  specify() {
-    const rivers = pack.rivers;
+  specify(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+    const rivers = context.pack.rivers;
     if (!rivers.length) return;
 
     for (const river of rivers) {
-      river.basin = this.getBasin(river.i);
-      river.name = this.getName(river.mouth);
-      river.type = this.getType(river);
+      river.basin = this.getBasin(river.i, context);
+      river.name = this.getName(river.mouth, context);
+      river.type = this.getType(river, context);
     }
   }
 
-  getName(cell: number) {
-    return Names.getCulture(pack.cells.culture[cell]);
+  getName(
+    cell: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    return context.naming.getCulture(context.pack.cells.culture[cell]);
   }
 
-  getType({ i, length, parent }: River) {
+  getType(
+    { i, length, parent }: River,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
     if (this.smallLength === null) {
-      const threshold = Math.ceil(pack.rivers.length * 0.15);
-      this.smallLength = pack.rivers
+      const threshold = Math.ceil(context.pack.rivers.length * 0.15);
+      this.smallLength = context.pack.rivers
         .map((r) => r.length || 0)
         .sort((a: number, b: number) => a - b)[threshold];
     }
@@ -616,10 +654,13 @@ class RiverModule {
     pack.rivers = pack.rivers.filter((r) => !riversToRemove.includes(r.i));
   }
 
-  getBasin(r: number): number {
-    const parent = pack.rivers.find((river) => river.i === r)?.parent;
+  getBasin(
+    r: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ): number {
+    const parent = context.pack.rivers.find((river) => river.i === r)?.parent;
     if (!parent || r === parent) return r;
-    return this.getBasin(parent);
+    return this.getBasin(parent, context);
   }
 
   getNextId(rivers: { i: number }[]) {
@@ -627,4 +668,6 @@ class RiverModule {
   }
 }
 
-window.Rivers = new RiverModule();
+if (typeof window !== "undefined") {
+  window.Rivers = new RiverModule();
+}

@@ -1009,7 +1009,7 @@ function editHeightmap(options) {
     function setRange(event) {
       if (event.target.value !== "interval") return;
 
-      prompt("Set a height interval. Avoid space, use hyphen as a separator", {default: "17-20"}, v => {
+      requestStudioInput("Set a height interval. Avoid space, use hyphen as a separator", {default: "17-20"}, v => {
         const opt = document.createElement("option");
         opt.value = opt.innerHTML = v;
         event.target.add(opt);
@@ -1401,7 +1401,7 @@ function editHeightmap(options) {
     }
 
     function setConvertColorsNumber() {
-      prompt(
+      requestStudioInput(
         `Please set maximum number of colors. <br>An actual number is usually lower and depends on color scheme`,
         {default: +convertColors.value, step: 1, min: 3, max: 255},
         number => {

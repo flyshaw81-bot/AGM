@@ -1,5 +1,6 @@
 import polylabel from "polylabel";
 import { rn } from "./numberUtils";
+import { PriorityQueue } from "./priorityQueue";
 
 /**
  * Generates SVG path data for filling a shape defined by a chain of vertices.
@@ -343,11 +344,11 @@ export const findPath = (
 
   const from = [];
   const cost = [];
-  const queue = new window.FlatQueue();
+  const queue = new PriorityQueue<number>();
   queue.push(start, 0);
 
   while (queue.length) {
-    const currentCost = queue.peekValue();
+    const currentCost = queue.peekPriority();
     const current = queue.pop();
 
     for (const next of packedGraph.cells.c[current]) {
@@ -373,7 +374,6 @@ export const findPath = (
 declare global {
   interface Window {
     ERROR: boolean;
-    FlatQueue: any;
 
     getIsolines: typeof getIsolines;
     getPolesOfInaccessibility: typeof getPolesOfInaccessibility;

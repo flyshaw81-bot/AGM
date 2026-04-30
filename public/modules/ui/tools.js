@@ -571,7 +571,7 @@ function regenerateMarkers() {
 
 function regenerateZones(event) {
   if (isCtrlClick(event))
-    prompt("Please provide zones number multiplier", {default: 1, step: 0.01, min: 0, max: 100}, v =>
+    requestStudioInput("Please provide zones number multiplier", {default: 1, step: 0.01, min: 0, max: 100}, v =>
       addNumberOfZones(v)
     );
   else addNumberOfZones(gauss(1, 0.5, 0.6, 5, 2));

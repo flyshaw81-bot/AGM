@@ -4,45 +4,53 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>AGM Studio</title>
+    <title>AGM Studio — Atlas Generation Matrix</title>
     <meta name="application-name" content="AGM Studio" />
     <meta name="author" content="AGM Team" />
     <meta
       name="description"
-      content="AGM Studio helps game development teams generate, edit, validate, and export playable world data."
+      content="AGM Studio is the editor for Atlas Generation Matrix, helping game development teams generate, edit, validate, and export playable world data."
     />
     <meta property="og:url" content="/AGM-Studio/" />
 
-    <meta property="og:title" content="AGM Studio" />
+    <meta property="og:title" content="AGM Studio — Atlas Generation Matrix" />
     <meta
       property="og:description"
-      content="AGM Studio helps game development teams generate, edit, validate, and export playable world data."
+      content="AGM Studio is the editor for Atlas Generation Matrix, helping teams generate, edit, validate, and export playable world data."
     />
     <meta property="og:image" content="images/preview.png" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta property="twitter:domain" content="AGM Studio" />
     <meta property="twitter:url" content="/AGM-Studio/" />
-    <meta name="twitter:title" content="AGM Studio" />
+    <meta name="twitter:title" content="AGM Studio — Atlas Generation Matrix" />
     <meta
       name="twitter:description"
       content="Build playable worlds from structured generation."
     />
     <meta name="twitter:image" content="images/preview.png" />
 
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-VJL3J26W7R"></script>
+    <link rel="icon" type="image/svg+xml" href="agm-brand/favicon/agm-favicon-dark.svg" />
+    <link rel="apple-touch-icon" href="agm-brand/icons/svg/agm-app-icon-dark.svg" />
+
     <script>
       window.dataLayer = window.dataLayer || [];
-      function gtag() {
-        dataLayer.push(arguments);
-      }
-      gtag("js", new Date());
-      gtag("config", "G-VJL3J26W7R");
+      window.gtag = window.gtag || function gtag() {
+        window.dataLayer.push(arguments);
+      };
+      (() => {
+        const localHosts = new Set(["localhost", "127.0.0.1", "::1"]);
+        if (localHosts.has(window.location.hostname) || window.location.protocol === "file:") return;
+
+        const analyticsScript = document.createElement("script");
+        analyticsScript.async = true;
+        analyticsScript.src = "https://www.googletagmanager.com/gtag/js?id=G-VJL3J26W7R";
+        document.head.appendChild(analyticsScript);
+        window.gtag("js", new Date());
+        window.gtag("config", "G-VJL3J26W7R");
+      })();
     </script>
 
-    <link rel="icon" type="image/png" href="images/icons/favicon-32x32.png" sizes="32x32" />
-    <link rel="icon" type="image/png" href="images/icons/favicon-16x16.png" sizes="16x16" />
-    <link rel="apple-touch-icon" href="images/icons/maskable_icon_x192.png" />
     <link rel="canonical" href="/AGM-Studio/" />
     <link rel="manifest" href="manifest.webmanifest" />
 
@@ -8476,7 +8484,6 @@
     <script vite-ignore src="%BASE_URL%libs/jquery-ui.min.js"></script>
     <script vite-ignore src="%BASE_URL%versioning.js"></script>
     <script vite-ignore src="%BASE_URL%libs/d3.min.js"></script>
-    <script vite-ignore src="%BASE_URL%libs/flatqueue.js"></script>
     <script vite-ignore src="%BASE_URL%libs/delaunator.min.js"></script>
     <script vite-ignore src="%BASE_URL%libs/indexedDB.js?v=1.99.00"></script>
 

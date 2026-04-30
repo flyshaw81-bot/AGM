@@ -1,0 +1,18 @@
+{
+  "name": "AGM.Importers.Unity.Editor",
+  "rootNamespace": "AGM.Importers.Unity.Editor",
+  "references": [
+    "AGM.Importers.Unity.Runtime"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

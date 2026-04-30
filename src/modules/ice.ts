@@ -1,26 +1,26 @@
 import Alea from "alea";
 import { min } from "d3";
+import { clipPoly } from "../utils/commonUtils";
+import { getGridPolygon } from "../utils/graphUtils";
+import { lerp, minmax, normalize, rn } from "../utils/numberUtils";
+import { getIsolines } from "../utils/pathUtils";
+import { P, ra, rand } from "../utils/probabilityUtils";
 import {
-  clipPoly,
-  getGridPolygon,
-  getIsolines,
-  lerp,
-  minmax,
-  normalize,
-  P,
-  ra,
-  rand,
-  rn,
-} from "../utils";
+  type EngineRuntimeContext,
+  getGlobalEngineRuntimeContext,
+} from "./engine-runtime-context";
 import type { Point } from "./voronoi";
 
 declare global {
   var Ice: IceModule;
 }
 
-class IceModule {
+export class IceModule {
   // Find next available id for new ice element idealy filling gaps
-  private getNextId() {
+  private getNextId(
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { pack } = context;
     if (pack.ice.length === 0) return 0;
     // find gaps in existing ids
     const existingIds = pack.ice.map((e) => e.i).sort((a, b) => a - b);
@@ -31,16 +31,23 @@ class IceModule {
   }
 
   // Clear all ice
-  private clear() {
+  private clear(
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { pack } = context;
     pack.ice = [];
   }
 
   // Generate glaciers and icebergs based on temperature and height
-  public generate() {
-    this.clear();
+  public generate(
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    this.clear(context);
+    const { grid, pack } = context;
+    const { graphWidth = 0, graphHeight = 0 } = context.worldSettings;
     const { cells, features } = grid;
     const { temp, h } = cells;
-    Math.random = Alea(seed);
+    Math.random = Alea(context.seed);
 
     const ICEBERG_MAX_TEMP = 0;
     const GLACIER_MAX_TEMP = -8;
@@ -57,7 +64,7 @@ class IceModule {
         isolines[type].polygons.forEach((points: Point[]) => {
           const clipped = clipPoly(points, graphWidth, graphHeight);
           pack.ice.push({
-            i: this.getNextId(),
+            i: this.getNextId(context),
             points: clipped,
             type: "glacier",
           });
@@ -85,7 +92,7 @@ class IceModule {
       ]);
 
       pack.ice.push({
-        i: this.getNextId(),
+        i: this.getNextId(context),
         points,
         type: "iceberg",
         cellId,
@@ -94,13 +101,18 @@ class IceModule {
     }
   }
 
-  addIceberg(cellId: number, size: number) {
+  addIceberg(
+    cellId: number,
+    size: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { grid, pack } = context;
     const [cx, cy] = grid.points[cellId];
     const points = getGridPolygon(cellId, grid).map(([x, y]: Point) => [
       rn(lerp(cx, x, size), 2),
       rn(lerp(cy, y, size), 2),
     ]);
-    const id = this.getNextId();
+    const id = this.getNextId(context);
     pack.ice.push({
       i: id,
       points,
@@ -108,23 +120,31 @@ class IceModule {
       cellId,
       size,
     });
-    redrawIceberg(id);
+    context.rendering?.redrawIceberg(id);
   }
 
-  removeIce(id: number) {
+  removeIce(
+    id: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { pack } = context;
     const index = pack.ice.findIndex((element) => element.i === id);
     if (index !== -1) {
       const type = pack.ice.find((element) => element.i === id).type;
       pack.ice.splice(index, 1);
       if (type === "glacier") {
-        redrawGlacier(id);
+        context.rendering?.redrawGlacier(id);
       } else {
-        redrawIceberg(id);
+        context.rendering?.redrawIceberg(id);
       }
     }
   }
 
-  randomizeIcebergShape(id: number) {
+  randomizeIcebergShape(
+    id: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { grid, pack } = context;
     const iceberg = pack.ice.find((element) => element.i === id);
     if (!iceberg) return;
 
@@ -147,7 +167,12 @@ class IceModule {
     iceberg.points = points;
   }
 
-  changeIcebergSize(id: number, newSize: number) {
+  changeIcebergSize(
+    id: number,
+    newSize: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { grid, pack } = context;
     const iceberg = pack.ice.find((element) => element.i === id);
     if (!iceberg) return;
 
@@ -172,4 +197,6 @@ class IceModule {
   }
 }
 
-window.Ice = new IceModule();
+if (typeof window !== "undefined") {
+  window.Ice = new IceModule();
+}

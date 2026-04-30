@@ -36,7 +36,7 @@ function editUnits() {
 
   function changeDistanceUnit() {
     if (this.value === "custom_name") {
-      prompt("Provide a custom name for a distance unit", {default: ""}, custom => {
+      requestStudioInput("Provide a custom name for a distance unit", {default: ""}, custom => {
         this.options.add(new Option(custom, custom, false, true));
         lock("distanceUnit");
         renderScaleBar();
@@ -58,7 +58,7 @@ function editUnits() {
   function changeHeightUnit() {
     if (this.value !== "custom_name") return;
 
-    prompt("Provide a custom name for a height unit", {default: ""}, custom => {
+    requestStudioInput("Provide a custom name for a height unit", {default: ""}, custom => {
       this.options.add(new Option(custom, custom, false, true));
       lock("heightUnit");
     });

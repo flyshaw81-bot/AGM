@@ -1,15 +1,18 @@
 import { mean, quadtree } from "d3";
 import { clipPolyline } from "lineclip";
 import type { PackedGraph } from "../types/PackedGraph";
+import { unique } from "../utils/arrayUtils";
 import {
   findAllCellsInRadius,
   findClosestCell,
-  generateGrid,
-  getPolesOfInaccessibility,
   isWater,
-  rn,
-  unique,
-} from "../utils";
+} from "../utils/graphUtils";
+import { rn } from "../utils/numberUtils";
+import { getPolesOfInaccessibility } from "../utils/pathUtils";
+import {
+  type EngineRuntimeContext,
+  getGlobalEngineRuntimeContext,
+} from "./engine-runtime-context";
 import type { River } from "./river-generator";
 import type { Point } from "./voronoi";
 
@@ -30,14 +33,23 @@ type ParentMapDefinition = {
 };
 
 class Resampler {
-  private saveRiversData(parentRivers: PackedGraph["rivers"]) {
+  private saveRiversData(
+    parentRivers: PackedGraph["rivers"],
+    context: EngineRuntimeContext,
+  ) {
     return parentRivers.map((river) => {
-      const meanderedPoints = Rivers.addMeandering(river.cells, river.points);
+      const meanderedPoints = Rivers.addMeandering(
+        river.cells,
+        river.points,
+        0.5,
+        context,
+      );
       return { ...river, meanderedPoints };
     });
   }
 
-  private smoothHeightmap() {
+  private smoothHeightmap(context: EngineRuntimeContext) {
+    const { grid } = context;
     grid.cells.h.forEach((height: number, newGridCell: number) => {
       const heights = [
         height,
@@ -54,7 +66,9 @@ class Resampler {
     parentMap: ParentMapDefinition,
     inverse: (x: number, y: number) => [number, number],
     scale: number,
+    context: EngineRuntimeContext,
   ) {
+    const { grid } = context;
     grid.cells.h = new Uint8Array(grid.points.length);
     grid.cells.temp = new Int8Array(grid.points.length);
     grid.cells.prec = new Uint8Array(grid.points.length);
@@ -73,7 +87,7 @@ class Resampler {
       grid.cells.prec[newGridCell] = parentMap.grid.cells.prec[parentGridCell];
     });
 
-    if (scale >= 2) this.smoothHeightmap();
+    if (scale >= 2) this.smoothHeightmap(context);
   }
 
   private groupCellsByType(graph: PackedGraph) {
@@ -87,7 +101,12 @@ class Resampler {
     );
   }
 
-  private isInMap(x: number, y: number) {
+  private isInMap(
+    x: number,
+    y: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { graphWidth = 0, graphHeight = 0 } = context.worldSettings;
     return x >= 0 && x <= graphWidth && y >= 0 && y <= graphHeight;
   }
 
@@ -95,7 +114,9 @@ class Resampler {
     parentMap: ParentMapDefinition,
     inverse: (x: number, y: number) => [number, number],
     scale: number,
+    context: EngineRuntimeContext,
   ) {
+    const { pack } = context;
     pack.cells.biome = new Uint8Array(pack.cells.i.length);
     pack.cells.fl = new Uint16Array(pack.cells.i.length);
     pack.cells.s = new Int16Array(pack.cells.i.length);
@@ -145,7 +166,9 @@ class Resampler {
     riversData: (River & { meanderedPoints?: [number, number, number][] })[],
     projection: (x: number, y: number) => [number, number],
     scale: number,
+    context: EngineRuntimeContext,
   ) {
+    const { pack } = context;
     pack.cells.r = new Uint16Array(pack.cells.i.length);
     pack.cells.conf = new Uint8Array(pack.cells.i.length);
 
@@ -184,7 +207,7 @@ class Resampler {
       .filter((river) => river !== null);
 
     pack.rivers.forEach((river) => {
-      river.basin = Rivers.getBasin(river.i);
+      river.basin = Rivers.getBasin(river.i, context);
       river.length = Rivers.getApproximateLength(river.points);
     });
   }
@@ -192,7 +215,9 @@ class Resampler {
   private restoreCultures(
     parentMap: ParentMapDefinition,
     projection: (x: number, y: number) => [number, number],
+    context: EngineRuntimeContext,
   ) {
+    const { pack } = context;
     const validCultures = new Set(pack.cells.culture);
     const culturePoles = getPolesOfInaccessibility(
       pack,
@@ -206,7 +231,7 @@ class Resampler {
       const parentCoords = parentMap.pack.cells.p[culture.center!];
       const [xp, yp] = projection(parentCoords[0], parentCoords[1]);
       const [x, y] = [rn(xp, 2), rn(yp, 2)];
-      const [centerX, centerY] = this.isInMap(x, y)
+      const [centerX, centerY] = this.isInMap(x, y, context)
         ? [x, y]
         : culturePoles[culture.i];
       const center = findClosestCell(centerX, centerY, Infinity, pack);
@@ -220,16 +245,22 @@ class Resampler {
     cell: number,
     xp: number,
     yp: number,
+    context: EngineRuntimeContext,
   ): Point {
+    const { pack } = context;
     const haven = pack.cells.haven[cell];
-    if (burg.port && haven) return this.getCloseToEdgePoint(cell, haven);
+    if (burg.port && haven) return this.getCloseToEdgePoint(cell, haven, pack);
 
     if (closestCell !== cell) return pack.cells.p[cell];
     return [rn(xp, 2), rn(yp, 2)];
   }
 
-  private getCloseToEdgePoint(cell1: number, cell2: number): Point {
-    const { cells, vertices } = pack;
+  private getCloseToEdgePoint(
+    cell1: number,
+    cell2: number,
+    graph: PackedGraph,
+  ): Point {
+    const { cells, vertices } = graph;
 
     const [x0, y0] = cells.p[cell1];
     const commonVertices = cells.v[cell1].filter((vertex) =>
@@ -250,7 +281,9 @@ class Resampler {
     parentMap: ParentMapDefinition,
     projection: (x: number, y: number) => [number, number],
     scale: number,
+    context: EngineRuntimeContext,
   ) {
+    const { pack } = context;
     const packLandCellsQuadtree = quadtree(this.groupCellsByType(pack).land);
     const findLandCell = (x: number, y: number) =>
       packLandCellsQuadtree.find(x, y, Infinity)?.[2];
@@ -260,7 +293,8 @@ class Resampler {
       burg.population! *= scale; // adjust for populationRate change
 
       const [xp, yp] = projection(burg.x, burg.y);
-      if (!this.isInMap(xp, yp)) return { ...burg, removed: true, lock: false };
+      if (!this.isInMap(xp, yp, context))
+        return { ...burg, removed: true, lock: false };
 
       const closestCell = findClosestCell(xp, yp, Infinity, pack) as number;
       const cell = isWater(closestCell, pack)
@@ -268,15 +302,21 @@ class Resampler {
         : closestCell;
 
       if (pack.cells.burg[cell]) {
-        WARN &&
-          console.warn(
-            `Cell ${cell} already has a burg. Removing burg ${burg.name} (${burg.i})`,
-          );
+        context.logs?.warn(
+          `Cell ${cell} already has a burg. Removing burg ${burg.name} (${burg.i})`,
+        );
         return { ...burg, removed: true, lock: false };
       }
 
       pack.cells.burg[cell] = burg.i;
-      const [x, y] = this.getBurgCoordinates(burg, closestCell, cell, xp, yp);
+      const [x, y] = this.getBurgCoordinates(
+        burg,
+        closestCell,
+        cell,
+        xp,
+        yp,
+        context,
+      );
       return { ...burg, cell, x, y };
     });
   }
@@ -284,7 +324,9 @@ class Resampler {
   private restoreStates(
     parentMap: ParentMapDefinition,
     projection: (x: number, y: number) => [number, number],
+    context: EngineRuntimeContext,
   ) {
+    const { pack, states } = context;
     const validStates = new Set(pack.cells.state);
     pack.states = parentMap.pack.states.map((state) => {
       if (!state.i || state.removed) return state;
@@ -292,7 +334,7 @@ class Resampler {
       return { ...state, removed: true, lock: false };
     });
 
-    States.getPoles();
+    states.getPoles();
     const regimentCellsMap: Record<number, number> = {};
     const VERTICAL_GAP = 8;
 
@@ -308,7 +350,7 @@ class Resampler {
 
       const military = state.military!.map((regiment) => {
         const cellCoords = projection(...parentMap.pack.cells.p[regiment.cell]);
-        const cell = this.isInMap(...cellCoords)
+        const cell = this.isInMap(...cellCoords, context)
           ? findClosestCell(...cellCoords, Infinity, pack)!
           : state.center;
 
@@ -320,15 +362,16 @@ class Resampler {
         regimentCellsMap[cell] = regsOnCell + 1;
 
         const name =
-          this.isInMap(xPos, yPos) || regiment.name.includes("[relocated]")
+          this.isInMap(xPos, yPos, context) ||
+          regiment.name.includes("[relocated]")
             ? regiment.name
             : `[relocated] ${regiment.name}`;
 
-        const pos = this.isInMap(xPos, yPos)
+        const pos = this.isInMap(xPos, yPos, context)
           ? { x: rn(xPos, 2), y: rn(yPos, 2) }
           : { x: xCell, y: yCell + regsOnCell * VERTICAL_GAP };
 
-        const base = this.isInMap(xBase, yBase)
+        const base = this.isInMap(xBase, yBase, context)
           ? { bx: rn(xBase, 2), by: rn(yBase, 2) }
           : { bx: xCell, by: yCell };
 
@@ -345,7 +388,12 @@ class Resampler {
   private restoreRoutes(
     parentMap: ParentMapDefinition,
     projection: (x: number, y: number) => [number, number],
+    context: EngineRuntimeContext,
   ) {
+    const { pack, routes, worldSettings } = context;
+    const graphWidth = worldSettings.graphWidth ?? 0;
+    const graphHeight = worldSettings.graphHeight ?? 0;
+
     pack.routes = parentMap.pack.routes
       .map((route) => {
         let wasInMap = true;
@@ -353,7 +401,7 @@ class Resampler {
 
         route.points.forEach(([parentX, parentY]) => {
           const [x, y] = projection(parentX, parentY);
-          const inMap = this.isInMap(x, y);
+          const inMap = this.isInMap(x, y, context);
           if (inMap || wasInMap) points.push([rn(x, 2), rn(y, 2)]);
           wasInMap = inMap;
         });
@@ -385,13 +433,15 @@ class Resampler {
       })
       .filter((route) => route !== null);
 
-    pack.cells.routes = Routes.buildLinks(pack.routes);
+    pack.cells.routes = routes.buildLinks(pack.routes);
   }
 
   private restoreReligions(
     parentMap: ParentMapDefinition,
     projection: (x: number, y: number) => [number, number],
+    context: EngineRuntimeContext,
   ) {
+    const { pack } = context;
     const validReligions = new Set(pack.cells.religion);
     const religionPoles = getPolesOfInaccessibility(
       pack,
@@ -405,7 +455,7 @@ class Resampler {
 
       const [xp, yp] = projection(...parentMap.pack.cells.p[religion.center]);
       const [x, y] = [rn(xp, 2), rn(yp, 2)];
-      const [centerX, centerY] = this.isInMap(x, y)
+      const [centerX, centerY] = this.isInMap(x, y, context)
         ? [x, y]
         : religionPoles[religion.i];
       const center = findClosestCell(centerX, centerY, Infinity, pack);
@@ -413,7 +463,11 @@ class Resampler {
     });
   }
 
-  private restoreProvinces(parentMap: ParentMapDefinition) {
+  private restoreProvinces(
+    parentMap: ParentMapDefinition,
+    context: EngineRuntimeContext,
+  ) {
+    const { pack } = context;
     const validProvinces = new Set(pack.cells.province);
     pack.provinces = parentMap.pack.provinces.map((province) => {
       if (!province.i || province.removed) return province;
@@ -423,7 +477,7 @@ class Resampler {
       return province;
     });
 
-    Provinces.getPoles();
+    Provinces.getPoles(context);
 
     pack.provinces.forEach((province) => {
       if (!province.i || province.removed) return;
@@ -438,7 +492,9 @@ class Resampler {
   private restoreFeatureDetails(
     parentMap: ParentMapDefinition,
     inverse: (x: number, y: number) => [number, number],
+    context: EngineRuntimeContext,
   ) {
+    const { pack } = context;
     const parentPackQ = quadtree(
       parentMap.pack.cells.p.map(([x, y], i) => [x, y, i]),
     );
@@ -460,11 +516,13 @@ class Resampler {
   private restoreMarkers(
     parentMap: ParentMapDefinition,
     projection: (x: number, y: number) => [number, number],
+    context: EngineRuntimeContext,
   ) {
+    const { pack } = context;
     pack.markers = parentMap.pack.markers;
     pack.markers.forEach((marker) => {
       const [x, y] = projection(marker.x, marker.y);
-      if (!this.isInMap(x, y)) Markers.deleteMarker(marker.i);
+      if (!this.isInMap(x, y, context)) Markers.deleteMarker(marker.i, context);
 
       const cell = findClosestCell(x, y, Infinity, pack);
       marker.x = rn(x, 2);
@@ -477,14 +535,16 @@ class Resampler {
     parentMap: ParentMapDefinition,
     projection: (x: number, y: number) => [number, number],
     scale: number,
+    context: EngineRuntimeContext,
   ) {
+    const { pack } = context;
     const getSearchRadius = (cellId: number) =>
       Math.sqrt(parentMap.pack.cells.area[cellId] / Math.PI) * scale;
 
     pack.zones = parentMap.pack.zones.map((zone) => {
       const cells = zone.cells.flatMap((cellId) => {
         const [newX, newY] = projection(...parentMap.pack.cells.p[cellId]);
-        if (!this.isInMap(newX, newY)) return [];
+        if (!this.isInMap(newX, newY, context)) return [];
         return findAllCellsInRadius(newX, newY, getSearchRadius(cellId), pack);
       });
 
@@ -492,48 +552,48 @@ class Resampler {
     });
   }
 
-  process(options: ResamplerProcessOptions): void {
+  process(
+    options: ResamplerProcessOptions,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ): void {
     const { projection, inverse, scale } = options;
-    const parentMap = {
-      grid: structuredClone(grid),
-      pack: structuredClone(pack),
-      notes: structuredClone(notes),
-    };
-    const riversData = this.saveRiversData(pack.rivers);
+    const parentMap = context.mapStore.createSnapshot();
+    const riversData = this.saveRiversData(context.pack.rivers, context);
 
-    grid = generateGrid(seed, graphWidth, graphHeight);
-    pack = {} as PackedGraph;
-    notes = parentMap.notes;
+    context.mapStore.resetForResample(parentMap);
+    const resampledContext = context.mapStore.getCurrentContext();
 
-    this.resamplePrimaryGridData(parentMap, inverse, scale);
+    this.resamplePrimaryGridData(parentMap, inverse, scale, resampledContext);
 
-    Features.markupGrid();
-    addLakesInDeepDepressions();
-    openNearSeaLakes();
+    EngineGenerationPipeline.markupGrid(resampledContext);
+    resampledContext.lifecycle.addLakesInDeepDepressions(resampledContext);
+    resampledContext.lifecycle.openNearSeaLakes(resampledContext);
 
-    OceanLayers();
-    calculateMapCoordinates();
-    calculateTemperatures();
+    resampledContext.lifecycle.drawOceanLayers(resampledContext);
+    resampledContext.lifecycle.calculateMapCoordinates(resampledContext);
+    EngineGenerationPipeline.calculateClimate(resampledContext);
 
-    reGraph();
-    Features.markupPack();
-    Ice.generate();
-    createDefaultRuler();
+    resampledContext.lifecycle.rebuildGraph();
+    EngineGenerationPipeline.markupPack(resampledContext);
+    EngineGenerationPipeline.generateIce(resampledContext);
+    resampledContext.lifecycle.createDefaultRuler();
 
-    this.restoreCellData(parentMap, inverse, scale);
-    this.restoreRivers(riversData, projection, scale);
-    this.restoreCultures(parentMap, projection);
-    this.restoreBurgs(parentMap, projection, scale);
-    this.restoreStates(parentMap, projection);
-    this.restoreRoutes(parentMap, projection);
-    this.restoreReligions(parentMap, projection);
-    this.restoreProvinces(parentMap);
-    this.restoreFeatureDetails(parentMap, inverse);
-    this.restoreMarkers(parentMap, projection);
-    this.restoreZones(parentMap, projection, scale);
+    this.restoreCellData(parentMap, inverse, scale, resampledContext);
+    this.restoreRivers(riversData, projection, scale, resampledContext);
+    this.restoreCultures(parentMap, projection, resampledContext);
+    this.restoreBurgs(parentMap, projection, scale, resampledContext);
+    this.restoreStates(parentMap, projection, resampledContext);
+    this.restoreRoutes(parentMap, projection, resampledContext);
+    this.restoreReligions(parentMap, projection, resampledContext);
+    this.restoreProvinces(parentMap, resampledContext);
+    this.restoreFeatureDetails(parentMap, inverse, resampledContext);
+    this.restoreMarkers(parentMap, projection, resampledContext);
+    this.restoreZones(parentMap, projection, scale, resampledContext);
 
-    showStatistics();
+    resampledContext.lifecycle.showStatistics(resampledContext);
   }
 }
 
-window.Resample = new Resampler();
+if (typeof window !== "undefined") {
+  window.Resample = new Resampler();
+}

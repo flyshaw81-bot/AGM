@@ -7,12 +7,20 @@
   "main": "main.js",
   "scripts": {
     "dev": "vite",
+    "dev:5174": "vite --host 127.0.0.1 --port 5174 --strictPort",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "verify": "npm run lint && npm run typecheck && npm run test -- --run && npm run build",
     "test": "vitest",
     "test:browser": "vitest --config=vitest.browser.config.ts",
     "test:e2e": "playwright test",
-    "lint": "biome check --write",
+    "test:e2e:studio": "playwright test tests/e2e/studio-export-data-workflow.spec.ts tests/e2e/studio-editor-workflow.spec.ts tests/e2e/studio-language-switch.spec.ts",
+    "test:e2e:legacy": "playwright test tests/e2e/burgs.spec.ts tests/e2e/layers.spec.ts tests/e2e/load-map.spec.ts tests/e2e/states.spec.ts tests/e2e/zones-export.spec.ts",
+    "test:engine-importer-fixtures": "playwright test tests/e2e/engine-importer-fixture-automation.spec.ts",
+    "validate:unity-export": "node scripts/validate-unity-export.mjs",
+    "lint": "biome check",
+    "lint:fix": "biome check --write",
     "format": "biome format --write"
   },
   "devDependencies": {

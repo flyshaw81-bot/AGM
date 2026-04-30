@@ -1,17 +1,17 @@
 import { curveCatmullRom, line } from "d3";
 import Delaunator from "delaunator";
-import {
-  distanceSquared,
-  findClosestCell,
-  findPath,
-  getAdjective,
-  isLand,
-  ra,
-  rn,
-  round,
-  rw,
-} from "../utils";
+import { distanceSquared } from "../utils/functionUtils";
+import { findClosestCell, isLand } from "../utils/graphUtils";
+import { getAdjective } from "../utils/languageUtils";
+import { rn } from "../utils/numberUtils";
+import { findPath } from "../utils/pathUtils";
+import { ra, rw } from "../utils/probabilityUtils";
+import { round } from "../utils/stringUtils";
 import type { Burg } from "./burgs-generator";
+import {
+  type EngineRuntimeContext,
+  getGlobalEngineRuntimeContext,
+} from "./engine-runtime-context";
 import type { Point } from "./voronoi";
 
 const ROUTES_SHARP_ANGLE = 135;
@@ -183,7 +183,7 @@ export interface Route {
   merged?: boolean;
 }
 
-class RoutesModule {
+export class RoutesModule {
   buildLinks(routes: Route[]): Record<number, Record<number, number>> {
     const links: Record<number, Record<number, number>> = {};
 
@@ -278,10 +278,14 @@ class RoutesModule {
   private createCostEvaluator({
     isWater,
     connections,
+    context,
   }: {
     isWater: boolean;
     connections: Map<string, boolean>;
+    context: EngineRuntimeContext;
   }) {
+    const { biomesData, grid, pack } = context;
+
     function getLandPathCost(current: number, next: number) {
       if (pack.cells.h[next] < 20) return Infinity; // ignore water cells
 
@@ -367,13 +371,20 @@ class RoutesModule {
     connections,
     start,
     exit,
+    context,
   }: {
     isWater: boolean;
     connections: Map<string, boolean>;
     start: number;
     exit: number;
+    context: EngineRuntimeContext;
   }) {
-    const getCost = this.createCostEvaluator({ isWater, connections });
+    const getCost = this.createCostEvaluator({
+      isWater,
+      connections,
+      context,
+    });
+    const { pack } = context;
     const pathCells = findPath(
       start,
       (current) => current === exit,
@@ -385,9 +396,12 @@ class RoutesModule {
     return segments;
   }
 
-  private generateMainRoads(connections: Map<string, boolean>) {
-    TIME && console.time("generateMainRoads");
-    const { capitalsByFeature } = this.sortBurgsByFeature(pack.burgs);
+  private generateMainRoads(
+    connections: Map<string, boolean>,
+    context: EngineRuntimeContext,
+  ) {
+    context.timing.shouldTime && console.time("generateMainRoads");
+    const { capitalsByFeature } = this.sortBurgsByFeature(context.pack.burgs);
     const mainRoads: Route[] = [];
 
     for (const [key, featureCapitals] of Object.entries(capitalsByFeature)) {
@@ -402,6 +416,7 @@ class RoutesModule {
           connections,
           start,
           exit,
+          context,
         });
         for (const segment of segments) {
           this.addConnections(segment, connections);
@@ -410,7 +425,7 @@ class RoutesModule {
       });
     }
 
-    TIME && console.timeEnd("generateMainRoads");
+    context.timing.shouldTime && console.timeEnd("generateMainRoads");
     return mainRoads;
   }
 
@@ -425,9 +440,12 @@ class RoutesModule {
     }
   }
 
-  private generateTrails(connections: Map<string, boolean>) {
-    TIME && console.time("generateTrails");
-    const { burgsByFeature } = this.sortBurgsByFeature(pack.burgs);
+  private generateTrails(
+    connections: Map<string, boolean>,
+    context: EngineRuntimeContext,
+  ) {
+    context.timing.shouldTime && console.time("generateTrails");
+    const { burgsByFeature } = this.sortBurgsByFeature(context.pack.burgs);
     const trails: Route[] = [];
 
     for (const [key, featureBurgs] of Object.entries(burgsByFeature)) {
@@ -442,6 +460,7 @@ class RoutesModule {
           connections,
           start,
           exit,
+          context,
         });
         for (const segment of segments) {
           this.addConnections(segment, connections);
@@ -450,13 +469,16 @@ class RoutesModule {
       });
     }
 
-    TIME && console.timeEnd("generateTrails");
+    context.timing.shouldTime && console.timeEnd("generateTrails");
     return trails;
   }
 
-  private generateSeaRoutes(connections: Map<string, boolean>) {
-    TIME && console.time("generateSeaRoutes");
-    const { portsByFeature } = this.sortBurgsByFeature(pack.burgs);
+  private generateSeaRoutes(
+    connections: Map<string, boolean>,
+    context: EngineRuntimeContext,
+  ) {
+    context.timing.shouldTime && console.time("generateSeaRoutes");
+    const { portsByFeature } = this.sortBurgsByFeature(context.pack.burgs);
     const seaRoutes: Route[] = [];
 
     for (const [featureId, featurePorts] of Object.entries(portsByFeature)) {
@@ -471,6 +493,7 @@ class RoutesModule {
           connections,
           start,
           exit,
+          context,
         });
         for (const segment of segments) {
           this.addConnections(segment, connections);
@@ -482,12 +505,12 @@ class RoutesModule {
       });
     }
 
-    TIME && console.timeEnd("generateSeaRoutes");
+    context.timing.shouldTime && console.timeEnd("generateSeaRoutes");
     return seaRoutes;
   }
 
-  private preparePointsArray(): Point[] {
-    const { cells, burgs } = pack;
+  private preparePointsArray(context: EngineRuntimeContext): Point[] {
+    const { cells, burgs } = context.pack;
     return cells.p.map(([x, y], cellId) => {
       const burgId = cells.burg[cellId];
       if (burgId) return [burgs[burgId].x, burgs[burgId].y];
@@ -495,7 +518,13 @@ class RoutesModule {
     });
   }
 
-  private getPoints(group: string, cells: number[], points: Point[]) {
+  private getPoints(
+    group: string,
+    cells: number[],
+    points: Point[],
+    context: EngineRuntimeContext,
+  ) {
+    const { pack } = context;
     const data = cells.map((cellId) => [...points[cellId], cellId]);
 
     // resolve sharp angles
@@ -530,7 +559,7 @@ class RoutesModule {
             newY = rn((currY + middleY) / 2, 2);
           }
 
-          if (findClosestCell(newX, newY, undefined, pack) === cellId) {
+          if (findClosestCell(newX, newY, undefined, context.pack) === cellId) {
             data[i] = [newX, newY, cellId];
             points[cellId] = [data[i][0], data[i][1]]; // change cell coordinate for all routes
           }
@@ -563,34 +592,44 @@ class RoutesModule {
 
     return routesMerged > 1 ? this.mergeRoutes(routes) : routes;
   }
-  private createRoutesData(routes: Route[], connections: Map<string, boolean>) {
-    const mainRoads = this.generateMainRoads(connections);
-    const trails = this.generateTrails(connections);
-    const seaRoutes = this.generateSeaRoutes(connections);
-    const pointsArray = this.preparePointsArray();
+  private createRoutesData(
+    routes: Route[],
+    connections: Map<string, boolean>,
+    context: EngineRuntimeContext,
+  ) {
+    const mainRoads = this.generateMainRoads(connections, context);
+    const trails = this.generateTrails(connections, context);
+    const seaRoutes = this.generateSeaRoutes(connections, context);
+    const pointsArray = this.preparePointsArray(context);
 
     for (const { feature, cells, merged } of this.mergeRoutes(mainRoads)) {
       if (merged) continue;
-      const points = this.getPoints("roads", cells!, pointsArray);
+      const points = this.getPoints("roads", cells!, pointsArray, context);
       routes.push({ i: routes.length, group: "roads", feature, points });
     }
 
     for (const { feature, cells, merged } of this.mergeRoutes(trails)) {
       if (merged) continue;
-      const points = this.getPoints("trails", cells!, pointsArray);
+      const points = this.getPoints("trails", cells!, pointsArray, context);
       routes.push({ i: routes.length, group: "trails", feature, points });
     }
 
     for (const { feature, cells, merged } of this.mergeRoutes(seaRoutes)) {
       if (merged) continue;
-      const points = this.getPoints("searoutes", cells!, pointsArray);
+      const points = this.getPoints("searoutes", cells!, pointsArray, context);
       routes.push({ i: routes.length, group: "searoutes", feature, points });
     }
 
     return routes;
   }
 
-  generate(lockedRoutes: Route[] = []) {
+  generate(
+    input: EngineRuntimeContext | Route[] = getGlobalEngineRuntimeContext(),
+  ) {
+    const context = Array.isArray(input)
+      ? getGlobalEngineRuntimeContext()
+      : input;
+    const lockedRoutes = Array.isArray(input) ? input : [];
     const connections = new Map();
     lockedRoutes.forEach((route: Route) => {
       this.addConnections(
@@ -599,8 +638,12 @@ class RoutesModule {
       );
     });
 
-    pack.routes = this.createRoutesData(lockedRoutes, connections);
-    pack.cells.routes = this.buildLinks(pack.routes);
+    context.pack.routes = this.createRoutesData(
+      lockedRoutes,
+      connections,
+      context,
+    );
+    context.pack.cells.routes = this.buildLinks(context.pack.routes);
   }
 
   // utility functions
@@ -617,16 +660,18 @@ class RoutesModule {
 
   // connect cell with routes system by land
   connect(cellId: number): Route | undefined {
+    const context = getGlobalEngineRuntimeContext();
     const getCost = this.createCostEvaluator({
       isWater: false,
       connections: new Map(),
+      context,
     });
     const isExit = (c: number) => isLand(c, pack) && this.isConnected(c);
     const pathCells = findPath(cellId, isExit, getCost, pack);
     if (!pathCells) return;
 
-    const pointsArray = this.preparePointsArray();
-    const points = this.getPoints("trails", pathCells, pointsArray);
+    const pointsArray = this.preparePointsArray(context);
+    const points = this.getPoints("trails", pathCells, pointsArray, context);
     const feature = pack.cells.f[cellId];
     const routeId = this.getNextId();
     const newRoute = { i: routeId, group: "trails", feature, points };
@@ -783,4 +828,6 @@ class RoutesModule {
   }
 }
 
-window.Routes = new RoutesModule();
+if (typeof window !== "undefined") {
+  window.Routes = new RoutesModule();
+}

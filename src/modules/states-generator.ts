@@ -1,20 +1,14 @@
 import { mean, median, sum } from "d3";
+import { getMixedColor, getRandomColor } from "../utils/colorUtils";
+import { getAdjective, trimVowels } from "../utils/languageUtils";
+import { minmax, rn } from "../utils/numberUtils";
+import { getPolesOfInaccessibility } from "../utils/pathUtils";
+import { PriorityQueue } from "../utils/priorityQueue";
+import { each, gauss, P, ra, rand, rw } from "../utils/probabilityUtils";
 import {
-  byId,
-  each,
-  gauss,
-  getAdjective,
-  getMixedColor,
-  getPolesOfInaccessibility,
-  getRandomColor,
-  minmax,
-  P,
-  ra,
-  rand,
-  rn,
-  rw,
-  trimVowels,
-} from "../utils";
+  type EngineRuntimeContext,
+  getGlobalEngineRuntimeContext,
+} from "./engine-runtime-context";
 
 declare global {
   var States: StatesModule;
@@ -56,11 +50,12 @@ export interface State {
   alert?: number;
 }
 
-class StatesModule {
-  private createStates() {
+export class StatesModule {
+  private createStates(context: EngineRuntimeContext) {
+    const { generationSettings, naming, pack } = context;
     const states: State[] = [{ i: 0, name: "Neutrals" } as State];
     const each5th = each(5);
-    const sizeVariety = (byId("sizeVariety") as HTMLInputElement).valueAsNumber;
+    const sizeVariety = generationSettings.stateSizeVariety;
 
     pack.burgs.forEach((burg) => {
       if (!burg.i || !burg.capital) return;
@@ -69,11 +64,11 @@ class StatesModule {
       const basename =
         burg.name!.length < 9 && each5th(burg.cell)
           ? burg.name!
-          : Names.getCultureShort(burg.culture!);
-      const name = Names.getState(basename, burg.culture!);
+          : naming.getCultureShort(burg.culture!);
+      const name = naming.getState(basename, burg.culture!);
       const type = pack.cultures[burg.culture!].type;
-      const coa = COA.generate(null, null, null, type);
-      coa.shield = COA.getShield(burg.culture!);
+      const coa = context.heraldry.generate(null, null, null, type);
+      coa.shield = context.heraldry.getShield(burg.culture!);
       states.push({
         i: burg.i,
         name,
@@ -109,10 +104,15 @@ class StatesModule {
     return 0;
   }
 
-  private getRiverCost(r: any, i: number, type: string) {
+  private getRiverCost(
+    r: any,
+    i: number,
+    type: string,
+    context: EngineRuntimeContext,
+  ) {
     if (type === "River") return r ? 0 : 100; // penalty for river cultures
     if (!r) return 0; // no penalty for others if there is no river
-    return minmax(pack.cells.fl[i] / 10, 20, 100); // river penalty from 20 to 100 based on flux
+    return minmax(context.pack.cells.fl[i] / 10, 20, 100); // river penalty from 20 to 100 based on flux
   }
 
   private getTypeCost(t: number, type: string) {
@@ -127,33 +127,37 @@ class StatesModule {
     return 0;
   }
 
-  generate() {
-    TIME && console.time("generateStates");
-    pack.states = this.createStates();
-    this.expandStates();
-    this.normalize();
-    this.getPoles();
-    this.findNeighbors();
-    this.assignColors();
-    this.generateCampaigns();
-    this.generateDiplomacy();
+  generate(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+    context.timing.shouldTime && console.time("generateStates");
+    context.pack.states = this.createStates(context);
+    this.expandStates(context);
+    this.normalize(context);
+    this.getPoles(context);
+    this.findNeighbors(context);
+    this.assignColors(context);
+    this.generateCampaigns(context);
+    this.generateDiplomacy(context);
 
-    TIME && console.timeEnd("generateStates");
+    context.timing.shouldTime && console.timeEnd("generateStates");
   }
 
-  expandStates() {
-    TIME && console.time("expandStates");
-    const { cells, states, cultures, burgs } = pack;
+  expandStates(
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    context.timing.shouldTime && console.time("expandStates");
+    const { cells, states, cultures, burgs, features } = context.pack;
 
     cells.state = cells.state || new Uint16Array(cells.i.length);
 
-    const queue = new FlatQueue();
+    const queue = new PriorityQueue<{
+      e: number;
+      p: number;
+      s: number;
+      b: number;
+    }>();
     const cost: number[] = [];
 
-    const globalGrowthRate =
-      (byId("growthRate") as HTMLInputElement)?.valueAsNumber || 1;
-    const statesGrowthRate =
-      (byId("statesGrowthRate") as HTMLInputElement)?.valueAsNumber || 1;
+    const { globalGrowthRate, statesGrowthRate } = context.generationSettings;
     const growthRate =
       (cells.i.length / 2) * globalGrowthRate * statesGrowthRate; // limit cost for state growth
 
@@ -195,11 +199,11 @@ class StatesModule {
               : 5000;
         const biomeCost = this.getBiomeCost(b, cells.biome[e], type);
         const heightCost = this.getHeightCost(
-          pack.features[cells.f[e]],
+          features[cells.f[e]],
           cells.h[e],
           type,
         );
-        const riverCost = this.getRiverCost(cells.r[e], e, type);
+        const riverCost = this.getRiverCost(cells.r[e], e, type, context);
         const typeCost = this.getTypeCost(cells.t[e], type);
         const cellCost = Math.max(
           cultureCost +
@@ -227,38 +231,37 @@ class StatesModule {
       .forEach((b) => {
         b.state = cells.state[b.cell]; // assign state to burgs
       });
-    TIME && console.timeEnd("expandStates");
+    context.timing.shouldTime && console.timeEnd("expandStates");
   }
 
-  normalize() {
-    TIME && console.time("normalizeStates");
-    const { cells, burgs } = pack;
+  normalize(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+    context.timing.shouldTime && console.time("normalizeStates");
+    const { cells, burgs, states } = context.pack;
 
     for (const i of cells.i) {
       if (cells.h[i] < 20 || cells.burg[i]) continue; // do not overwrite burgs
-      if (pack.states[cells.state[i]]?.lock) continue; // do not overwrite cells of locks states
+      if (states[cells.state[i]]?.lock) continue; // do not overwrite cells of locks states
       if (cells.c[i].some((c) => burgs[cells.burg[c]].capital)) continue; // do not overwrite near capital
       const neibs = cells.c[i].filter((c) => cells.h[c] >= 20);
       const adversaries = neibs.filter(
         (c) =>
-          !pack.states[cells.state[c]]?.lock &&
-          cells.state[c] !== cells.state[i],
+          !states[cells.state[c]]?.lock && cells.state[c] !== cells.state[i],
       );
       if (adversaries.length < 2) continue;
       const buddies = neibs.filter(
         (c) =>
-          !pack.states[cells.state[c]]?.lock &&
-          cells.state[c] === cells.state[i],
+          !states[cells.state[c]]?.lock && cells.state[c] === cells.state[i],
       );
       if (buddies.length > 2) continue;
       if (adversaries.length <= buddies.length) continue;
       cells.state[i] = cells.state[adversaries[0]];
     }
-    TIME && console.timeEnd("normalizeStates");
+    context.timing.shouldTime && console.timeEnd("normalizeStates");
   }
 
   // calculate pole of inaccessibility for each state
-  getPoles() {
+  getPoles(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+    const { pack } = context;
     const getType = (cellId: number) => pack.cells.state[cellId];
     const poles = getPolesOfInaccessibility(pack, getType);
 
@@ -268,8 +271,10 @@ class StatesModule {
     });
   }
 
-  findNeighbors() {
-    const { cells, states } = pack;
+  findNeighbors(
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { cells, states } = context.pack;
 
     const stateNeighbors: Set<number>[] = [];
 
@@ -297,8 +302,10 @@ class StatesModule {
     });
   }
 
-  assignColors() {
-    TIME && console.time("assignColors");
+  assignColors(
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    context.timing.shouldTime && console.time("assignColors");
     const colors = [
       "#66c2a5",
       "#fc8d62",
@@ -307,7 +314,7 @@ class StatesModule {
       "#a6d854",
       "#ffd92f",
     ]; // d3.schemeSet2;
-    const states = pack.states;
+    const states = context.pack.states;
 
     // assign basic color using greedy coloring algorithm
     states.forEach((state) => {
@@ -332,13 +339,15 @@ class StatesModule {
       });
     });
 
-    TIME && console.timeEnd("assignColors");
+    context.timing.shouldTime && console.timeEnd("assignColors");
   }
 
   // calculate states data like area, population etc.
-  collectStatistics() {
-    TIME && console.time("collectStatistics");
-    const { cells, states } = pack;
+  collectStatistics(
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    context.timing.shouldTime && console.time("collectStatistics");
+    const { cells, states, burgs } = context.pack;
 
     states.forEach((s) => {
       if (s.removed) return;
@@ -354,15 +363,19 @@ class StatesModule {
       states[s].area! += cells.area[i];
       states[s].rural! += cells.pop[i];
       if (cells.burg[i]) {
-        states[s].urban! += pack.burgs[cells.burg[i]].population!;
+        states[s].urban! += burgs[cells.burg[i]].population!;
         states[s].burgs!++;
       }
     }
 
-    TIME && console.timeEnd("collectStatistics");
+    context.timing.shouldTime && console.timeEnd("collectStatistics");
   }
 
-  generateCampaign(state: State) {
+  generateCampaign(
+    state: State,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { naming, options, pack } = context;
     const wars = {
       War: 6,
       Conflict: 2,
@@ -380,7 +393,7 @@ class StatesModule {
         const name =
           i && P(0.8)
             ? pack.states[i].name
-            : Names.getCultureShort(state.culture);
+            : naming.getCultureShort(state.culture);
         const start = gauss(options.year - 100, 150, 1, options.year - 6);
         const end = start + gauss(4, 5, 1, options.year - start - 1);
         return { name: `${getAdjective(name)} ${rw(wars)}`, start, end };
@@ -388,17 +401,22 @@ class StatesModule {
       .sort((a, b) => a.start - b.start);
   }
 
-  generateCampaigns() {
-    pack.states.forEach((s) => {
+  generateCampaigns(
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    context.pack.states.forEach((s) => {
       if (!s.i || s.removed) return;
-      s.campaigns = this.generateCampaign(s);
+      s.campaigns = this.generateCampaign(s, context);
     });
   }
 
   // generate Diplomatic Relationships
-  generateDiplomacy() {
-    TIME && console.time("generateDiplomacy");
-    const { cells, states } = pack;
+  generateDiplomacy(
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    context.timing.shouldTime && console.time("generateDiplomacy");
+    const { cells, states } = context.pack;
+    const { options } = context;
     states[0].diplomacy = [];
     // FIRST STATE IS ALWAYS NEUTRAL and contains the history of diplomacy
     const chronicle = states[0].diplomacy;
@@ -629,12 +647,22 @@ class StatesModule {
       // TODO: record war in chronicle to keep state interface clean
       chronicle.push(war as any); // add a record to diplomatical history
     }
-    TIME && console.timeEnd("generateDiplomacy");
+    context.timing.shouldTime && console.timeEnd("generateDiplomacy");
   }
 
   // select a forms for listed or all valid states
-  defineStateForms(list: number[] | null = null) {
-    TIME && console.time("defineStateForms");
+  defineStateForms(
+    input: number[] | null | EngineRuntimeContext = null,
+    context?: EngineRuntimeContext,
+  ) {
+    const runtimeContext =
+      Array.isArray(input) || input === null
+        ? (context ?? getGlobalEngineRuntimeContext())
+        : input;
+    const list = Array.isArray(input) ? input : null;
+    const { pack, timing } = runtimeContext;
+
+    timing.shouldTime && console.time("defineStateForms");
     const states = pack.states.filter((s) => s.i && !s.removed && !s.lock);
     if (states.length < 1) return;
 
@@ -791,7 +819,7 @@ class StatesModule {
       s.fullName = this.getFullName(s);
     }
 
-    TIME && console.timeEnd("defineStateForms");
+    timing.shouldTime && console.timeEnd("defineStateForms");
   }
 
   getFullName(state: State) {
@@ -825,4 +853,6 @@ class StatesModule {
   }
 }
 
-window.States = new StatesModule();
+if (typeof window !== "undefined") {
+  window.States = new StatesModule();
+}

@@ -13,6 +13,8 @@ declare global {
   var ERROR: boolean;
   var DEBUG: { stateLabels?: boolean; [key: string]: boolean | undefined };
   var options: any;
+  var mapHistory: Array<{ seed?: string; [key: string]: unknown }>;
+  var aleaPRNG: (seed: string) => () => number;
 
   var heightmapTemplates: any;
   var Routes: any;
@@ -31,8 +33,10 @@ declare global {
   var religionsNumber: HTMLInputElement;
   var distanceUnitInput: HTMLInputElement;
   var heightUnit: HTMLSelectElement;
+  var precInput: HTMLInputElement;
 
   var rivers: Selection<SVGElement, unknown, null, undefined>;
+  var prec: Selection<SVGGElement, unknown, null, undefined>;
   var oceanLayers: Selection<SVGGElement, unknown, null, undefined>;
   var emblems: Selection<SVGElement, unknown, null, undefined>;
   var svg: Selection<SVGSVGElement, unknown, null, undefined>;
@@ -75,8 +79,13 @@ declare global {
   var layerIsOn: (layerId: string) => boolean;
   var drawRoute: (route: any) => void;
   var invokeActiveZooming: () => void;
-  var FlatQueue: any;
-
+  var setSeed: (precreatedSeed?: string) => void;
+  var applyGraphSize: () => void;
+  var randomizeOptions: () => void;
+  var parseError: (error: Error) => string;
+  var clearMainTip: () => void;
+  var cleanupData: () => void;
+  var regenerateMap: (reason?: string) => void;
   var tip: (
     message: string,
     autoHide?: boolean,
@@ -89,14 +98,27 @@ declare global {
   var scale: number;
   var changeFont: () => void;
   var getFriendlyHeight: (coords: [number, number]) => string;
-  var addLakesInDeepDepressions: () => void;
-  var openNearSeaLakes: () => void;
-  var calculateMapCoordinates: () => void;
+  var addLakesInDeepDepressions: (lakeElevationLimit?: number) => void;
+  var openNearSeaLakes: (heightmapTemplateId?: string) => void;
+  var defineMapSize: (heightmapTemplateId?: string) => void;
+  var calculateMapCoordinates: (settings?: {
+    mapSizePercent?: number;
+    latitudePercent?: number;
+    longitudePercent?: number;
+  }) => void;
   var calculateTemperatures: () => void;
+  var generatePrecipitation: () => void;
   var reGraph: () => void;
   var createDefaultRuler: () => void;
-  var showStatistics: () => void;
-  var studioViewportSync: (presetId: string, orientation: "landscape" | "portrait", fitMode: "contain" | "cover" | "actual-size") => void;
+  var showStatistics: (heightmapTemplateId?: string) => void;
+  var setStudioViewportSize:
+    | ((width: number, height: number) => void)
+    | undefined;
+  var studioViewportSync: (
+    presetId: string,
+    orientation: "landscape" | "portrait",
+    fitMode: "contain" | "cover" | "actual-size",
+  ) => void;
   var saveMap: (method: "storage" | "machine" | "dropbox") => Promise<void>;
   var quickLoad: () => Promise<void>;
   var generateMapOnLoad: () => Promise<void>;

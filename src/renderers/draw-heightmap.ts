@@ -1,10 +1,29 @@
 import type { CurveFactory } from "d3";
-import * as d3 from "d3";
-import { color, line, range } from "d3";
+import {
+  color,
+  curveBasisClosed,
+  curveLinear,
+  curveStep,
+  line,
+  range,
+} from "d3";
 import { round } from "../utils";
 
 declare global {
   var drawHeightmap: () => void;
+}
+
+const HEIGHTMAP_CURVES = {
+  curveBasisClosed,
+  curveLinear,
+  curveStep,
+} satisfies Record<string, CurveFactory>;
+
+function getHeightmapCurve(curveName: string | null): CurveFactory {
+  return (
+    HEIGHTMAP_CURVES[curveName as keyof typeof HEIGHTMAP_CURVES] ||
+    curveBasisClosed
+  );
 }
 
 const heightmapRenderer = (): void => {
@@ -28,10 +47,7 @@ const heightmapRenderer = (): void => {
   if (renderOceanCells) {
     const skip = +ocean.attr("skip") + 1 || 1;
     const relax = +ocean.attr("relax") || 0;
-    // TODO: Improve for treeshaking
-    const curveType: keyof typeof d3 = (ocean.attr("curve") ||
-      "curveBasisClosed") as keyof typeof d3;
-    const lineGen = line().curve(d3[curveType] as CurveFactory);
+    const lineGen = line().curve(getHeightmapCurve(ocean.attr("curve")));
 
     let currentLayer = 0;
     for (const i of heights) {
@@ -59,9 +75,7 @@ const heightmapRenderer = (): void => {
   {
     const skip = +land.attr("skip") + 1 || 1;
     const relax = +land.attr("relax") || 0;
-    const curveType: keyof typeof d3 = (land.attr("curve") ||
-      "curveBasisClosed") as keyof typeof d3;
-    const lineGen = line().curve(d3[curveType] as CurveFactory);
+    const lineGen = line().curve(getHeightmapCurve(land.attr("curve")));
 
     let currentLayer = 20;
     for (const i of heights) {

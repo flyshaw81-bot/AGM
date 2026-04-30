@@ -299,7 +299,7 @@ function editBurg(id) {
     const id = +elSelected.attr("data-id");
     const burg = pack.burgs[id];
 
-    prompt(
+    requestStudioInput(
       "Provide custom URL to the burg map. It can be a link to a generator or just an image. Leave empty to use the default map preview",
       {default: Burgs.getPreview(burg).link, required: false},
       link => {

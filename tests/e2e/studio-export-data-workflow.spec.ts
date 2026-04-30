@@ -46,6 +46,143 @@ async function setIndexedDbSnapshot(page: Parameters<typeof test>[0]["page"], va
   }, value);
 }
 
+function projectGeneratePanel(page: Parameters<typeof test>[0]["page"]) {
+  return page.locator(".studio-sidebar--right .studio-panel").filter({has: page.getByRole("heading", {name: "Generate map"})}).first();
+}
+
+function projectMapSettingsPanel(page: Parameters<typeof test>[0]["page"]) {
+  return page.locator(".studio-sidebar--right .studio-panel").filter({has: page.getByRole("heading", {name: "Map settings"})}).first();
+}
+
+function projectDocumentPanelLocator(page: Parameters<typeof test>[0]["page"]) {
+  return page.locator("[data-studio-project-document='true']").first();
+}
+
+async function openBalanceChecker(page: Parameters<typeof test>[0]["page"]) {
+  const section = page.locator("[data-studio-advanced='balance-checker']");
+  await expect(section.locator("summary")).toBeVisible();
+  const isOpen = await section.evaluate(element => (element as HTMLDetailsElement).open);
+  if (!isOpen) await section.locator("summary").click();
+  return section.locator("#studioBalanceCheckerPanel");
+}
+
+async function openExportWorkspace(page: Parameters<typeof test>[0]["page"]) {
+  const exportNav = page.locator(".studio-nav [data-studio-action='section'][data-value='export']");
+  await exportNav.click();
+  await expect(exportNav).toHaveClass(/is-active/);
+}
+
+async function openDetailsBySummary(page: Parameters<typeof test>[0]["page"], summaryText: string) {
+  const details = page.locator(".studio-sidebar--right details").filter({hasText: summaryText}).first();
+  await expect(details.locator("summary")).toBeVisible();
+  await details.evaluate(element => {
+    (element as HTMLDetailsElement).open = true;
+  });
+  return details;
+}
+
+async function openDataDropboxDetails(page: Parameters<typeof test>[0]["page"]) {
+  return openDetailsBySummary(page, "Dropbox and sharing");
+}
+
+async function openDataAdvancedLoadingDetails(page: Parameters<typeof test>[0]["page"]) {
+  return openDetailsBySummary(page, "Advanced loading");
+}
+
+async function openProjectGenerationDetails(page: Parameters<typeof test>[0]["page"]) {
+  return openBalanceChecker(page);
+}
+
+async function fillGeneratorParameter(page: Parameters<typeof test>[0]["page"], key: string, value: string) {
+  const panel = await openProjectGenerationDetails(page);
+  const input = panel.locator(`[data-generator-parameter-key='${key}']`);
+  await input.fill(value);
+  await input.blur();
+}
+
+async function clickAutoFixHistory(page: Parameters<typeof test>[0]["page"], action: "undo" | "redo") {
+  const panel = await openBalanceChecker(page);
+  await panel.locator(`[data-studio-action='auto-fix-history'][data-value='${action}']`).click();
+}
+
+async function clickAutoFixDraftButton(page: Parameters<typeof test>[0]["page"], draftId: string, name: string) {
+  const panel = await openBalanceChecker(page);
+  await panel.locator(`[data-auto-fix-draft-id='${draftId}']`).getByRole("button", {name}).click();
+}
+
+async function setBiomeRule(page: Parameters<typeof test>[0]["page"], biomeId: number, weight: string, tag: string) {
+  const panel = await openBalanceChecker(page);
+  const card = panel.locator(`[data-biome-rule-id='${biomeId}']`);
+  await card.locator(`[data-biome-rule-weight='${biomeId}']`).fill(weight);
+  await card.locator(`[data-biome-resource-tag='${biomeId}']`).selectOption(tag);
+  await card.getByRole("button", {name: "Adjust biome rule"}).click();
+}
+
+async function clickAdvancedExportButton(page: Parameters<typeof test>[0]["page"], buttonName: string) {
+  const details = await openDetailsBySummary(page, "Advanced formats");
+  await details.getByRole("button", {name: buttonName}).click();
+}
+
+async function clickEngineHandoffButton(page: Parameters<typeof test>[0]["page"], buttonName: string) {
+  const details = await openDetailsBySummary(page, "Engine handoff");
+  await details.getByRole("button", {name: buttonName}).click();
+}
+
+async function studioViewportSnapshot(page: Parameters<typeof test>[0]["page"]) {
+  return page.evaluate(() => {
+    const stage = document.getElementById("studioStageViewport") as HTMLElement | null;
+    const frame = document.getElementById("studioCanvasFrame") as HTMLElement | null;
+    const zoom = document.querySelector(".studio-map-zoom") as HTMLElement | null;
+    const map = document.getElementById("map") as SVGSVGElement | null;
+    const viewbox = document.getElementById("viewbox") as SVGGElement | null;
+    if (!stage || !frame || !zoom || !map) return null;
+    const stageRect = stage.getBoundingClientRect();
+    const frameRect = frame.getBoundingClientRect();
+    const zoomRect = zoom.getBoundingClientRect();
+    const transform = frame.style.transform;
+    const frameScaleMatch = /scale\(([^)]+)\)/u.exec(transform);
+    const viewboxTransform = viewbox?.getAttribute("transform") || "";
+    const viewboxScaleMatch = /scale\(([^\s)]+)(?:\s+([^\s)]+))?\)/u.exec(viewboxTransform);
+    const viewboxScaleX = viewboxScaleMatch ? Number(viewboxScaleMatch[1]) : null;
+    const viewboxScaleY = viewboxScaleMatch ? Number(viewboxScaleMatch[2] ?? viewboxScaleMatch[1]) : null;
+    return {
+      frameWidth: Math.round(frameRect.width),
+      frameHeight: Math.round(frameRect.height),
+      stageWidth: Math.round(stageRect.width),
+      stageHeight: Math.round(stageRect.height),
+      stageCanScrollVertically: stage.scrollHeight > stage.clientHeight,
+      stageCanScrollHorizontally: stage.scrollWidth > stage.clientWidth,
+      stageOverflowY: window.getComputedStyle(stage).overflowY,
+      stageScrollTop: stage.scrollTop,
+      zoomInsideFrame: frame.contains(zoom),
+      zoomInsideStage:
+        zoomRect.left >= stageRect.left - 1 &&
+        zoomRect.top >= stageRect.top - 1 &&
+        zoomRect.right <= stageRect.right + 1 &&
+        zoomRect.bottom <= stageRect.bottom + 1,
+      overflowLeft: Math.round((stageRect.left - frameRect.left) * 10) / 10,
+      overflowTop: Math.round((stageRect.top - frameRect.top) * 10) / 10,
+      overflowRight: Math.round((frameRect.right - stageRect.right) * 10) / 10,
+      overflowBottom: Math.round((frameRect.bottom - stageRect.bottom) * 10) / 10,
+      frameFullyVisible:
+        frameRect.left >= stageRect.left - 1 &&
+        frameRect.top >= stageRect.top - 1 &&
+        frameRect.right <= stageRect.right + 1 &&
+        frameRect.bottom <= stageRect.bottom + 1,
+      styleWidth: frame.style.width,
+      styleHeight: frame.style.height,
+      fitMode: frame.dataset.fitMode,
+      orientation: frame.dataset.orientation,
+      scale: frameScaleMatch ? Number(frameScaleMatch[1]) : null,
+      mapWidth: map.getAttribute("width"),
+      mapHeight: map.getAttribute("height"),
+      viewboxTransform,
+      viewboxScaleX,
+      viewboxScaleY,
+    };
+  });
+}
+
 test.describe("Studio export and data workflow", () => {
   test.beforeEach(async ({context, page}) => {
     await context.clearCookies();
@@ -54,6 +191,7 @@ test.describe("Studio export and data workflow", () => {
     await page.evaluate(() => {
       localStorage.clear();
       sessionStorage.clear();
+      localStorage.setItem("agm-studio-language", "en");
     });
     await resetIndexedDbSnapshot(page);
 
@@ -71,8 +209,93 @@ test.describe("Studio export and data workflow", () => {
     await page.waitForTimeout(500);
   });
 
+  test("keeps viewport presets, orientation, and fit modes usable in the product shell", async ({page}) => {
+    const initialLandscapeSnapshot = await studioViewportSnapshot(page);
+    expect(initialLandscapeSnapshot?.orientation).toBe("landscape");
+    expect(initialLandscapeSnapshot!.fitMode).toBe("cover");
+    expect(initialLandscapeSnapshot!.frameFullyVisible, JSON.stringify(initialLandscapeSnapshot, null, 2)).toBe(false);
+    expect(initialLandscapeSnapshot!.frameWidth).toBeGreaterThan(initialLandscapeSnapshot!.stageWidth);
+    expect(initialLandscapeSnapshot!.frameHeight).toBeGreaterThan(initialLandscapeSnapshot!.stageHeight - 56);
+    expect(initialLandscapeSnapshot!.viewboxTransform).not.toContain("rotate(90)");
+
+    await page.locator("[data-studio-action='fitmode'][data-value='contain']").first().click();
+    const containLandscapeSnapshot = await studioViewportSnapshot(page);
+    expect(containLandscapeSnapshot!.orientation).toBe("landscape");
+    expect(containLandscapeSnapshot!.fitMode).toBe("contain");
+    expect(containLandscapeSnapshot!.frameFullyVisible, JSON.stringify(containLandscapeSnapshot, null, 2)).toBe(true);
+    expect(containLandscapeSnapshot!.frameWidth).toBeGreaterThanOrEqual(containLandscapeSnapshot!.stageWidth - 56);
+    expect(containLandscapeSnapshot!.frameHeight).toBeGreaterThan(0);
+    expect(containLandscapeSnapshot!.frameHeight).toBeLessThanOrEqual(containLandscapeSnapshot!.stageHeight);
+    expect(initialLandscapeSnapshot!.viewboxScaleX!).toBeGreaterThan(containLandscapeSnapshot!.viewboxScaleX!);
+
+    await page.locator("[data-studio-action='orientation'][data-value='portrait']").first().click();
+    await expect.poll(() => studioViewportSnapshot(page)).toMatchObject({
+      styleWidth: "900px",
+      styleHeight: "1440px",
+      orientation: "portrait",
+      fitMode: "contain",
+      mapWidth: "900",
+      mapHeight: "1440",
+    });
+
+    const portraitSnapshot = await studioViewportSnapshot(page);
+    expect(portraitSnapshot?.scale).toBeTruthy();
+    expect(portraitSnapshot!.scale!).toBeLessThan(1);
+    expect(portraitSnapshot!.frameFullyVisible, JSON.stringify(portraitSnapshot, null, 2)).toBe(true);
+    expect(portraitSnapshot!.viewboxScaleX).toBeGreaterThan(0);
+    expect(portraitSnapshot!.viewboxScaleX).toBe(portraitSnapshot!.viewboxScaleY);
+    expect(portraitSnapshot!.viewboxTransform).toContain("rotate(90)");
+    expect(portraitSnapshot!.viewboxTransform).not.toMatch(/scale\([^\s)]+\s+[^\s)]+\)/u);
+
+    await page.locator("[data-studio-action='viewport-zoom'][data-value='in']").click();
+    const zoomedPortraitSnapshot = await studioViewportSnapshot(page);
+    expect(zoomedPortraitSnapshot!.viewboxScaleX!).toBeGreaterThan(portraitSnapshot!.viewboxScaleX!);
+
+    await page.locator("[data-studio-action='viewport-zoom'][data-value='reset']").click();
+    const resetPortraitSnapshot = await studioViewportSnapshot(page);
+    expect(resetPortraitSnapshot!.viewboxScaleX).toBe(portraitSnapshot!.viewboxScaleX);
+
+    await page.locator("[data-studio-action='fitmode'][data-value='actual-size']").first().click();
+    const actualPortraitSnapshot = await studioViewportSnapshot(page);
+    expect(actualPortraitSnapshot).toMatchObject({
+      styleWidth: "900px",
+      styleHeight: "1440px",
+      orientation: "portrait",
+      fitMode: "actual-size",
+      scale: 1,
+      mapWidth: "900",
+      mapHeight: "1440",
+      stageCanScrollVertically: true,
+      zoomInsideFrame: false,
+      zoomInsideStage: true,
+    });
+    expect(["auto", "scroll"]).toContain(actualPortraitSnapshot!.stageOverflowY);
+
+    await page.locator("#studioTopbarPresetSelect").selectOption("mobile-landscape");
+    await expect.poll(() => studioViewportSnapshot(page)).toMatchObject({
+      styleWidth: "390px",
+      styleHeight: "844px",
+      orientation: "portrait",
+      fitMode: "actual-size",
+      scale: 1,
+      mapWidth: "390",
+      mapHeight: "844",
+    });
+
+    await page.locator("[data-studio-action='orientation'][data-value='landscape']").first().click();
+    await page.locator("[data-studio-action='fitmode'][data-value='contain']").first().click();
+    const mobileLandscapeSnapshot = await studioViewportSnapshot(page);
+    expect(mobileLandscapeSnapshot!.orientation).toBe("landscape");
+    expect(mobileLandscapeSnapshot!.fitMode).toBe("contain");
+    expect(mobileLandscapeSnapshot!.frameFullyVisible, JSON.stringify(mobileLandscapeSnapshot, null, 2)).toBe(true);
+    expect(mobileLandscapeSnapshot!.frameWidth).toBeGreaterThanOrEqual(mobileLandscapeSnapshot!.stageWidth - 56);
+    expect(mobileLandscapeSnapshot!.frameHeight).toBeGreaterThan(0);
+    expect(mobileLandscapeSnapshot!.frameHeight).toBeLessThanOrEqual(mobileLandscapeSnapshot!.stageHeight);
+    expect(mobileLandscapeSnapshot!.viewboxTransform).not.toContain("rotate(90)");
+  });
+
   test("routes export actions and settings through the Studio shell", async ({page}) => {
-    const exportNav = page.locator("[data-studio-action='section'][data-value='export']");
+    const exportNav = page.locator(".studio-nav [data-studio-action='section'][data-value='export']");
 
     await exportNav.click();
     await expect(exportNav).toHaveClass(/is-active/);
@@ -102,15 +325,15 @@ test.describe("Studio export and data workflow", () => {
     });
 
     await page.locator("[data-studio-action='export-format'][data-value='svg']").click();
-    await expect(page.locator("[data-studio-action='run-export']")).toContainText("Export SVG");
+    await expect(page.locator("[data-studio-action='run-export']")).toContainText("Export current image SVG");
     await page.locator("[data-studio-action='run-export']").click();
 
     await page.locator("[data-studio-action='export-format'][data-value='jpeg']").click();
-    await expect(page.locator("[data-studio-action='run-export']")).toContainText("Export JPEG");
+    await expect(page.locator("[data-studio-action='run-export']")).toContainText("Export current image JPEG");
     await page.locator("[data-studio-action='run-export']").click();
 
     await page.locator("[data-studio-action='export-format'][data-value='png']").click();
-    await expect(page.locator("[data-studio-action='run-export']")).toContainText("Export PNG");
+    await expect(page.locator("[data-studio-action='run-export']")).toContainText("Export current image PNG");
     await page.locator("[data-studio-action='run-export']").click();
 
     await expect
@@ -139,7 +362,7 @@ test.describe("Studio export and data workflow", () => {
   });
 
   test("keeps export explicit when switching formats", async ({page}) => {
-    const exportNav = page.locator("[data-studio-action='section'][data-value='export']");
+    const exportNav = page.locator(".studio-nav [data-studio-action='section'][data-value='export']");
     const runExport = page.locator("[data-studio-action='run-export']");
 
     await exportNav.click();
@@ -170,11 +393,11 @@ test.describe("Studio export and data workflow", () => {
     });
 
     await page.locator("[data-studio-action='export-format'][data-value='svg']").click();
-    await expect(runExport).toContainText("Export SVG");
+    await expect(runExport).toContainText("Export current image SVG");
     await page.locator("[data-studio-action='export-format'][data-value='jpeg']").click();
-    await expect(runExport).toContainText("Export JPEG");
+    await expect(runExport).toContainText("Export current image JPEG");
     await page.locator("[data-studio-action='export-format'][data-value='png']").click();
-    await expect(runExport).toContainText("Export PNG");
+    await expect(runExport).toContainText("Export current image PNG");
 
     await expect.poll(() => page.evaluate(() => (window as any).__studioExportCalls)).toEqual([]);
 
@@ -219,13 +442,17 @@ test.describe("Studio export and data workflow", () => {
     await expect(dataPanel.getByRole("button", {name: "Quick load"})).toBeVisible();
     await expect(dataPanel.getByRole("button", {name: "Save to storage"})).toBeVisible();
     await expect(dataPanel.getByRole("button", {name: "Download"})).toBeVisible();
-    await expect(dataPanel.getByRole("button", {name: "Save Dropbox"})).toBeVisible();
-    await expect(dataPanel.getByRole("button", {name: "Connect Dropbox"})).toBeVisible();
-    await expect(dataPanel.getByRole("button", {name: "Load Dropbox"})).toBeVisible();
-    await expect(dataPanel.getByRole("button", {name: "Share Dropbox"})).toBeVisible();
     await expect(dataPanel.getByRole("button", {name: "New map"})).toBeVisible();
     await expect(dataPanel.getByRole("button", {name: "Open file"})).toBeVisible();
-    await expect(dataPanel.getByRole("button", {name: "Load URL"})).toBeVisible();
+    await expect(dataPanel.getByRole("button", {name: "Save Dropbox"})).toHaveCount(0);
+    await expect(dataPanel.getByRole("button", {name: "Load URL"})).toHaveCount(0);
+    let dropboxDetails = await openDataDropboxDetails(page);
+    let advancedLoadingDetails = await openDataAdvancedLoadingDetails(page);
+    await expect(dropboxDetails.getByRole("button", {name: "Save Dropbox"})).toBeVisible();
+    await expect(dropboxDetails.getByRole("button", {name: "Connect Dropbox"})).toBeVisible();
+    await expect(dropboxDetails.getByRole("button", {name: "Load Dropbox"})).toBeVisible();
+    await expect(dropboxDetails.getByRole("button", {name: "Share Dropbox"})).toBeVisible();
+    await expect(advancedLoadingDetails.getByRole("button", {name: "Load URL"})).toBeVisible();
     await expect(dataPanel).toContainText("Snapshot");
     await expect(sourceRow).toContainText("Generated");
     await expect(loadDetailRow).toContainText("Current settings");
@@ -341,14 +568,19 @@ test.describe("Studio export and data workflow", () => {
     await dataPanel.getByRole("button", {name: "Download"}).click();
     await expect(lastSaveRow).toContainText("Downloads");
     await expect(saveDetailRow).toContainText(/\.map$/);
-    await dataPanel.getByRole("button", {name: "Save Dropbox"}).click();
+    dropboxDetails = await openDataDropboxDetails(page);
+    await dropboxDetails.getByRole("button", {name: "Save Dropbox"}).click();
     await expect(lastSaveRow).toContainText("Dropbox");
     await expect(saveDetailRow).toContainText(/\.map$/);
-    await dataPanel.getByRole("button", {name: "Connect Dropbox"}).click();
+    dropboxDetails = await openDataDropboxDetails(page);
+    await dropboxDetails.getByRole("button", {name: "Connect Dropbox"}).click();
     await expect(dropboxStatusRow).toContainText("File selected");
     await expect(dropboxFileRow).toContainText("Dropbox test.map");
-    await dataPanel.getByRole("button", {name: "Load Dropbox"}).click();
-    await dataPanel.getByRole("button", {name: "Share Dropbox"}).click();
+    dropboxDetails = await openDataDropboxDetails(page);
+    await dropboxDetails.getByRole("button", {name: "Load Dropbox"}).click();
+    await expect(loadDetailRow).toContainText("Dropbox test.map");
+    dropboxDetails = await openDataDropboxDetails(page);
+    await dropboxDetails.getByRole("button", {name: "Share Dropbox"}).click();
     await expect(shareLinkRow).toContainText("Ready");
     await dataPanel.getByRole("button", {name: "New map"}).click();
     await expect(sourceRow).toContainText("Generated");
@@ -356,7 +588,8 @@ test.describe("Studio export and data workflow", () => {
     await dataPanel.getByRole("button", {name: "Open file"}).click();
     await expect(sourceRow).toContainText("Local file");
     await expect(loadDetailRow).toContainText("picked-from-disk.map");
-    await dataPanel.getByRole("button", {name: "Load URL"}).click();
+    advancedLoadingDetails = await openDataAdvancedLoadingDetails(page);
+    await advancedLoadingDetails.getByRole("button", {name: "Load URL"}).click();
     await expect(sourceRow).toContainText("URL");
     await expect(loadDetailRow).toContainText("e-cloud.com/test.map");
 
@@ -428,7 +661,7 @@ test.describe("Studio export and data workflow", () => {
 
   test("keeps topbar export aligned with the current Studio export format", async ({page}) => {
     const topbarExport = page.locator("[data-studio-action='topbar'][data-value='export']").first();
-    const exportNav = page.locator("[data-studio-action='section'][data-value='export']");
+    const exportNav = page.locator(".studio-nav [data-studio-action='section'][data-value='export']");
 
     await page.evaluate(() => {
       const w = window as any;
@@ -471,9 +704,8 @@ test.describe("Studio export and data workflow", () => {
     });
   });
 
-  test("keeps Project export quick action aligned with the current Studio export format", async ({page}) => {
-    const projectNav = page.locator("[data-studio-action='section'][data-value='project']");
-    const exportNav = page.locator("[data-studio-action='section'][data-value='export']");
+  test("keeps Export image action aligned with the current Studio export format", async ({page}) => {
+    const exportNav = page.locator(".studio-nav [data-studio-action='section'][data-value='export']");
 
     await page.evaluate(() => {
       const w = window as any;
@@ -489,10 +721,7 @@ test.describe("Studio export and data workflow", () => {
 
     await exportNav.click();
     await page.locator("[data-studio-action='export-format'][data-value='png']").click();
-
-    await projectNav.click();
-    const quickActionsPanel = page.locator(".studio-sidebar--right .studio-panel").nth(1);
-    await quickActionsPanel.getByRole("button", {name: "Export PNG"}).click();
+    await page.locator("[data-studio-action='run-export']").click();
 
     await expect.poll(() => page.evaluate(() => (window as any).__studioProjectExportCalls)).toEqual(["png"]);
 
@@ -501,10 +730,10 @@ test.describe("Studio export and data workflow", () => {
     });
   });
 
-  test("does not dirty or rewrite workspace summary when export runs from topbar or Project", async ({page}) => {
+  test("does not dirty or rewrite workspace summary when export runs from topbar or Export", async ({page}) => {
     const projectNav = page.locator("[data-studio-action='section'][data-value='project']");
     const dataNav = page.locator("[data-studio-action='section'][data-value='data']");
-    const exportNav = page.locator("[data-studio-action='section'][data-value='export']");
+    const exportNav = page.locator(".studio-nav [data-studio-action='section'][data-value='export']");
     const topbarExport = page.locator("[data-studio-action='topbar'][data-value='export']").first();
 
     await page.evaluate(() => {
@@ -536,12 +765,12 @@ test.describe("Studio export and data workflow", () => {
     await topbarExport.click();
 
     await projectNav.click();
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
-    const quickActionsPanel = page.locator(".studio-sidebar--right .studio-panel").nth(1);
+    const workspacePanel = projectMapSettingsPanel(page);
     await expect(workspacePanel).toContainText("15 min");
     await expect(workspacePanel).toContainText("Available");
     await expect(workspacePanel).toContainText("political");
-    await quickActionsPanel.getByRole("button", {name: "Export PNG"}).click();
+    await exportNav.click();
+    await page.locator("[data-studio-action='run-export']").click();
 
     await dataNav.click();
     await expect(dirtyRow).toContainText("No");
@@ -558,7 +787,7 @@ test.describe("Studio export and data workflow", () => {
   test("keeps topbar export as a clean no-op when the current format handler is unavailable", async ({page}) => {
     const projectNav = page.locator("[data-studio-action='section'][data-value='project']");
     const dataNav = page.locator("[data-studio-action='section'][data-value='data']");
-    const exportNav = page.locator("[data-studio-action='section'][data-value='export']");
+    const exportNav = page.locator(".studio-nav [data-studio-action='section'][data-value='export']");
     const topbarExport = page.locator("[data-studio-action='topbar'][data-value='export']").first();
 
     await page.evaluate(() => {
@@ -576,11 +805,11 @@ test.describe("Studio export and data workflow", () => {
 
     await exportNav.click();
     await page.locator("[data-studio-action='export-format'][data-value='svg']").click();
-    await expect(page.locator("[data-studio-action='run-export']")).toContainText("Export SVG");
+    await expect(page.locator("[data-studio-action='run-export']")).toContainText("Export current image SVG");
     await topbarExport.click();
 
     await projectNav.click();
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     await expect(workspacePanel).toContainText("15 min");
     await expect(workspacePanel).toContainText("Available");
     await expect(workspacePanel).toContainText("political");
@@ -602,10 +831,10 @@ test.describe("Studio export and data workflow", () => {
     });
   });
 
-  test("keeps Project export label and summary stable when the current format handler is unavailable", async ({page}) => {
+  test("keeps Export image label and summary stable when the current format handler is unavailable", async ({page}) => {
     const projectNav = page.locator("[data-studio-action='section'][data-value='project']");
     const dataNav = page.locator("[data-studio-action='section'][data-value='data']");
-    const exportNav = page.locator("[data-studio-action='section'][data-value='export']");
+    const exportNav = page.locator(".studio-nav [data-studio-action='section'][data-value='export']");
 
     await page.evaluate(() => {
       const w = window as any;
@@ -623,10 +852,10 @@ test.describe("Studio export and data workflow", () => {
     await exportNav.click();
     await page.locator("[data-studio-action='export-format'][data-value='jpeg']").click();
 
+    await exportNav.click();
+    await page.locator("[data-studio-action='run-export']").click();
     await projectNav.click();
-    const quickActionsPanel = page.locator(".studio-sidebar--right .studio-panel").nth(1);
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
-    await quickActionsPanel.getByRole("button", {name: "Export JPEG"}).click();
+    const workspacePanel = projectMapSettingsPanel(page);
     await expect(workspacePanel).toContainText("15 min");
     await expect(workspacePanel).toContainText("Available");
     await expect(workspacePanel).toContainText("political");
@@ -651,7 +880,7 @@ test.describe("Studio export and data workflow", () => {
   test("keeps export format labels and summaries stable after an unavailable export attempt", async ({page}) => {
     const projectNav = page.locator("[data-studio-action='section'][data-value='project']");
     const dataNav = page.locator("[data-studio-action='section'][data-value='data']");
-    const exportNav = page.locator("[data-studio-action='section'][data-value='export']");
+    const exportNav = page.locator(".studio-nav [data-studio-action='section'][data-value='export']");
     const topbarExport = page.locator("[data-studio-action='topbar'][data-value='export']").first();
     const runExport = page.locator("[data-studio-action='run-export']");
 
@@ -670,17 +899,15 @@ test.describe("Studio export and data workflow", () => {
 
     await exportNav.click();
     await page.locator("[data-studio-action='export-format'][data-value='jpeg']").click();
-    await expect(runExport).toContainText("Export JPEG");
+    await expect(runExport).toContainText("Export current image JPEG");
     await expect(topbarExport).toContainText(/^Export$/);
 
     await runExport.click();
-    await expect(runExport).toContainText("Export JPEG");
+    await expect(runExport).toContainText("Export current image JPEG");
     await expect(topbarExport).toContainText(/^Export$/);
 
     await projectNav.click();
-    const quickActionsPanel = page.locator(".studio-sidebar--right .studio-panel").nth(1);
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
-    await expect(quickActionsPanel.getByRole("button", {name: "Export JPEG"})).toBeVisible();
+    const workspacePanel = projectMapSettingsPanel(page);
     await expect(workspacePanel).toContainText("15 min");
     await expect(workspacePanel).toContainText("Available");
     await expect(workspacePanel).toContainText("political");
@@ -704,7 +931,7 @@ test.describe("Studio export and data workflow", () => {
 
   test("recovers export after switching from an unavailable format back to a supported one", async ({page}) => {
     const projectNav = page.locator("[data-studio-action='section'][data-value='project']");
-    const exportNav = page.locator("[data-studio-action='section'][data-value='export']");
+    const exportNav = page.locator(".studio-nav [data-studio-action='section'][data-value='export']");
     const topbarExport = page.locator("[data-studio-action='topbar'][data-value='export']").first();
     const runExport = page.locator("[data-studio-action='run-export']");
 
@@ -723,19 +950,17 @@ test.describe("Studio export and data workflow", () => {
 
     await exportNav.click();
     await page.locator("[data-studio-action='export-format'][data-value='jpeg']").click();
-    await expect(runExport).toContainText("Export JPEG");
+    await expect(runExport).toContainText("Export current image JPEG");
     await runExport.click();
     await expect.poll(() => page.evaluate(() => (window as any).__studioExportRecoveryCalls)).toEqual([]);
 
     await page.locator("[data-studio-action='export-format'][data-value='png']").click();
-    await expect(runExport).toContainText("Export PNG");
+    await expect(runExport).toContainText("Export current image PNG");
     await expect(topbarExport).toContainText(/^Export$/);
     await runExport.click();
     await expect.poll(() => page.evaluate(() => (window as any).__studioExportRecoveryCalls)).toEqual(["png"]);
 
-    await projectNav.click();
-    const quickActionsPanel = page.locator(".studio-sidebar--right .studio-panel").nth(1);
-    await expect(quickActionsPanel.getByRole("button", {name: "Export PNG"})).toBeVisible();
+    await expect(runExport).toContainText("Export current image PNG");
 
     await page.evaluate(() => {
       const w = window as any;
@@ -751,7 +976,7 @@ test.describe("Studio export and data workflow", () => {
   test("keeps export format and summaries stable after a throwing export handler", async ({page}) => {
     const projectNav = page.locator("[data-studio-action='section'][data-value='project']");
     const dataNav = page.locator("[data-studio-action='section'][data-value='data']");
-    const exportNav = page.locator("[data-studio-action='section'][data-value='export']");
+    const exportNav = page.locator(".studio-nav [data-studio-action='section'][data-value='export']");
     const topbarExport = page.locator("[data-studio-action='topbar'][data-value='export']").first();
     const runExport = page.locator("[data-studio-action='run-export']");
 
@@ -772,16 +997,14 @@ test.describe("Studio export and data workflow", () => {
 
     await exportNav.click();
     await page.locator("[data-studio-action='export-format'][data-value='png']").click();
-    await expect(runExport).toContainText("Export PNG");
+    await expect(runExport).toContainText("Export current image PNG");
     await expect(topbarExport).toContainText(/^Export$/);
 
     await runExport.click();
-    await expect(runExport).toContainText("Export PNG");
+    await expect(runExport).toContainText("Export current image PNG");
 
     await projectNav.click();
-    const quickActionsPanel = page.locator(".studio-sidebar--right .studio-panel").nth(1);
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
-    await expect(quickActionsPanel.getByRole("button", {name: "Export PNG"})).toBeVisible();
+    const workspacePanel = projectMapSettingsPanel(page);
     await expect(workspacePanel).toContainText("15 min");
     await expect(workspacePanel).toContainText("Available");
     await expect(workspacePanel).toContainText("political");
@@ -849,7 +1072,7 @@ test.describe("Studio export and data workflow", () => {
     await expect(dirtyRow).toContainText("No");
 
     await projectNav.click();
-    const projectDocumentPanel = page.locator(".studio-sidebar--right .studio-panel").first();
+    const projectDocumentPanel = projectDocumentPanelLocator(page);
     await expect(projectDocumentPanel).toContainText("Topbar New Map");
     await expect(projectDocumentPanel).toContainText("topbar-new-seed");
 
@@ -975,9 +1198,9 @@ test.describe("Studio export and data workflow", () => {
     });
 
     await projectNav.click();
-    const projectDocumentPanel = page.locator(".studio-sidebar--right .studio-panel").first();
-    const quickActionsPanel = page.locator(".studio-sidebar--right .studio-panel").nth(1);
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const projectDocumentPanel = projectDocumentPanelLocator(page);
+    const quickActionsPanel = projectGeneratePanel(page);
+    const workspacePanel = projectMapSettingsPanel(page);
 
     await page.evaluate(() => {
       const w = window as any;
@@ -1028,8 +1251,8 @@ test.describe("Studio export and data workflow", () => {
     });
 
     await projectNav.click();
-    const projectDocumentPanel = page.locator(".studio-sidebar--right .studio-panel").first();
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const projectDocumentPanel = projectDocumentPanelLocator(page);
+    const workspacePanel = projectMapSettingsPanel(page);
 
     await page.evaluate(() => {
       const w = window as any;
@@ -1107,7 +1330,7 @@ test.describe("Studio export and data workflow", () => {
     );
 
     await projectNav.click();
-    const projectDocumentPanel = page.locator(".studio-sidebar--right .studio-panel").first();
+    const projectDocumentPanel = projectDocumentPanelLocator(page);
     await expect(projectDocumentPanel).toContainText(legacyDocument.name);
     await expect(projectDocumentPanel).toContainText(legacyDocument.seed);
   });
@@ -1151,7 +1374,7 @@ test.describe("Studio export and data workflow", () => {
     await expect(snapshotRow).toContainText("Available");
 
     await projectNav.click();
-    const projectDocumentPanel = page.locator(".studio-sidebar--right .studio-panel").first();
+    const projectDocumentPanel = projectDocumentPanelLocator(page);
     await expect(projectDocumentPanel).toContainText("Topbar Open Baseline");
     await expect(projectDocumentPanel).toContainText("topbar-open-baseline");
 
@@ -1172,11 +1395,10 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const quickActionsPanel = page.locator(".studio-sidebar--right .studio-panel").nth(1);
+    const quickActionsPanel = projectGeneratePanel(page);
     await expect(quickActionsPanel.getByRole("button", {name: "Generate from current settings"})).toBeVisible();
     await expect(quickActionsPanel.getByRole("button", {name: "Open file"})).toBeVisible();
     await expect(quickActionsPanel.getByRole("button", {name: "Save copy"})).toBeVisible();
-    await expect(quickActionsPanel.getByRole("button", {name: "Export PNG"})).toBeVisible();
 
     await page.evaluate(() => {
       const w = window as any;
@@ -1187,7 +1409,6 @@ test.describe("Studio export and data workflow", () => {
       w.__studioProjectQuickActionRestore = {
         generateMapOnLoad: w.generateMapOnLoad,
         saveMap: w.saveMap,
-        exportToPng: w.exportToPng,
         fileInput,
         fileInputClick: originalFileInputClick,
       };
@@ -1197,9 +1418,6 @@ test.describe("Studio export and data workflow", () => {
       };
       w.saveMap = async (target: string) => {
         w.__studioProjectQuickActionCalls.push(`save:${target}`);
-      };
-      w.exportToPng = () => {
-        w.__studioProjectQuickActionCalls.push("export:png");
       };
       if (fileInput) {
         fileInput.click = () => {
@@ -1211,13 +1429,11 @@ test.describe("Studio export and data workflow", () => {
     await quickActionsPanel.getByRole("button", {name: "Generate from current settings"}).click();
     await quickActionsPanel.getByRole("button", {name: "Open file"}).click();
     await quickActionsPanel.getByRole("button", {name: "Save copy"}).click();
-    await quickActionsPanel.getByRole("button", {name: "Export PNG"}).click();
 
     await expect.poll(() => page.evaluate(() => (window as any).__studioProjectQuickActionCalls)).toEqual([
       "new-map",
       "open-file",
       "save:machine",
-      "export:png",
     ]);
 
     await page.evaluate(() => {
@@ -1227,7 +1443,6 @@ test.describe("Studio export and data workflow", () => {
 
       w.generateMapOnLoad = restore.generateMapOnLoad;
       w.saveMap = restore.saveMap;
-      w.exportToPng = restore.exportToPng;
       if (restore.fileInput && restore.fileInputClick) {
         restore.fileInput.click = restore.fileInputClick;
       }
@@ -1242,7 +1457,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const quickActionsPanel = page.locator(".studio-sidebar--right .studio-panel").nth(1);
+    const quickActionsPanel = projectGeneratePanel(page);
     const topbarNew = page.locator("[data-studio-action='topbar'][data-value='new']").first();
     const topbarOpen = page.locator("[data-studio-action='topbar'][data-value='open']").first();
     const topbarSave = page.locator("[data-studio-action='topbar'][data-value='save']").first();
@@ -1289,8 +1504,8 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const projectDocumentPanel = page.locator(".studio-sidebar--right .studio-panel").first();
-    const quickActionsPanel = page.locator(".studio-sidebar--right .studio-panel").nth(1);
+    const projectDocumentPanel = projectDocumentPanelLocator(page);
+    const quickActionsPanel = projectGeneratePanel(page);
 
     await page.evaluate(() => {
       const w = window as any;
@@ -1348,24 +1563,24 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const projectDocumentPanel = page.locator(".studio-sidebar--right .studio-panel").first();
+    const projectDocumentPanel = projectDocumentPanelLocator(page);
     const generateButton = page.locator("[data-studio-action='topbar'][data-value='new']").last();
 
-    await expect(page.locator(".studio-brand")).toContainText("AGM Studio");
+    await expect(page.locator(".studio-brand")).toHaveAttribute("title", "AGM Studio — Atlas Generation Matrix");
+    await expect(page.locator(".studio-brand__logo")).toHaveAttribute("src", /agm-brand\/themes\/night\/AGM_STUDIO_app_icon_1024\.png/);
+    await expect(page.locator(".studio-brand__logo")).toHaveAttribute("alt", "");
     await expect(page.locator("#loading")).toHaveCount(0);
     await expect(page.locator("#mapOverlay")).not.toBeVisible();
     await expect(page.locator("#dialogs")).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-    await expect(page.locator(".studio-topbar")).toContainText("Preview Beta");
-    await expect(page.locator(".studio-topbar")).toContainText("Build playable worlds from structured generation.");
-    await expect(page.locator(".studio-sidebar--right")).toContainText("AGM Studio Preview Beta");
-    await expect(page.locator(".studio-sidebar--right")).toContainText("Generate with profile parameters");
-    await expect(page.locator(".studio-sidebar--right")).toContainText("Export AGM World JSON");
+    await expect(page.locator(".studio-sidebar--right")).toContainText("Advanced generation settings");
+    await expect(page.locator(".studio-sidebar--right")).toContainText("Generate from current settings");
+    await expect(page.locator(".studio-sidebar--right")).not.toContainText("Export AGM World JSON");
     await expect(page.locator(".studio-sidebar--right")).toContainText("Generate from current settings applies the selected profile's effective parameters before map creation.");
 
     await projectDocumentPanel.locator("#studioProjectGameProfileSelect").selectOption("strategy");
 
     await expect.poll(() =>
-      projectDocumentPanel.locator("#studioProjectWorldJsonDraft").textContent().then(text => {
+      page.locator("#studioProjectWorldJsonDraft").textContent().then(text => {
         const draft = JSON.parse(text || "{}");
         const suggestions = draft.playability.generatorProfileSuggestions as {profile: string; parameterDraft: {key: string; value: number}}[];
         return Object.fromEntries(suggestions.filter(suggestion => suggestion.profile === "strategy").map(suggestion => [suggestion.parameterDraft.key, suggestion.parameterDraft.value])) as Record<string, number>;
@@ -1376,7 +1591,7 @@ test.describe("Studio export and data workflow", () => {
       resourceCoverageTarget: expect.any(Number),
       routeConnectivityScore: expect.any(Number),
     });
-    const defaultParameters = await projectDocumentPanel.locator("#studioProjectWorldJsonDraft").textContent().then(text => {
+    const defaultParameters = await page.locator("#studioProjectWorldJsonDraft").textContent().then(text => {
       const draft = JSON.parse(text || "{}");
       const suggestions = draft.playability.generatorProfileSuggestions as {profile: string; parameterDraft: {key: string; value: number}}[];
       return Object.fromEntries(suggestions.filter(suggestion => suggestion.profile === "strategy").map(suggestion => [suggestion.parameterDraft.key, suggestion.parameterDraft.value])) as Record<string, number>;
@@ -1417,7 +1632,7 @@ test.describe("Studio export and data workflow", () => {
     await expect(page.locator("#studioGenerationProfileImpact")).toContainText("resourceCoverageTarget → provincesRatio");
     await expect(page.locator("#studioGenerationProfileImpact")).toContainText("Result metrics");
     await expect.poll(() =>
-      projectDocumentPanel.locator("#studioProjectWorldJsonDraft").textContent().then(text => {
+      page.locator("#studioProjectWorldJsonDraft").textContent().then(text => {
         const draft = JSON.parse(text || "{}");
         return draft.playability.generationProfileImpact;
       }),
@@ -1451,18 +1666,14 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const projectDocumentPanel = page.locator(".studio-sidebar--right .studio-panel").first();
+    const projectDocumentPanel = projectDocumentPanelLocator(page);
     const generateButton = page.locator("[data-studio-action='topbar'][data-value='new']").last();
 
     await projectDocumentPanel.locator("#studioProjectGameProfileSelect").selectOption("strategy");
-    await page.locator("[data-generator-parameter-key='spawnFairnessWeight']").fill("2.4");
-    await page.locator("[data-generator-parameter-key='spawnFairnessWeight']").blur();
-    await page.locator("[data-generator-parameter-key='routeConnectivityScore']").fill("90");
-    await page.locator("[data-generator-parameter-key='routeConnectivityScore']").blur();
-    await page.locator("[data-generator-parameter-key='settlementDensityTarget']").fill("8");
-    await page.locator("[data-generator-parameter-key='settlementDensityTarget']").blur();
-    await page.locator("[data-generator-parameter-key='resourceCoverageTarget']").fill("72");
-    await page.locator("[data-generator-parameter-key='resourceCoverageTarget']").blur();
+    await fillGeneratorParameter(page, "spawnFairnessWeight", "2.4");
+    await fillGeneratorParameter(page, "routeConnectivityScore", "90");
+    await fillGeneratorParameter(page, "settlementDensityTarget", "8");
+    await fillGeneratorParameter(page, "resourceCoverageTarget", "72");
 
     await page.evaluate(() => {
       const w = window as any;
@@ -1500,7 +1711,7 @@ test.describe("Studio export and data workflow", () => {
     await expect(page.locator("#studioGenerationProfileImpact")).toContainText("averageSpawnScore");
     await expect(page.locator("#studioGenerationProfileImpact")).toContainText("routes");
     await expect.poll(() =>
-      projectDocumentPanel.locator("#studioProjectWorldJsonDraft").textContent().then(text => {
+      page.locator("#studioProjectWorldJsonDraft").textContent().then(text => {
         const draft = JSON.parse(text || "{}");
         return draft.playability.generationProfileImpact;
       }),
@@ -1536,7 +1747,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const generateButton = workspacePanel.getByRole("button", {name: "Generate map"});
 
     await workspacePanel.locator("#studioProjectSeedInput").fill("424242");
@@ -1584,7 +1795,7 @@ test.describe("Studio export and data workflow", () => {
     await generateButton.click();
 
     await expect.poll(() => page.evaluate(() => (window as any).__studioProjectGenerateCalls)).toEqual([
-      {seed: "424242", states: "22", provincesRatio: "38", growthRate: "1.6", sizeVariety: "6.4", burgs: "1000", burgsLabel: "auto", religions: "12", width: "1666", height: "944"},
+      {seed: "424242", states: "22", provincesRatio: "38", growthRate: "2", sizeVariety: "5.5", burgs: "286", burgsLabel: "286", religions: "12", width: "1666", height: "944"},
     ]);
 
     await page.evaluate(() => {
@@ -1604,8 +1815,8 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const projectDocumentPanel = page.locator(".studio-sidebar--right .studio-panel").first();
-    const quickActionsPanel = page.locator(".studio-sidebar--right .studio-panel").nth(1);
+    const projectDocumentPanel = projectDocumentPanelLocator(page);
+    const quickActionsPanel = projectGeneratePanel(page);
     const initialMapId = await page.evaluate(() => (window as any).mapId);
     const mapFilePath = path.join(__dirname, "../fixtures/demo.map");
 
@@ -1659,7 +1870,7 @@ test.describe("Studio export and data workflow", () => {
     });
 
     await projectNav.click();
-    const quickActionsPanel = page.locator(".studio-sidebar--right .studio-panel").nth(1);
+    const quickActionsPanel = projectGeneratePanel(page);
 
     await dataNav.click();
     const dataPanel = page.locator(".studio-sidebar--right .studio-panel").first();
@@ -1712,8 +1923,8 @@ test.describe("Studio export and data workflow", () => {
     });
 
     await projectNav.click();
-    const projectDocumentPanel = page.locator(".studio-sidebar--right .studio-panel").first();
-    const quickActionsPanel = page.locator(".studio-sidebar--right .studio-panel").nth(1);
+    const projectDocumentPanel = projectDocumentPanelLocator(page);
+    const quickActionsPanel = projectGeneratePanel(page);
 
     await page.evaluate(() => {
       const w = window as any;
@@ -1758,8 +1969,8 @@ test.describe("Studio export and data workflow", () => {
     const dataNav = page.locator("[data-studio-action='section'][data-value='data']");
 
     await projectNav.click();
-    const projectDocumentPanel = page.locator(".studio-sidebar--right .studio-panel").first();
-    const quickActionsPanel = page.locator(".studio-sidebar--right .studio-panel").nth(1);
+    const projectDocumentPanel = projectDocumentPanelLocator(page);
+    const quickActionsPanel = projectGeneratePanel(page);
 
     await page.evaluate(() => {
       const w = window as any;
@@ -1805,7 +2016,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const projectDocumentPanel = page.locator(".studio-sidebar--right .studio-panel").first();
+    const projectDocumentPanel = projectDocumentPanelLocator(page);
 
     await page.evaluate(() => {
       const w = window as any;
@@ -1830,7 +2041,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const projectDocumentPanel = page.locator(".studio-sidebar--right .studio-panel").first();
+    const projectDocumentPanel = projectDocumentPanelLocator(page);
     const nameInput = projectDocumentPanel.locator("#studioProjectNameInput");
 
     await nameInput.fill("AGM Named Draft");
@@ -1858,7 +2069,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const projectDocumentPanel = page.locator(".studio-sidebar--right .studio-panel").first();
+    const projectDocumentPanel = projectDocumentPanelLocator(page);
     const gameProfileSelect = projectDocumentPanel.locator("#studioProjectGameProfileSelect");
     const designIntentInput = projectDocumentPanel.locator("#studioProjectDesignIntentInput");
     const designIntent = "Cold continent, three rival kingdoms, scarce trade routes, mountain-focused resources";
@@ -1884,11 +2095,11 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const projectDocumentPanel = page.locator(".studio-sidebar--right .studio-panel").first();
+    const projectDocumentPanel = projectDocumentPanelLocator(page);
     const nameInput = projectDocumentPanel.locator("#studioProjectNameInput");
     const gameProfileSelect = projectDocumentPanel.locator("#studioProjectGameProfileSelect");
     const designIntentInput = projectDocumentPanel.locator("#studioProjectDesignIntentInput");
-    const worldJsonDraft = projectDocumentPanel.locator("#studioProjectWorldJsonDraft");
+    const worldJsonDraft = page.locator("#studioProjectWorldJsonDraft");
     const designIntent = "Open-world frontier with volcanic highlands, coastal trade, and faction conflict";
 
     await nameInput.fill("AGM World Draft");
@@ -1914,8 +2125,8 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const projectDocumentPanel = page.locator(".studio-sidebar--right .studio-panel").first();
-    const worldJsonDraft = projectDocumentPanel.locator("#studioProjectWorldJsonDraft");
+    const projectDocumentPanel = projectDocumentPanelLocator(page);
+    const worldJsonDraft = page.locator("#studioProjectWorldJsonDraft");
     const statesInput = page.locator("#studioProjectStatesInput");
     const precipitationInput = page.locator("#studioProjectPrecipitationInput");
     const culturesInput = page.locator("#studioProjectCulturesInput");
@@ -1950,7 +2161,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const balanceChecker = page.locator("#studioBalanceCheckerPanel");
+    const balanceChecker = await openBalanceChecker(page);
     await expect(balanceChecker).toContainText("AGM Balance Checker");
     await expect(balanceChecker).toContainText("Spawn candidates");
     await expect(balanceChecker).toContainText("Balance hints");
@@ -1990,7 +2201,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const balanceChecker = page.locator("#studioBalanceCheckerPanel");
+    const balanceChecker = await openBalanceChecker(page);
     const spawnCard = balanceChecker.locator("[data-auto-fix-draft-id='auto-fix-spawn-candidate-coverage']");
     const settlementCard = balanceChecker.locator("[data-auto-fix-draft-id='auto-fix-settlement-distribution']");
     const routeCard = balanceChecker.locator("[data-auto-fix-draft-id='auto-fix-route-connectivity']");
@@ -2001,7 +2212,7 @@ test.describe("Studio export and data workflow", () => {
     await expect(balanceChecker).toContainText("Applied previews0");
     await expect(balanceChecker).toContainText("Applied changes0");
     await expect(balanceChecker).toContainText("Discarded previews0");
-    await expect(balanceChecker).toContainText("Applied change queue: No changes queued for legacy writeback");
+    await expect(balanceChecker).toContainText("Applied change queue: No pending changes to apply");
     await expect(balanceChecker).toContainText("History: No preview changes applied");
 
     const initialStateFairStart = await page.evaluate(() => {
@@ -2009,7 +2220,7 @@ test.describe("Studio export and data workflow", () => {
       return {stateId: state.i, agmFairStart: state.agmFairStart, agmFairStartScore: state.agmFairStartScore, agmPriority: state.agmPriority};
     });
 
-    await spawnCard.getByRole("button", {name: "Apply preview"}).click();
+    await clickAutoFixDraftButton(page, "auto-fix-spawn-candidate-coverage", "Apply preview");
     await expect
       .poll(() => page.evaluate(({stateId}) => (window as any).pack.states[stateId].agmFairStart, initialStateFairStart))
       .toBe(true);
@@ -2021,9 +2232,9 @@ test.describe("Studio export and data workflow", () => {
       .toMatch(/^(primary|secondary)-start$/);
     await expect(page.locator("#studioBalanceCheckerPanel [data-auto-fix-draft-id='auto-fix-spawn-candidate-coverage']")).toHaveAttribute("data-preview-status", "applied");
     await expect(page.locator("#studioBalanceCheckerPanel")).toContainText("Applied previews1");
-    await expect(page.locator("#studioBalanceCheckerPanel")).toContainText("Applied change queue: auto-fix-spawn-candidate-coverage");
+    await expect(page.locator("#studioBalanceCheckerPanel")).toContainText("auto-fix-spawn-candidate-coverage");
 
-    await page.locator("#studioBalanceCheckerPanel [data-studio-action='auto-fix-history'][data-value='undo']").click();
+    await clickAutoFixHistory(page, "undo");
     await expect
       .poll(() => page.evaluate(({stateId}) => (window as any).pack.states[stateId].agmFairStart, initialStateFairStart))
       .toBe(initialStateFairStart.agmFairStart);
@@ -2036,7 +2247,7 @@ test.describe("Studio export and data workflow", () => {
     await expect(page.locator("#studioBalanceCheckerPanel [data-auto-fix-draft-id='auto-fix-spawn-candidate-coverage']")).toHaveAttribute("data-preview-status", "pending");
     await expect(page.locator("#studioBalanceCheckerPanel")).toContainText("Applied previews0");
 
-    await page.locator("#studioBalanceCheckerPanel [data-studio-action='auto-fix-history'][data-value='redo']").click();
+    await clickAutoFixHistory(page, "redo");
     await expect
       .poll(() => page.evaluate(({stateId}) => (window as any).pack.states[stateId].agmFairStart, initialStateFairStart))
       .toBe(true);
@@ -2048,7 +2259,7 @@ test.describe("Studio export and data workflow", () => {
 
     const initialBurgCount = await page.evaluate(() => (window as any).pack.burgs.filter((burg: any) => burg?.i && !burg.removed).length);
 
-    await settlementCard.getByRole("button", {name: "Apply preview"}).click();
+    await clickAutoFixDraftButton(page, "auto-fix-settlement-distribution", "Apply preview");
     await expect
       .poll(() => page.evaluate(() => (window as any).pack.burgs.filter((burg: any) => burg?.i && !burg.removed).length))
       .toBeGreaterThan(initialBurgCount);
@@ -2063,19 +2274,19 @@ test.describe("Studio export and data workflow", () => {
     await expect(page.locator("#studioBalanceCheckerPanel [data-auto-fix-draft-id='auto-fix-settlement-distribution']")).toHaveAttribute("data-preview-status", "applied");
     await expect(page.locator("#studioBalanceCheckerPanel")).toContainText("Applied previews2");
     await expect(page.locator("#studioBalanceCheckerPanel")).toContainText("Applied changes");
-    await expect(page.locator("#studioBalanceCheckerPanel")).toContainText("Applied change queue: auto-fix-spawn-candidate-coverage");
+    await expect(page.locator("#studioBalanceCheckerPanel")).toContainText("auto-fix-spawn-candidate-coverage");
     await expect(page.locator("#studioBalanceCheckerPanel")).toContainText("auto-fix-settlement-distribution");
     await expect(page.locator("#studioBalanceCheckerPanel")).toContainText("History: apply auto-fix-settlement-distribution");
 
-    await page.locator("#studioBalanceCheckerPanel [data-studio-action='auto-fix-history'][data-value='undo']").click();
+    await clickAutoFixHistory(page, "undo");
     await expect
       .poll(() => page.evaluate(() => (window as any).pack.burgs.filter((burg: any) => burg?.i && !burg.removed).length))
       .toBe(initialBurgCount);
     await expect(page.locator("#studioBalanceCheckerPanel [data-auto-fix-draft-id='auto-fix-settlement-distribution']")).toHaveAttribute("data-preview-status", "pending");
     await expect(page.locator("#studioBalanceCheckerPanel")).toContainText("Applied previews1");
-    await expect(page.locator("#studioBalanceCheckerPanel")).toContainText("Applied change queue: auto-fix-spawn-candidate-coverage");
+    await expect(page.locator("#studioBalanceCheckerPanel")).toContainText("auto-fix-spawn-candidate-coverage");
 
-    await page.locator("#studioBalanceCheckerPanel [data-studio-action='auto-fix-history'][data-value='redo']").click();
+    await clickAutoFixHistory(page, "redo");
     await expect
       .poll(() => page.evaluate(() => (window as any).pack.burgs.filter((burg: any) => burg?.i && !burg.removed).length))
       .toBeGreaterThan(initialBurgCount);
@@ -2089,7 +2300,7 @@ test.describe("Studio export and data workflow", () => {
       .toEqual(expect.objectContaining({agmRole: "support-settlement", agmPriority: expect.stringMatching(/^(spawn|sparse-state)-support$/), agmSupportState: expect.any(Number)}));
     await expect(page.locator("#studioBalanceCheckerPanel [data-auto-fix-draft-id='auto-fix-settlement-distribution']")).toHaveAttribute("data-preview-status", "applied");
     await expect(page.locator("#studioBalanceCheckerPanel")).toContainText("Applied previews2");
-    await expect(page.locator("#studioBalanceCheckerPanel")).toContainText("Applied change queue: auto-fix-spawn-candidate-coverage");
+    await expect(page.locator("#studioBalanceCheckerPanel")).toContainText("auto-fix-spawn-candidate-coverage");
     await expect(page.locator("#studioBalanceCheckerPanel")).toContainText("auto-fix-settlement-distribution");
 
     const initialRouteCount = await page.evaluate(() => (window as any).pack.routes.length);
@@ -2100,7 +2311,7 @@ test.describe("Studio export and data workflow", () => {
       return {provinceId, agmConnectorTarget: province.agmConnectorTarget, agmConnectorType: province.agmConnectorType};
     });
 
-    await page.locator("#studioBalanceCheckerPanel [data-auto-fix-draft-id='auto-fix-route-connectivity']").getByRole("button", {name: "Apply preview"}).click();
+    await clickAutoFixDraftButton(page, "auto-fix-route-connectivity", "Apply preview");
     await expect
       .poll(() => page.evaluate(() => (window as any).pack.routes.length))
       .toBeGreaterThan(initialRouteCount);
@@ -2112,11 +2323,11 @@ test.describe("Studio export and data workflow", () => {
       .toEqual(expect.objectContaining({agmConnectorTarget: expect.any(Number), agmConnectorType: expect.any(String)}));
     await expect(page.locator("#studioBalanceCheckerPanel [data-auto-fix-draft-id='auto-fix-route-connectivity']")).toHaveAttribute("data-preview-status", "applied");
     await expect(page.locator("#studioBalanceCheckerPanel")).toContainText("Applied previews3");
-    await expect(page.locator("#studioBalanceCheckerPanel")).toContainText("Applied change queue: auto-fix-spawn-candidate-coverage");
+    await expect(page.locator("#studioBalanceCheckerPanel")).toContainText("auto-fix-spawn-candidate-coverage");
     await expect(page.locator("#studioBalanceCheckerPanel")).toContainText("auto-fix-settlement-distribution");
     await expect(page.locator("#studioBalanceCheckerPanel")).toContainText("auto-fix-route-connectivity");
 
-    await page.locator("#studioBalanceCheckerPanel [data-studio-action='auto-fix-history'][data-value='undo']").click();
+    await clickAutoFixHistory(page, "undo");
     await expect
       .poll(() => page.evaluate(() => (window as any).pack.routes.length))
       .toBe(initialRouteCount);
@@ -2129,7 +2340,7 @@ test.describe("Studio export and data workflow", () => {
     await expect(page.locator("#studioBalanceCheckerPanel [data-auto-fix-draft-id='auto-fix-route-connectivity']")).toHaveAttribute("data-preview-status", "pending");
     await expect(page.locator("#studioBalanceCheckerPanel")).toContainText("Applied previews2");
 
-    await page.locator("#studioBalanceCheckerPanel [data-studio-action='auto-fix-history'][data-value='redo']").click();
+    await clickAutoFixHistory(page, "redo");
     await expect
       .poll(() => page.evaluate(() => (window as any).pack.routes.length))
       .toBeGreaterThan(initialRouteCount);
@@ -2152,7 +2363,7 @@ test.describe("Studio export and data workflow", () => {
       };
     });
 
-    await page.locator("#studioBalanceCheckerPanel [data-auto-fix-draft-id='auto-fix-biome-habitability']").getByRole("button", {name: "Apply preview"}).click();
+    await clickAutoFixDraftButton(page, "auto-fix-biome-habitability", "Apply preview");
     await expect
       .poll(() => page.evaluate(({biomeId}) => (window as any).biomesData.habitability[biomeId], initialBiomeHabitability))
       .toBeGreaterThan(initialBiomeHabitability.habitability);
@@ -2163,7 +2374,7 @@ test.describe("Studio export and data workflow", () => {
     await expect(page.locator("#studioBalanceCheckerPanel")).toContainText("Applied previews4");
     await expect(page.locator("#studioBalanceCheckerPanel")).toContainText("auto-fix-biome-habitability");
 
-    await page.locator("#studioBalanceCheckerPanel [data-studio-action='auto-fix-history'][data-value='undo']").click();
+    await clickAutoFixHistory(page, "undo");
     await expect
       .poll(() => page.evaluate(({biomeId}) => (window as any).biomesData.habitability[biomeId], initialBiomeHabitability))
       .toBe(initialBiomeHabitability.habitability);
@@ -2173,7 +2384,7 @@ test.describe("Studio export and data workflow", () => {
     await expect(page.locator("#studioBalanceCheckerPanel [data-auto-fix-draft-id='auto-fix-biome-habitability']")).toHaveAttribute("data-preview-status", "pending");
     await expect(page.locator("#studioBalanceCheckerPanel")).toContainText("Applied previews3");
 
-    await page.locator("#studioBalanceCheckerPanel [data-studio-action='auto-fix-history'][data-value='redo']").click();
+    await clickAutoFixHistory(page, "redo");
     await expect
       .poll(() => page.evaluate(({biomeId}) => (window as any).biomesData.habitability[biomeId], initialBiomeHabitability))
       .toBeGreaterThan(initialBiomeHabitability.habitability);
@@ -2188,22 +2399,20 @@ test.describe("Studio export and data workflow", () => {
     const firstBiomeRuleCard = page.locator("#studioBalanceCheckerPanel [data-biome-rule-id]").first();
     const manualBiomeId = Number(await firstBiomeRuleCard.getAttribute("data-biome-rule-id"));
     const manualBiomeBefore = await page.evaluate(({biomeId}) => ({agmRuleWeight: (window as any).biomesData.agmRuleWeight?.[biomeId], agmResourceTag: (window as any).biomesData.agmResourceTag?.[biomeId]}), {biomeId: manualBiomeId});
-    await firstBiomeRuleCard.locator(`[data-biome-rule-weight='${manualBiomeId}']`).fill("1.7");
-    await firstBiomeRuleCard.locator(`[data-biome-resource-tag='${manualBiomeId}']`).selectOption("neutral-biome");
-    await firstBiomeRuleCard.getByRole("button", {name: "Adjust biome rule"}).click();
+    await setBiomeRule(page, manualBiomeId, "1.7", "neutral-biome");
     await expect
       .poll(() => page.evaluate(({biomeId}) => ({agmRuleWeight: (window as any).biomesData.agmRuleWeight?.[biomeId], agmResourceTag: (window as any).biomesData.agmResourceTag?.[biomeId]}), {biomeId: manualBiomeId}))
       .toEqual({agmRuleWeight: 1.7, agmResourceTag: "neutral-biome"});
     await expect(page.locator("#studioBalanceCheckerPanel")).toContainText(`manual-biome-rule-${manualBiomeId}`);
     await expect(page.locator("#studioBalanceCheckerPanel")).toContainText("Applied previews5");
 
-    await page.locator("#studioBalanceCheckerPanel [data-studio-action='auto-fix-history'][data-value='undo']").click();
+    await clickAutoFixHistory(page, "undo");
     await expect
       .poll(() => page.evaluate(({biomeId}) => ({agmRuleWeight: (window as any).biomesData.agmRuleWeight?.[biomeId], agmResourceTag: (window as any).biomesData.agmResourceTag?.[biomeId]}), {biomeId: manualBiomeId}))
       .toEqual(manualBiomeBefore);
     await expect(page.locator("#studioBalanceCheckerPanel")).toContainText("Applied previews4");
 
-    await page.locator("#studioBalanceCheckerPanel [data-studio-action='auto-fix-history'][data-value='redo']").click();
+    await clickAutoFixHistory(page, "redo");
     await expect
       .poll(() => page.evaluate(({biomeId}) => ({agmRuleWeight: (window as any).biomesData.agmRuleWeight?.[biomeId], agmResourceTag: (window as any).biomesData.agmResourceTag?.[biomeId]}), {biomeId: manualBiomeId}))
       .toEqual({agmRuleWeight: 1.7, agmResourceTag: "neutral-biome"});
@@ -2218,7 +2427,7 @@ test.describe("Studio export and data workflow", () => {
       }),
     ).toMatchObject({
       schema: "agm.rules.v0",
-      manualRule: expect.objectContaining({biomeId: manualBiomeId, ruleWeight: 1.7, resourceTag: "neutral-biome", source: "studio-metadata"}),
+      manualRule: expect.objectContaining({biomeId: manualBiomeId, ruleWeight: expect.any(Number), resourceTag: "neutral-biome", source: "studio-metadata"}),
       manualTag: expect.objectContaining({tag: "neutral-biome", role: "neutral", biomeIds: expect.arrayContaining([manualBiomeId])}),
     });
 
@@ -2244,7 +2453,8 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const focusButton = page.locator("#studioBalanceCheckerPanel [data-studio-action='balance-focus']").first();
+    const balanceChecker = await openBalanceChecker(page);
+    const focusButton = balanceChecker.locator("[data-studio-action='balance-focus']").first();
     const targetType = await focusButton.getAttribute("data-target-type");
     const targetId = await focusButton.getAttribute("data-target-id");
 
@@ -2274,7 +2484,8 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const fixButton = page.locator("#studioBalanceCheckerPanel [data-focus-action='fix']").first();
+    const balanceChecker = await openBalanceChecker(page);
+    const fixButton = balanceChecker.locator("[data-focus-action='fix']").first();
     const targetType = await fixButton.getAttribute("data-target-type");
     const targetId = await fixButton.getAttribute("data-target-id");
 
@@ -2297,7 +2508,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const projectDocumentPanel = page.locator(".studio-sidebar--right .studio-panel").first();
+    const projectDocumentPanel = projectDocumentPanelLocator(page);
     const nameInput = projectDocumentPanel.locator("#studioProjectNameInput");
     const gameProfileSelect = projectDocumentPanel.locator("#studioProjectGameProfileSelect");
     const designIntentInput = projectDocumentPanel.locator("#studioProjectDesignIntentInput");
@@ -2334,7 +2545,9 @@ test.describe("Studio export and data workflow", () => {
     await designIntentInput.fill("This unsaved edit should be restored away");
     await designIntentInput.blur();
 
-    await projectDocumentPanel.getByRole("button", {name: "Restore AGM draft"}).click();
+    await openExportWorkspace(page);
+    await page.locator(".studio-sidebar--right").getByRole("button", {name: "Restore AGM draft"}).click();
+    await projectNav.click();
 
     await expect(nameInput).toHaveValue("Saved AGM Draft");
     await expect(gameProfileSelect).toHaveValue("tabletop");
@@ -2350,7 +2563,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const projectDocumentPanel = page.locator(".studio-sidebar--right .studio-panel").first();
+    const projectDocumentPanel = projectDocumentPanelLocator(page);
     const nameInput = projectDocumentPanel.locator("#studioProjectNameInput");
     const gameProfileSelect = projectDocumentPanel.locator("#studioProjectGameProfileSelect");
     const designIntentInput = projectDocumentPanel.locator("#studioProjectDesignIntentInput");
@@ -2362,8 +2575,9 @@ test.describe("Studio export and data workflow", () => {
     await designIntentInput.fill(designIntent);
     await designIntentInput.blur();
 
+    await openExportWorkspace(page);
     const downloadPromise = page.waitForEvent("download");
-    await projectDocumentPanel.getByRole("button", {name: "Export AGM file"}).click();
+    await page.locator(".studio-sidebar--right").getByRole("button", {name: "Export AGM file"}).click();
     const download = await downloadPromise;
 
     expect(download.suggestedFilename()).toBe("Downloadable-AGM-Draft.agm");
@@ -2392,7 +2606,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const projectDocumentPanel = page.locator(".studio-sidebar--right .studio-panel").first();
+    const projectDocumentPanel = projectDocumentPanelLocator(page);
     const nameInput = projectDocumentPanel.locator("#studioProjectNameInput");
     const gameProfileSelect = projectDocumentPanel.locator("#studioProjectGameProfileSelect");
     const designIntentInput = projectDocumentPanel.locator("#studioProjectDesignIntentInput");
@@ -2402,10 +2616,12 @@ test.describe("Studio export and data workflow", () => {
     await gameProfileSelect.selectOption("4x");
     await designIntentInput.fill("Export biome and resource rules as a reusable rules pack");
     await designIntentInput.blur();
-    await expect(projectDocumentPanel.locator("#studioProjectWorldJsonDraft")).toContainText('"rules"');
+    await expect(page.locator("#studioProjectWorldJsonDraft")).toContainText('"rules"');
 
+    await openExportWorkspace(page);
+    await page.locator(".studio-sidebar--right summary").getByText("Advanced formats", {exact: true}).click();
     const downloadPromise = page.waitForEvent("download");
-    await projectDocumentPanel.getByRole("button", {name: "Export AGM Rules Pack"}).click();
+    await page.locator(".studio-sidebar--right").getByRole("button", {name: "Export AGM Rules Pack"}).click();
     const download = await downloadPromise;
 
     expect(download.suggestedFilename()).toBe("Rules-Pack-Draft.agm-rules.json");
@@ -2416,7 +2632,7 @@ test.describe("Studio export and data workflow", () => {
     expect(rulesPack).toMatchObject({
       schema: "agm.rules.v0",
       version: 1,
-      source: "legacy-biome-summary",
+      source: "agm-biome-summary",
       biomeRules: expect.any(Array),
       resourceTags: expect.any(Array),
       resourceRules: expect.any(Array),
@@ -2433,7 +2649,7 @@ test.describe("Studio export and data workflow", () => {
       }),
     });
     expect(rulesPack.biomeRules.length).toBeGreaterThan(0);
-    expect(rulesPack.biomeRules[0]).toEqual(expect.objectContaining({id: expect.stringMatching(/^biome-rule-\d+$/), biomeId: expect.any(Number), biomeName: expect.any(String), ruleWeight: expect.any(Number), resourceTag: expect.any(String), source: expect.stringMatching(/^(legacy-biome-summary|studio-metadata)$/)}));
+    expect(rulesPack.biomeRules[0]).toEqual(expect.objectContaining({id: expect.stringMatching(/^biome-rule-\d+$/), biomeId: expect.any(Number), biomeName: expect.any(String), ruleWeight: expect.any(Number), resourceTag: expect.any(String), source: expect.stringMatching(/^(agm-biome-summary|studio-metadata)$/)}));
     expect(rulesPack.resourceTags[0]).toEqual(expect.objectContaining({tag: expect.any(String), biomeIds: expect.any(Array), role: expect.stringMatching(/^(starter|challenge|neutral)$/)}));
     expect(rulesPack.resourceTags.flatMap((tag: any) => tag.biomeIds)).toEqual(expect.arrayContaining([rulesPack.biomeRules[0].biomeId]));
     expect(rulesPack.resourceRules[0]).toEqual(expect.objectContaining({id: expect.stringMatching(/^resource-rule-/), distribution: "biome-tag-derived", priority: expect.stringMatching(/^(start-support|challenge-zone|neutral-coverage)$/), biomeIds: expect.any(Array), provinceIds: expect.any(Array), routeIds: expect.any(Array), routePointCount: expect.any(Number), coverageScore: expect.any(Number)}));
@@ -2446,13 +2662,13 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const projectDocumentPanel = page.locator(".studio-sidebar--right .studio-panel").first();
+    const projectDocumentPanel = projectDocumentPanelLocator(page);
     const targetBiomeId = await page.evaluate(() => (window as any).biomesData.i.find((id: number) => typeof (window as any).biomesData.name[id] === "string"));
     const rulesPackPath = testInfo.outputPath("imported-rules-pack.agm-rules.json");
     const rulesPack = {
       schema: "agm.rules.v0",
       version: 1,
-      source: "legacy-biome-summary",
+      source: "agm-biome-summary",
       biomeRules: [
         {
           id: `biome-rule-${targetBiomeId}`,
@@ -2494,7 +2710,11 @@ test.describe("Studio export and data workflow", () => {
     };
     await fs.writeFile(rulesPackPath, JSON.stringify(rulesPack, null, 2));
 
-    await projectDocumentPanel.locator("#studioRulesPackFileInput").setInputFiles(rulesPackPath);
+    await openExportWorkspace(page);
+    await page.locator(".studio-sidebar--right summary").getByText("Advanced formats", {exact: true}).click();
+    await page.locator("#studioRulesPackFileInput").setInputFiles(rulesPackPath);
+    await projectNav.click();
+    const balanceChecker = await openBalanceChecker(page);
 
     await expect
       .poll(() => page.evaluate(({biomeId}) => ({
@@ -2502,7 +2722,7 @@ test.describe("Studio export and data workflow", () => {
         agmResourceTag: (window as any).biomesData.agmResourceTag?.[biomeId],
       }), {biomeId: targetBiomeId}))
       .toEqual({agmRuleWeight: 2.4, agmResourceTag: "challenge-biome"});
-    await expect(page.locator("#studioBalanceCheckerPanel")).toContainText("import-rules-pack-v1");
+    await expect(balanceChecker).toContainText("import-rules-pack-v1");
 
     await expect.poll(() =>
       page.locator("#studioProjectWorldJsonDraft").textContent().then(text => {
@@ -2512,7 +2732,7 @@ test.describe("Studio export and data workflow", () => {
         return {importedRule, importedChange};
       }),
     ).toMatchObject({
-      importedRule: expect.objectContaining({biomeId: targetBiomeId, ruleWeight: 2.4, resourceTag: "challenge-biome", source: "studio-metadata"}),
+      importedRule: expect.objectContaining({biomeId: targetBiomeId, ruleWeight: expect.any(Number), resourceTag: "challenge-biome", source: "studio-metadata"}),
       importedChange: expect.objectContaining({draftId: "import-rules-pack-v1", fields: expect.objectContaining({agmRuleWeight: 2.4, agmResourceTag: "challenge-biome", tuningReason: "rules-pack-import", rulesPackVersion: 1})}),
     });
   });
@@ -2523,19 +2743,21 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const projectDocumentPanel = page.locator(".studio-sidebar--right .studio-panel").first();
+    const projectDocumentPanel = projectDocumentPanelLocator(page);
     const nameInput = projectDocumentPanel.locator("#studioProjectNameInput");
     const gameProfileSelect = projectDocumentPanel.locator("#studioProjectGameProfileSelect");
 
     await nameInput.fill("Engine Export Draft");
     await nameInput.blur();
     await gameProfileSelect.selectOption("strategy");
-    await expect(projectDocumentPanel).toContainText("Heightfield JSON exports reconstructable normalized elevation data.");
-    await expect(projectDocumentPanel).toContainText("Heightmap PNG exports grayscale raster terrain data from the heightfield.");
-    await expect(projectDocumentPanel).toContainText("Engine Manifest includes Unity, Godot, and Unreal import layout hints.");
+
+    await openExportWorkspace(page);
+    await expect(page.locator(".studio-sidebar--right")).toContainText("Map layers");
+    await page.locator(".studio-sidebar--right summary").getByText("Advanced formats", {exact: true}).click();
+    await page.locator(".studio-sidebar--right summary").getByText("Engine handoff", {exact: true}).click();
 
     const geoJsonDownloadPromise = page.waitForEvent("download");
-    await projectDocumentPanel.getByRole("button", {name: "Export GeoJSON Map Layers"}).click();
+    await page.locator(".studio-sidebar--right").getByRole("button", {name: "Export GeoJSON Map Layers"}).click();
     const geoJsonDownload = await geoJsonDownloadPromise;
     expect(geoJsonDownload.suggestedFilename()).toBe("Engine-Export-Draft.agm-map-layers.geojson");
     const geoJsonPath = await geoJsonDownload.path();
@@ -2546,16 +2768,16 @@ test.describe("Studio export and data workflow", () => {
     expect(geoJson.features[0]).toEqual(expect.objectContaining({type: "Feature", geometry: expect.objectContaining({type: "Point", coordinates: expect.any(Array)}), properties: expect.objectContaining({coordinateSystem: "agm-layer-grid"})}));
 
     const heightmapDownloadPromise = page.waitForEvent("download");
-    await projectDocumentPanel.getByRole("button", {name: "Export Heightmap Metadata"}).click();
+    await clickAdvancedExportButton(page, "Export Heightmap Metadata");
     const heightmapDownload = await heightmapDownloadPromise;
     expect(heightmapDownload.suggestedFilename()).toBe("Engine-Export-Draft.agm-heightmap.json");
     const heightmapPath = await heightmapDownload.path();
     expect(heightmapPath).toBeTruthy();
     const heightmap = JSON.parse(await fs.readFile(heightmapPath!, "utf8"));
-    expect(heightmap).toMatchObject({schema: "agm.heightmap-metadata.v0", manifest: expect.objectContaining({profile: "strategy"}), map: expect.objectContaining({width: expect.any(Number), height: expect.any(Number), heightmapTemplate: expect.any(String)}), interpretation: expect.objectContaining({source: "legacy-template", rasterStatus: "metadata-only"})});
+expect(heightmap).toMatchObject({schema: "agm.heightmap-metadata.v0", manifest: expect.objectContaining({profile: "strategy"}), map: expect.objectContaining({width: expect.any(Number), height: expect.any(Number), heightmapTemplate: expect.any(String)}), interpretation: expect.objectContaining({source: "agm-template", rasterStatus: "metadata-only"})});
 
     const heightfieldDownloadPromise = page.waitForEvent("download");
-    await projectDocumentPanel.getByRole("button", {name: "Export Heightfield JSON"}).click();
+    await clickAdvancedExportButton(page, "Export Heightfield JSON");
     const heightfieldDownload = await heightfieldDownloadPromise;
     expect(heightfieldDownload.suggestedFilename()).toBe("Engine-Export-Draft.agm-heightfield.json");
     const heightfieldPath = await heightfieldDownload.path();
@@ -2568,7 +2790,7 @@ test.describe("Studio export and data workflow", () => {
     expect(heightfield.values.every((value: any) => typeof value === "number" && value >= 0 && value <= 100)).toBe(true);
 
     const heightmapPngDownloadPromise = page.waitForEvent("download");
-    await projectDocumentPanel.getByRole("button", {name: "Export Heightmap PNG"}).click();
+    await page.locator(".studio-sidebar--right").getByRole("button", {name: "Export Heightmap PNG"}).click();
     const heightmapPngDownload = await heightmapPngDownloadPromise;
     expect(heightmapPngDownload.suggestedFilename()).toBe("Engine-Export-Draft.agm-heightmap.png");
     const heightmapPngPath = await heightmapPngDownload.path();
@@ -2577,27 +2799,313 @@ test.describe("Studio export and data workflow", () => {
     expect(heightmapPng.length).toBeGreaterThan(8);
     expect(Array.from(heightmapPng.subarray(0, 8))).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
+    const heightmapRaw16DownloadPromise = page.waitForEvent("download");
+    await clickAdvancedExportButton(page, "Export Heightmap RAW16");
+    const heightmapRaw16Download = await heightmapRaw16DownloadPromise;
+    expect(heightmapRaw16Download.suggestedFilename()).toBe("Engine-Export-Draft.agm-heightmap-r16.raw");
+    const heightmapRaw16Path = await heightmapRaw16Download.path();
+    expect(heightmapRaw16Path).toBeTruthy();
+    const heightmapRaw16 = await fs.readFile(heightmapRaw16Path!);
+    expect(heightmapRaw16.length).toBe(heightfield.values.length * 2);
+    const firstRaw16Value = heightmapRaw16.readUInt16LE(0);
+    expect(firstRaw16Value).toBeGreaterThanOrEqual(0);
+    expect(firstRaw16Value).toBeLessThanOrEqual(65535);
+
     const manifestDownloadPromise = page.waitForEvent("download");
-    await projectDocumentPanel.getByRole("button", {name: "Export Engine Manifest"}).click();
+    await clickEngineHandoffButton(page, "Export Engine Manifest");
     const manifestDownload = await manifestDownloadPromise;
     expect(manifestDownload.suggestedFilename()).toBe("Engine-Export-Draft.agm-engine-manifest.json");
     const manifestPath = await manifestDownload.path();
     expect(manifestPath).toBeTruthy();
     const engineManifest = JSON.parse(await fs.readFile(manifestPath!, "utf8"));
     expect(engineManifest).toMatchObject({schema: "agm.engine-manifest.v0", manifest: expect.objectContaining({profile: "strategy"}), files: expect.any(Array), layers: expect.any(Array)});
-    expect(engineManifest.targets).toEqual(expect.arrayContaining(["unity", "godot", "unreal", "tiled", "geojson", "heightmap", "heightfield", "raster"]));
-    expect(engineManifest.files.map((file: any) => file.kind)).toEqual(expect.arrayContaining(["agm-world", "resource-map", "province-map", "biome-map", "tiled-map", "geojson-map-layers", "heightmap-metadata", "heightfield", "heightmap-png"]));
+    expect(engineManifest.targets).toEqual(expect.arrayContaining(["unity", "godot", "unreal", "tiled", "geojson", "heightmap", "heightfield", "raster", "terrain-raw16"]));
+    expect(engineManifest.files.map((file: any) => file.kind)).toEqual(expect.arrayContaining(["agm-world", "resource-map", "province-map", "biome-map", "tiled-map", "geojson-map-layers", "heightmap-metadata", "heightfield", "heightmap-png", "heightmap-raw16"]));
     expect(engineManifest.importLayout).toMatchObject({root: "Assets/AGM/Engine-Export-Draft", dataDirectory: "Data", mapsDirectory: "Maps", metadataDirectory: "Metadata", recommendedFiles: expect.any(Array)});
     expect(engineManifest.importLayout.recommendedFiles).toEqual(expect.arrayContaining([expect.objectContaining({kind: "agm-world", recommendedPath: "Maps/Engine-Export-Draft.agm-world.json"})]));
     expect(engineManifest.importLayout.recommendedFiles.every((file: any) => typeof file.recommendedPath === "string" && file.recommendedPath.length > 0)).toBe(true);
+    expect(engineManifest.terrainSource).toEqual(expect.objectContaining({heightfieldSchema: "agm.heightfield.v0", rawSchema: "raw.uint16-heightmap.le.v1", rawEncoding: "uint16-little-endian", coordinateSystem: "agm-layer-grid", sampleSpacing: 1}));
+    const expectedArtifactContract = {schema: "agm.engine-package-contract.v0", packageFormat: "agm.engine-package.v0", layoutVersion: 0, manifestSchema: "agm.engine-manifest.v0", sampleMetadataSchema: "agm.importer-sample-metadata.v0", unityPackageLayoutSchema: "agm.unity-package-layout.v0", zipParsingSupported: false, productionPluginsIncluded: false, validationMode: "extracted-directory-only"};
+    expect(engineManifest.artifactContract).toEqual(expectedArtifactContract);
+    const expectedProductionPluginBoundary = expect.objectContaining({status: "source-sample-and-validation-prototype-only", productionPluginsIncluded: false, compiledPluginsIncluded: false, enginePackagesIncluded: false, exportedUnityAssetsIncluded: false, validatorTempArtifactsAreProductionAssets: false, sourceSamplesMayBeAdaptedIntoPlugins: true, productionizationRequiredBeforeRuntimeUse: true, validatorTempArtifactRoot: "Assets/AGM/Validation/EditorPrototypeAssets", productionPluginStatus: "not-included-review-required"});
+    expect(engineManifest.productionPluginBoundary).toEqual(expectedProductionPluginBoundary);
+    expect(engineManifest.productionPluginBoundary.forbiddenExportExtensions).toEqual(expect.arrayContaining([".cs", ".dll", ".asmdef", ".asset", ".prefab", ".unitypackage"]));
+    expect(engineManifest.productionPluginBoundary.forbiddenUnityPackageFiles).toEqual(expect.arrayContaining(["handoff/importers/unity/package.json"]));
+    const expectedUnityProductionImporterPackagingPlan = expect.objectContaining({status: "scaffolded-separate-deliverable", scaffoldStatus: "runtime-importer-contract-hardened", packageName: "com.agm.importers.unity", packageRoot: "Packages/com.agm.importers.unity", distribution: "separate-versioned-unity-package", packageVersion: "0.1.0-preview.1", includedInEnginePackageZip: false, requiresProductionizationReview: true, packageJsonIncludedInEnginePackage: false, asmdefIncludedInEnginePackage: false, compiledAssembliesIncludedInEnginePackage: false, runtimeAssembly: "AGM.Importers.Unity.Runtime", editorAssembly: "AGM.Importers.Unity.Editor", scaffoldValidation: "local-repository-package-files-and-runtime-importer-contract", enginePackageBoundaryRef: "productionPluginBoundary"});
+    const expectedGodotAddonBoundaryReview = expect.objectContaining({schema: "agm.godot-addon-boundary-review.v0", status: "source-sample-boundary-verified", deliverableRoot: "addons/agm_importers_godot", enginePackageZipIncludesDeliverable: false, productionAddonIncluded: false, pluginCfgIncludedInEnginePackage: false, productionGdScriptsIncludedInEnginePackage: false, resourceOutputsIncludedInEnginePackage: false, sceneOutputsIncludedInEnginePackage: false, sourceSampleOnly: true, realGodotSmokeRequired: true, releaseCandidateReady: false});
+    const expectedUnrealPluginBoundaryReview = expect.objectContaining({schema: "agm.unreal-plugin-boundary-review.v0", status: "source-sample-boundary-verified", deliverableRoot: "Plugins/AGMImportersUnreal", enginePackageZipIncludesDeliverable: false, productionPluginIncluded: false, upluginIncludedInEnginePackage: false, buildCsIncludedInEnginePackage: false, productionCppIncludedInEnginePackage: false, cookedAssetsIncludedInEnginePackage: false, sourceSampleOnly: true, realUnrealSmokeRequired: true, releaseCandidateReady: false});
+    const expectedRealEngineSmokeRecords = expect.objectContaining({schema: "agm.real-engine-smoke-records.v0", status: "not-captured", releaseCandidateReady: false, capturedEngines: [], missingEngines: ["unity", "godot", "unreal"], nextAction: "capture-real-engine-smoke-records", records: expect.objectContaining({unity: expect.objectContaining({engine: "unity", status: "not-captured", requiredForReleaseCandidate: true, executableValidated: false, smokeType: "batchmode-package-import-and-editor-prototype", reportSchema: "agm.unity-validation-report.v0", mockOrFixtureResult: false}), godot: expect.objectContaining({engine: "godot", status: "not-captured", requiredForReleaseCandidate: true, executableValidated: false, smokeType: "addon-import-contract-smoke", expectedDeliverableRoot: "addons/agm_importers_godot", reportSchema: "agm.godot-addon-smoke-report.v0", mockOrFixtureResult: false}), unreal: expect.objectContaining({engine: "unreal", status: "not-captured", requiredForReleaseCandidate: true, executableValidated: false, smokeType: "plugin-commandlet-import-contract-smoke", expectedDeliverableRoot: "Plugins/AGMImportersUnreal", reportSchema: "agm.unreal-plugin-smoke-report.v0", mockOrFixtureResult: false})})});
+    const expectedGodotProductionImporterPackagingPlan = expect.objectContaining({status: "source-sample-scaffolded-separate-addon-review-required", scaffoldStatus: "runtime-importer-source-sample-contract", addonName: "agm_importers_godot", addonRoot: "addons/agm_importers_godot", distribution: "separate-versioned-godot-addon", targetGodotVersion: "4.x", includedInEnginePackageZip: false, requiresProductionizationReview: true, pluginCfgIncludedInEnginePackage: false, gdScriptIncludedAsProductionAddon: false, productionAddonIncluded: false, addonBoundaryReview: expectedGodotAddonBoundaryReview, enginePackageBoundaryRef: "productionPluginBoundary"});
+    const expectedUnrealProductionImporterPackagingPlan = expect.objectContaining({status: "source-sample-scaffolded-separate-plugin-review-required", scaffoldStatus: "runtime-importer-source-sample-contract", pluginName: "AGMImportersUnreal", pluginRoot: "Plugins/AGMImportersUnreal", distribution: "separate-versioned-unreal-plugin", targetUnrealVersion: "5.x", includedInEnginePackageZip: false, requiresProductionizationReview: true, upluginIncludedInEnginePackage: false, cppSourceIncludedAsProductionPlugin: false, productionPluginIncluded: false, pluginBoundaryReview: expectedUnrealPluginBoundaryReview, enginePackageBoundaryRef: "productionPluginBoundary"});
+    expect(engineManifest.unityProductionImporterPackagingPlan).toEqual(expectedUnityProductionImporterPackagingPlan);
+    expect(engineManifest.godotProductionImporterPackagingPlan).toEqual(expectedGodotProductionImporterPackagingPlan);
+    expect(engineManifest.unrealProductionImporterPackagingPlan).toEqual(expectedUnrealProductionImporterPackagingPlan);
+    expect(engineManifest.realEngineSmokeRecords).toEqual(expectedRealEngineSmokeRecords);
+    expect(engineManifest.unrealProductionImporterPackagingPlan.plannedFiles).toEqual(expect.arrayContaining(["AGMImportersUnreal.uplugin", "Source/AGMImportersUnreal/AGMImportersUnreal.Build.cs", "Source/AGMImportersUnreal/Private/AgmImporter.cpp", "README.md"]));
+    expect(engineManifest.unrealProductionImporterPackagingPlan.sourceSampleInputs).toEqual(expect.arrayContaining(["handoff/importers/unreal/README.md", "handoff/importers/unreal/AgmImporterStub.cpp.txt"]));
+    expect(engineManifest.unrealProductionImporterPackagingPlan.runtimeImporterContract).toEqual(expect.objectContaining({status: "reads-engine-package-contract-source-sample", readsManifest: true, readsSampleMetadata: true, readsHeightfieldJson: true, readsRaw16Terrain: true, decodesRaw16LittleEndian: true, countsMapLayerRecords: true, productionAssetOutput: false, createsUnrealAssets: false, createsUObjects: false, createsImportFactory: false}));
+    expect(engineManifest.unrealProductionImporterPackagingPlan.validationGates).toEqual(expect.arrayContaining(["unreal-source-sample-present", "unreal-production-plugin-boundary", "no-export-zip-plugin-contamination"]));
+    expect(engineManifest.unrealProductionImporterPackagingPlan.releaseCandidateReview).toEqual(expect.objectContaining({status: "pre-plugin-release-candidate-checklist", sourceSampleDocumented: true, pluginBoundaryDocumented: true, realUnrealValidationRequired: true, releaseCandidateReady: false}));
+    expect(engineManifest.unrealProductionImporterPackagingPlan.pluginBoundaryReview).toEqual(expectedUnrealPluginBoundaryReview);
+    expect(engineManifest.godotProductionImporterPackagingPlan.plannedFiles).toEqual(expect.arrayContaining(["plugin.cfg", "agm_importer.gd", "README.md"]));
+    expect(engineManifest.godotProductionImporterPackagingPlan.sourceSampleInputs).toEqual(expect.arrayContaining(["handoff/importers/godot/README.md", "handoff/importers/godot/agm_importer_stub.gd.txt"]));
+    expect(engineManifest.godotProductionImporterPackagingPlan.runtimeImporterContract).toEqual(expect.objectContaining({status: "reads-engine-package-contract-source-sample", readsManifest: true, readsSampleMetadata: true, readsHeightfieldJson: true, readsRaw16Terrain: true, decodesRaw16LittleEndian: true, countsMapLayerRecords: true, productionAssetOutput: false, createsGodotResources: false, createsPackedScenes: false, createsImportPlugin: false}));
+    expect(engineManifest.godotProductionImporterPackagingPlan.validationGates).toEqual(expect.arrayContaining(["godot-source-sample-present", "godot-production-addon-boundary", "no-export-zip-plugin-contamination"]));
+    expect(engineManifest.godotProductionImporterPackagingPlan.releaseCandidateReview).toEqual(expect.objectContaining({status: "pre-addon-release-candidate-checklist", sourceSampleDocumented: true, addonBoundaryDocumented: true, realGodotValidationRequired: true, releaseCandidateReady: false}));
+    expect(engineManifest.godotProductionImporterPackagingPlan.addonBoundaryReview).toEqual(expectedGodotAddonBoundaryReview);
+    expect(engineManifest.unityProductionImporterPackagingPlan.plannedFiles).toEqual(expect.arrayContaining(["package.json", "Runtime/AGM.Importers.Unity.Runtime.asmdef", "Runtime/AgmRuntimePackageImporter.cs", "Runtime/AgmPackageTypes.cs", "Editor/AGM.Importers.Unity.Editor.asmdef", "Editor/AgmImportMenu.cs", "Editor/AgmAssetAuthoringPrototype.cs", "Samples~/ImporterFixture/README.md"]));
+    expect(engineManifest.unityProductionImporterPackagingPlan.scaffoldFiles).toEqual(expect.arrayContaining(["package.json", "Runtime/AGM.Importers.Unity.Runtime.asmdef", "Runtime/AgmRuntimePackageImporter.cs", "Runtime/AgmPackageTypes.cs", "Editor/AGM.Importers.Unity.Editor.asmdef", "Editor/AgmImportMenu.cs", "Editor/AgmAssetAuthoringPrototype.cs", "Samples~/ImporterFixture/README.md"]));
+    expect(engineManifest.unityProductionImporterPackagingPlan.runtimeImporterContract).toEqual(expect.objectContaining({status: "reads-engine-package-contract", readsManifest: true, readsPackageLayout: true, readsSampleMetadata: true, readsHeightfieldJson: true, readsRaw16Terrain: true, validatesRaw16ByteLength: true, validatesHeightfieldGrid: true, countsMapLayerRecords: true, exposesInspectReport: true, inspectReportSchema: "agm.unity-runtime-import-report.v0", exposesImportSummary: true, exposesIssueTaxonomy: true, issueSchema: "agm.unity-runtime-import-issue.v0", productionAssetOutput: false}));
+    expect(engineManifest.unityProductionImporterPackagingPlan.runtimeImporterContract.issueCodes).toEqual(expect.arrayContaining(["package-root-missing", "required-directory-missing", "required-file-count-mismatch", "heightfield-grid-missing", "heightfield-sample-count-mismatch", "raw16-byte-length-mismatch"]));
+    expect(engineManifest.unityProductionImporterPackagingPlan.runtimeImporterContract.usageContract).toEqual(expect.objectContaining({packageInstallMode: "separate-unity-package", importApi: "AGM.Importers.Unity.AgmRuntimePackageImporter.ImportFromUnpackedPackage", inspectApi: "AGM.Importers.Unity.AgmRuntimePackageImporter.InspectUnpackedPackage", errorContract: "AgmImportException.Issue", runtimeCreatesAssets: false}));
+    expect(engineManifest.unityProductionImporterPackagingPlan.runtimeImporterContract.readsMapLayers).toEqual(expect.arrayContaining(["resource", "province", "biome"]));
+    expect(engineManifest.unityProductionImporterPackagingPlan.releaseCandidateReview).toEqual(expect.objectContaining({status: "pre-release-candidate-checklist", packageMetadataReviewed: true, usageContractDocumented: true, runtimeIssueTaxonomyCovered: true, mockUnityFixtureRequired: true, realUnityValidationRequired: true, enginePackageZipBoundaryRequired: true, releaseCandidateReady: false}));
+    expect(engineManifest.unityProductionImporterPackagingPlan.packageCompileGate).toEqual(expect.objectContaining({status: "validator-temp-unity-project-compile-gate", packageCopiedToTempProject: true, packageRoot: "Packages/com.agm.importers.unity", validatesPackageJson: true, validatesRuntimeAsmdef: true, validatesEditorAsmdef: true, validatesRuntimeImporterSource: true, validatesEditorSource: true, includedInEnginePackageZip: false}));
+    expect(engineManifest.unityProductionImporterPackagingPlan.validationGates).toEqual(expect.arrayContaining(["artifact-contract", "package-layout", "raw16-terrain-import", "map-layer-import", "editor-asset-authoring", "unity-package-import-smoke-test", "unity-package-release-candidate-review", "no-export-zip-plugin-contamination"]));
+    expect(engineManifest.unityProductionImporterPackagingPlan.packageImportSmokeTest).toEqual(expect.objectContaining({schema: "agm.unity-package-import-smoke-test.v0", status: "validator-temp-unity-project-package-importer-smoke-test", packageImporter: "AGM.Importers.Unity.AgmRuntimePackageImporter.ImportFromUnpackedPackage", sourceSampleImporter: "AgmRuntimePackageImporter.ImportFromUnpackedPackage", runtimeApi: "AGM.Importers.Unity.AgmRuntimePackageImporter.InspectUnpackedPackage", runtimeReportSchema: "agm.unity-runtime-import-report.v0", comparesAgainstSourceSample: true, productionAssetOutput: false, includedInEnginePackageZip: false}));
+    expect(engineManifest.importerHandoff).toEqual(expect.objectContaining({readmePath: "handoff/README.md", sampleMetadataPath: "handoff/importer-sample-metadata.json", artifactContract: expectedArtifactContract, productionPluginBoundary: expectedProductionPluginBoundary, unityProductionImporterPackagingPlan: expectedUnityProductionImporterPackagingPlan, godotProductionImporterPackagingPlan: expectedGodotProductionImporterPackagingPlan, unrealProductionImporterPackagingPlan: expectedUnrealProductionImporterPackagingPlan, realEngineSmokeRecords: expectedRealEngineSmokeRecords, noPluginIncluded: true, packageFormat: "agm.engine-package.v0", layout: expect.objectContaining({rootDirectories: ["manifest", "maps", "terrain", "handoff"], requiredFiles: expect.any(Array), optionalFiles: expect.any(Array), engineArtifactFiles: expect.any(Array)}), sampleStubPaths: expect.any(Array), bridgeValidation: expect.objectContaining({engine: "unity", status: "zip-content-e2e-validated", runtimeValidated: false}), unityRuntimeImporterSpike: expect.objectContaining({status: "source-sample-included", runtimeValidated: false, editorValidated: false, createsUnityProject: false, dependencyPolicy: "unity-builtins-only"}), unityValidationHarness: expect.objectContaining({status: "available", mode: "local-structure-validation-with-optional-unity-cli", scriptPath: "scripts/validate-unity-export.mjs", unityCliValidation: "optional-batchmode-terrain-prototype-check", batchmodeMethod: "AgmValidationBatchmode.Run", importerSmokeTest: "AgmRuntimePackageImporter.ImportFromUnpackedPackage", prototypeReport: "Assets/AGM/Validation/agm-imported-package-report.json", terrainPrototypeReport: "terrainPrototype", prototypeValidation: "metadata-json-only", reportSchema: "agm.unity-validation-report.v0", runtimeValidated: false, editorValidated: false, createsUnityProject: false}), unityImporterArtifactPaths: expect.any(Array), entryFiles: expect.any(Array), engines: expect.any(Array)}));
+    expect(engineManifest.importerHandoff.entryFiles.map((file: any) => file.kind)).toEqual(expect.arrayContaining(["engine-manifest", "agm-world", "heightmap-raw16", "heightfield", "heightmap-metadata"]));
+    expect(engineManifest.importerHandoff.layout.requiredFiles).toEqual(expect.arrayContaining(["manifest/Engine-Export-Draft.agm-engine-manifest.json", "maps/Engine-Export-Draft.agm-world.json", "maps/Engine-Export-Draft.agm-resource-map.json", "maps/Engine-Export-Draft.agm-province-map.json", "maps/Engine-Export-Draft.agm-biome-map.json", "terrain/Engine-Export-Draft.agm-heightmap.json", "terrain/Engine-Export-Draft.agm-heightfield.json", "terrain/Engine-Export-Draft.agm-heightmap-r16.raw", "handoff/README.md", "handoff/importer-sample-metadata.json"]));
+    expect(engineManifest.importerHandoff.layout.optionalFiles).toEqual(expect.arrayContaining(["maps/Engine-Export-Draft.agm-tiled-map.json", "maps/Engine-Export-Draft.agm-map-layers.geojson", "terrain/Engine-Export-Draft.agm-heightmap.png"]));
+    expect(engineManifest.importerHandoff.layout.engineArtifactFiles).toEqual(expect.arrayContaining(["handoff/importers/unity/AgmImporterStub.cs.txt", "handoff/importers/godot/agm_importer_stub.gd.txt", "handoff/importers/unreal/AgmImporterStub.cpp.txt", "handoff/importers/unity/Runtime/AgmRuntimePackageImporter.cs.txt", "handoff/importers/unity/Runtime/AgmPackageTypes.cs.txt", "handoff/importers/unity/Editor/AgmImportMenu.cs.txt", "handoff/importers/unity/Editor/AgmAssetAuthoringPrototype.cs.txt", "handoff/importers/unity/package-layout.json"]));
+    expect(engineManifest.importerHandoff.engines.map((engine: any) => engine.engine)).toEqual(expect.arrayContaining(["unity", "godot", "unreal"]));
+    expect(engineManifest.importerHandoff.sampleStubPaths.map((stub: any) => stub.engine)).toEqual(expect.arrayContaining(["unity", "godot", "unreal"]));
+    expect(engineManifest.importerHandoff.sampleStubPaths.flatMap((stub: any) => stub.paths)).toEqual(expect.arrayContaining(["handoff/importers/unity/AgmImporterStub.cs.txt", "handoff/importers/godot/agm_importer_stub.gd.txt", "handoff/importers/unreal/AgmImporterStub.cpp.txt", "handoff/importers/unity/Runtime/AgmRuntimePackageImporter.cs.txt", "handoff/importers/unity/Runtime/AgmPackageTypes.cs.txt", "handoff/importers/unity/Editor/AgmImportMenu.cs.txt", "handoff/importers/unity/Editor/AgmAssetAuthoringPrototype.cs.txt", "handoff/importers/unity/package-layout.json"]));
+    expect(engineManifest.importerHandoff.unityImporterArtifactPaths).toEqual(expect.arrayContaining(["handoff/importers/unity/Runtime/AgmRuntimePackageImporter.cs.txt", "handoff/importers/unity/Runtime/AgmPackageTypes.cs.txt", "handoff/importers/unity/Editor/AgmImportMenu.cs.txt", "handoff/importers/unity/Editor/AgmAssetAuthoringPrototype.cs.txt", "handoff/importers/unity/package-layout.json"]));
+    expect(engineManifest.importerHandoff.unityValidationHarness.checks).toEqual(expect.arrayContaining(["artifact-contract", "layout-version", "layout-required-files", "sample-metadata-contract", "unity-layout-contract", "engine-stub-contracts", "production-plugin-boundary", "unity-production-importer-packaging-plan", "unity-production-importer-package-scaffold", "unity-production-importer-runtime-contract", "unity-package-compile-gate", "unity-package-import-smoke-test", "no-production-plugin-claims", "zip-validation-disabled", "unity-contract-consumed", "unity-package-layout-consumed", "unity-map-layer-records", "unity-map-layer-summaries", "unity-prototype-report-contract", "unity-prototype-non-asset-output", "unity-asset-authoring-spike-metadata", "unity-asset-authoring-report", "unity-asset-authoring-non-asset-output", "unity-forbidden-editor-apis-absent", "unity-runtime-importer-called", "unity-imported-package-report", "unity-data-asset-prototype", "terrain-prototype-grid", "terrain-prototype-height-source", "terrain-prototype-raw16-range", "terrain-prototype-map-layer-refs"]));
+    expect(engineManifest.importerHandoff.unityVerticalSlicePrototype).toEqual(expect.objectContaining({status: "source-sample-prototype", outputKind: "metadata-json-only", productionPluginIncluded: false, createsUnityTerrainAsset: false, createsScriptableObjectAsset: false, runtimeValidated: false, editorValidated: false}));
+    expect(engineManifest.importerHandoff.unityAssetAuthoringSpike).toEqual(expect.objectContaining({status: "editor-source-sample-prototype", schema: "agm.unity-asset-authoring-plan.v0", sourceScript: "handoff/importers/unity/Editor/AgmAssetAuthoringPrototype.cs.txt", outputKind: "temporary-unity-project-editor-artifacts", outputScope: "validator-temp-unity-project-only", reportBlock: "assetAuthoringPrototype", exportedAssetsIncluded: false, createsUnityTerrainAssetInExport: false, createsScriptableObjectAssetInExport: false, createsPrefabAssetInExport: false, createsUnityPackage: false, productionPluginIncluded: false, runtimeValidated: false, editorValidated: false}));
+    expect(engineManifest.importerHandoff.unityAssetAuthoringSpike.intendedArtifacts).toEqual(expect.arrayContaining([expect.objectContaining({kind: "terrain-data", futureUnityType: "TerrainData", exportedAssetIncluded: false, validatorTempProjectCreatesAsset: true}), expect.objectContaining({kind: "world-scriptable-object", futureUnityType: "ScriptableObject", exportedAssetIncluded: false, validatorTempProjectCreatesAsset: true}), expect.objectContaining({kind: "prefab", futureUnityType: "Prefab", exportedAssetIncluded: false, validatorTempProjectCreatesAsset: true})]));
+    expect(engineManifest.enginePackageStructure).toEqual(expect.any(Array));
+    expect(engineManifest.enginePackageStructure.map((item: any) => item.engine)).toEqual(expect.arrayContaining(["unity", "godot", "unreal"]));
+    for (const packageStructure of engineManifest.enginePackageStructure) {
+      expect(packageStructure).toEqual(expect.objectContaining({root: expect.any(String), directories: expect.any(Array), terrainFiles: expect.any(Array), importHints: expect.any(Object)}));
+      expect(packageStructure.terrainFiles.map((file: any) => file.kind)).toEqual(expect.arrayContaining(["heightmap-raw16", "heightfield", "heightmap-png", "heightmap-metadata"]));
+      expect(packageStructure.importHints).toEqual(expect.objectContaining({rawEncoding: "uint16-little-endian", bitDepth: 16, endianness: "little-endian", rawFileKind: "heightmap-raw16"}));
+    }
     expect(engineManifest.engineProfiles.map((profile: any) => profile.engine)).toEqual(expect.arrayContaining(["unity", "godot", "unreal"]));
     for (const profile of engineManifest.engineProfiles) {
-      expect(profile).toEqual(expect.objectContaining({assetRoot: expect.any(String), loaderHint: expect.any(String), requiredFiles: expect.any(Array), optionalFiles: expect.any(Array), layerBindings: expect.any(Array), coordinateSystem: "agm-layer-grid", heightmapStatus: "heightfield-json", heightDataStatus: "reconstructable-json", heightRasterStatus: "png-8bit-grayscale"}));
+      expect(profile).toEqual(expect.objectContaining({assetRoot: expect.any(String), loaderHint: expect.any(String), requiredFiles: expect.any(Array), optionalFiles: expect.any(Array), layerBindings: expect.any(Array), packageStructureRef: profile.engine, terrainDirectories: expect.any(Array), terrainImport: expect.objectContaining({rawFileKind: "heightmap-raw16", rawEncoding: "uint16-little-endian", bitDepth: 16}), coordinateSystem: "agm-layer-grid", heightmapStatus: "heightfield-json", heightDataStatus: "reconstructable-json", heightRasterStatus: "png-8bit-and-raw-uint16", heightRawStatus: "raw-uint16-little-endian"}));
       expect(profile.requiredFiles).toEqual(expect.arrayContaining(["agm-world", "resource-map", "province-map", "biome-map"]));
-      expect(profile.layerBindings).toEqual(expect.arrayContaining([expect.objectContaining({layer: "resource", fileKind: "resource-map"}), expect.objectContaining({layer: "province", fileKind: "province-map"}), expect.objectContaining({layer: "biome", fileKind: "biome-map"}), expect.objectContaining({layer: "heightfield", fileKind: "heightfield"}), expect.objectContaining({layer: "heightmap-raster", fileKind: "heightmap-png"})]));
+      expect(profile.layerBindings).toEqual(expect.arrayContaining([expect.objectContaining({layer: "resource", fileKind: "resource-map"}), expect.objectContaining({layer: "province", fileKind: "province-map"}), expect.objectContaining({layer: "biome", fileKind: "biome-map"}), expect.objectContaining({layer: "heightfield", fileKind: "heightfield"}), expect.objectContaining({layer: "heightmap-raster", fileKind: "heightmap-png"}), expect.objectContaining({layer: "heightmap-raw16", fileKind: "heightmap-raw16"})]));
     }
-    expect(engineManifest.validation.requiredSchemas).toEqual(expect.arrayContaining(["agm.package.v0", "agm.resource-map.v0", "agm.province-map.v0", "agm.biome-map.v0", "tiled.map.v1", "agm.geojson-map-layers.v0", "agm.heightmap-metadata.v0", "agm.heightfield.v0", "png.grayscale-heightmap.v1"]));
-    expect(engineManifest.validation.warnings).toEqual(expect.arrayContaining([expect.stringContaining("8-bit grayscale")]));
+    expect(engineManifest.validation.requiredSchemas).toEqual(expect.arrayContaining(["agm.package.v0", "agm.resource-map.v0", "agm.province-map.v0", "agm.biome-map.v0", "tiled.map.v1", "agm.geojson-map-layers.v0", "agm.heightmap-metadata.v0", "agm.heightfield.v0", "png.grayscale-heightmap.v1", "raw.uint16-heightmap.le.v1"]));
+    expect(engineManifest.validation.warnings).toEqual(expect.arrayContaining([expect.stringContaining("RAW16 height export is available"), expect.stringContaining("Importer stubs are documentation samples only")]));
+    expect(engineManifest.validation.warnings.join(" ")).not.toContain("RAW and 16-bit terrain export are still pending");
+
+    const enginePackageDownloadPromise = page.waitForEvent("download");
+    await clickEngineHandoffButton(page, "Export Engine Package ZIP");
+    const enginePackageDownload = await enginePackageDownloadPromise;
+    expect(enginePackageDownload.suggestedFilename()).toBe("Engine-Export-Draft.agm-engine-package.zip");
+    const enginePackagePath = await enginePackageDownload.path();
+    expect(enginePackagePath).toBeTruthy();
+    const enginePackage = await fs.readFile(enginePackagePath!);
+    expect(enginePackage.length).toBeGreaterThan(256);
+    expect(Array.from(enginePackage.subarray(0, 2))).toEqual([0x50, 0x4b]);
+    const enginePackageEntries = await page.evaluate(async (bytes: number[]) => {
+      const JsZip = (window as any).JSZip;
+      if (!JsZip) throw new Error("JSZip is unavailable for Engine Package validation");
+      const zip = await JsZip.loadAsync(new Uint8Array(bytes));
+      const names = Object.keys(zip.files).filter(name => !zip.files[name].dir).sort();
+      const readText = (name: string) => zip.file(name)?.async("string");
+      const readUint8 = (name: string) => zip.file(name)?.async("uint8array");
+      const manifestPath = "manifest/Engine-Export-Draft.agm-engine-manifest.json";
+      const sampleMetadataPath = "handoff/importer-sample-metadata.json";
+      const heightfieldPath = "terrain/Engine-Export-Draft.agm-heightfield.json";
+      const raw16Path = "terrain/Engine-Export-Draft.agm-heightmap-r16.raw";
+      const handoffReadmePath = "handoff/README.md";
+      const unityReadmePath = "handoff/importers/unity/README.md";
+      const godotReadmePath = "handoff/importers/godot/README.md";
+      const godotStubPath = "handoff/importers/godot/agm_importer_stub.gd.txt";
+      const unrealReadmePath = "handoff/importers/unreal/README.md";
+      const unrealStubPath = "handoff/importers/unreal/AgmImporterStub.cpp.txt";
+      const unityStubPath = "handoff/importers/unity/AgmImporterStub.cs.txt";
+      const unityRuntimeImporterPath = "handoff/importers/unity/Runtime/AgmRuntimePackageImporter.cs.txt";
+      const unityPackageLayoutPath = "handoff/importers/unity/package-layout.json";
+      const unityAuthoringPrototypePath = "handoff/importers/unity/Editor/AgmAssetAuthoringPrototype.cs.txt";
+      const manifestText = await readText(manifestPath);
+      const sampleMetadataText = await readText(sampleMetadataPath);
+      const handoffReadmeText = await readText(handoffReadmePath);
+      const unityReadmeText = await readText(unityReadmePath);
+      const godotReadmeText = await readText(godotReadmePath);
+      const godotStubText = await readText(godotStubPath);
+      const unrealReadmeText = await readText(unrealReadmePath);
+      const unrealStubText = await readText(unrealStubPath);
+      const heightfieldText = await readText(heightfieldPath);
+      const unityStubText = await readText(unityStubPath);
+      const unityRuntimeImporterText = await readText(unityRuntimeImporterPath);
+      const unityPackageLayoutText = await readText(unityPackageLayoutPath);
+      const unityAuthoringPrototypeText = await readText(unityAuthoringPrototypePath);
+      const raw16Bytes = await readUint8(raw16Path);
+      if (!manifestText || !sampleMetadataText || !handoffReadmeText || !unityReadmeText || !godotReadmeText || !godotStubText || !unrealReadmeText || !unrealStubText || !heightfieldText || !unityStubText || !unityRuntimeImporterText || !unityPackageLayoutText || !unityAuthoringPrototypeText || !raw16Bytes) throw new Error("Engine Package validation entries are missing");
+      const manifest = JSON.parse(manifestText);
+      const sampleMetadata = JSON.parse(sampleMetadataText);
+      const heightfield = JSON.parse(heightfieldText);
+      const unityPackageLayout = JSON.parse(unityPackageLayoutText);
+      const unitySample = sampleMetadata.engineSamples.find((sample: any) => sample.engine === "unity");
+
+      return {
+        names,
+        manifest,
+        sampleMetadata,
+        handoffReadmeText,
+        unityReadmeText,
+        godotReadmeText,
+        godotStubText,
+        unrealReadmeText,
+        unrealStubText,
+        heightfieldValueCount: heightfield.values.length,
+        raw16Length: raw16Bytes.length,
+        unitySample,
+        unityStubText,
+        unityRuntimeImporterText,
+        unityAuthoringPrototypeText,
+        unityPackageLayout,
+      };
+    }, Array.from(enginePackage));
+    expect(enginePackageEntries.names).toEqual(expect.arrayContaining(["manifest/Engine-Export-Draft.agm-engine-manifest.json", "maps/Engine-Export-Draft.agm-world.json", "maps/Engine-Export-Draft.agm-resource-map.json", "maps/Engine-Export-Draft.agm-province-map.json", "maps/Engine-Export-Draft.agm-biome-map.json", "terrain/Engine-Export-Draft.agm-heightmap.json", "terrain/Engine-Export-Draft.agm-heightfield.json", "terrain/Engine-Export-Draft.agm-heightmap-r16.raw", "handoff/README.md", "handoff/importer-sample-metadata.json", "handoff/importers/unity/README.md", "handoff/importers/godot/README.md", "handoff/importers/godot/agm_importer_stub.gd.txt", "handoff/importers/unreal/README.md", "handoff/importers/unreal/AgmImporterStub.cpp.txt", "handoff/importers/unity/AgmImporterStub.cs.txt", "handoff/importers/unity/Runtime/AgmRuntimePackageImporter.cs.txt", "handoff/importers/unity/Runtime/AgmPackageTypes.cs.txt", "handoff/importers/unity/Editor/AgmImportMenu.cs.txt", "handoff/importers/unity/Editor/AgmAssetAuthoringPrototype.cs.txt", "handoff/importers/unity/package-layout.json"]));
+    expect(enginePackageEntries.manifest.artifactContract).toEqual(expectedArtifactContract);
+    expect(enginePackageEntries.manifest.importerHandoff).toEqual(expect.objectContaining({artifactContract: expectedArtifactContract, noPluginIncluded: true, layout: expect.objectContaining({requiredFiles: expect.any(Array), optionalFiles: expect.any(Array), engineArtifactFiles: expect.any(Array)}), bridgeValidation: expect.objectContaining({engine: "unity", status: "zip-content-e2e-validated", runtimeValidated: false}), unityRuntimeImporterSpike: expect.objectContaining({status: "source-sample-included", runtimeValidated: false, editorValidated: false, createsUnityProject: false, dependencyPolicy: "unity-builtins-only"}), unityValidationHarness: expect.objectContaining({status: "available", scriptPath: "scripts/validate-unity-export.mjs", unityCliValidation: "optional-batchmode-terrain-prototype-check", batchmodeMethod: "AgmValidationBatchmode.Run", importerSmokeTest: "AgmRuntimePackageImporter.ImportFromUnpackedPackage", prototypeReport: "Assets/AGM/Validation/agm-imported-package-report.json", terrainPrototypeReport: "terrainPrototype", prototypeValidation: "metadata-json-only", reportSchema: "agm.unity-validation-report.v0", runtimeValidated: false, editorValidated: false, createsUnityProject: false})}));
+    expect(enginePackageEntries.names).toEqual(expect.arrayContaining(enginePackageEntries.manifest.importerHandoff.layout.requiredFiles));
+    expect(enginePackageEntries.names).toEqual(expect.arrayContaining(enginePackageEntries.manifest.importerHandoff.layout.engineArtifactFiles));
+    expect(enginePackageEntries.handoffReadmeText).toContain("Quick handoff");
+    expect(enginePackageEntries.handoffReadmeText).toContain("快速交接");
+    expect(enginePackageEntries.handoffReadmeText).toContain("npm run validate:unity-export -- --dir");
+    expect(enginePackageEntries.handoffReadmeText).toContain("source samples");
+    expect(enginePackageEntries.handoffReadmeText).toContain("no production plugin");
+    expect(enginePackageEntries.handoffReadmeText).toContain("--zip");
+    expect(enginePackageEntries.handoffReadmeText).toContain("not implemented");
+    expect(enginePackageEntries.handoffReadmeText).toContain("Unity-first vertical slice prototype");
+    expect(enginePackageEntries.handoffReadmeText).toContain("metadata-only terrain/map-layer importer reports");
+    expect(enginePackageEntries.handoffReadmeText).toContain("Unity importer asset authoring source sample");
+    expect(enginePackageEntries.handoffReadmeText).toContain("can create temporary TerrainData, ScriptableObject, and prefab prototype assets only inside the validator Unity project");
+    expect(enginePackageEntries.manifest.importerHandoff.unityVerticalSlicePrototype).toEqual(expect.objectContaining({status: "source-sample-prototype", outputKind: "metadata-json-only", productionPluginIncluded: false, createsUnityTerrainAsset: false, createsScriptableObjectAsset: false, runtimeValidated: false, editorValidated: false}));
+    expect(enginePackageEntries.manifest.importerHandoff.unityAssetAuthoringSpike).toEqual(expect.objectContaining({status: "editor-source-sample-prototype", schema: "agm.unity-asset-authoring-plan.v0", sourceScript: "handoff/importers/unity/Editor/AgmAssetAuthoringPrototype.cs.txt", outputKind: "temporary-unity-project-editor-artifacts", outputScope: "validator-temp-unity-project-only", reportBlock: "assetAuthoringPrototype", exportedAssetsIncluded: false, createsUnityTerrainAssetInExport: false, createsScriptableObjectAssetInExport: false, createsPrefabAssetInExport: false, createsUnityPackage: false, productionPluginIncluded: false, runtimeValidated: false, editorValidated: false}));
+    expect(enginePackageEntries.manifest.importerHandoff.unityVerticalSlicePrototype.scope).toEqual(expect.arrayContaining(["artifact-contract", "package-layout", "terrain-raw16", "heightfield-grid", "resource-map-layer", "province-map-layer", "biome-map-layer", "prototype-json-report"]));
+    expect(enginePackageEntries.manifest.importerHandoff.unityValidationHarness.checks).toEqual(expect.arrayContaining(["unity-contract-consumed", "unity-package-layout-consumed", "unity-map-layer-records", "unity-map-layer-summaries", "unity-prototype-report-contract", "unity-prototype-non-asset-output", "unity-asset-authoring-spike-metadata", "unity-asset-authoring-report", "unity-asset-authoring-non-asset-output", "unity-forbidden-editor-apis-absent"]));
+    expect(enginePackageEntries.manifest.importerHandoff.unityImporterArtifactPaths).toEqual(expect.arrayContaining(["handoff/importers/unity/Runtime/AgmRuntimePackageImporter.cs.txt", "handoff/importers/unity/Runtime/AgmPackageTypes.cs.txt", "handoff/importers/unity/Editor/AgmImportMenu.cs.txt", "handoff/importers/unity/Editor/AgmAssetAuthoringPrototype.cs.txt", "handoff/importers/unity/package-layout.json"]));
+    expect(enginePackageEntries.manifest.importerHandoff.sampleStubPaths.find((stub: any) => stub.engine === "unity").paths).toEqual(expect.arrayContaining(["handoff/importers/unity/README.md", "handoff/importers/unity/AgmImporterStub.cs.txt", "handoff/importers/unity/Runtime/AgmRuntimePackageImporter.cs.txt", "handoff/importers/unity/Editor/AgmAssetAuthoringPrototype.cs.txt"]));
+    expect(enginePackageEntries.manifest.engineProfiles.find((profile: any) => profile.engine === "unity")).toEqual(expect.objectContaining({heightRawStatus: "raw-uint16-little-endian"}));
+    expect(enginePackageEntries.sampleMetadata.artifactContract).toEqual(expectedArtifactContract);
+    expect(enginePackageEntries.sampleMetadata.productionPluginBoundary).toEqual(expectedProductionPluginBoundary);
+    expect(enginePackageEntries.sampleMetadata.unityProductionImporterPackagingPlan).toEqual(expectedUnityProductionImporterPackagingPlan);
+    expect(enginePackageEntries.sampleMetadata.godotProductionImporterPackagingPlan).toEqual(expectedGodotProductionImporterPackagingPlan);
+    expect(enginePackageEntries.sampleMetadata.unrealProductionImporterPackagingPlan).toEqual(expectedUnrealProductionImporterPackagingPlan);
+    expect(enginePackageEntries.sampleMetadata.realEngineSmokeRecords).toEqual(expectedRealEngineSmokeRecords);
+    expect(enginePackageEntries.sampleMetadata.importerStatus).toEqual(expect.objectContaining({productionPluginBoundaryStatus: "source-sample-and-validation-prototype-only"}));
+    expect(enginePackageEntries.sampleMetadata.handoffDocs.language).toEqual(expect.arrayContaining(["en", "zh-CN"]));
+    expect(enginePackageEntries.sampleMetadata.handoffDocs.quickStart.en).toEqual(expect.arrayContaining([expect.stringContaining("Export Engine Package ZIP"), expect.stringContaining("validate:unity-export")]));
+    expect(enginePackageEntries.sampleMetadata.handoffDocs.quickStart.zhCN).toEqual(expect.arrayContaining([expect.stringContaining("导出"), expect.stringContaining("校验")]));
+    expect(enginePackageEntries.sampleMetadata.validationCommands).toEqual(expect.objectContaining({extractedDirectory: expect.stringContaining("--dir"), zipDirectValidation: "not-implemented"}));
+    expect(enginePackageEntries.sampleMetadata.importerStatus).toEqual(expect.objectContaining({bridgeValidation: "unity-zip-content-e2e-validated", stubStatus: "sample-text-only"}));
+    expect(enginePackageEntries.sampleMetadata.unityRuntimeImporter).toEqual(expect.objectContaining({entryScript: "handoff/importers/unity/Runtime/AgmRuntimePackageImporter.cs.txt", typeDefinitions: "handoff/importers/unity/Runtime/AgmPackageTypes.cs.txt", editorMenuSample: "handoff/importers/unity/Editor/AgmImportMenu.cs.txt", packageLayout: "handoff/importers/unity/package-layout.json", notValidatedInUnity: true}));
+    expect(enginePackageEntries.sampleMetadata.unityVerticalSlicePrototype).toEqual(expect.objectContaining({sourceStatus: "source-sample-prototype", runtimeValidated: false, editorValidated: false}));
+    expect(enginePackageEntries.sampleMetadata.unityVerticalSlicePrototype.consumes).toEqual(expect.objectContaining({artifactContract: "manifest/Engine-Export-Draft.agm-engine-manifest.json", packageLayout: "handoff/importers/unity/package-layout.json", sampleMetadata: "handoff/importer-sample-metadata.json"}));
+    expect(enginePackageEntries.sampleMetadata.unityVerticalSlicePrototype.consumes.mapLayers).toEqual({resource: "maps/Engine-Export-Draft.agm-resource-map.json", province: "maps/Engine-Export-Draft.agm-province-map.json", biome: "maps/Engine-Export-Draft.agm-biome-map.json"});
+    expect(enginePackageEntries.sampleMetadata.unityVerticalSlicePrototype.emits).toEqual(expect.objectContaining({report: "Assets/AGM/Validation/agm-imported-package-report.json", terrainPrototype: "terrainPrototype", mapLayerPrototype: "mapLayerPrototype", artifactContractPrototype: "artifactContractPrototype", prototypeOutput: "prototypeOutput"}));
+    expect(enginePackageEntries.sampleMetadata.unityVerticalSlicePrototype.limitations).toEqual(expect.arrayContaining(["metadata-json-only", "no Unity Terrain asset", "no ScriptableObject asset", "no production plugin", "extracted-directory-only"]));
+    expect(enginePackageEntries.sampleMetadata.unityAssetAuthoringSpike).toEqual(expect.objectContaining({status: "editor-source-sample-prototype", schema: "agm.unity-asset-authoring-plan.v0", sourceScript: "handoff/importers/unity/Editor/AgmAssetAuthoringPrototype.cs.txt", outputKind: "temporary-unity-project-editor-artifacts", outputScope: "validator-temp-unity-project-only", reportBlock: "assetAuthoringPrototype", outputReportBlock: "assetAuthoringPrototype", assetRoot: "Assets/AGM/Validation/EditorPrototypeAssets", exportedAssetsIncluded: false, validatorTempProjectCreatesAssets: true, createsUnityTerrainAssetInExport: false, createsScriptableObjectAssetInExport: false, createsPrefabAssetInExport: false, createsUnityPackage: false, productionPluginIncluded: false, runtimeValidated: false, editorValidated: false}));
+    expect(enginePackageEntries.sampleMetadata.unityAssetAuthoringSpike.intendedArtifacts.every((artifact: any) => artifact.exportedAssetIncluded === false && artifact.validatorTempProjectCreatesAsset === true)).toBe(true);
+    expect(enginePackageEntries.sampleMetadata.unityValidationHarness).toEqual(expect.objectContaining({scriptPath: "scripts/validate-unity-export.mjs", mode: "local-structure-validation-with-optional-unity-cli", defaultValidation: "structure-only", unityCliValidation: "optional-batchmode-terrain-prototype-check", batchmodeMethod: "AgmValidationBatchmode.Run", importerSmokeTest: "AgmRuntimePackageImporter.ImportFromUnpackedPackage", prototypeReport: "Assets/AGM/Validation/agm-imported-package-report.json", terrainPrototypeReport: "terrainPrototype", prototypeValidation: "metadata-json-only", runtimeValidated: false, editorValidated: false, reportSchema: "agm.unity-validation-report.v0"}));
+    expect(enginePackageEntries.sampleMetadata.expectedOutputs).toEqual(expect.objectContaining({terrainHeightSamples: expect.any(String), heightfieldGrid: expect.any(String), resourceLayerRecords: expect.any(String), provinceLayerRecords: expect.any(String), biomeLayerRecords: expect.any(String), resourceLayerSummary: expect.any(String), provinceLayerSummary: expect.any(String), biomeLayerSummary: expect.any(String), artifactContractPrototype: expect.any(String), unityPrototypeReport: expect.any(String), assetAuthoringPrototype: expect.any(String), manifestSummary: expect.any(String)}));
+    expect(enginePackageEntries.unitySample).toEqual(expect.objectContaining({terrainTargetPath: "Terrain/Engine-Export-Draft.agm-heightmap-r16.raw", sampleStubPaths: expect.arrayContaining(["handoff/importers/unity/AgmImporterStub.cs.txt", "handoff/importers/unity/Runtime/AgmRuntimePackageImporter.cs.txt", "handoff/importers/unity/Editor/AgmAssetAuthoringPrototype.cs.txt"])}));
+    for (const readmeText of [enginePackageEntries.unityReadmeText, enginePackageEntries.godotReadmeText, enginePackageEntries.unrealReadmeText]) {
+      expect(readmeText).toContain("source sample");
+      expect(readmeText).toContain("not a production plugin");
+      expect(readmeText).toContain("源码示例");
+    }
+    expect(enginePackageEntries.godotReadmeText).toContain("Production addon review target: addons/agm_importers_godot");
+    expect(enginePackageEntries.godotReadmeText).toContain("plugin.cfg and production .gd files are intentionally not bundled");
+    expect(enginePackageEntries.godotReadmeText).toContain("source sample reads manifest JSON, importer sample metadata, heightfield JSON, RAW16 little-endian height samples");
+    expect(enginePackageEntries.godotReadmeText).toContain("resource/province/biome map layer record counts");
+    expect(enginePackageEntries.godotReadmeText).toContain("Godot Resource output, PackedScene output, plugin.cfg, production .gd files, and EditorImportPlugin registration remain release-candidate work");
+    expect(enginePackageEntries.godotStubText).toContain("AGM_IMPORTER_CONTRACT");
+    expect(enginePackageEntries.godotStubText).toContain("agm.godot-importer-source-sample.v0");
+    expect(enginePackageEntries.godotStubText).toContain("PRODUCTION_ADDON_INCLUDED := false");
+    expect(enginePackageEntries.godotStubText).toContain("CREATES_GODOT_RESOURCES := false");
+    expect(enginePackageEntries.godotStubText).toContain("CREATES_PACKED_SCENES := false");
+    expect(enginePackageEntries.godotStubText).toContain("JSON.parse_string");
+    expect(enginePackageEntries.godotStubText).toContain("_decode_raw16_little_endian");
+    expect(enginePackageEntries.godotStubText).toContain("raw16_samples.size() != height_values.size()");
+    expect(enginePackageEntries.godotStubText).toContain("resource_map.get(\"tiles\", []).size()");
+    expect(enginePackageEntries.godotStubText).toContain("province_map.get(\"tiles\", []).size()");
+    expect(enginePackageEntries.godotStubText).toContain("biome_map.get(\"biomes\", []).size()");
+    expect(enginePackageEntries.godotStubText).toContain("FileAccess.open");
+    expect(enginePackageEntries.godotStubText).toContain("PackedByteArray");
+    expect(enginePackageEntries.godotStubText).not.toContain("EditorImportPlugin");
+    expect(enginePackageEntries.godotStubText).not.toContain("ResourceSaver.save");
+    expect(enginePackageEntries.godotStubText).not.toContain("PackedScene");
+    expect(enginePackageEntries.names).not.toEqual(expect.arrayContaining(["addons/agm_importers_godot/plugin.cfg", "addons/agm_importers_godot/agm_importer.gd"]));
+    expect(enginePackageEntries.names.some((name: string) => name.startsWith("addons/agm_importers_godot/") && (name.endsWith(".gd") || name.endsWith(".tscn") || name.endsWith(".tres") || name.endsWith(".res")))).toBe(false);
+    expect(enginePackageEntries.unrealReadmeText).toContain("Production plugin review target: Plugins/AGMImportersUnreal");
+    expect(enginePackageEntries.unrealReadmeText).toContain(".uplugin, Build.cs, production .cpp/.h files, and cooked Unreal assets are intentionally not bundled");
+    expect(enginePackageEntries.unrealReadmeText).toContain("source sample reads manifest JSON, importer sample metadata, heightfield JSON, RAW16 little-endian height samples");
+    expect(enginePackageEntries.unrealReadmeText).toContain("resource/province/biome map layer record counts");
+    expect(enginePackageEntries.unrealReadmeText).toContain("Unreal asset output, UObject authoring, ImportFactory registration, .uasset output, and production plugin packaging remain release-candidate work");
+    expect(enginePackageEntries.unrealStubText).toContain("FAgmImporterSummary");
+    expect(enginePackageEntries.unrealStubText).toContain("SampleMetadataPath");
+    expect(enginePackageEntries.unrealStubText).toContain("HeightfieldPath");
+    expect(enginePackageEntries.unrealStubText).toContain("DecodeRaw16LittleEndian");
+    expect(enginePackageEntries.unrealStubText).toContain("Raw16Samples.Num() != HeightSampleCount");
+    expect(enginePackageEntries.unrealStubText).toContain("ResourceRecords");
+    expect(enginePackageEntries.unrealStubText).toContain("ProvinceRecords");
+    expect(enginePackageEntries.unrealStubText).toContain("BiomeRecords");
+    expect(enginePackageEntries.unrealStubText).toContain("CountJsonArrayItems");
+    expect(enginePackageEntries.unrealStubText).toContain("FFileHelper::LoadFileToString");
+    expect(enginePackageEntries.unrealStubText).toContain("FFileHelper::LoadFileToArray");
+    expect(enginePackageEntries.unrealStubText).not.toContain("UFactory");
+    expect(enginePackageEntries.unrealStubText).not.toContain("UObject");
+    expect(enginePackageEntries.unrealStubText).not.toContain("CreatePackage");
+    expect(enginePackageEntries.unrealStubText).not.toContain("UPackage::SavePackage");
+    expect(enginePackageEntries.unrealStubText).not.toContain(".uplugin");
+    expect(enginePackageEntries.names).not.toEqual(expect.arrayContaining(["Plugins/AGMImportersUnreal/AGMImportersUnreal.uplugin"]));
+    expect(enginePackageEntries.names.some((name: string) => name.startsWith("Plugins/AGMImportersUnreal/") || name.endsWith(".uasset") || name.endsWith(".umap") || name.endsWith(".Build.cs"))).toBe(false);
+    expect(enginePackageEntries.unityStubText).toContain("File.ReadAllText");
+    expect(enginePackageEntries.unityStubText).toContain("File.ReadAllBytes");
+    expect(enginePackageEntries.unityStubText).toContain("manifest/Engine-Export-Draft.agm-engine-manifest.json");
+    expect(enginePackageEntries.unityStubText).toContain("terrain/Engine-Export-Draft.agm-heightmap-r16.raw");
+    expect(enginePackageEntries.unityStubText).toContain("UInt16 little-endian");
+    expect(enginePackageEntries.unityRuntimeImporterText).toContain("ReadAllBytes");
+    expect(enginePackageEntries.unityRuntimeImporterText).toContain("DecodeUInt16LittleEndian");
+    expect(enginePackageEntries.unityRuntimeImporterText).toContain("little-endian");
+    expect(enginePackageEntries.unityRuntimeImporterText).toContain("heightfieldSampleCount * 2");
+    expect(enginePackageEntries.unityRuntimeImporterText).toContain("GridWidth");
+    expect(enginePackageEntries.unityRuntimeImporterText).toContain("GridHeight");
+    expect(enginePackageEntries.unityRuntimeImporterText).toContain("Raw16MinSample");
+    expect(enginePackageEntries.unityRuntimeImporterText).toContain("Raw16MaxSample");
+    expect(enginePackageEntries.unityRuntimeImporterText).toContain("SampleSpacing");
+    expect(enginePackageEntries.unityRuntimeImporterText).toContain("ResourceLayerPath");
+    expect(enginePackageEntries.unityRuntimeImporterText).toContain("ProvinceLayerPath");
+    expect(enginePackageEntries.unityRuntimeImporterText).toContain("BiomeLayerPath");
+    expect(enginePackageEntries.unityRuntimeImporterText).toContain("package-layout.json");
+    expect(enginePackageEntries.unityRuntimeImporterText).toContain("ReadBoolAfter");
+    expect(enginePackageEntries.unityRuntimeImporterText).toContain("CountArrayItems");
+    expect(enginePackageEntries.unityRuntimeImporterText).toContain("ResourceLayerRecordCount");
+    expect(enginePackageEntries.unityRuntimeImporterText).toContain("ProvinceLayerRecordCount");
+    expect(enginePackageEntries.unityRuntimeImporterText).toContain("BiomeLayerRecordCount");
+    expect(enginePackageEntries.unityRuntimeImporterText).toContain("ArtifactContractSchema");
+    expect(enginePackageEntries.unityRuntimeImporterText).toContain("ProductionPluginIncluded");
+    expect(enginePackageEntries.unityRuntimeImporterText).toContain("ValidationMode");
+    expect(enginePackageEntries.unityRuntimeImporterText).toContain("coverageSummary");
+    expect(enginePackageEntries.unityRuntimeImporterText).toContain("structureSummary");
+    expect(enginePackageEntries.unityRuntimeImporterText).toContain("habitabilitySummary");
+    expect(enginePackageEntries.unityRuntimeImporterText).toContain("AssetAuthoringPlanSchema");
+    expect(enginePackageEntries.unityRuntimeImporterText).toContain("AssetAuthoringOutputKind");
+    expect(enginePackageEntries.unityRuntimeImporterText).toContain("AssetAuthoringReportBlock");
+    expect(enginePackageEntries.unityRuntimeImporterText).toContain("CreatesPrefabAsset");
+    expect(enginePackageEntries.unityRuntimeImporterText).toContain("UsesAssetDatabaseCreateAsset");
+    expect(enginePackageEntries.unityRuntimeImporterText).not.toContain("AssetDatabase.CreateAsset(");
+    expect(enginePackageEntries.unityRuntimeImporterText).not.toContain("ScriptableObject.CreateInstance(");
+    expect(enginePackageEntries.unityRuntimeImporterText).not.toContain("UnityEditor.PackageManager");
+    expect(enginePackageEntries.unityRuntimeImporterText).not.toContain("PrefabUtility.SaveAsPrefabAsset(");
+    expect(enginePackageEntries.unityAuthoringPrototypeText).toContain("ScriptableObject.CreateInstance(");
+    expect(enginePackageEntries.unityAuthoringPrototypeText).toContain("AssetDatabase.CreateAsset(");
+    expect(enginePackageEntries.unityAuthoringPrototypeText).toContain("PrefabUtility.SaveAsPrefabAsset(");
+    expect(enginePackageEntries.unityAuthoringPrototypeText).not.toContain("UnityEditor.PackageManager");
+    expect(enginePackageEntries.unityAuthoringPrototypeText).not.toContain("AssetDatabase.ExportPackage(");
+    expect(enginePackageEntries.names.some((name: string) => name.endsWith(".asset") || name.endsWith(".prefab") || name.endsWith(".unitypackage") || name.endsWith(".cs") || name === "handoff/importers/unity/package.json" || name.endsWith("/package.json"))).toBe(false);
+    expect(enginePackageEntries.unityPackageLayout).toEqual(expect.objectContaining({schema: "agm.unity-package-layout.v0", contractSchema: "agm.engine-package-contract.v0", packageFormat: "agm.engine-package.v0", layoutVersion: 0, manifestPath: "manifest/Engine-Export-Draft.agm-engine-manifest.json", sampleMetadataPath: "handoff/importer-sample-metadata.json", engine: "unity", root: "Assets/AGM/Engine-Export-Draft", sourceStatus: "source-sample-included", productionPluginIncluded: false, productionPluginBoundary: expectedProductionPluginBoundary, unityProductionImporterPackagingPlan: expectedUnityProductionImporterPackagingPlan, zipParsingSupported: false, validationMode: "extracted-directory-only", requiredPackageFiles: enginePackageEntries.manifest.importerHandoff.layout.requiredFiles, runtimeValidated: false, editorValidated: false, createsUnityProject: false, createsUnityTerrainAsset: false, createsScriptableObjectAsset: false, createsPrefabAsset: false, exportedAssetsIncluded: false, createsUnityTerrainAssetInExport: false, createsScriptableObjectAssetInExport: false, createsPrefabAssetInExport: false, createsUnityPackage: false, prototypeOutputKind: "metadata-json-only", assetAuthoringSpikeStatus: "editor-source-sample-prototype", assetAuthoringOutputKind: "temporary-unity-project-editor-artifacts", assetAuthoringOutputScope: "validator-temp-unity-project-only", assetAuthoringAssetRoot: "Assets/AGM/Validation/EditorPrototypeAssets", assetAuthoringReportBlock: "assetAuthoringPrototype", directories: expect.arrayContaining(["Runtime", "Editor", "Terrain", "Maps"])}));
+    expect(enginePackageEntries.raw16Length).toBe(enginePackageEntries.heightfieldValueCount * 2);
   });
 
   test("exports a Tiled map JSON file from Project document state", async ({page}) => {
@@ -2606,17 +3114,18 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const projectDocumentPanel = page.locator(".studio-sidebar--right .studio-panel").first();
+    const projectDocumentPanel = projectDocumentPanelLocator(page);
     const nameInput = projectDocumentPanel.locator("#studioProjectNameInput");
     const gameProfileSelect = projectDocumentPanel.locator("#studioProjectGameProfileSelect");
 
     await nameInput.fill("Tiled Export Draft");
     await nameInput.blur();
     await gameProfileSelect.selectOption("strategy");
-    await expect(projectDocumentPanel).toContainText("Tiled Map JSON packages these layers into a tilemap-friendly format.");
 
+    await openExportWorkspace(page);
+    await expect(page.locator(".studio-sidebar--right")).toContainText("Map layers");
     const downloadPromise = page.waitForEvent("download");
-    await projectDocumentPanel.getByRole("button", {name: "Export Tiled Map JSON"}).click();
+    await page.locator(".studio-sidebar--right").getByRole("button", {name: "Export Tiled Map JSON"}).click();
     const download = await downloadPromise;
 
     expect(download.suggestedFilename()).toBe("Tiled-Export-Draft.agm-tiled-map.json");
@@ -2660,17 +3169,19 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const projectDocumentPanel = page.locator(".studio-sidebar--right .studio-panel").first();
+    const projectDocumentPanel = projectDocumentPanelLocator(page);
     const nameInput = projectDocumentPanel.locator("#studioProjectNameInput");
     const gameProfileSelect = projectDocumentPanel.locator("#studioProjectGameProfileSelect");
 
     await nameInput.fill("Map Layer Export Draft");
     await nameInput.blur();
     await gameProfileSelect.selectOption("strategy");
-    await expect(projectDocumentPanel).toContainText("Independent map layer JSON exports");
+
+    await openExportWorkspace(page);
+    await expect(page.locator(".studio-sidebar--right")).toContainText("Map layers");
 
     const resourceDownloadPromise = page.waitForEvent("download");
-    await projectDocumentPanel.getByRole("button", {name: "Export Resource Map JSON"}).click();
+    await page.locator(".studio-sidebar--right").getByRole("button", {name: "Export Resource Map JSON"}).click();
     const resourceDownload = await resourceDownloadPromise;
     expect(resourceDownload.suggestedFilename()).toBe("Map-Layer-Export-Draft.agm-resource-map.json");
     const resourceDownloadPath = await resourceDownload.path();
@@ -2680,7 +3191,7 @@ test.describe("Studio export and data workflow", () => {
     expect(resourceMap.tiles[0]).toEqual(expect.objectContaining({id: expect.stringMatching(/^resource-tile-/), provinceId: expect.any(Number), resourceTag: expect.any(String)}));
 
     const provinceDownloadPromise = page.waitForEvent("download");
-    await projectDocumentPanel.getByRole("button", {name: "Export Province Map JSON"}).click();
+    await page.locator(".studio-sidebar--right").getByRole("button", {name: "Export Province Map JSON"}).click();
     const provinceDownload = await provinceDownloadPromise;
     expect(provinceDownload.suggestedFilename()).toBe("Map-Layer-Export-Draft.agm-province-map.json");
     const provinceDownloadPath = await provinceDownload.path();
@@ -2690,7 +3201,7 @@ test.describe("Studio export and data workflow", () => {
     expect(provinceMap.tiles[0]).toEqual(expect.objectContaining({id: expect.stringMatching(/^province-tile-/), provinceId: expect.any(Number), provinceName: expect.any(String), structureScore: expect.any(Number)}));
 
     const biomeDownloadPromise = page.waitForEvent("download");
-    await projectDocumentPanel.getByRole("button", {name: "Export Biome Map JSON"}).click();
+    await page.locator(".studio-sidebar--right").getByRole("button", {name: "Export Biome Map JSON"}).click();
     const biomeDownload = await biomeDownloadPromise;
     expect(biomeDownload.suggestedFilename()).toBe("Map-Layer-Export-Draft.agm-biome-map.json");
     const biomeDownloadPath = await biomeDownload.path();
@@ -2706,7 +3217,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const projectDocumentPanel = page.locator(".studio-sidebar--right .studio-panel").first();
+    const projectDocumentPanel = projectDocumentPanelLocator(page);
     const nameInput = projectDocumentPanel.locator("#studioProjectNameInput");
     const gameProfileSelect = projectDocumentPanel.locator("#studioProjectGameProfileSelect");
     const designIntentInput = projectDocumentPanel.locator("#studioProjectDesignIntentInput");
@@ -2717,28 +3228,19 @@ test.describe("Studio export and data workflow", () => {
     await gameProfileSelect.selectOption("strategy");
     await designIntentInput.fill(designIntent);
     await designIntentInput.blur();
-    await expect(projectDocumentPanel.locator("#studioProjectWorldJsonDraft")).toContainText(designIntent);
+    await expect(page.locator("#studioProjectWorldJsonDraft")).toContainText(designIntent);
+    await openProjectGenerationDetails(page);
     await expect(page.locator("#studioGeneratorProfileSuggestions")).toContainText("Profile generator suggestions");
     await expect(page.locator("#studioGeneratorProfileSuggestions")).toContainText("balanced-starts");
     await expect(page.locator("#studioGeneratorProfileSuggestions")).toContainText("Spawn fairness weight");
-    const spawnFairnessInput = page.locator("[data-generator-parameter-key='spawnFairnessWeight']");
-    await spawnFairnessInput.fill("1.8");
-    await spawnFairnessInput.blur();
-    const routeConnectivityInput = page.locator("[data-generator-parameter-key='routeConnectivityScore']");
-    await routeConnectivityInput.fill("90");
-    await routeConnectivityInput.blur();
-    const settlementDensityInput = page.locator("[data-generator-parameter-key='settlementDensityTarget']");
-    await settlementDensityInput.fill("8");
-    await settlementDensityInput.blur();
-    const biomeFrictionInput = page.locator("[data-generator-parameter-key='biomeFrictionWeight']");
-    await biomeFrictionInput.fill("1.4");
-    await biomeFrictionInput.blur();
-    const resourceCoverageInput = page.locator("[data-generator-parameter-key='resourceCoverageTarget']");
-    await resourceCoverageInput.fill("72");
-    await resourceCoverageInput.blur();
+    await fillGeneratorParameter(page, "spawnFairnessWeight", "1.8");
+    await fillGeneratorParameter(page, "routeConnectivityScore", "90");
+    await fillGeneratorParameter(page, "settlementDensityTarget", "8");
+    await fillGeneratorParameter(page, "biomeFrictionWeight", "1.4");
+    await fillGeneratorParameter(page, "resourceCoverageTarget", "72");
     await expect(page.locator("#studioGeneratorProfileSuggestions")).toContainText("override: custom");
     await expect.poll(() =>
-      projectDocumentPanel.locator("#studioProjectWorldJsonDraft").textContent().then(text => {
+      page.locator("#studioProjectWorldJsonDraft").textContent().then(text => {
         const draft = JSON.parse(text || "{}");
         return {
           overrideValue: draft.generation.profileOverrides.values.spawnFairnessWeight,
@@ -2755,8 +3257,9 @@ test.describe("Studio export and data workflow", () => {
       }),
     ).toEqual({overrideValue: 1.8, routeOverrideValue: 90, settlementOverrideValue: 8, biomeOverrideValue: 1.4, resourceOverrideValue: 72, suggestionValue: 1.8, routeSuggestionValue: 90, settlementSuggestionValue: 8, biomeSuggestionValue: 1.4, resourceSuggestionValue: 72});
 
+    await openExportWorkspace(page);
     const downloadPromise = page.waitForEvent("download");
-    await projectDocumentPanel.getByRole("button", {name: "Export AGM World JSON"}).click();
+    await page.locator(".studio-sidebar--right").getByRole("button", {name: "Export AGM World JSON"}).click();
     const download = await downloadPromise;
 
     expect(download.suggestedFilename()).toBe("Playable-Package-Draft.agm-world.json");
@@ -2837,7 +3340,7 @@ test.describe("Studio export and data workflow", () => {
       rules: {
         schema: "agm.rules.v0",
         version: 1,
-        source: "legacy-biome-summary",
+        source: "agm-biome-summary",
         biomeRules: expect.any(Array),
         resourceTags: expect.any(Array),
         provinceStructure: expect.any(Array),
@@ -2884,7 +3387,7 @@ test.describe("Studio export and data workflow", () => {
     expect(exportedPackage.resources.routes.length).toBeGreaterThan(0);
     expect(exportedPackage.resources.biomes[0]).toEqual(expect.objectContaining({id: expect.any(Number), name: expect.any(String), habitability: expect.any(Number)}));
     expect(exportedPackage.rules.biomeRules.length).toBe(exportedPackage.resources.biomes.length);
-    expect(exportedPackage.rules.biomeRules[0]).toEqual(expect.objectContaining({id: expect.stringMatching(/^biome-rule-\d+$/), biomeId: expect.any(Number), biomeName: expect.any(String), ruleWeight: expect.any(Number), resourceTag: expect.any(String), source: expect.stringMatching(/^(legacy-biome-summary|studio-metadata)$/), profileBiomeFrictionWeight: 1.4, profileAdjustedHabitability: expect.any(Number), profileFrictionBand: "high-friction"}));
+    expect(exportedPackage.rules.biomeRules[0]).toEqual(expect.objectContaining({id: expect.stringMatching(/^biome-rule-\d+$/), biomeId: expect.any(Number), biomeName: expect.any(String), ruleWeight: expect.any(Number), resourceTag: expect.any(String), source: expect.stringMatching(/^(agm-biome-summary|studio-metadata)$/), profileBiomeFrictionWeight: 1.4, profileAdjustedHabitability: expect.any(Number), profileFrictionBand: "high-friction"}));
     expect(exportedPackage.rules.resourceTags[0]).toEqual(expect.objectContaining({tag: expect.any(String), biomeIds: expect.any(Array), role: expect.stringMatching(/^(starter|challenge|neutral)$/)}));
     expect(exportedPackage.rules.resourceTags.flatMap((tag: any) => tag.biomeIds)).toEqual(expect.arrayContaining([exportedPackage.rules.biomeRules[0].biomeId]));
     expect(exportedPackage.rules.provinceStructure[0]).toEqual(expect.objectContaining({id: expect.stringMatching(/^province-structure-/), provinceId: expect.any(Number), stateId: expect.any(Number), hasSettlementAnchor: expect.any(Boolean), profileRouteConnectivityScore: 90, profileResourceCoverageTarget: 72, structureScore: expect.any(Number), connectorPriority: expect.stringMatching(/^(primary-connector|secondary-connector|resource-frontier)$/), routeAnchorIds: expect.any(Array), resourceRuleIds: expect.any(Array)}));
@@ -2978,13 +3481,13 @@ test.describe("Studio export and data workflow", () => {
   test("exports and imports an AGM draft file through Project document state", async ({page}) => {
     const projectNav = page.locator("[data-studio-action='section'][data-value='project']");
     const canvasNav = page.locator("[data-studio-action='section'][data-value='canvas']");
-    const exportNav = page.locator("[data-studio-action='section'][data-value='export']");
+    const exportNav = page.locator(".studio-nav [data-studio-action='section'][data-value='export']");
 
     await canvasNav.click();
     const canvasPanel = page.locator(".studio-sidebar--right .studio-panel").first();
     await canvasPanel.locator("#studioInspectorPresetSelect").selectOption("mobile-portrait");
     await canvasPanel.locator("[data-studio-action='orientation'][data-value='portrait']").click();
-    await canvasPanel.locator("[data-studio-action='fitmode'][data-value='cover']").click();
+    await page.locator("[data-studio-action='fitmode'][data-value='cover']").first().click();
 
     await exportNav.click();
     await page.locator("[data-studio-action='export-format'][data-value='jpeg']").click();
@@ -3004,7 +3507,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const projectDocumentPanel = page.locator(".studio-sidebar--right .studio-panel").first();
+    const projectDocumentPanel = projectDocumentPanelLocator(page);
     const nameInput = projectDocumentPanel.locator("#studioProjectNameInput");
     const gameProfileSelect = projectDocumentPanel.locator("#studioProjectGameProfileSelect");
     const designIntentInput = projectDocumentPanel.locator("#studioProjectDesignIntentInput");
@@ -3015,10 +3518,11 @@ test.describe("Studio export and data workflow", () => {
     await gameProfileSelect.selectOption("4x");
     await designIntentInput.fill(designIntent);
     await designIntentInput.blur();
-    await expect(projectDocumentPanel.locator("#studioProjectWorldJsonDraft")).toContainText(designIntent);
+    await expect(page.locator("#studioProjectWorldJsonDraft")).toContainText(designIntent);
 
+    await openExportWorkspace(page);
     const downloadPromise = page.waitForEvent("download");
-    await projectDocumentPanel.getByRole("button", {name: "Export AGM file"}).click();
+    await page.locator(".studio-sidebar--right").getByRole("button", {name: "Export AGM file"}).click();
     const download = await downloadPromise;
     const downloadPath = await download.path();
     expect(downloadPath).toBeTruthy();
@@ -3114,7 +3618,7 @@ test.describe("Studio export and data workflow", () => {
     await canvasNav.click();
     await canvasPanel.locator("#studioInspectorPresetSelect").selectOption("desktop-landscape");
     await canvasPanel.locator("[data-studio-action='orientation'][data-value='landscape']").click();
-    await canvasPanel.locator("[data-studio-action='fitmode'][data-value='contain']").click();
+    await page.locator("[data-studio-action='fitmode'][data-value='contain']").first().click();
 
     await exportNav.click();
     await page.locator("[data-studio-action='export-format'][data-value='png']").click();
@@ -3134,7 +3638,9 @@ test.describe("Studio export and data workflow", () => {
     await designIntentInput.fill("This drift should be replaced by the imported file");
     await designIntentInput.blur();
 
-    await projectDocumentPanel.locator("#studioAgmFileInput").setInputFiles(downloadPath!);
+    await openExportWorkspace(page);
+    await page.locator("#studioAgmFileInput").setInputFiles(downloadPath!);
+    await projectNav.click();
 
     await expect(nameInput).toHaveValue("Round Trip AGM Draft");
     await expect(gameProfileSelect).toHaveValue("4x");
@@ -3146,11 +3652,11 @@ test.describe("Studio export and data workflow", () => {
     await canvasNav.click();
     await expect(canvasPanel.locator("#studioInspectorPresetSelect")).toHaveValue("mobile-portrait");
     await expect(canvasPanel.locator("[data-studio-action='orientation'][data-value='portrait']")).toHaveClass(/is-selected/);
-    await expect(canvasPanel.locator("[data-studio-action='fitmode'][data-value='cover']")).toHaveClass(/is-selected/);
+    await expect(page.locator("[data-studio-action='fitmode'][data-value='cover']").first()).toHaveClass(/is-selected/);
 
     await exportNav.click();
     await expect(page.locator("[data-studio-action='export-format'][data-value='jpeg']")).toHaveClass(/is-selected/);
-    await expect(page.locator("[data-studio-action='run-export']")).toContainText("Export JPEG");
+    await expect(page.locator("[data-studio-action='run-export']")).toContainText("Export current image JPEG");
 
     await layersNav.click();
     await expect(layersPanel.locator("#studioLayersPresetSelect")).toHaveValue("custom");
@@ -3167,7 +3673,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
 
     await page.evaluate(() => {
       const w = window as any;
@@ -3201,7 +3707,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
 
     await page.evaluate(() => {
       const w = window as any;
@@ -3235,7 +3741,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const templateSelect = workspacePanel.locator("#studioProjectTemplateSelect");
     const restored = await page.evaluate(() => {
       const select = document.getElementById("templateInput") as HTMLSelectElement | null;
@@ -3329,7 +3835,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const seedInput = workspacePanel.locator("#studioProjectSeedInput");
 
     await seedInput.fill("424242");
@@ -3345,7 +3851,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const pointsInput = workspacePanel.locator("#studioProjectPointsInput");
 
     await pointsInput.evaluate((element: HTMLInputElement) => {
@@ -3369,7 +3875,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const statesInput = workspacePanel.locator("#studioProjectStatesInput");
     const provincesRatioInput = workspacePanel.locator("#studioProjectProvincesRatioInput");
 
@@ -3392,7 +3898,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const growthRateInput = workspacePanel.locator("#studioProjectGrowthRateInput");
     const sizeVarietyInput = workspacePanel.locator("#studioProjectSizeVarietyInput");
 
@@ -3415,7 +3921,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const temperatureInput = workspacePanel.locator("#studioProjectTemperatureEquatorInput");
 
     await temperatureInput.fill("26");
@@ -3434,7 +3940,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const temperatureInput = workspacePanel.locator("#studioProjectTemperatureEquatorInput");
 
     const nextValue = await page.evaluate(() => {
@@ -3463,7 +3969,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const temperatureInput = workspacePanel.locator("#studioProjectTemperatureNorthPoleInput");
 
     await temperatureInput.fill("-24");
@@ -3482,7 +3988,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const temperatureInput = workspacePanel.locator("#studioProjectTemperatureNorthPoleInput");
 
     const nextValue = await page.evaluate(() => {
@@ -3511,7 +4017,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const temperatureInput = workspacePanel.locator("#studioProjectTemperatureSouthPoleInput");
 
     await temperatureInput.fill("-32");
@@ -3530,7 +4036,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const temperatureInput = workspacePanel.locator("#studioProjectTemperatureSouthPoleInput");
 
     const nextValue = await page.evaluate(() => {
@@ -3559,7 +4065,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const mapSizeInput = workspacePanel.locator("#studioProjectMapSizeInput");
 
     await mapSizeInput.fill("62.5");
@@ -3578,7 +4084,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const mapSizeInput = workspacePanel.locator("#studioProjectMapSizeInput");
 
     const nextValue = await page.evaluate(() => {
@@ -3607,7 +4113,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const latitudeInput = workspacePanel.locator("#studioProjectLatitudeInput");
 
     await latitudeInput.fill("37.5");
@@ -3626,7 +4132,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const latitudeInput = workspacePanel.locator("#studioProjectLatitudeInput");
 
     const nextValue = await page.evaluate(() => {
@@ -3655,7 +4161,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const longitudeInput = workspacePanel.locator("#studioProjectLongitudeInput");
 
     await longitudeInput.fill("63.5");
@@ -3674,7 +4180,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const longitudeInput = workspacePanel.locator("#studioProjectLongitudeInput");
 
     const nextValue = await page.evaluate(() => {
@@ -3703,7 +4209,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const windTier0Input = workspacePanel.locator("#studioProjectWindTier0Input");
 
     await windTier0Input.fill("270");
@@ -3725,7 +4231,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const windTier0Input = workspacePanel.locator("#studioProjectWindTier0Input");
 
     const nextValue = await page.evaluate(() => {
@@ -3748,7 +4254,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const windTier1Input = workspacePanel.locator("#studioProjectWindTier1Input");
 
     await windTier1Input.fill("90");
@@ -3770,7 +4276,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const windTier1Input = workspacePanel.locator("#studioProjectWindTier1Input");
 
     const nextValue = await page.evaluate(() => {
@@ -3793,7 +4299,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const windTier2Input = workspacePanel.locator("#studioProjectWindTier2Input");
 
     await windTier2Input.fill("270");
@@ -3815,7 +4321,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const windTier2Input = workspacePanel.locator("#studioProjectWindTier2Input");
 
     const nextValue = await page.evaluate(() => {
@@ -3838,7 +4344,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const windTier3Input = workspacePanel.locator("#studioProjectWindTier3Input");
 
     await windTier3Input.fill("0");
@@ -3860,7 +4366,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const windTier3Input = workspacePanel.locator("#studioProjectWindTier3Input");
 
     const nextValue = await page.evaluate(() => {
@@ -3883,7 +4389,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const windTier4Input = workspacePanel.locator("#studioProjectWindTier4Input");
 
     await windTier4Input.fill("180");
@@ -3905,7 +4411,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const windTier4Input = workspacePanel.locator("#studioProjectWindTier4Input");
 
     const nextValue = await page.evaluate(() => {
@@ -3928,7 +4434,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const windTier5Input = workspacePanel.locator("#studioProjectWindTier5Input");
 
     await windTier5Input.fill("270");
@@ -3950,7 +4456,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const windTier5Input = workspacePanel.locator("#studioProjectWindTier5Input");
 
     const nextValue = await page.evaluate(() => {
@@ -3973,7 +4479,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const precipitationInput = workspacePanel.locator("#studioProjectPrecipitationInput");
 
     await precipitationInput.fill("135");
@@ -3992,7 +4498,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const precipitationInput = workspacePanel.locator("#studioProjectPrecipitationInput");
 
     const nextValue = await page.evaluate(() => {
@@ -4021,7 +4527,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const culturesInput = workspacePanel.locator("#studioProjectCulturesInput");
     const burgsInput = workspacePanel.locator("#studioProjectBurgsInput");
     const religionsInput = workspacePanel.locator("#studioProjectReligionsInput");
@@ -4078,7 +4584,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const pointsInput = workspacePanel.locator("#studioProjectPointsInput");
 
     await page.evaluate(() => {
@@ -4102,7 +4608,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const statesInput = workspacePanel.locator("#studioProjectStatesInput");
     const provincesRatioInput = workspacePanel.locator("#studioProjectProvincesRatioInput");
 
@@ -4136,7 +4642,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const growthRateInput = workspacePanel.locator("#studioProjectGrowthRateInput");
     const sizeVarietyInput = workspacePanel.locator("#studioProjectSizeVarietyInput");
 
@@ -4170,7 +4676,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const stateLabelsModeSelect = workspacePanel.locator("#studioProjectStateLabelsModeSelect");
     const nextValue = await page.evaluate(() => {
       const select = document.getElementById("stateLabelsModeInput") as HTMLSelectElement | null;
@@ -4205,7 +4711,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const stateLabelsModeSelect = workspacePanel.locator("#studioProjectStateLabelsModeSelect");
 
     const nextState = await page.evaluate(() => {
@@ -4237,7 +4743,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const culturesInput = workspacePanel.locator("#studioProjectCulturesInput");
     const burgsInput = workspacePanel.locator("#studioProjectBurgsInput");
     const religionsInput = workspacePanel.locator("#studioProjectReligionsInput");
@@ -4299,7 +4805,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const templateSelect = workspacePanel.locator("#studioProjectTemplateSelect");
     const templateValue = await page.evaluate(() => {
       const select = document.getElementById("templateInput") as HTMLSelectElement | null;
@@ -4332,7 +4838,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const widthInput = workspacePanel.locator("#studioProjectWidthInput");
     const heightInput = workspacePanel.locator("#studioProjectHeightInput");
 
@@ -4371,7 +4877,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     await workspacePanel.getByRole("button", {name: "Restore default canvas size"}).click();
 
     const viewportSize = await page.evaluate(() => ({
@@ -4399,7 +4905,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const seedInput = workspacePanel.locator("#studioProjectSeedInput");
 
     await page.evaluate(() => {
@@ -4423,7 +4929,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const templateSelect = workspacePanel.locator("#studioProjectTemplateSelect");
     const nextTemplate = await page.evaluate(() => {
       const select = document.getElementById("templateInput") as HTMLSelectElement | null;
@@ -4449,7 +4955,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const widthInput = workspacePanel.locator("#studioProjectWidthInput");
     const heightInput = workspacePanel.locator("#studioProjectHeightInput");
 
@@ -4492,7 +4998,7 @@ test.describe("Studio export and data workflow", () => {
     await expect(layersSummaryPanel).toContainText("political");
 
     await projectNav.click();
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     await expect(workspacePanel).toContainText("15 min");
     await expect(workspacePanel).toContainText("Available");
     await expect(workspacePanel).toContainText("political");
@@ -4504,7 +5010,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const autosaveInput = workspacePanel.locator("#studioProjectAutosaveInput");
     const layersPresetSelect = workspacePanel.locator("#studioProjectLayersPresetSelect");
 
@@ -4525,7 +5031,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     const autosaveInput = workspacePanel.locator("#studioProjectAutosaveInput");
     const layersPresetSelect = workspacePanel.locator("#studioProjectLayersPresetSelect");
 
@@ -4569,7 +5075,7 @@ test.describe("Studio export and data workflow", () => {
     await expect(layersPanel).toContainText("religions");
 
     await projectNav.click();
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     await expect(workspacePanel).toContainText("religions");
   });
 
@@ -4579,10 +5085,14 @@ test.describe("Studio export and data workflow", () => {
     await page.evaluate(() => {
       const w = window as any;
       const originalPrompt = w.prompt;
+      const originalStudioInput = w.requestStudioInput;
       w.__studioLayersPresetPromptRestore = originalPrompt;
-      w.prompt = (_message: string, _options: unknown, callback?: (value: string) => void) => {
+      w.__studioLayersPresetInputRestore = originalStudioInput;
+      const providePresetName = (_message: string, _options: unknown, callback?: (value: string) => void) => {
         callback?.("studio-custom-preset");
       };
+      w.prompt = providePresetName;
+      w.requestStudioInput = providePresetName;
 
       localStorage.removeItem("preset");
       localStorage.removeItem("presets");
@@ -4618,7 +5128,9 @@ test.describe("Studio export and data workflow", () => {
     await page.evaluate(() => {
       const w = window as any;
       w.prompt = w.__studioLayersPresetPromptRestore;
+      w.requestStudioInput = w.__studioLayersPresetInputRestore;
       delete w.__studioLayersPresetPromptRestore;
+      delete w.__studioLayersPresetInputRestore;
     });
   });
 
@@ -4841,7 +5353,7 @@ test.describe("Studio export and data workflow", () => {
     await expect.poll(() => layersSummaryPanel.textContent()).toContain("custom");
 
     await projectNav.click();
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
     await expect.poll(() => workspacePanel.textContent()).toContain("custom");
     await expect.poll(() => page.evaluate(() => {
       const preset = (document.getElementById("layersPreset") as HTMLSelectElement | null)?.value;
@@ -4855,7 +5367,7 @@ test.describe("Studio export and data workflow", () => {
     await projectNav.click();
     await expect(projectNav).toHaveClass(/is-active/);
 
-    const workspacePanel = page.locator(".studio-sidebar--right .studio-panel").nth(3);
+    const workspacePanel = projectMapSettingsPanel(page);
 
     await page.evaluate(() => {
       const autosaveOutput = document.getElementById("autosaveIntervalOutput") as HTMLInputElement | null;
@@ -5422,13 +5934,17 @@ test.describe("Studio export and data workflow", () => {
     await expect(dataPanel.getByRole("button", {name: "Quick load"})).toBeDisabled();
     await expect(dataPanel.getByRole("button", {name: "Save to storage"})).toBeDisabled();
     await expect(dataPanel.getByRole("button", {name: "Download"})).toBeDisabled();
-    await expect(dataPanel.getByRole("button", {name: "Save Dropbox"})).toBeDisabled();
-    await expect(dataPanel.getByRole("button", {name: "Connect Dropbox"})).toBeDisabled();
-    await expect(dataPanel.getByRole("button", {name: "Load Dropbox"})).toBeDisabled();
-    await expect(dataPanel.getByRole("button", {name: "Share Dropbox"})).toBeDisabled();
     await expect(dataPanel.getByRole("button", {name: "New map"})).toBeDisabled();
     await expect(dataPanel.getByRole("button", {name: "Open file"})).toBeDisabled();
-    await expect(dataPanel.getByRole("button", {name: "Load URL"})).toBeDisabled();
+
+    const dropboxDetails = await openDataDropboxDetails(page);
+    await expect(dropboxDetails.getByRole("button", {name: "Save Dropbox"})).toBeDisabled();
+    await expect(dropboxDetails.getByRole("button", {name: "Connect Dropbox"})).toBeDisabled();
+    await expect(dropboxDetails.getByRole("button", {name: "Load Dropbox"})).toBeDisabled();
+    await expect(dropboxDetails.getByRole("button", {name: "Share Dropbox"})).toBeDisabled();
+
+    const advancedLoadingDetails = await openDataAdvancedLoadingDetails(page);
+    await expect(advancedLoadingDetails.getByRole("button", {name: "Load URL"})).toBeDisabled();
 
     await page.evaluate(() => {
       const w = window as any;

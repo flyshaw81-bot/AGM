@@ -138,7 +138,7 @@ var grid = {}; // initial graph based on jittered square grid and data
 var pack = {}; // packed graph and data
 var seed;
 let mapId;
-let mapHistory = [];
+var mapHistory = [];
 let elSelected;
 let modules = {};
 let notes = [];
@@ -251,6 +251,13 @@ var graphHeight = +mapHeightInput.value;
 // svg canvas resolution, can be changed
 let svgWidth = graphWidth;
 let svgHeight = graphHeight;
+
+window.setStudioViewportSize = (width, height) => {
+  svgWidth = width;
+  svgHeight = height;
+  window.svgWidth = width;
+  window.svgHeight = height;
+};
 
 landmass.append("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
 oceanPattern
@@ -407,11 +414,23 @@ function focusOn() {
 }
 
 let isAssistantLoaded = false;
+function isLocalRuntime() {
+  return location.protocol === "file:" || ["localhost", "127.0.0.1", "::1"].includes(location.hostname);
+}
+
 function toggleAssistant() {
   const assistantContainer = byId("chat-widget-container");
-  const showAssistant = byId("agmAssistant").value === "show";
+  const assistantToggle = byId("agmAssistant");
+  if (!assistantContainer || !assistantToggle) return;
+
+  const showAssistant = assistantToggle.value === "show";
 
   if (showAssistant) {
+    if (isLocalRuntime()) {
+      if (assistantContainer) assistantContainer.style.display = "none";
+      return;
+    }
+
     if (isAssistantLoaded) {
       assistantContainer.style.display = "block";
     } else {
@@ -621,115 +640,27 @@ void (function addDragToUpload() {
 async function generate(options) {
   try {
     const timeStart = performance.now();
-    const {seed: precreatedSeed, graph: precreatedGraph} = options || {};
 
-    invokeActiveZooming();
-    setSeed(precreatedSeed);
+    const generationSession = EngineGenerationPipeline.prepareGenerationSession(options);
     INFO && console.group("Generated Map " + seed);
-
-    applyGraphSize();
-    randomizeOptions();
-
-    if (shouldRegenerateGrid(grid, precreatedSeed)) grid = precreatedGraph || generateGrid();
-    else delete grid.cells.h;
-    grid.cells.h = await HeightmapGenerator.generate(grid);
-    pack = {}; // reset pack
-
-    Features.markupGrid();
-    addLakesInDeepDepressions();
-    openNearSeaLakes();
-
-    OceanLayers();
-    defineMapSize();
-    calculateMapCoordinates();
-    calculateTemperatures();
-    generatePrecipitation();
-
-    reGraph();
-    Features.markupPack();
-    createDefaultRuler();
-
-    Rivers.generate();
-    Biomes.define();
-    Features.defineGroups();
-
-    Ice.generate();
-
-    rankCells();
-    Cultures.generate();
-    Cultures.expand();
-
-    Burgs.generate();
-    States.generate();
-    Routes.generate();
-    Religions.generate();
-
-    Burgs.specify();
-    States.collectStatistics();
-    States.defineStateForms();
-
-    Provinces.generate();
-    Provinces.getPoles();
-
-    Rivers.specify();
-    Lakes.defineNames();
-
-    Military.generate();
-    Markers.generate();
-    Zones.generate();
-
-    drawScaleBar(scaleBar, scale);
-    Names.getMapName();
+    const generationContext = await EngineGenerationPipeline.generateWorld(generationSession);
 
     WARN && console.warn(`TOTAL: ${rn((performance.now() - timeStart) / 1000, 2)}s`);
-    showStatistics();
+    EngineGenerationPipeline.finalizeGeneration(generationContext);
     INFO && console.groupEnd("Generated Map " + seed);
   } catch (error) {
-    ERROR && console.error(error);
-    const parsedError = parseError(error);
-    clearMainTip();
-
-    alertMessage.innerHTML = /* html */ `An error has occurred on map generation. Please retry. <br />If error is critical, clear the stored data and try again.
-      <p id="errorBox">${parsedError}</p>`;
-    $("#alert").dialog({
-      resizable: false,
-      title: "Generation error",
-      width: "32em",
-      buttons: {
-        "Cleanup data": () => cleanupData(),
-        Regenerate: function () {
-          regenerateMap("generation error");
-          $(this).dialog("close");
-        },
-        Ignore: function () {
-          $(this).dialog("close");
-        }
-      },
-      position: {my: "center", at: "center", of: "svg"}
-    });
+    EngineGenerationPipeline.handleGenerationError(error);
   }
 }
 
 // set map seed (string!)
 function setSeed(precreatedSeed) {
-  if (!precreatedSeed) {
-    const first = !mapHistory[0];
-    const params = new URL(window.location.href).searchParams;
-    const urlSeed = params.get("seed");
-    if (first && params.get("from") === "MFCG" && urlSeed.length === 13) seed = urlSeed.slice(0, -4);
-    else if (first && urlSeed) seed = urlSeed;
-    else seed = generateSeed();
-  } else {
-    seed = precreatedSeed;
-  }
-
-  byId("optionsSeed").value = seed;
-  Math.random = aleaPRNG(seed);
+  return EngineSeedSession.apply(precreatedSeed);
 }
 
-function addLakesInDeepDepressions() {
+function addLakesInDeepDepressions(lakeElevationLimit = +byId("lakeElevationLimitOutput").value) {
   TIME && console.time("addLakesInDeepDepressions");
-  const elevationLimit = +byId("lakeElevationLimitOutput").value;
+  const elevationLimit = lakeElevationLimit;
   if (elevationLimit === 80) return;
 
   const {cells, features} = grid;
@@ -788,8 +719,8 @@ function addLakesInDeepDepressions() {
 }
 
 // near sea lakes usually get a lot of water inflow, most of them should break threshold and flow out to sea (see Ancylus Lake)
-function openNearSeaLakes() {
-  if (byId("templateInput").value === "Atoll") return; // no need for Atolls
+function openNearSeaLakes(heightmapTemplateId = byId("templateInput").value) {
+  if (heightmapTemplateId === "Atoll") return; // no need for Atolls
 
   const cells = grid.cells;
   const features = grid.features;
@@ -831,15 +762,14 @@ function openNearSeaLakes() {
 }
 
 // define map size and position based on template and random factor
-function defineMapSize() {
-  const [size, latitude, longitude] = getSizeAndLatitude();
+function defineMapSize(heightmapTemplateId = byId("templateInput").value) {
+  const [size, latitude, longitude] = getSizeAndLatitude(heightmapTemplateId);
   const randomize = new URL(window.location.href).searchParams.get("options") === "default"; // ignore stored options
   if (randomize || !locked("mapSize")) mapSizeOutput.value = mapSizeInput.value = size;
   if (randomize || !locked("latitude")) latitudeOutput.value = latitudeInput.value = latitude;
   if (randomize || !locked("longitude")) longitudeOutput.value = longitudeInput.value = longitude;
 
-  function getSizeAndLatitude() {
-    const template = byId("templateInput").value; // heightmap template
+  function getSizeAndLatitude(template) {
 
     if (template === "africa-centric") return [45, 53, 38];
     if (template === "arabia") return [20, 35, 35];
@@ -890,10 +820,10 @@ function defineMapSize() {
 }
 
 // calculate map position on globe
-function calculateMapCoordinates() {
-  const sizeFraction = +byId("mapSizeOutput").value / 100;
-  const latShift = +byId("latitudeOutput").value / 100;
-  const lonShift = +byId("longitudeOutput").value / 100;
+function calculateMapCoordinates(settings = {}) {
+  const sizeFraction = +(settings.mapSizePercent ?? byId("mapSizeOutput").value) / 100;
+  const latShift = +(settings.latitudePercent ?? byId("latitudeOutput").value) / 100;
+  const lonShift = +(settings.longitudePercent ?? byId("longitudeOutput").value) / 100;
 
   const latT = rn(sizeFraction * 180, 1);
   const latN = rn(90 - (180 - latT) * latShift, 1);
@@ -908,214 +838,12 @@ function calculateMapCoordinates() {
 // temperature model, trying to follow real-world data
 // based on http://www-das.uwyo.edu/~geerts/cwx/notes/chap16/Image64.gif
 function calculateTemperatures() {
-  TIME && console.time("calculateTemperatures");
-  const cells = grid.cells;
-  cells.temp = new Int8Array(cells.i.length); // temperature array
-
-  const {temperatureEquator, temperatureNorthPole, temperatureSouthPole} = options;
-  const tropics = [16, -20]; // tropics zone
-  const tropicalGradient = 0.15;
-
-  const tempNorthTropic = temperatureEquator - tropics[0] * tropicalGradient;
-  const northernGradient = (tempNorthTropic - temperatureNorthPole) / (90 - tropics[0]);
-
-  const tempSouthTropic = temperatureEquator + tropics[1] * tropicalGradient;
-  const southernGradient = (tempSouthTropic - temperatureSouthPole) / (90 + tropics[1]);
-
-  const exponent = +heightExponentInput.value;
-
-  for (let rowCellId = 0; rowCellId < cells.i.length; rowCellId += grid.cellsX) {
-    const [, y] = grid.points[rowCellId];
-    const rowLatitude = mapCoordinates.latN - (y / graphHeight) * mapCoordinates.latT; // [90; -90]
-    const tempSeaLevel = calculateSeaLevelTemp(rowLatitude);
-    DEBUG.temperature && console.info(`${rn(rowLatitude)}° sea temperature: ${rn(tempSeaLevel)}°C`);
-
-    for (let cellId = rowCellId; cellId < rowCellId + grid.cellsX; cellId++) {
-      const tempAltitudeDrop = getAltitudeTemperatureDrop(cells.h[cellId]);
-      cells.temp[cellId] = minmax(tempSeaLevel - tempAltitudeDrop, -128, 127);
-    }
-  }
-
-  function calculateSeaLevelTemp(latitude) {
-    const isTropical = latitude <= 16 && latitude >= -20;
-    if (isTropical) return temperatureEquator - Math.abs(latitude) * tropicalGradient;
-
-    return latitude > 0
-      ? tempNorthTropic - (latitude - tropics[0]) * northernGradient
-      : tempSouthTropic + (latitude - tropics[1]) * southernGradient;
-  }
-
-  // temperature drops by 6.5°C per 1km of altitude
-  function getAltitudeTemperatureDrop(h) {
-    if (h < 20) return 0;
-    const height = Math.pow(h - 18, exponent);
-    return rn((height / 1000) * 6.5);
-  }
-
-  TIME && console.timeEnd("calculateTemperatures");
+  return Climate.calculateTemperatures();
 }
 
 // simplest precipitation model
 function generatePrecipitation() {
-  TIME && console.time("generatePrecipitation");
-  prec.selectAll("*").remove();
-  const {cells, cellsX, cellsY} = grid;
-  cells.prec = new Uint8Array(cells.i.length); // precipitation array
-
-  const cellsNumberModifier = (pointsInput.dataset.cells / 10000) ** 0.25;
-  const precInputModifier = precInput.value / 100;
-  const modifier = cellsNumberModifier * precInputModifier;
-
-  const westerly = [];
-  const easterly = [];
-  let southerly = 0;
-  let northerly = 0;
-
-  // precipitation modifier per latitude band
-  // x4 = 0-5 latitude: wet through the year (rising zone)
-  // x2 = 5-20 latitude: wet summer (rising zone), dry winter (sinking zone)
-  // x1 = 20-30 latitude: dry all year (sinking zone)
-  // x2 = 30-50 latitude: wet winter (rising zone), dry summer (sinking zone)
-  // x3 = 50-60 latitude: wet all year (rising zone)
-  // x2 = 60-70 latitude: wet summer (rising zone), dry winter (sinking zone)
-  // x1 = 70-85 latitude: dry all year (sinking zone)
-  // x0.5 = 85-90 latitude: dry all year (sinking zone)
-  const latitudeModifier = [4, 2, 2, 2, 1, 1, 2, 2, 2, 2, 3, 3, 2, 2, 1, 1, 1, 0.5];
-  const MAX_PASSABLE_ELEVATION = 85;
-
-  // define wind directions based on cells latitude and prevailing winds there
-  d3.range(0, cells.i.length, cellsX).forEach(function (c, i) {
-    const lat = mapCoordinates.latN - (i / cellsY) * mapCoordinates.latT;
-    const latBand = ((Math.abs(lat) - 1) / 5) | 0;
-    const latMod = latitudeModifier[latBand];
-    const windTier = (Math.abs(lat - 89) / 30) | 0; // 30d tiers from 0 to 5 from N to S
-    const {isWest, isEast, isNorth, isSouth} = getWindDirections(windTier);
-
-    if (isWest) westerly.push([c, latMod, windTier]);
-    if (isEast) easterly.push([c + cellsX - 1, latMod, windTier]);
-    if (isNorth) northerly++;
-    if (isSouth) southerly++;
-  });
-
-  // distribute winds by direction
-  if (westerly.length) passWind(westerly, 120 * modifier, 1, cellsX);
-  if (easterly.length) passWind(easterly, 120 * modifier, -1, cellsX);
-
-  const vertT = southerly + northerly;
-  if (northerly) {
-    const bandN = ((Math.abs(mapCoordinates.latN) - 1) / 5) | 0;
-    const latModN = mapCoordinates.latT > 60 ? d3.mean(latitudeModifier) : latitudeModifier[bandN];
-    const maxPrecN = (northerly / vertT) * 60 * modifier * latModN;
-    passWind(d3.range(0, cellsX, 1), maxPrecN, cellsX, cellsY);
-  }
-
-  if (southerly) {
-    const bandS = ((Math.abs(mapCoordinates.latS) - 1) / 5) | 0;
-    const latModS = mapCoordinates.latT > 60 ? d3.mean(latitudeModifier) : latitudeModifier[bandS];
-    const maxPrecS = (southerly / vertT) * 60 * modifier * latModS;
-    passWind(d3.range(cells.i.length - cellsX, cells.i.length, 1), maxPrecS, -cellsX, cellsY);
-  }
-
-  function getWindDirections(tier) {
-    const angle = options.winds[tier];
-
-    const isWest = angle > 40 && angle < 140;
-    const isEast = angle > 220 && angle < 320;
-    const isNorth = angle > 100 && angle < 260;
-    const isSouth = angle > 280 || angle < 80;
-
-    return {isWest, isEast, isNorth, isSouth};
-  }
-
-  function passWind(source, maxPrec, next, steps) {
-    const maxPrecInit = maxPrec;
-
-    for (let first of source) {
-      if (first[0]) {
-        maxPrec = Math.min(maxPrecInit * first[1], 255);
-        first = first[0];
-      }
-
-      let humidity = maxPrec - cells.h[first]; // initial water amount
-      if (humidity <= 0) continue; // if first cell in row is too elevated consider wind dry
-
-      for (let s = 0, current = first; s < steps; s++, current += next) {
-        if (cells.temp[current] < -5) continue; // no flux in permafrost
-
-        if (cells.h[current] < 20) {
-          // water cell
-          if (cells.h[current + next] >= 20) {
-            cells.prec[current + next] += Math.max(humidity / rand(10, 20), 1); // coastal precipitation
-          } else {
-            humidity = Math.min(humidity + 5 * modifier, maxPrec); // wind gets more humidity passing water cell
-            cells.prec[current] += 5 * modifier; // water cells precipitation (need to correctly pour water through lakes)
-          }
-          continue;
-        }
-
-        // land cell
-        const isPassable = cells.h[current + next] <= MAX_PASSABLE_ELEVATION;
-        const precipitation = isPassable ? getPrecipitation(humidity, current, next) : humidity;
-        cells.prec[current] += precipitation;
-        const evaporation = precipitation > 1.5 ? 1 : 0; // some humidity evaporates back to the atmosphere
-        humidity = isPassable ? minmax(humidity - precipitation + evaporation, 0, maxPrec) : 0;
-      }
-    }
-  }
-
-  function getPrecipitation(humidity, i, n) {
-    const normalLoss = Math.max(humidity / (10 * modifier), 1); // precipitation in normal conditions
-    const diff = Math.max(cells.h[i + n] - cells.h[i], 0); // difference in height
-    const mod = (cells.h[i + n] / 70) ** 2; // 50 stands for hills, 70 for mountains
-    return minmax(normalLoss + diff * mod, 1, humidity);
-  }
-
-  void (function drawWindDirection() {
-    const wind = prec.append("g").attr("id", "wind");
-
-    d3.range(0, 6).forEach(function (t) {
-      if (westerly.length > 1) {
-        const west = westerly.filter(w => w[2] === t);
-        if (west && west.length > 3) {
-          const from = west[0][0],
-            to = west[west.length - 1][0];
-          const y = (grid.points[from][1] + grid.points[to][1]) / 2;
-          wind.append("text").attr("text-rendering", "optimizeSpeed").attr("x", 20).attr("y", y).text("\u21C9");
-        }
-      }
-      if (easterly.length > 1) {
-        const east = easterly.filter(w => w[2] === t);
-        if (east && east.length > 3) {
-          const from = east[0][0],
-            to = east[east.length - 1][0];
-          const y = (grid.points[from][1] + grid.points[to][1]) / 2;
-          wind
-            .append("text")
-            .attr("text-rendering", "optimizeSpeed")
-            .attr("x", graphWidth - 52)
-            .attr("y", y)
-            .text("\u21C7");
-        }
-      }
-    });
-
-    if (northerly)
-      wind
-        .append("text")
-        .attr("text-rendering", "optimizeSpeed")
-        .attr("x", graphWidth / 2)
-        .attr("y", 42)
-        .text("\u21CA");
-    if (southerly)
-      wind
-        .append("text")
-        .attr("text-rendering", "optimizeSpeed")
-        .attr("x", graphWidth / 2)
-        .attr("y", graphHeight - 20)
-        .text("\u21C8");
-  })();
-
-  TIME && console.timeEnd("generatePrecipitation");
+  return Climate.generatePrecipitation();
 }
 
 // recalculate Voronoi Graph to pack cells
@@ -1179,57 +907,12 @@ function isWetLand(moisture, temperature, height) {
 
 // assess cells suitability to calculate population and rand cells for culture center and burgs placement
 function rankCells() {
-  TIME && console.time("rankCells");
-  const {cells, features} = pack;
-  cells.s = new Int16Array(cells.i.length); // cell suitability array
-  cells.pop = new Float32Array(cells.i.length); // cell population array
-
-  const meanFlux = d3.median(cells.fl.filter(f => f)) || 0;
-  const maxFlux = d3.max(cells.fl) + d3.max(cells.conf); // to normalize flux
-  const meanArea = d3.mean(cells.area); // to adjust population by cell area
-
-  const scoreMap = {
-    estuary: 15,
-    ocean_coast: 5,
-    save_harbor: 20,
-    freshwater: 30,
-    salt: 10,
-    frozen: 1,
-    dry: -5,
-    sinkhole: -5,
-    lava: -30
-  };
-
-  for (const i of cells.i) {
-    if (cells.h[i] < 20) continue; // no population in water
-    let score = biomesData.habitability[cells.biome[i]]; // base suitability derived from biome habitability
-    if (!score) continue; // uninhabitable biomes has 0 suitability
-
-    if (meanFlux) score += normalize(cells.fl[i] + cells.conf[i], meanFlux, maxFlux) * 250; // big rivers and confluences are valued
-    score -= (cells.h[i] - 50) / 5; // low elevation is valued, high is not;
-
-    if (cells.t[i] === 1) {
-      if (cells.r[i]) score += scoreMap.estuary;
-      const feature = features[cells.f[cells.haven[i]]];
-      if (feature.type === "lake") {
-        score += scoreMap[feature.group] || 0;
-      } else {
-        score += scoreMap.ocean_coast;
-        if (cells.harbor[i] === 1) score += scoreMap.save_harbor;
-      }
-    }
-
-    cells.s[i] = score / 5; // general population rate
-    // cell rural population is suitability adjusted by cell area
-    cells.pop[i] = cells.s[i] > 0 ? (cells.s[i] * cells.area[i]) / meanArea : 0;
-  }
-
-  TIME && console.timeEnd("rankCells");
+  return CellRanking.rank(EngineGenerationPipeline.getCurrentContext());
 }
 
 // show map stats on generation complete
-function showStatistics() {
-  const heightmap = byId("templateInput").value;
+function showStatistics(heightmapTemplateId = byId("templateInput").value) {
+  const heightmap = heightmapTemplateId;
   const isTemplate = heightmap in heightmapTemplates;
   const heightmapType = isTemplate ? "template" : "precreated";
   const isRandomTemplate = isTemplate && !locked("template") ? "random " : "";

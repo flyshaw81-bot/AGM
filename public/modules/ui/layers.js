@@ -136,7 +136,7 @@ function handleLayersPresetChange(preset) {
 }
 
 function savePreset() {
-  prompt("Please provide a preset name", {default: ""}, preset => {
+  requestStudioInput("Please provide a preset name", {default: ""}, preset => {
     presets[preset] = Array.from(byId("mapLayers").querySelectorAll("li:not(.buttonoff)"))
       .map(node => node.id)
       .sort();

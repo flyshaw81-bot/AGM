@@ -1,18 +1,20 @@
 import Alea from "alea";
 import { range as d3Range, leastIndex, mean } from "d3";
+import { createTypedArray } from "../utils/arrayUtils";
+import { findGridCell } from "../utils/graphUtils";
+import { lim, minmax } from "../utils/numberUtils";
+import { getNumberInRange, P, rand } from "../utils/probabilityUtils";
 import {
-  byId,
-  createTypedArray,
-  findGridCell,
-  getNumberInRange,
-  lim,
-  minmax,
-  P,
-  rand,
-} from "../utils";
+  type EngineRuntimeContext,
+  getGlobalEngineRuntimeContext,
+} from "./engine-runtime-context";
 
 declare global {
   var HeightmapGenerator: HeightmapModule;
+}
+
+function logEngineError(message: string) {
+  globalThis.ERROR && console.error(message);
 }
 
 type Tool =
@@ -27,7 +29,7 @@ type Tool =
   | "Multiply"
   | "Smooth";
 
-class HeightmapModule {
+export class HeightmapModule {
   grid: any = null;
   heights: Uint8Array | null = null;
   blobPower: number = 0;
@@ -79,7 +81,7 @@ class HeightmapModule {
 
   private getPointInRange(range: string, length: number): number | undefined {
     if (typeof range !== "string") {
-      window.ERROR && console.error("Range should be a string");
+      logEngineError("Range should be a string");
       return;
     }
 
@@ -592,16 +594,20 @@ class HeightmapModule {
     }
   }
 
-  async generate(graph: any): Promise<Uint8Array> {
-    TIME && console.time("defineHeightmap");
-    const id = (byId("templateInput")! as HTMLInputElement).value;
-    Math.random = Alea(seed);
+  async generate(
+    graph: any,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ): Promise<Uint8Array> {
+    const shouldTime = context.timing.shouldTime;
+    shouldTime && console.time("defineHeightmap");
+    const id = context.generationSettings.heightmapTemplateId ?? "";
+    Math.random = Alea(context.seed);
     const isTemplate = id in heightmapTemplates;
 
     const heights = isTemplate
       ? this.fromTemplate(graph, id)
       : await this.fromPrecreated(graph, id);
-    TIME && console.timeEnd("defineHeightmap");
+    shouldTime && console.timeEnd("defineHeightmap");
 
     this.clearData();
     return heights as Uint8Array;
@@ -672,4 +678,6 @@ class HeightmapModule {
   }
 }
 
-window.HeightmapGenerator = new HeightmapModule();
+if (typeof window !== "undefined") {
+  window.HeightmapGenerator = new HeightmapModule();
+}

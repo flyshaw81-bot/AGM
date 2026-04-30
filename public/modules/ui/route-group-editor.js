@@ -43,7 +43,7 @@ function editRouteGroups() {
   const DEFAULT_GROUPS = ["roads", "trails", "searoutes"];
 
   function addGroup() {
-    prompt("Type group name", {default: "route-group-new"}, v => {
+    requestStudioInput("Type group name", {default: "route-group-new"}, v => {
       let group = v
         .toLowerCase()
         .replace(/ /g, "_")

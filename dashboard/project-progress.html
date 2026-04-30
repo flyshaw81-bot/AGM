@@ -60,83 +60,84 @@
     </main>
     <script>
       const fallbackData = {
-  "project": {
-    "name": "AGM",
-    "status": "in_progress",
-    "overallProgress": 99,
-    "remainingProgress": 1,
-    "summary": "AGM（Atlas Generation Matrix，阿特拉斯生成矩阵）的终局已明确为面向游戏开发的程序化世界与地图内容生产工具。当前 bridge-first 阶段已完成新壳基础、高频 workflow 收回、主要 world 配置桥接推进、AGM 全仓库命名迁移，AGM World JSON 已接入 generation、climate、population、entities、resources、rules 与 playability；Game Export Pipeline 已把 resourceMap、provinceMap、biomeMap 扩展为 package 内地图层并提供独立 JSON、Tiled Map JSON、GeoJSON map layers、heightmap metadata、可复原 Heightfield JSON、8-bit grayscale Heightmap PNG 与 engine manifest 导出；engine manifest 已包含 importLayout、Unity/Godot/Unreal engineProfiles、heightfield/raster bindings 与 RAW/16-bit pending warning。本轮已清理 Vite production build 中 public CSS 缺失和 legacy classic script bundling warnings，仅保留 chunk size warning。整体约 99%，RAW/16-bit terrain export、真实引擎导入器/project 结构与双语产品化仍需继续推进。"
-  },
-  "currentMilestone": {
-    "title": "Build warnings cleanup / public asset paths",
-    "summary": "AGM Studio 已清理 production build 中反复出现的 public static asset warnings：src/index.html 的 legacy CSS 和 classic script 现在使用 %BASE_URL% 指向 public assets，并通过 vite-ignore 明确跳过 Vite HTML asset bundling 处理。Build 不再输出 CSS missing 和 non-module script bundling warnings，仅保留既有 chunk size warning；focused export workflow E2E 已通过。"
-  },
-  "nextMilestone": {
-    "title": "RAW / 16-bit terrain height export 与真实引擎导入结构",
-    "summary": "下一步应继续在 Heightfield JSON 与 8-bit PNG 之上提供 RAW 或 16-bit terrain height export，并补充 Unity/Godot/Unreal 更真实的 terrain import 目录和说明结构。"
-  },
-  "milestones": [
-    {
-      "title": "新 Studio 与渲染宿主基础",
-      "status": "completed",
-      "progress": 100,
-      "summary": "新的 shell、舞台区、视口预设和 hosted render surface 已建立，AGM Studio 已具备继续替代旧 UI 的基础。"
-    },
-    {
-      "title": "高频工作流收回到 AGM",
-      "status": "in_progress",
-      "progress": 99,
-      "summary": "一批高频查看、导出、数据与生成入口已收回到 AGM，并已切入 precipitation、temperature 组、map size、latitude、longitude 以及 globe wind tiers 0 / 1 / 2 / 3 / 4 / 5；profile 默认 parameterDraft 与显式 override 已在 Generate map 前应用到 states、burgs、growthRate、sizeVariety、provincesRatio 等 generation inputs，并能展示参数 impact 与结果 metrics。"
-    },
-    {
-      "title": "World Document 与状态架构",
-      "status": "in_progress",
-      "progress": 99,
-      "summary": "AGM 自有 World Document / AGM World JSON 已接入 generation、climate、population、entities、resources、rules、playability 与 maps.resourceMap / maps.provinceMap / maps.biomeMap；rules 节点包含 agm.rules.v0、version、biomeRules、resourceTags、resourceRules、provinceStructure、profileRules、weights、sourceFields，playability 已携带 profile-weighted balance hints、auto-fix drafts、generatorProfileSuggestions、parameterDraft、generationProfileImpact 参数 diff 与 resultMetrics，generation 已携带用户显式 profileOverrides，且 effective profile parameters 已可驱动生成前参数应用与 spawn、route、settlement、resource、biome、province structure、resource map 结果层解释。"
-    },
-    {
-      "title": "World Editor 与高级工作流闭环",
-      "status": "planned",
-      "progress": 87,
-      "summary": "编辑器入口、shell 联动、平衡检查、drill-down、Canvas focus overlay、真实坐标聚焦、实体轮廓、auto-fix drafts、Apply / Discard / Undo / Redo、appliedPreviewChanges，以及 settlement、route connector、biome habitability、state fair-start、support settlement、province connector、biome rule/resource 的写入、撤销、表单编辑、rules schema、独立导出、导入恢复、资源规则、profile 规则、profile-weighted 修复排序、可见生成建议、generation profile override、profile 默认参数生成前应用、Preview Beta 可见体验和独立地图层导出已有基础，但完整国家、城市、资源、路线编辑闭环仍需推进。"
-    },
-    {
-      "title": "World Generator 与游戏规则系统",
-      "status": "planned",
-      "progress": 74,
-      "summary": "AGM Studio 提供地形与世界生成基础，AGM 已继续切入世界生成控制；AGM Rules Pack 现在可表达 biomeRules、resourceRules、provinceStructure 与 profileRules，playability 已根据 profileRules 输出可见 generatorProfileSuggestions，parameterDraft 已可编辑并写回 generation.profileOverrides，未编辑时 profile 默认 parameterDraft 也会作为 effective generation parameters 应用到 states、burgs、growthRate、sizeVariety、provincesRatio 等生成输入，并记录参数 diff 与生成前后 resultMetrics；spawnFairnessWeight 已参与 spawn candidate 评分和 reasons 解释，routeConnectivityScore 已影响 route connector preview 与 provinceStructure，settlementDensityTarget 已影响 support settlement preview，resourceCoverageTarget 已影响 resourceRules coverage、provinceStructure 与 maps.resourceMap / maps.provinceMap，biomeFrictionWeight 已影响 biome habitability preview、biomeRules friction band 与 maps.biomeMap。下一步要继续把 profile impact 推进到真实地图格式导出、路线拓扑与 settlement placement 等更深层生成算法。"
-    },
-    {
-      "title": "Game Export Pipeline",
-      "status": "planned",
-      "progress": 60,
-      "summary": "PNG/SVG 等基础导出已纳入 AGM Studio；AGM 已新增 AGM World JSON package export、独立 AGM Rules Pack JSON export、独立 Resource / Province / Biome Map JSON export、Tiled-compatible Map JSON export、GeoJSON map layer export、heightmap metadata export、可复原 Heightfield JSON export、8-bit grayscale Heightmap PNG raster export 与 engine manifest export，并让 engine manifest 携带 importLayout、recommendedFiles、Unity/Godot/Unreal engineProfiles、heightfield/raster layerBindings 和 RAW/16-bit pending validation warning；production build 的 public asset warnings 已清理。Preview Beta 已把 AGM World JSON、独立地图层、Tiled JSON、GeoJSON、heightmap metadata、Heightfield JSON、Heightmap PNG 与 engine manifest 标为核心游戏数据输出，但 RAW/16-bit terrain export 与真实引擎 importer/project 结构仍需建立。"
-    },
-    {
-      "title": "精美 UI / UX 与简易操作",
-      "status": "planned",
-      "progress": 94,
-      "summary": "现代化外壳已经起步，Project document panel 已开始面向游戏项目 profile，AGM Balance Checker 已把可玩性提示可视化并提供 drill-down、editor 入口、Canvas focus overlay、真实坐标聚焦、实体轮廓、Fix / Adjust 入口、auto-fix draft 草案展示、dry-run preview diff、Apply / Discard / Undo / Redo 预览历史、Applied changes 按 draft 汇总的写入队列摘要，以及 settlement、route connector、biome habitability、state fair-start、state priority、support settlement 城市属性、province connector 属性与 biome AGM rule/resource 元数据写入 / 撤销反馈、可见摘要、表单调整、Rules Pack 导出/导入、资源规则、profile 规则、profile-weighted 修复排序、可见生成建议、可编辑参数覆盖、profile 默认参数生成前应用、Profile generation impact 的参数 diff / Result metrics 展示，以及 AGM Studio Preview Beta 的三步产品化引导、legacy loading 开屏动画移除，以及独立 Resource / Province / Biome Map JSON、Tiled Map JSON、GeoJSON map layers、heightmap metadata、Heightfield JSON、Heightmap PNG 与带 Unity/Godot/Unreal import layout hints 的 engine manifest 导出入口。"
-    },
-    {
-      "title": "可扩展架构、规则包与产品化交付",
-      "status": "planned",
-      "progress": 68,
-      "summary": "模块化边界、规则包/内容包、扩展点、双语能力、长期演进结构和真正独立应用交付方式仍需推进；AGM 全仓库命名迁移已完成，agm.rules.v0 已具备 version、biomeRules、resourceTags、resourceRules、profileRules、导入/导出/校验闭环，并通过 playability.generatorProfileSuggestions / parameterDraft / generationProfileImpact 与 generation.profileOverrides 影响下游生成建议、生成前参数应用、结果层 impact 解释、独立地图层导出、Heightfield JSON、Heightmap PNG、engine manifest import profiles、Preview Beta 可见体验和更干净的 Vite production build。"
-    }
-  ],
-  "remainingToGoal": [
-    "继续把其他世界参数链路从 world-configurator 收回到 AGM，但避免把搬控件误当终局。",
-    "把 profile-driven 生成从 effective parameters 继续推进到更深层生成逻辑：route topology、settlement placement、独立 map exports 和真实游戏引擎导出管线。",
-    "建立面向游戏设计目标的 World Generator：RPG、策略、4X、跑团、开放世界等 profile 应真实影响生成逻辑。",
-    "把编辑器从“能打开旧编辑器”推进到“可通过 AGM 队列真实应用自动修复、可编辑国家、城市、资源、路线并修复关联数据”的 World Editor。",
-    "扩展平衡检查器，检查资源集中、国家碎片化、城市距离、出生点公平性、资源/生物群系规则可玩性等更多游戏设计问题。",
-    "建立 Game Export Pipeline：已起步独立 biome/province/resource map JSON、Tiled-compatible Map JSON、GeoJSON map layers、heightmap metadata、可复原 Heightfield JSON、8-bit grayscale Heightmap PNG 与带 Unity/Godot/Unreal import layout hints 的 engine manifest，仍需 RAW/16-bit terrain export 和真实引擎 importer/project 结构。",
-    "为规则包、风格包、战役模板、内容包市场和简体中文 / 英文双语切换准备稳定结构。"
-  ],
-  "updatedAt": "2026-04-26T05:02:00+08:00"
+        "project": {
+                "name": "AGM",
+                "status": "in_progress",
+                "overallProgress": 99,
+                "remainingProgress": 1,
+                "summary": "AGM（阿特拉斯生成矩阵，Atlas Generation Matrix）的终局已明确为面向游戏开发的程序化世界与地图内容生产工具。当前 bridge-first 阶段已完成新壳基础、高频 workflow 收回、主要 world 配置桥接推进、AGM 全仓库命名迁移，AGM World JSON 已接入 generation、climate、population、entities、resources、rules 与 playability；Game Export Pipeline 已完成多种地图层、地形与 Engine Package handoff 导出，并已建立 Unity/Godot/Unreal source-sample、边界审查与 real engine smoke record gate。近期完成 AGM Preview Product Shell first pass、地图 viewport 可用性修复、顶栏精简、官方品牌 UI 接入、顶栏 Studio 颜色主题下拉、右侧 Inspector Biome distribution insights 可视化、原生编辑器多工作台与 Editors 导航仪表；Relationship checks 已推进到可见问题详情、按类型分组、源实体上下文、候选覆盖提示、候选替换预览、candidate rank/recommended、可见候选批量替换、完整选择器入口、修复预览、批量预览、轻量修复队列、队列冲突/过期复查、队列影响摘要、queue action dynamic scope、应用结果反馈、最近队列历史与复查入口、跨 section 重渲染持久化、受限原生 Undo last queue、Undo conflict review、多步历史列表、历史行复查跳转、字段级历史明细 drilldown、历史可读性 polish、历史审计摘要、当前值 stale/match 审阅、字段级 Field audit 审计摘要、Undo blocked 重试说明、restore-after shortcut、批量 Restore all to After 恢复、恢复后 Ready 确认提示、历史状态筛选、问题卡片 Navigation path、字段级 Review field 复查入口、Review target 明确目标提示、blocked recovery path 提示、Undo-ready confirmation、History Details compact layout、mobile wrap polish、recovery microcopy polish、batch review summary、batch action clarity、batch guard scope hints、hidden issue expansion、hidden issue pagination、page queue action 与 cross-entity suggestion hints、逐项移除、统一应用、辅助修复、断链引用清理、分组级安全批量清理、替代引用编辑入口与卡片内有效实体快捷替换。dashboard file:// fallback 加载修复、production build、聚焦 relationship 回归与完整 editor workflow 36 项均通过，build 仅保留既有 chunk size warning。整体约 99%，下一步建议继续把 Relationship 可见编辑闭环推进到更完整的逐页复查、页内导航、字段审计、Biome 分布洞察、右侧数据卡视觉和安全批量体验。"
+        },
+        "currentMilestone": {
+                "title": "Toolbar slimming and export/data consolidation",
+                "summary": "已完成 AGM Studio 工具栏瘦身：World 默认聚焦生成、地图设置和生物群系洞察，Balance Checker 与 AGM World JSON 草稿收进高级区；Export 承接 AGM 文件、World JSON、地图图层、地形、Engine Manifest 与 Engine Package 等导出并按用途折叠分组；Layers 默认只展示高频图层，Data 默认聚焦快速加载、保存、下载、打开文件和新建地图，Dropbox / URL 加载收进折叠区；Canvas / Style / Layers / Export / Data 不再重复 Suggested workflow，编辑器入口集中到 Editors。完整 export/data workflow 115/115、完整 editor workflow 37/37 通过，production build 通过且仅保留既有 chunk size warning。"
+        },
+        "nextMilestone": {
+                "title": "Continuous brush and region edit workflow",
+                "summary": "下一步建议推进 Continuous brush and region edit workflow：在当前瘦身后的清爽主壳上扩展连续笔刷半径、区域选择、批量预览与多步撤销，让水域、地形、生物群系和王国区域编辑进入更接近真实产品的所见即所得流程。"
+        },
+        "milestones": [
+                {
+                        "title": "新 Studio 与渲染宿主基础",
+                        "status": "completed",
+                        "progress": 100,
+                        "summary": "新的 shell、舞台区、视口预设和 hosted render surface 已建立，AGM Studio 已具备继续替代旧 UI 的基础。"
+                },
+                {
+                        "title": "高频工作流收回到 AGM",
+                        "status": "in_progress",
+                        "progress": 99,
+                        "summary": "一批高频查看、导出、数据与生成入口已收回到 AGM，并已切入 precipitation、temperature 组、map size、latitude、longitude 以及 globe wind tiers 0 / 1 / 2 / 3 / 4 / 5；profile 默认 parameterDraft 与显式 override 已在 Generate map 前应用到 states、burgs、growthRate、sizeVariety、provincesRatio 等 generation inputs，并能展示参数 impact 与结果 metrics。"
+                },
+                {
+                        "title": "World Document 与状态架构",
+                        "status": "in_progress",
+                        "progress": 99,
+                        "summary": "AGM 自有 World Document / AGM World JSON 已接入 generation、climate、population、entities、resources、rules、playability 与 maps.resourceMap / maps.provinceMap / maps.biomeMap；rules 节点包含 agm.rules.v0、version、biomeRules、resourceTags、resourceRules、provinceStructure、profileRules、weights、sourceFields，playability 已携带 profile-weighted balance hints、auto-fix drafts、generatorProfileSuggestions、parameterDraft、generationProfileImpact 参数 diff 与 resultMetrics，generation 已携带用户显式 profileOverrides，且 effective profile parameters 已可驱动生成前参数应用与 spawn、route、settlement、resource、biome、province structure、resource map 结果层解释。"
+                },
+                {
+                        "title": "World Editor 与高级工作流闭环",
+                        "status": "planned",
+                        "progress": 99,
+                        "summary": "编辑器入口、shell 联动、平衡检查、drill-down、Canvas focus overlay、真实坐标聚焦、实体轮廓、auto-fix drafts、Apply / Discard / Undo / Redo、appliedPreviewChanges，以及 settlement、route connector、biome habitability、state fair-start、support settlement、province connector、biome rule/resource 的写入、撤销、表单编辑、rules schema、独立导出、导入恢复、资源规则、profile 规则、profile-weighted 修复排序、可见生成建议、generation profile override、profile 默认参数生成前应用、Preview Product Shell 可见体验和独立地图层导出已有基础；AGM 原生 States / Burgs / Cultures / Religions / Provinces / Routes / Zones / Diplomacy / Biomes-Resources 工作台与 Biome distribution insights 已支持搜索/过滤、地图高亮、dirty/saved/clean 状态、常用字段编辑、实体名称选择器、关系编辑、应用写回、草稿重置、地图聚焦、带记录数/选中项/最近应用项/筛选状态/统一最近应用摘要/批量关联检查、关系问题详情列表、按类型分组、源实体上下文、候选覆盖提示、完整选择器入口、修复预览、批量预览、轻量修复队列、队列冲突/过期复查、队列影响摘要、queue action dynamic scope、应用结果反馈、最近队列历史、复查最近队列、跨 section 重渲染持久化、受限 Undo last queue、Undo conflict review、多步队列历史列表、历史状态筛选、问题卡片 Navigation path、最新/旧项可撤销边界标记、历史行复查跳转、字段级历史明细 drilldown、历史可读性 polish、历史审计摘要、当前值 stale/match 审阅、字段级 Field audit 审计摘要、Undo blocked 重试说明、restore-after shortcut、Restore all to After、字段级 Review field 复查入口、Review target 明确目标提示、blocked recovery path 提示、Undo-ready confirmation、post-restore ready confirmation、History Details compact layout、mobile wrap polish、recovery microcopy polish、batch review summary、batch action clarity、batch guard scope hints、hidden issue expansion、hidden issue pagination、page queue action、cross-entity suggestion hints、candidate replacement preview、candidate rank/recommended、visible candidate bulk replace、逐项移除、统一应用、断链引用清理、分组级安全批量清理、省份-城镇国家同步修复、替代引用编辑入口、卡片内候选实体快捷替换、复查最近应用、复查首个关联问题、一键清空全部筛选，以及国家到城镇/省份/外交、城镇到国家/文化、省份到国家/城镇的跨工作台跳转。下一步应继续强化可见编辑闭环，支持更完整的逐页复查、跨实体修复建议、批量/单项操作边界、冲突恢复与撤销重试。"
+                },
+                {
+                        "title": "World Generator 与游戏规则系统",
+                        "status": "planned",
+                        "progress": 74,
+                        "summary": "AGM Studio 提供地形与世界生成基础，AGM 已继续切入世界生成控制；AGM Rules Pack 现在可表达 biomeRules、resourceRules、provinceStructure 与 profileRules，playability 已根据 profileRules 输出可见 generatorProfileSuggestions，parameterDraft 已可编辑并写回 generation.profileOverrides，未编辑时 profile 默认 parameterDraft 也会作为 effective generation parameters 应用到 states、burgs、growthRate、sizeVariety、provincesRatio 等生成输入，并记录参数 diff 与生成前后 resultMetrics；spawnFairnessWeight 已参与 spawn candidate 评分和 reasons 解释，routeConnectivityScore 已影响 route connector preview 与 provinceStructure，settlementDensityTarget 已影响 support settlement preview，resourceCoverageTarget 已影响 resourceRules coverage、provinceStructure 与 maps.resourceMap / maps.provinceMap，biomeFrictionWeight 已影响 biome habitability preview、biomeRules friction band 与 maps.biomeMap。下一步要继续把 profile impact 推进到真实地图格式导出、路线拓扑与 settlement placement 等更深层生成算法。"
+                },
+                {
+                        "title": "Game Export Pipeline",
+                        "status": "planned",
+                        "progress": 99,
+                        "summary": "PNG/SVG 等基础导出已纳入 AGM Studio；AGM 已新增 AGM World JSON package export、独立 AGM Rules Pack JSON export、独立 Resource / Province / Biome Map JSON export、Tiled-compatible Map JSON export、GeoJSON map layer export、heightmap metadata export、可复原 Heightfield JSON export、8-bit grayscale Heightmap PNG raster export、16-bit little-endian RAW terrain height export、engine manifest export 与 Engine Package ZIP 导出，并让 engine manifest 携带 importLayout、recommendedFiles、Unity/Godot/Unreal engineProfiles、heightfield/raster/RAW16 layerBindings、terrainSource、enginePackageStructure、engine-specific terrainFiles/importHints、terrainImport、importerHandoff、artifactContract、layout required/optional files、engine artifact files、importer sample metadata、sampleStubPaths、Unity ZIP bridge validation、Unity runtime importer source-sample metadata、Unity validation harness metadata、optional Unity CLI batchmode compile check、Unity importer JSON prototype report、Unity terrain prototype metadata validation、Unity vertical slice prototype metadata report、Unity real asset authoring prototype、productionPluginBoundary、unityProductionImporterPackagingPlan、本地 Packages/com.agm.importers.unity scaffold、hardened package runtime importer contract、Unity package compile gate、Unity package import smoke test、package import smoke diagnostics hardening、Unity package runtime API hardening、Unity importer runtime issue taxonomy、Unity package usage contract、runtime issue failure fixture、release-candidate checklist、Godot production importer source-sample scaffold/separate addon boundary、Godot runtime parsing hardening、Godot CLI discovery/readiness diagnostics、Godot addon smoke validator path、Unreal production importer source-sample scaffold/runtime parsing/boundary gate、Unreal importer fixture gate hardening、Godot/Unreal addon/plugin boundary review gate 与 real engine smoke record readiness gate；local validator 与 fixture automation 已能交叉验证 Unity/Godot/Unreal 的 source-sample contract、production plugin boundary、runtime parsing metadata、addon/plugin deliverable boundary review、Unity real smoke、Godot smoke report contract 与 no-production-plugin / non-asset-output claims；Unity importer real asset authoring prototype 已能在 validator/mock Unity 临时项目内创建并校验 TerrainData、ScriptableObject 与 prefab artifacts，同时保持导出 ZIP asset-free/source-sample-only；已安装 Unity 2022.3.62f3 并通过真实 Unity batchmode capture；Godot headless smoke path 已具备 mock pass/fail automation，等待真实 Godot 4.x executable capture。"
+                },
+                {
+                        "title": "精美 UI / UX 与简易操作",
+                        "status": "planned",
+                        "progress": 99,
+                        "summary": "现代化外壳已经从基础 shell 推进到 AGM Preview Product Shell first pass，并完成地图 viewport 可用性修复、顶栏精简、官方 AGM 品牌 UI 接入、Studio 颜色主题下拉、右侧 Inspector Biome distribution insights 占比卡片、AGM 原生国家工作台强化、UI 视觉方向校正、国家工作台检索控件、地图高亮、dirty 编辑反馈、实体选择器、Apply/Reset 状态加固、关系字段编辑、Burgs Workbench、Burgs 选择器加固、Cultures Workbench、Religions Workbench、Provinces Workbench、Routes Workbench、Zones Workbench、Diplomacy Workbench、Biomes / Resources Workbench 和 Editors 工作台导航仪表。Editors 区域具备现代实体列表、原生模式标识、搜索/筛选/排序、点击列表地图高亮、dirty/saved/clean 状态提示、可选择详情、常用字段编辑、实体名称选择器、外交关系编辑、应用写回、草稿重置、地图聚焦、一键目录跳转、目录级记录数/选中/最近应用状态摘要、统一最近应用反馈、批量关联检查、关系问题详情卡片、按类型分组、源实体上下文、候选覆盖提示、完整选择器入口、修复预览、批量预览、轻量修复队列、队列冲突/过期复查、队列影响摘要、queue action dynamic scope、应用结果反馈、多步队列历史列表、历史状态筛选、问题卡片 Navigation path、最新/旧项只读边界提示、历史行复查跳转、字段级历史明细 drilldown、历史可读性 polish、当前值 stale/match 审阅、Undo blocked 重试说明、逐项移除、统一应用、省份-城镇国家不一致辅助修复、断链引用清理、分组级安全批量清理、替代引用编辑入口、卡片内候选实体快捷替换、候选替换预览、可见候选批量替换、复查最近应用/关联问题、全局筛选状态/一键清空筛选，以及国家/城镇/省份之间的常用跨面板关联跳转。中英文切换继续默认中文、可切换 English 并持久化；Studio 主题可在 Blue / Violet / Emerald / Amber / Slate 间切换并持久化；relationship 队列应用历史、最近队列复查、跨 section 持久化、受限 Undo last queue、Undo conflict review、多步历史 review、字段级 detail drilldown、可读性 polish、history audit summary、current value review、field audit summary、undo explanation polish、restore-after shortcut、Restore all to After、字段级 Review field 复查入口与 Review target 明确目标提示、blocked recovery path 提示与 Undo-ready confirmation、post-restore ready confirmation 与 History Details compact layout、mobile wrap polish、recovery microcopy polish、batch review summary、batch action clarity、batch guard scope hints、hidden issue expansion、hidden issue pagination、page queue action、cross-entity suggestion hints、candidate replacement preview、candidate rank/recommended、visible candidate bulk replace、batch guard scope hints、hidden issue expansion、hidden issue pagination、page queue action 与 history status filters 与 issue navigation path 已覆盖；production build、主题聚焦 E2E 和relationship cleanup focused E2E、完整 editor workflow 36 项和 production build 均通过。"
+                },
+                {
+                        "title": "可扩展架构、规则包与产品化交付",
+                        "status": "planned",
+                        "progress": 90,
+                        "summary": "模块化边界、规则包/内容包、扩展点、双语能力、长期演进结构和真正独立应用交付方式仍需推进；AGM 全仓库命名迁移已完成，agm.rules.v0 已具备 version、biomeRules、resourceTags、resourceRules、profileRules、导入/导出/校验闭环，并通过 playability.generatorProfileSuggestions / parameterDraft / generationProfileImpact 与 generation.profileOverrides 影响下游生成建议、生成前参数应用、结果层 impact 解释、独立地图层导出、Heightfield JSON、Heightmap PNG、RAW16、engine manifest、Engine Package ZIP、Unity/Godot/Unreal sample importer stubs 与真实引擎 smoke readiness gate。StudioLanguage、localStorage 持久化、document lang 同步、顶栏语言切换、主壳双语标签和 Preview Product Shell first pass 已落地，为后续规则包、风格包、战役模板、内容包市场和简体中文 / 英文产品化交付打下基础。"
+                }
+        ],
+        "remainingToGoal": [
+                "继续把其他世界参数链路从 world-configurator 收回到 AGM，但避免把搬控件误当终局。",
+                "把 profile-driven 生成从 effective parameters 继续推进到更深层生成逻辑：route topology、settlement placement、独立 map exports 和真实游戏引擎导出管线。",
+                "建立面向游戏设计目标的 World Generator：RPG、策略、4X、跑团、开放世界等 profile 应真实影响生成逻辑。",
+                "把编辑器从“能打开旧编辑器”继续推进到“可通过 AGM 队列真实应用自动修复、可编辑国家、城市、省份、路线、资源/生物群系、文化、宗教、区域和外交并修复关联数据”的 World Editor；当前国家、城市、文化、宗教、省份、路线、区域、外交和生物群系/资源原生工作台已落地并具备带记录数/选中项/最近应用项/筛选状态/统一应用反馈/批量关联检查/关系问题详情/按类型分组/源实体上下文/候选覆盖提示/完整选择器入口/修复预览/批量预览/轻量修复队列/队列冲突与过期复查/队列影响摘要/应用结果反馈/最近队列历史/复查最近队列/历史撤销入口跳转/多步队列历史列表/历史项只读边界/历史行复查跳转/字段级历史明细 drilldown/历史可读性 polish/当前值 stale/match 审阅/字段级 Field audit 审计摘要/Undo blocked 重试说明/逐项移除/统一应用/辅助修复/断链引用清理/分组级安全批量清理/替代引用编辑入口/卡片内候选实体快捷替换的目录导航仪表、一键清空全部筛选、复查最近应用/关联问题，以及国家/城镇/省份/文化/外交之间的常用跨面板跳转，下一步要继续打磨 Relationship 的逐页复查、有效引用推荐、历史过滤、字段审计和冲突恢复体验，并把 Biome 分布洞察接到地图高亮与生成参数建议。",
+                "扩展平衡检查器，检查资源集中、国家碎片化、城市距离、出生点公平性、资源/生物群系规则可玩性等更多游戏设计问题。",
+                "建立 Game Export Pipeline：已起步独立 biome/province/resource map JSON、Tiled-compatible Map JSON、GeoJSON map layers、heightmap metadata、可复原 Heightfield JSON、8-bit grayscale Heightmap PNG、16-bit little-endian RAW terrain export、engine manifest、Engine Package ZIP、importer sample metadata、sample importer stubs、Unity ZIP bridge validation、Unity source importer spike artifacts、本地 Unity export validation harness、optional Unity CLI batchmode compile/importer check、Unity terrain prototype metadata report、hardened importer artifact contract、中英双语 handoff docs、Unity vertical slice prototype、Unity real asset authoring prototype、diagnostic asset authoring hardening、Unity CLI diagnostics hardening、Unity executable auto-discovery、Unity standalone editor discovery、Unity temp project lifecycle policy、Engine importer fixture automation、真实 Unity executable validation、no-Unity smoke readiness diagnostics、real Unity batchmode smoke capture、production plugin boundary review、Unity production importer packaging plan、Unity production importer package scaffold、Unity production importer scaffold hardening、Unity production importer package README/menu workflow、Unity Engine Package Importer EditorWindow、Unity importer window inspect-before-import hardening、Unity package sample walkthrough、Unity package packaging checklist、Unity package compile gate、Unity package import smoke test、package import smoke diagnostics hardening、Unity package runtime API hardening、Runtime issue taxonomy、Unity package usage contract、runtime issue failure fixture、release-candidate checklist、Godot production importer source-sample scaffold gate、Godot runtime parsing hardening、Godot CLI discovery/readiness diagnostics、Godot addon smoke validator path、Unreal production importer source-sample scaffold gate、Unreal importer fixture gate hardening、Godot/Unreal addon/plugin boundary review gate 与 real engine smoke record readiness gate，仍需真实 Godot/Unreal smoke record capture 与 Unity package release artifact cleanup。",
+                "继续扩大简体中文 / English 双语覆盖和产品化 UI：官方品牌资产、favicon/PWA icon 与主壳 token 已接入，下一步要把右侧 inspector、Balance Checker、Project/Data/Export 深层面板、Biome 分布交互、右侧洞察卡片体系和参考 UI 级视觉细节打磨成真实可用工作台。"
+        ],
+        "updatedAt": "2026-04-27T12:10:00.000Z"
 };
-      function setText(id, value) { document.getElementById(id).textContent = value ?? "—"; }
+
+      function setText(id, text) { const element = document.getElementById(id); if (element) element.textContent = text; }
       function renderStatus(status) { const labels = {planned: "计划中", in_progress: "进行中", completed: "已完成", blocked: "阻塞"}; return `<span class="status status--${status}">${labels[status] || status}</span>`; }
       function renderStatusText(status) { const labels = {planned: "计划中", in_progress: "进行中", completed: "已完成", blocked: "阻塞"}; return labels[status] || status; }
       function renderBullets(containerId, items, emptyText = "暂无内容") { const container = document.getElementById(containerId); container.innerHTML = items.length ? items.map(item => `<div class="bullet">${item}</div>`).join("") : `<div class="bullet muted">${emptyText}</div>`; }

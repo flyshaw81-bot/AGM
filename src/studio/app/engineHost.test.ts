@@ -1,0 +1,122 @@
+import { describe, expect, it, vi } from "vitest";
+import {
+  ensureEngineDialogsContainer,
+  ensureStudioRoot,
+  preserveEngineNode,
+  relocateEngineMapHost,
+  syncEngineDialogsPosition,
+} from "./engineHost";
+import type { EngineHostTargets } from "./engineHostTargets";
+
+function createElement(id = "") {
+  const children = new Set<HTMLElement>();
+  const element = {
+    id,
+    style: {} as CSSStyleDeclaration,
+    dataset: {},
+    appendChild: vi.fn((child: HTMLElement) => {
+      children.add(child);
+      return child;
+    }),
+    contains: vi.fn((child: HTMLElement) => children.has(child)),
+    getBoundingClientRect: vi.fn(() => ({
+      left: 0,
+      top: 0,
+      right: 100,
+      bottom: 100,
+      width: 100,
+      height: 100,
+    })),
+  } as unknown as HTMLElement;
+  return { element, children };
+}
+
+function rect(
+  left: number,
+  top: number,
+  right: number,
+  bottom: number,
+): DOMRect {
+  return {
+    left,
+    top,
+    right,
+    bottom,
+    width: right - left,
+    height: bottom - top,
+    x: left,
+    y: top,
+    toJSON: () => ({}),
+  } as DOMRect;
+}
+
+function createTargets(elements: Record<string, HTMLElement> = {}) {
+  const appended: HTMLElement[] = [];
+  const created: HTMLElement[] = [];
+  const dialogs: HTMLElement[] = [];
+  const targets: EngineHostTargets = {
+    getElementById: (id) => elements[id] ?? null,
+    createElement: vi.fn(() => {
+      const { element } = createElement();
+      created.push(element);
+      return element;
+    }),
+    appendToBody: vi.fn((element) => {
+      appended.push(element);
+    }),
+    queryDialogs: () => dialogs,
+  };
+  return { targets, appended, created, dialogs };
+}
+
+describe("engine host", () => {
+  it("creates missing Studio root and dialogs container through targets", () => {
+    const { targets, appended } = createTargets();
+
+    const root = ensureStudioRoot(targets);
+    const dialogs = ensureEngineDialogsContainer(targets);
+
+    expect(root.id).toBe("studioRoot");
+    expect(dialogs.id).toBe("dialogs");
+    expect(appended).toEqual([root, dialogs]);
+  });
+
+  it("preserves engine nodes and relocates the map into the Studio host", () => {
+    const { element: root, children: rootChildren } = createElement("root");
+    const { element: map } = createElement("map");
+    const { element: host } = createElement("studioMapHost");
+    rootChildren.add(map);
+    const { targets, appended } = createTargets({
+      map,
+      studioMapHost: host,
+    });
+
+    preserveEngineNode(root, "map", targets);
+    relocateEngineMapHost(targets);
+
+    expect(appended).toContain(map);
+    expect(host.appendChild).toHaveBeenCalledWith(map);
+  });
+
+  it("clamps dialog positions inside the stage viewport", () => {
+    const { element: stage } = createElement("studioStageViewport");
+    stage.getBoundingClientRect = vi.fn(() =>
+      rect(10, 20, 210, 220),
+    ) as HTMLElement["getBoundingClientRect"];
+    const { element: dialog } = createElement("dialog");
+    dialog.style.left = "0px";
+    dialog.style.top = "0px";
+    dialog.getBoundingClientRect = vi.fn(() =>
+      rect(0, 0, 80, 80),
+    ) as HTMLElement["getBoundingClientRect"];
+    const { targets, dialogs } = createTargets({
+      studioStageViewport: stage,
+    });
+    dialogs.push(dialog);
+
+    syncEngineDialogsPosition(targets);
+
+    expect(dialog.style.left).toBe("18px");
+    expect(dialog.style.top).toBe("28px");
+  });
+});

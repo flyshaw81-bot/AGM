@@ -1,11 +1,23 @@
 import type { Selection } from "d3";
 import { curveBasisClosed, line } from "d3";
-import { clipPoly, P, rn, round } from "../utils";
+import { clipPoly } from "../utils/commonUtils";
+import { rn } from "../utils/numberUtils";
+import { P } from "../utils/probabilityUtils";
+import { round } from "../utils/stringUtils";
+import {
+  type EngineRuntimeContext,
+  getGlobalEngineRuntimeContext,
+} from "./engine-runtime-context";
 
 declare global {
   var OceanLayers: typeof OceanModule.prototype.draw;
 }
-class OceanModule {
+
+function logEngineError(message: string) {
+  globalThis.ERROR && console.error(message);
+}
+
+export class OceanModule {
   private cells: any;
   private vertices: any;
   private pointsN: any;
@@ -53,7 +65,7 @@ class OceanModule {
       else if (v[1] !== undefined && v[1] !== prev && c1 !== c2) current = v[1];
       else if (v[2] !== undefined && v[2] !== prev && c0 !== c2) current = v[2];
       if (current === chain[chain.length - 1]) {
-        ERROR && console.error("Next vertex is not found");
+        logEngineError("Next vertex is not found");
         break;
       }
     }
@@ -74,13 +86,13 @@ class OceanModule {
     ];
   }
 
-  draw() {
+  draw(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
     const outline = this.oceanLayers.attr("layers");
     if (outline === "none") return;
-    TIME && console.time("drawOceanLayers");
-    this.cells = grid.cells;
-    this.pointsN = grid.cells.i.length;
-    this.vertices = grid.vertices;
+    context.timing.shouldTime && console.time("drawOceanLayers");
+    this.cells = context.grid.cells;
+    this.pointsN = context.grid.cells.i.length;
+    this.vertices = context.grid.vertices;
     const limits =
       outline === "random"
         ? this.randomizeOutline()
@@ -109,8 +121,8 @@ class OceanModule {
 
       const points = clipPoly(
         relaxed.map((v) => this.vertices.p[v]),
-        graphWidth,
-        graphHeight,
+        context.worldSettings.graphWidth ?? graphWidth,
+        context.worldSettings.graphHeight ?? graphHeight,
       );
       chains.push([t, points]);
     }
@@ -128,8 +140,10 @@ class OceanModule {
           .attr("fill-opacity", opacity);
     }
 
-    TIME && console.timeEnd("drawOceanLayers");
+    context.timing.shouldTime && console.timeEnd("drawOceanLayers");
   }
 }
 
-window.OceanLayers = () => new OceanModule(oceanLayers).draw();
+if (typeof window !== "undefined") {
+  window.OceanLayers = (context) => new OceanModule(oceanLayers).draw(context);
+}

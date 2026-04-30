@@ -1,19 +1,17 @@
-import { mean } from "d3";
+﻿import { mean } from "d3";
 import type { PackedGraph } from "../types/PackedGraph";
+import { last } from "../utils/arrayUtils";
+import { generateDate } from "../utils/commonUtils";
+import { getAdjective } from "../utils/languageUtils";
+import { rn } from "../utils/numberUtils";
+import { gauss, P, ra, rand, rw } from "../utils/probabilityUtils";
+import { byId } from "../utils/shorthands";
+import { capitalize } from "../utils/stringUtils";
+import { convertTemperature } from "../utils/unitUtils";
 import {
-  byId,
-  capitalize,
-  convertTemperature,
-  gauss,
-  generateDate,
-  getAdjective,
-  last,
-  P,
-  ra,
-  rand,
-  rn,
-  rw,
-} from "../utils";
+  type EngineRuntimeContext,
+  getGlobalEngineRuntimeContext,
+} from "./engine-runtime-context";
 
 declare global {
   var Markers: MarkersModule;
@@ -28,8 +26,8 @@ type MarkerConfig = {
   min: number;
   each: number;
   multiplier: number;
-  list: (pack: PackedGraph) => number[];
-  add: (id: string, cell: number) => void;
+  list: (pack: PackedGraph, context: EngineRuntimeContext) => number[];
+  add: (id: string, cell: number, context: EngineRuntimeContext) => void;
 };
 
 interface Marker {
@@ -43,9 +41,10 @@ interface Marker {
   lock?: boolean;
 }
 
-class MarkersModule {
+export class MarkersModule {
   private config: MarkerConfig[];
   private occupied: boolean[];
+  private runtimeContext?: EngineRuntimeContext;
 
   constructor() {
     this.config = this.getDefaultConfig();
@@ -60,51 +59,63 @@ class MarkersModule {
     this.config = newConfig;
   }
 
-  generate() {
-    this.resetConfig();
-    pack.markers = [];
-    this.generateTypes();
+  generate(
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    resetConfig = true,
+  ) {
+    if (resetConfig) this.resetConfig();
+    context.pack.markers = [];
+    this.generateTypes(context);
   }
 
-  regenerate() {
-    pack.markers = pack.markers.filter(({ i, lock, cell }) => {
+  regenerate(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+    context.pack.markers = context.pack.markers.filter(({ i, lock, cell }) => {
       if (lock) {
         this.occupied[cell] = true;
         return true;
       }
       const id = `marker${i}`;
-      document.getElementById(id)?.remove();
-      const index = notes.findIndex((note) => note.id === id);
-      if (index !== -1) notes.splice(index, 1);
+      context.rendering?.removeElementById(id);
+      const index = context.notes.findIndex((note) => note.id === id);
+      if (index !== -1) context.notes.splice(index, 1);
       return false;
     });
 
-    this.generateTypes();
+    this.generateTypes(context);
   }
 
-  add(marker: Marker) {
+  add(
+    marker: Marker,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
     const base = this.config.find((c) => c.type === marker.type);
     if (base) {
       const { icon, type, dx, dy, px } = base;
-      marker = this.addMarker({ icon, type, dx, dy, px }, marker);
-      base.add(`marker${marker.i}`, marker.cell);
+      marker = this.addMarker({ icon, type, dx, dy, px }, marker, context);
+      base.add(`marker${marker.i}`, marker.cell, context);
       return marker;
     }
 
-    const i = last(pack.markers)?.i + 1 || 0;
-    pack.markers.push({ ...marker, i });
+    const i = last(context.pack.markers)?.i + 1 || 0;
+    context.pack.markers.push({ ...marker, i });
     this.occupied[marker.cell] = true;
     return { ...marker, i };
   }
 
-  deleteMarker(markerId: number) {
+  deleteMarker(
+    markerId: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
     const noteId = `marker${markerId}`;
-    notes = notes.filter((note) => note.id !== noteId);
-    pack.markers = pack.markers.filter((m) => m.i !== markerId);
+    context.notes.removeWhere((note) => note.id === noteId);
+    context.pack.markers = context.pack.markers.filter((m) => m.i !== markerId);
   }
 
   private getDefaultConfig(): MarkerConfig[] {
-    const culturesSet = (byId("culturesSet") as HTMLSelectElement)?.value || "";
+    const culturesSet =
+      typeof document === "undefined"
+        ? ""
+        : (byId("culturesSet") as HTMLSelectElement)?.value || "";
     const isFantasy = culturesSet.includes("Fantasy");
 
     /*
@@ -122,7 +133,7 @@ class MarkersModule {
     return [
       {
         type: "volcanoes",
-        icon: "🌋",
+        icon: "馃寢",
         dx: 52,
         px: 13,
         min: 10,
@@ -133,7 +144,7 @@ class MarkersModule {
       },
       {
         type: "hot-springs",
-        icon: "♨️",
+        icon: "鈾笍",
         dy: 52,
         min: 30,
         each: 1200,
@@ -143,7 +154,7 @@ class MarkersModule {
       },
       {
         type: "water-sources",
-        icon: "💧",
+        icon: "馃挧",
         min: 1,
         each: 1000,
         multiplier: 1,
@@ -152,7 +163,7 @@ class MarkersModule {
       },
       {
         type: "mines",
-        icon: "⛏️",
+        icon: "鉀忥笍",
         dx: 48,
         px: 13,
         min: 1,
@@ -163,7 +174,7 @@ class MarkersModule {
       },
       {
         type: "bridges",
-        icon: "🌉",
+        icon: "馃寜",
         px: 14,
         min: 1,
         each: 5,
@@ -173,7 +184,7 @@ class MarkersModule {
       },
       {
         type: "inns",
-        icon: "🍻",
+        icon: "馃嵒",
         px: 14,
         min: 1,
         each: 10,
@@ -183,7 +194,7 @@ class MarkersModule {
       },
       {
         type: "lighthouses",
-        icon: "🚨",
+        icon: "馃毃",
         px: 14,
         min: 1,
         each: 2,
@@ -193,7 +204,7 @@ class MarkersModule {
       },
       {
         type: "waterfalls",
-        icon: "⟱",
+        icon: "~",
         dy: 54,
         px: 16,
         min: 1,
@@ -204,7 +215,7 @@ class MarkersModule {
       },
       {
         type: "battlefields",
-        icon: "⚔️",
+        icon: "鈿旓笍",
         dy: 52,
         min: 50,
         each: 700,
@@ -214,7 +225,7 @@ class MarkersModule {
       },
       {
         type: "dungeons",
-        icon: "🗝️",
+        icon: "D",
         dy: 51,
         px: 13,
         min: 30,
@@ -225,7 +236,7 @@ class MarkersModule {
       },
       {
         type: "lake-monsters",
-        icon: "🐉",
+        icon: "馃悏",
         dy: 48,
         min: 2,
         each: 10,
@@ -235,7 +246,7 @@ class MarkersModule {
       },
       {
         type: "sea-monsters",
-        icon: "🦑",
+        icon: "馃",
         min: 50,
         each: 700,
         multiplier: 1,
@@ -244,7 +255,7 @@ class MarkersModule {
       },
       {
         type: "hill-monsters",
-        icon: "👹",
+        icon: "馃懝",
         dy: 54,
         px: 13,
         min: 30,
@@ -255,7 +266,7 @@ class MarkersModule {
       },
       {
         type: "sacred-mountains",
-        icon: "🗻",
+        icon: "馃椈",
         dy: 48,
         min: 1,
         each: 5,
@@ -265,7 +276,7 @@ class MarkersModule {
       },
       {
         type: "sacred-forests",
-        icon: "🌳",
+        icon: "馃尦",
         min: 30,
         each: 1000,
         multiplier: 1,
@@ -274,7 +285,7 @@ class MarkersModule {
       },
       {
         type: "sacred-pineries",
-        icon: "🌲",
+        icon: "馃尣",
         px: 13,
         min: 30,
         each: 800,
@@ -284,7 +295,7 @@ class MarkersModule {
       },
       {
         type: "sacred-palm-groves",
-        icon: "🌴",
+        icon: "馃尨",
         px: 13,
         min: 1,
         each: 100,
@@ -294,7 +305,7 @@ class MarkersModule {
       },
       {
         type: "brigands",
-        icon: "💰",
+        icon: "馃挵",
         px: 13,
         min: 50,
         each: 100,
@@ -304,7 +315,7 @@ class MarkersModule {
       },
       {
         type: "pirates",
-        icon: "🏴‍☠️",
+        icon: "P",
         dx: 51,
         min: 40,
         each: 300,
@@ -314,7 +325,7 @@ class MarkersModule {
       },
       {
         type: "statues",
-        icon: "🗿",
+        icon: "馃椏",
         min: 80,
         each: 1200,
         multiplier: 1,
@@ -323,7 +334,7 @@ class MarkersModule {
       },
       {
         type: "ruins",
-        icon: "🏺",
+        icon: "馃徍",
         min: 80,
         each: 1200,
         multiplier: 1,
@@ -332,7 +343,7 @@ class MarkersModule {
       },
       {
         type: "libraries",
-        icon: "📚",
+        icon: "馃摎",
         min: 10,
         each: 1200,
         multiplier: 1,
@@ -341,7 +352,7 @@ class MarkersModule {
       },
       {
         type: "circuses",
-        icon: "🎪",
+        icon: "馃帾",
         min: 80,
         each: 1000,
         multiplier: 1,
@@ -350,7 +361,7 @@ class MarkersModule {
       },
       {
         type: "jousts",
-        icon: "🤺",
+        icon: "馃ず",
         dx: 48,
         min: 5,
         each: 500,
@@ -360,7 +371,7 @@ class MarkersModule {
       },
       {
         type: "fairs",
-        icon: "🎠",
+        icon: "馃帬",
         min: 50,
         each: 1000,
         multiplier: 1,
@@ -369,7 +380,7 @@ class MarkersModule {
       },
       {
         type: "canoes",
-        icon: "🛶",
+        icon: "馃浂",
         min: 500,
         each: 2000,
         multiplier: 1,
@@ -378,7 +389,7 @@ class MarkersModule {
       },
       {
         type: "migration",
-        icon: "🐗",
+        icon: "馃悧",
         min: 20,
         each: 1000,
         multiplier: 1,
@@ -387,7 +398,7 @@ class MarkersModule {
       },
       {
         type: "dances",
-        icon: "💃🏽",
+        icon: "馃拑馃徑",
         min: 50,
         each: 1000,
         multiplier: 1,
@@ -396,7 +407,7 @@ class MarkersModule {
       },
       {
         type: "mirage",
-        icon: "💦",
+        icon: "馃挦",
         min: 10,
         each: 400,
         multiplier: 1,
@@ -405,7 +416,7 @@ class MarkersModule {
       },
       {
         type: "caves",
-        icon: "🦇",
+        icon: "馃",
         min: 60,
         each: 1000,
         multiplier: 1,
@@ -414,7 +425,7 @@ class MarkersModule {
       },
       {
         type: "portals",
-        icon: "🌀",
+        icon: "馃寑",
         px: 14,
         min: 16,
         each: 8,
@@ -424,7 +435,7 @@ class MarkersModule {
       },
       {
         type: "rifts",
-        icon: "🎆",
+        icon: "馃巻",
         min: 5,
         each: 3000,
         multiplier: +isFantasy,
@@ -433,7 +444,7 @@ class MarkersModule {
       },
       {
         type: "disturbed-burials",
-        icon: "💀",
+        icon: "馃拃",
         min: 20,
         each: 3000,
         multiplier: +isFantasy,
@@ -442,7 +453,7 @@ class MarkersModule {
       },
       {
         type: "necropolises",
-        icon: "🪦",
+        icon: "馃",
         min: 20,
         each: 1000,
         multiplier: 1,
@@ -451,7 +462,7 @@ class MarkersModule {
       },
       {
         type: "encounters",
-        icon: "🧙",
+        icon: "馃",
         min: 10,
         each: 600,
         multiplier: 1,
@@ -465,30 +476,41 @@ class MarkersModule {
     this.config = this.getDefaultConfig();
   }
 
-  private generateTypes() {
-    TIME && console.time("addMarkers");
+  private generateTypes(context: EngineRuntimeContext) {
+    context.timing.shouldTime && console.time("addMarkers");
+    const { pack } = context;
+    const previousContext = this.runtimeContext;
+    this.runtimeContext = context;
 
-    this.config.forEach(
-      ({ type, icon, dx, dy, px, min, each, multiplier, list, add }) => {
-        if (multiplier === 0) return;
+    try {
+      this.config.forEach(
+        ({ type, icon, dx, dy, px, min, each, multiplier, list, add }) => {
+          if (multiplier === 0) return;
 
-        const candidates = Array.from(list(pack));
-        let quantity = this.getQuantity(candidates, min, each, multiplier);
-        // uncomment for debugging:
-        // console.info(`${icon} ${type}: each ${each} of ${candidates.length}, min ${min} candidates. Got ${quantity}`);
+          const candidates = Array.from(list(pack, context));
+          let quantity = this.getQuantity(candidates, min, each, multiplier);
+          // uncomment for debugging:
+          // console.info(`${icon} ${type}: each ${each} of ${candidates.length}, min ${min} candidates. Got ${quantity}`);
 
-        while (quantity && candidates.length) {
-          const [cell] = this.extractAnyElement(candidates);
-          const marker = this.addMarker({ icon, type, dx, dy, px }, { cell });
-          if (!marker) continue;
-          add(`marker${marker.i}`, cell);
-          quantity--;
-        }
-      },
-    );
+          while (quantity && candidates.length) {
+            const [cell] = this.extractAnyElement(candidates);
+            const marker = this.addMarker(
+              { icon, type, dx, dy, px },
+              { cell },
+              context,
+            );
+            if (!marker) continue;
+            add(`marker${marker.i}`, cell, context);
+            quantity--;
+          }
+        },
+      );
+    } finally {
+      this.runtimeContext = previousContext;
+    }
 
     this.occupied = [];
-    TIME && console.timeEnd("addMarkers");
+    context.timing.shouldTime && console.timeEnd("addMarkers");
   }
 
   private getQuantity(
@@ -507,18 +529,33 @@ class MarkersModule {
     return array.splice(index, 1);
   }
 
-  private addMarker(base: any, marker: any) {
+  private addNote(
+    note: { id: string; name: string; legend: string },
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    (this.runtimeContext ?? context).notes.push(note);
+  }
+
+  private addMarker(
+    base: any,
+    marker: any,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
     if (marker.cell === undefined) return;
+    const { pack } = context;
     const i = last(pack.markers)?.i + 1 || 0;
-    const [x, y] = this.getMarkerCoordinates(marker.cell);
+    const [x, y] = this.getMarkerCoordinates(marker.cell, context);
     marker = { ...base, x, y, ...marker, i };
     pack.markers.push(marker);
     this.occupied[marker.cell] = true;
     return marker;
   }
 
-  private getMarkerCoordinates(cell: number) {
-    const { cells, burgs } = pack;
+  private getMarkerCoordinates(
+    cell: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { cells, burgs } = context.pack;
     const burgId = cells.burg[cell];
 
     if (burgId) {
@@ -533,17 +570,21 @@ class MarkersModule {
     return cells.i.filter((i) => !this.occupied[i] && cells.h[i] >= 70);
   }
 
-  private addVolcano(id: string, cell: number) {
-    const { cells } = pack;
+  private addVolcano(
+    id: string,
+    cell: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { cells } = context.pack;
 
-    const proper = Names.getCulture(cells.culture[cell]);
+    const proper = context.naming.getCulture(cells.culture[cell]);
     const name = P(0.3)
       ? `Mount ${proper}`
       : P(0.7)
         ? `${proper} Volcano`
         : proper;
     const status = P(0.6) ? "Dormant" : P(0.4) ? "Active" : "Erupting";
-    notes.push({
+    this.addNote({
       id,
       name,
       legend: `${status} volcano. Height: ${getFriendlyHeight(cells.p[cell])}.`,
@@ -556,10 +597,14 @@ class MarkersModule {
     );
   }
 
-  private addHotSpring(id: string, cell: number) {
-    const { cells } = pack;
+  private addHotSpring(
+    id: string,
+    cell: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { cells } = context.pack;
 
-    const proper = Names.getCulture(cells.culture[cell]);
+    const proper = context.naming.getCulture(cells.culture[cell]);
     const temp = convertTemperature(gauss(35, 15, 20, 100));
     const name = P(0.3)
       ? `Hot Springs of ${proper}`
@@ -568,7 +613,7 @@ class MarkersModule {
         : proper;
     const legend = `A geothermal springs with naturally heated water that provide relaxation and medicinal benefits. Average temperature is ${temp}.`;
 
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listWaterSources({ cells }: PackedGraph) {
@@ -577,8 +622,12 @@ class MarkersModule {
     );
   }
 
-  private addWaterSource(id: string, cell: number) {
-    const { cells } = pack;
+  private addWaterSource(
+    id: string,
+    cell: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { cells } = context.pack;
 
     const type = rw({
       "Healing Spring": 5,
@@ -592,12 +641,12 @@ class MarkersModule {
       "Healing Stream": 1,
     });
 
-    const proper = Names.getCulture(cells.culture[cell]);
+    const proper = context.naming.getCulture(cells.culture[cell]);
     const name = `${proper} ${type}`;
     const legend =
       "This legendary water source is whispered about in ancient tales and believed to possess mystical properties. The spring emanates crystal-clear water, shimmering with an otherworldly iridescence that sparkles even in the dimmest light.";
 
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listMines({ cells }: PackedGraph) {
@@ -606,7 +655,12 @@ class MarkersModule {
     );
   }
 
-  private addMine(id: string, cell: number) {
+  private addMine(
+    id: string,
+    cell: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { pack, populationSettings } = context;
     const { cells } = pack;
 
     const resources = {
@@ -620,10 +674,14 @@ class MarkersModule {
     };
     const resource = rw(resources);
     const burg = pack.burgs[cells.burg[cell]];
-    const name = `${burg.name} — ${resource} mining town`;
-    const population = rn(burg.population! * populationRate * urbanization);
+    const name = `${burg.name} 鈥?${resource} mining town`;
+    const population = rn(
+      burg.population! *
+        populationSettings.populationRate *
+        populationSettings.urbanization,
+    );
     const legend = `${burg.name} is a mining town of ${population} people just nearby the ${resource} mine.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listBridges({ cells, burgs }: PackedGraph) {
@@ -639,11 +697,15 @@ class MarkersModule {
     );
   }
 
-  private addBridge(id: string, cell: number) {
-    const { cells } = pack;
+  private addBridge(
+    id: string,
+    cell: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { cells, burgs, rivers } = context.pack;
 
-    const burg = pack.burgs[cells.burg[cell]];
-    const river = pack.rivers.find((r) => r.i === pack.cells.r[cell]);
+    const burg = burgs[cells.burg[cell]];
+    const river = rivers.find((r) => r.i === cells.r[cell]);
     const riverName = river ? `${river.name} ${river.type}` : "river";
     const name =
       river && P(0.2) ? `${river.name} Bridge` : `${burg.name} Bridge`;
@@ -667,12 +729,13 @@ class MarkersModule {
       ? `A ${rw(weightedAdjectives)} bridge spans over the ${riverName} near ${burg.name}.`
       : `An old crossing of the ${riverName}, rarely used since ${ra(barriers)}.`;
 
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
-  private listInns({ cells }: PackedGraph) {
+  private listInns({ cells }: PackedGraph, context: EngineRuntimeContext) {
     return cells.i.filter(
-      (i) => !this.occupied[i] && cells.pop[i] > 5 && Routes.isCrossroad(i),
+      (i) =>
+        !this.occupied[i] && cells.pop[i] > 5 && context.routes.isCrossroad(i),
     );
   }
 
@@ -932,25 +995,34 @@ class MarkersModule {
     const drink =
       `${P(0.5) ? ra(types) : ra(colors)} ${ra(drinks)}`.toLowerCase();
     const legend = `A big and famous roadside ${typeName}. Delicious ${course} with ${drink} is served here.`;
-    notes.push({ id, name: `The ${name}`, legend });
+    this.addNote({ id, name: `The ${name}`, legend });
   }
 
-  private listLighthouses({ cells }: PackedGraph) {
+  private listLighthouses(
+    { cells }: PackedGraph,
+    context: EngineRuntimeContext,
+  ) {
     return cells.i.filter(
       (i) =>
         !this.occupied[i] &&
         cells.harbor[i] > 6 &&
-        cells.c[i].some((c) => cells.h[c] < 20 && Routes.isConnected(c)),
+        cells.c[i].some(
+          (c) => cells.h[c] < 20 && context.routes.isConnected(c),
+        ),
     );
   }
 
-  private addLighthouse(id: string, cell: number) {
-    const { cells } = pack;
+  private addLighthouse(
+    id: string,
+    cell: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { burgs, cells } = context.pack;
 
     const proper = cells.burg[cell]
-      ? pack.burgs[cells.burg[cell]].name!
-      : Names.getCulture(cells.culture[cell]);
-    notes.push({
+      ? burgs[cells.burg[cell]].name!
+      : context.naming.getCulture(cells.culture[cell]);
+    this.addNote({
       id,
       name: `${getAdjective(proper)} Lighthouse`,
       legend: `A lighthouse to serve as a beacon for ships in the open sea.`,
@@ -967,8 +1039,12 @@ class MarkersModule {
     );
   }
 
-  private addWaterfall(id: string, cell: number) {
-    const { cells } = pack;
+  private addWaterfall(
+    id: string,
+    cell: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { burgs, cells } = context.pack;
 
     const descriptions = [
       "A gorgeous waterfall flows here.",
@@ -980,9 +1056,9 @@ class MarkersModule {
     ];
 
     const proper = cells.burg[cell]
-      ? pack.burgs[cells.burg[cell]].name!
-      : Names.getCulture(cells.culture[cell]);
-    notes.push({
+      ? burgs[cells.burg[cell]].name!
+      : context.naming.getCulture(cells.culture[cell]);
+    this.addNote({
       id,
       name: `${getAdjective(proper)} Waterfall`,
       legend: `${ra(descriptions)}`,
@@ -1000,16 +1076,23 @@ class MarkersModule {
     );
   }
 
-  private addBattlefield(id: string, cell: number) {
+  private addBattlefield(
+    id: string,
+    cell: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { options, pack } = context;
     const { cells, states } = pack;
 
     const state = states[cells.state[cell]];
-    if (!state.campaigns) state.campaigns = States.generateCampaign(state);
+    if (!state.campaigns) {
+      state.campaigns = context.states.generateCampaign(state);
+    }
     const campaign = ra(state.campaigns);
     const date = generateDate(campaign.start, campaign.end);
-    const name = `${Names.getCulture(cells.culture[cell])} Battlefield`;
+    const name = `${context.naming.getCulture(cells.culture[cell])} Battlefield`;
     const legend = `A historical battle of the ${campaign.name}. \r\nDate: ${date} ${options.era}.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listDungeons({ cells }: PackedGraph) {
@@ -1018,11 +1101,15 @@ class MarkersModule {
     );
   }
 
-  private addDungeon(id: string, cell: number) {
-    const dungeonSeed = `${seed}${cell}`;
+  private addDungeon(
+    id: string,
+    cell: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const dungeonSeed = `${context.seed}${cell}`;
     const name = "Dungeon";
     const legend = `<div>Undiscovered dungeon. See <a href="https://watabou.github.io/one-page-dungeon/?seed=${dungeonSeed}" target="_blank">One page dungeon</a></div><iframe style="pointer-events: none;" src="https://watabou.github.io/one-page-dungeon/?seed=${dungeonSeed}" sandbox="allow-scripts allow-same-origin"></iframe>`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listLakeMonsters({ features }: PackedGraph) {
@@ -1036,8 +1123,13 @@ class MarkersModule {
       .map((feature) => feature.firstCell);
   }
 
-  private addLakeMonster(id: string, cell: number) {
-    const lake = pack.features[pack.cells.f[cell]];
+  private addLakeMonster(
+    id: string,
+    cell: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { cells, features } = context.pack;
+    const lake = features[cells.f[cell]];
 
     // Check that the feature is a lake in case the user clicked on a wrong
     // square
@@ -1056,27 +1148,34 @@ class MarkersModule {
       "Journeying folk",
       "Tales",
     ];
-    const legend = `${ra(subjects)} say a relic monster of ${length} ${heightUnit.value} long inhabits ${
+    const legend = `${ra(subjects)} say a relic monster of ${length} ${context.units.height} long inhabits ${
       lake.name
     } Lake. Truth or lie, folks are afraid to fish in the lake.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
-  private listSeaMonsters({ cells, features }: PackedGraph) {
+  private listSeaMonsters(
+    { cells, features }: PackedGraph,
+    context: EngineRuntimeContext,
+  ) {
     return cells.i.filter(
       (i) =>
         !this.occupied[i] &&
         cells.h[i] < 20 &&
-        Routes.isConnected(i) &&
+        context.routes.isConnected(i) &&
         features[cells.f[i]].type === "ocean",
     );
   }
 
-  private addSeaMonster(id: string, _cell: number) {
-    const name = `${Names.getCultureShort(0)} Monster`;
+  private addSeaMonster(
+    id: string,
+    _cell: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const name = `${context.naming.getCultureShort(0)} Monster`;
     const length = gauss(25, 10, 10, 100);
-    const legend = `Old sailors tell stories of a gigantic sea monster inhabiting these dangerous waters. Rumors say it can be ${length} ${heightUnit.value} long.`;
-    notes.push({ id, name, legend });
+    const legend = `Old sailors tell stories of a gigantic sea monster inhabiting these dangerous waters. Rumors say it can be ${length} ${context.units.height} long.`;
+    this.addNote({ id, name, legend });
   }
 
   private listHillMonsters({ cells }: PackedGraph) {
@@ -1085,8 +1184,12 @@ class MarkersModule {
     );
   }
 
-  private addHillMonster(id: string, cell: number) {
-    const { cells } = pack;
+  private addHillMonster(
+    id: string,
+    cell: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { cells } = context.pack;
 
     const adjectives = [
       "great",
@@ -1149,12 +1252,12 @@ class MarkersModule {
     ];
 
     const monster = ra(species);
-    const toponym = Names.getCulture(cells.culture[cell]);
+    const toponym = context.naming.getCulture(cells.culture[cell]);
     const name = `${toponym} ${monster}`;
     const legend = `${ra(subjects)} speak of a ${ra(adjectives)} ${monster} who inhabits ${toponym} hills and ${ra(
       modusOperandi,
     )}.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   // Sacred mountains spawn on lonely mountains
@@ -1168,15 +1271,19 @@ class MarkersModule {
     );
   }
 
-  private addSacredMountain(id: string, cell: number) {
-    const { cells, religions } = pack;
+  private addSacredMountain(
+    id: string,
+    cell: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { cells, religions } = context.pack;
 
     const culture = cells.c[cell].map((c) => cells.culture[c]).find((c) => c)!;
     const religion = cells.religion[cell];
-    const name = `${Names.getCulture(culture)} Mountain`;
+    const name = `${context.naming.getCulture(culture)} Mountain`;
     const height = getFriendlyHeight(cells.p[cell]);
     const legend = `A sacred mountain of ${religions[religion].name}. Height: ${height}.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   // Sacred forests spawn on temperate forests
@@ -1190,14 +1297,18 @@ class MarkersModule {
     );
   }
 
-  private addSacredForest(id: string, cell: number) {
-    const { cells, religions } = pack;
+  private addSacredForest(
+    id: string,
+    cell: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { cells, religions } = context.pack;
 
     const culture = cells.culture[cell];
     const religion = cells.religion[cell];
-    const name = `${Names.getCulture(culture)} Forest`;
+    const name = `${context.naming.getCulture(culture)} Forest`;
     const legend = `A forest sacred to local ${religions[religion].name}.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   // Sacred pineries spawn on boreal forests
@@ -1211,18 +1322,25 @@ class MarkersModule {
     );
   }
 
-  private addSacredPinery(id: string, cell: number) {
-    const { cells, religions } = pack;
+  private addSacredPinery(
+    id: string,
+    cell: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { cells, religions } = context.pack;
 
     const culture = cells.culture[cell];
     const religion = cells.religion[cell];
-    const name = `${Names.getCulture(culture)} Pinery`;
+    const name = `${context.naming.getCulture(culture)} Pinery`;
     const legend = `A pinery sacred to local ${religions[religion].name}.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   // Sacred palm groves spawn on oasises
-  private listSacredPalmGroves({ cells }: PackedGraph) {
+  private listSacredPalmGroves(
+    { cells }: PackedGraph,
+    context: EngineRuntimeContext,
+  ) {
     return cells.i.filter(
       (i) =>
         !this.occupied[i] &&
@@ -1230,28 +1348,36 @@ class MarkersModule {
         cells.religion[i] &&
         cells.biome[i] === 1 &&
         cells.pop[i] > 1 &&
-        Routes.isConnected(i),
+        context.routes.isConnected(i),
     );
   }
 
-  private addSacredPalmGrove(id: string, cell: number) {
-    const { cells, religions } = pack;
+  private addSacredPalmGrove(
+    id: string,
+    cell: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { cells, religions } = context.pack;
 
     const culture = cells.culture[cell];
     const religion = cells.religion[cell];
-    const name = `${Names.getCulture(culture)} Palm Grove`;
+    const name = `${context.naming.getCulture(culture)} Palm Grove`;
     const legend = `A palm grove sacred to local ${religions[religion].name}.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
-  private listBrigands({ cells }: PackedGraph) {
+  private listBrigands({ cells }: PackedGraph, context: EngineRuntimeContext) {
     return cells.i.filter(
-      (i) => !this.occupied[i] && cells.culture[i] && Routes.hasRoad(i),
+      (i) => !this.occupied[i] && cells.culture[i] && context.routes.hasRoad(i),
     );
   }
 
-  private addBrigands(id: string, cell: number) {
-    const { cells } = pack;
+  private addBrigands(
+    id: string,
+    cell: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { cells } = context.pack;
 
     const animals = [
       "Apes",
@@ -1300,22 +1426,23 @@ class MarkersModule {
       return "angry";
     })(height, biome);
 
-    const name = `${Names.getCulture(culture)} ${ra(animals)}`;
+    const name = `${context.naming.getCulture(culture)} ${ra(animals)}`;
     const legend = `A gang of ${locality} ${rw(types)}.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   // Pirates spawn on sea routes
-  private listPirates({ cells }: PackedGraph) {
+  private listPirates({ cells }: PackedGraph, context: EngineRuntimeContext) {
     return cells.i.filter(
-      (i) => !this.occupied[i] && cells.h[i] < 20 && Routes.isConnected(i),
+      (i) =>
+        !this.occupied[i] && cells.h[i] < 20 && context.routes.isConnected(i),
     );
   }
 
   private addPirates(id: string, _cell: number) {
     const name = "Pirates";
     const legend = "Pirate ships have been spotted in these waters.";
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listStatues({ cells }: PackedGraph) {
@@ -1324,8 +1451,12 @@ class MarkersModule {
     );
   }
 
-  private addStatue(id: string, cell: number) {
-    const { cells } = pack;
+  private addStatue(
+    id: string,
+    cell: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { cells } = context.pack;
 
     const variants = [
       "Statue",
@@ -1342,18 +1473,20 @@ class MarkersModule {
       "Idol",
     ];
     const scripts = {
-      cypriot: "𐠁𐠂𐠃𐠄𐠅𐠈𐠊𐠋𐠌𐠍𐠎𐠏𐠐𐠑𐠒𐠓𐠔𐠕𐠖𐠗𐠘𐠙𐠚𐠛𐠜𐠝𐠞𐠟𐠠𐠡𐠢𐠣𐠤𐠥𐠦𐠧𐠨𐠩𐠪𐠫𐠬𐠭𐠮𐠯𐠰𐠱𐠲𐠳𐠴𐠵𐠷𐠸𐠼𐠿      ",
-      geez: "ሀለሐመሠረሰቀበተኀነአከወዐዘየደገጠጰጸፀፈፐ   ",
-      coptic: "ⲲⲴⲶⲸⲺⲼⲾⳀⳁⳂⳃⳄⳆⳈⳊⳌⳎⳐⳒⳔⳖⳘⳚⳜⳞⳠⳢⳤ⳥⳧⳩⳪ⳫⳬⳭⳲ⳹⳾   ",
-      tibetan: "ༀ༁༂༃༄༅༆༇༈༉༊་༌༐༑༒༓༔༕༖༗༘༙༚༛༜༠༡༢༣༤༥༦༧༨༩༪༫༬༭༮༯༰༱༲༳༴༵༶༷༸༹༺༻༼༽༾༿",
+      cypriot:
+        "饜爜饜爞饜爟饜爠饜爡饜爤饜爦饜爧饜爩饜爫饜爭饜爮饜爯饜爲饜爳饜爴饜爺饜爼饜爾饜牀饜牁饜牂饜牃饜牄饜牅饜牆饜牉饜牊饜牋饜牎饜牏饜牐饜牑饜牓饜牔饜牕饜牗饜牘饜牚饜牜饜牞饜牠饜牣饜牤饜牥饜牨饜牪饜牫饜牬饜牭饜牱饜牳饜牸饜牽      ",
+      geez: "釄€釄堘垚釄樶垹釄ㄡ埌釅€釅犪壈釆€釆愥姞釆ㄡ媹釈愥嫎釈ㄡ嫲釋堘尃釋搬尭釐€釐堘崘   ",
+      coptic:
+        "獠测泊獠垛哺獠衡布獠锯硛獬佲硞獬冣硠獬嗏硤獬娾硨獬庘硱獬掆硵獬栤硺獬氣硿獬炩碃獬⑩长獬モ厂獬┾唱獬超獬巢獬光尘   ",
+      tibetan: "tibetan-script-placeholder",
       mongolian:
-        "᠀᠐᠑᠒ᠠᠡᠦᠧᠨᠩᠪᠭᠮᠯᠰᠱᠲᠳᠵᠻᠼᠽᠾᠿᡀᡁᡆᡍᡎᡏᡐᡑᡒᡓᡔᡕᡖᡗᡙᡜᡝᡞᡟᡠᡡᡭᡮᡯᡰᡱᡲᡳᡴᢀᢁᢂᢋᢏᢐᢑᢒᢓᢛᢜᢞᢟᢠᢡᢢᢤᢥᢦ",
+        "釥€釥愥爲釥掅牋釥♂牔釥п牗釥┽牚釥牣釥牥釥贬牪釥翅牭釥会牸釥结牼釥酷帷佱帷嶀帷忈帷戓帷撫帷曖帷椺帷溼帷炨帷犪　帷‘帷“帷贬〔帷翅〈幄€幄佱幄嬦幄愥幄掅幄涐幄炨幄犪ⅰ幄⑨ⅳ幄メⅵ",
     };
 
     const culture = cells.culture[cell];
 
     const variant = ra(variants);
-    const name = `${Names.getCulture(culture)} ${variant}`;
+    const name = `${context.naming.getCulture(culture)} ${variant}`;
     const script = scripts[
       ra(Object.keys(scripts)) as keyof typeof scripts
     ] as string;
@@ -1363,7 +1496,7 @@ class MarkersModule {
       .join("");
     const legend = `An ancient ${variant.toLowerCase()}. It has an inscription, but no one can translate it:
         <div style="font-size: 1.8em; line-break: anywhere;">${inscription}</div>`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listRuins({ cells }: PackedGraph) {
@@ -1396,7 +1529,7 @@ class MarkersModule {
     const ruinType = ra(types);
     const name = `Ruined ${ruinType}`;
     const legend = `Ruins of an ancient ${ruinType.toLowerCase()}. Untold riches may lie within.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listLibraries({ cells }: PackedGraph) {
@@ -1409,24 +1542,28 @@ class MarkersModule {
     );
   }
 
-  private addLibrary(id: string, cell: number) {
-    const { cells } = pack;
+  private addLibrary(
+    id: string,
+    cell: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { cells } = context.pack;
 
     const type = rw({ Library: 3, Archive: 1, Collection: 1 });
-    const name = `${Names.getCulture(cells.culture[cell])} ${type}`;
+    const name = `${context.naming.getCulture(cells.culture[cell])} ${type}`;
     const legend =
       "A vast collection of knowledge, including many rare and ancient tomes.";
 
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
-  private listCircuses({ cells }: PackedGraph) {
+  private listCircuses({ cells }: PackedGraph, context: EngineRuntimeContext) {
     return cells.i.filter(
       (i) =>
         !this.occupied[i] &&
         cells.culture[i] &&
         cells.h[i] >= 20 &&
-        Routes.isConnected(i),
+        context.routes.isConnected(i),
     );
   }
 
@@ -1445,7 +1582,7 @@ class MarkersModule {
     const adjective = ra(adjectives);
     const name = `Travelling ${adjective} Circus`;
     const legend = `Roll up, roll up, this ${adjective.toLowerCase()} circus is here for a limited time only.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listJousts({ cells, burgs }: PackedGraph) {
@@ -1457,8 +1594,12 @@ class MarkersModule {
     );
   }
 
-  private addJoust(id: string, cell: number) {
-    const { cells, burgs } = pack;
+  private addJoust(
+    id: string,
+    cell: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { cells, burgs } = context.pack;
     const types = ["Joust", "Competition", "Melee", "Tournament", "Contest"];
     const virtues = [
       "cunning",
@@ -1476,7 +1617,7 @@ class MarkersModule {
 
     const name = `${burgName} ${type}`;
     const legend = `Warriors from around the land gather for a ${type.toLowerCase()} of ${virtue} in ${burgName}, with fame, fortune and favour on offer to the victor.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listFairs({ cells, burgs }: PackedGraph) {
@@ -1489,8 +1630,12 @@ class MarkersModule {
     );
   }
 
-  private addFair(id: string, cell: number) {
-    const { cells, burgs } = pack;
+  private addFair(
+    id: string,
+    cell: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { cells, burgs } = context.pack;
     if (!cells.burg[cell]) return;
 
     const burgName = burgs[cells.burg[cell]].name;
@@ -1498,20 +1643,25 @@ class MarkersModule {
 
     const name = `${burgName} ${type}`;
     const legend = `A fair is being held in ${burgName}, with all manner of local and foreign goods and services on offer.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listCanoes({ cells }: PackedGraph) {
     return cells.i.filter((i) => !this.occupied[i] && cells.r[i]);
   }
 
-  private addCanoe(id: string, cell: number) {
-    const river = pack.rivers.find((r) => r.i === pack.cells.r[cell]);
+  private addCanoe(
+    id: string,
+    cell: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { cells, rivers } = context.pack;
+    const river = rivers.find((r) => r.i === cells.r[cell]);
 
     const name = `Minor Jetty`;
     const riverName = river ? `${river.name} ${river.type}` : "river";
     const legend = `A small location along the ${riverName} to launch boats from sits here, along with a weary looking owner, willing to sell passage along the river.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listMigrations({ cells }: PackedGraph) {
@@ -1578,7 +1728,7 @@ class MarkersModule {
 
     const name = `${animalChoice} migration`;
     const legend = `A huge group of ${animalChoice.toLowerCase()} are migrating, whether part of their annual routine, or something more extraordinary.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listDances({ cells, burgs }: PackedGraph) {
@@ -1590,8 +1740,12 @@ class MarkersModule {
     );
   }
 
-  private addDances(id: string, cell: number) {
-    const { cells, burgs } = pack;
+  private addDances(
+    id: string,
+    cell: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { cells, burgs } = context.pack;
     const burgName = burgs[cells.burg[cell]].name;
     const socialTypes = [
       "gala",
@@ -1622,7 +1776,7 @@ class MarkersModule {
     const legend = `A ${socialType} has been organised at ${burgName} as a chance to gather the ${ra(
       people,
     )} of the area together to be merry, make alliances and scheme around the crisis.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listMirage({ cells }: PackedGraph) {
@@ -1641,7 +1795,7 @@ class MarkersModule {
     const mirageAdjective = ra(adjectives);
     const name = `${mirageAdjective} mirage`;
     const legend = `This ${mirageAdjective.toLowerCase()} mirage has been luring travellers out of their way for eons.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listCaves({ cells }: PackedGraph) {
@@ -1650,8 +1804,12 @@ class MarkersModule {
     );
   }
 
-  private addCave(id: string, cell: number) {
-    const { cells } = pack;
+  private addCave(
+    id: string,
+    cell: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { cells } = context.pack;
 
     const formations = {
       Cave: 10,
@@ -1674,13 +1832,13 @@ class MarkersModule {
     };
 
     let formation = rw(formations);
-    const toponym = Names.getCulture(cells.culture[cell]);
+    const toponym = context.naming.getCulture(cells.culture[cell]);
     if (cells.biome[cell] === 11) {
       formation = `Glacial ${formation}`;
     }
     const name = `${toponym} ${formation}`;
     const legend = `The ${name}. Locals claim that it is ${rw(status)}.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listPortals({ burgs }: PackedGraph) {
@@ -1690,23 +1848,27 @@ class MarkersModule {
       .map((burg) => burg.cell);
   }
 
-  private addPortal(id: string, cell: number) {
-    const { cells, burgs } = pack;
+  private addPortal(
+    id: string,
+    cell: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { cells, burgs } = context.pack;
 
     if (!cells.burg[cell]) return;
     const burgName = burgs[cells.burg[cell]].name;
 
     const name = `${burgName} Portal`;
     const legend = `An element of the magic portal system connecting major city. The portals were installed centuries ago, but still work fine.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
-  private listRifts({ cells }: PackedGraph) {
+  private listRifts({ cells }: PackedGraph, context: EngineRuntimeContext) {
     return cells.i.filter(
       (i) =>
         !this.occupied[i] &&
         cells.pop[i] <= 3 &&
-        biomesData.habitability[cells.biome[i]],
+        context.biomesData.habitability[cells.biome[i]],
     );
   }
 
@@ -1732,7 +1894,7 @@ class MarkersModule {
     const riftType = ra(types);
     const name = `${riftType} Rift`;
     const legend = `A rumoured ${riftType.toLowerCase()} rift in this area is causing ${ra(descriptions)}.`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listDisturbedBurial({ cells }: PackedGraph) {
@@ -1745,7 +1907,7 @@ class MarkersModule {
     const name = "Disturbed Burial";
     const legend =
       "A burial site has been disturbed in this area, causing the dead to rise and attack the living.";
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listNecropolis({ cells }: PackedGraph) {
@@ -1754,10 +1916,14 @@ class MarkersModule {
     );
   }
 
-  private addNecropolis(id: string, cell: number) {
-    const { cells } = pack;
+  private addNecropolis(
+    id: string,
+    cell: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { cells } = context.pack;
 
-    const toponym = Names.getCulture(cells.culture[cell]);
+    const toponym = context.naming.getCulture(cells.culture[cell]);
     const type = rw({
       Necropolis: 5,
       Crypt: 2,
@@ -1782,7 +1948,7 @@ class MarkersModule {
       "A foreboding necropolis perched atop a jagged cliff, overlooking a desolate wasteland. Its towering walls harbor restless spirits, and the imposing gates bear the marks of countless battles and ancient curses.",
     ]);
 
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 
   private listEncounters({ cells }: PackedGraph) {
@@ -1795,8 +1961,10 @@ class MarkersModule {
     const name = "Random encounter";
     const encounterSeed = cell; // use just cell Id to not overwhelm the Vercel KV database
     const legend = `<div>You have encountered a character.</div><iframe src="https://deorum.vercel.app/encounter/${encounterSeed}" width="375" height="600" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>`;
-    notes.push({ id, name, legend });
+    this.addNote({ id, name, legend });
   }
 }
 
-window.Markers = new MarkersModule();
+if (typeof window !== "undefined") {
+  window.Markers = new MarkersModule();
+}

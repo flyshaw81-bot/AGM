@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="260" viewBox="0 0 1100 260" role="img" aria-labelledby="title desc">
+<title id="title">AGM Header Lockup ZH Dark</title>
+<desc id="desc">Header-friendly AGM lockup with bilingual brand name.</desc>
+<defs>
+  <linearGradient id="agm-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+    <stop offset="0%" stop-color="#2F80FF"/>
+    <stop offset="54%" stop-color="#4B63FF"/>
+    <stop offset="100%" stop-color="#7A35FF"/>
+  </linearGradient>
+  <linearGradient id="agm-gradient-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#2F80FF"/>
+    <stop offset="100%" stop-color="#7A35FF"/>
+  </linearGradient>
+  <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
+    <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000000" flood-opacity="0.18"/>
+  </filter>
+</defs>
+<g transform="translate(-210,-28) scale(0.82)">
+<g id="agm-wordmark">
+  <path id="agm-a" d="M259.802 235 L350.652 55 L380.552 55 L323.052 235 Z M355.252 55 L385.152 55 L476.002 235 L419.652 235 Z M323.052 188.2 L390.902 188.2 L409.302 218.8 L340.302 218.8 Z" fill="#FFFFFF"/>
+  <path id="agm-g" d="M616.872 235 C663.539 235 695.748 205.15 695.748 160.918 L695.748 137.285 L619.681 137.285 L619.681 168.184 L654.55 168.184 C654.175 186.199 640.28 198.258 618.145 198.258 C590.655 198.258 574.962 178.596 574.962 145.112 C574.962 111.517 590.505 91.742 617.658 91.742 C636.535 91.742 648.445 101.554 651.628 117.022 L694.437 117.022 C690.58 79.906 657.246 55 616.16 55 C568.745 55 532.602 88.109 532.602 145.112 C532.602 199.532 566.16 235 616.872 235 Z" fill="url(#agm-gradient)"/>
+  <path id="agm-m" d="M747.748 235 L790.39 235 L790.39 157.062 C790.39 145.232 789.54 123.621 789.076 102.938 C794.991 123.969 801.021 145.464 804.771 157.062 L831.099 235 L866.279 235 L892.104 157.062 C895.97 145 902.156 122.384 908.186 100.541 C907.723 121.92 906.756 144.768 906.756 157.062 L906.756 235 L949.398 235 L949.398 55 L884.991 55 L862.027 125.67 C858.663 137.152 853.212 156.946 848.766 173.995 C844.282 156.946 838.715 137.152 835.235 125.67 L812.04 55 L747.748 55 L747.748 235 Z" fill="#FFFFFF"/>
+</g>
+</g>
+<line x1="625" y1="58" x2="625" y2="202" stroke="#B7BECF" stroke-width="2" opacity="0.35"/>
+<text x="672" y="112" fill="#FFFFFF" font-family="Noto Sans CJK SC, Noto Sans SC, PingFang SC, Microsoft YaHei, system-ui, sans-serif" font-size="36" font-weight="600" letter-spacing="2">阿特拉斯生成矩阵</text>
+<text x="674" y="162" fill="#B7BECF" font-family="Inter Display, Inter, Arial, sans-serif" font-size="24" font-weight="500" letter-spacing="2">Atlas Generation Matrix</text>
+</svg>

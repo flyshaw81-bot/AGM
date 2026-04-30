@@ -193,15 +193,7 @@ function restoreDefaultCanvasSize() {
 
 // on map creation
 function applyGraphSize() {
-  graphWidth = +mapWidthInput.value;
-  graphHeight = +mapHeightInput.value;
-
-  landmass.select("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
-  oceanPattern.select("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
-  oceanLayers.select("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
-  fogging.selectAll("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
-  defs.select("mask#fog > rect").attr("width", graphWidth).attr("height", graphHeight);
-  defs.select("mask#water > rect").attr("width", graphWidth).attr("height", graphHeight);
+  return EngineGraphSession.applyGraphSize();
 }
 
 // on generate, on load, on resize, on canvas size change
@@ -584,65 +576,17 @@ function applyStoredOptions() {
 
 // randomize options if randomization is allowed (not locked or queryParam options='default')
 function randomizeOptions() {
-  const randomize = new URL(window.location.href).searchParams.get("options") === "default"; // ignore stored options
-
-  // 'Options' settings
-  if (randomize || !locked("points")) changeCellsDensity(4); // reset to default, no need to randomize
-  if (randomize || !locked("template")) randomizeHeightmapTemplate();
-  if (randomize || !locked("statesNumber")) statesNumber.value = gauss(18, 5, 2, 30);
-  if (randomize || !locked("provincesRatio")) provincesRatio.value = gauss(20, 10, 20, 100);
-  if (randomize || !locked("manors")) {
-    manorsInput.value = 1000;
-    manorsOutput.value = "auto";
-  }
-  if (randomize || !locked("religionsNumber")) religionsNumber.value = gauss(6, 3, 2, 10);
-  if (randomize || !locked("sizeVariety")) sizeVariety.value = gauss(4, 2, 0, 10, 1);
-  if (randomize || !locked("growthRate")) growthRate.value = rn(1 + Math.random(), 1);
-  if (randomize || !locked("cultures")) culturesInput.value = culturesOutput.value = gauss(12, 3, 5, 30);
-  if (randomize || !locked("culturesSet")) randomizeCultureSet();
-
-  // 'Configure World' settings
-  if (randomize || !locked("temperatureEquator")) options.temperatureEquator = gauss(25, 7, 20, 35, 0);
-  if (randomize || !locked("temperatureNorthPole")) options.temperatureNorthPole = gauss(-25, 7, -40, 10, 0);
-  if (randomize || !locked("temperatureSouthPole")) options.temperatureSouthPole = gauss(-15, 7, -40, 10, 0);
-  if (randomize || !locked("prec")) precInput.value = precOutput.value = gauss(100, 40, 5, 500);
-
-  // 'Units Editor' settings
-  const US = navigator.language === "en-US";
-  if (randomize || !locked("distanceScale")) distanceScale = distanceScaleInput.value = gauss(3, 1, 1, 5);
-  if (!stored("distanceUnit")) distanceUnitInput.value = US ? "mi" : "km";
-  if (!stored("heightUnit")) heightUnit.value = US ? "ft" : "m";
-  if (!stored("temperatureScale")) temperatureScale.value = US ? "°F" : "°C";
-
-  // World settings
-  generateEra();
+  return EngineOptionsSession.randomizeOptions();
 }
 
 // select heightmap template pseudo-randomly
 function randomizeHeightmapTemplate() {
-  const templates = {};
-  for (const key in heightmapTemplates) {
-    templates[key] = heightmapTemplates[key].probability || 0;
-  }
-  const template = rw(templates);
-  const name = heightmapTemplates[template].name;
-  applyOption(byId("templateInput"), template, name);
+  return EngineOptionsSession.randomizeHeightmapTemplate();
 }
 
 // select culture set pseudo-randomly
 function randomizeCultureSet() {
-  const sets = {
-    world: 10,
-    european: 10,
-    oriental: 2,
-    english: 5,
-    antique: 3,
-    highFantasy: 11,
-    darkFantasy: 3,
-    random: 1
-  };
-  culturesSet.value = rw(sets);
-  changeCultureSet();
+  return EngineOptionsSession.randomizeCultureSet();
 }
 
 function setRendering(value) {
@@ -662,14 +606,7 @@ function setRendering(value) {
 
 // generate current year and era name
 function generateEra() {
-  if (!stored("year")) yearInput.value = rand(100, 2000); // current year
-  if (!stored("era")) eraInput.value = Names.getBaseShort(P(0.7) ? 1 : rand(nameBases.length)) + " Era";
-  options.year = +yearInput.value;
-  options.era = eraInput.value;
-  options.eraShort = options.era
-    .split(" ")
-    .map(w => w[0].toUpperCase())
-    .join(""); // short name for era
+  return EngineOptionsSession.generateEra();
 }
 
 function regenerateEra() {

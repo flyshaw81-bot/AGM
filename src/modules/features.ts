@@ -1,16 +1,19 @@
 import Alea from "alea";
 import { polygonArea } from "d3";
 import {
-  clipPoly,
-  connectVertices,
   createTypedArray,
-  distanceSquared,
-  isLand,
-  isWater,
-  rn,
   TYPED_ARRAY_MAX_VALUES,
   unique,
-} from "../utils";
+} from "../utils/arrayUtils";
+import { clipPoly } from "../utils/commonUtils";
+import { distanceSquared } from "../utils/functionUtils";
+import { isLand, isWater } from "../utils/graphUtils";
+import { rn } from "../utils/numberUtils";
+import { connectVertices } from "../utils/pathUtils";
+import {
+  type EngineRuntimeContext,
+  getGlobalEngineRuntimeContext,
+} from "./engine-runtime-context";
 
 declare global {
   var Features: FeatureModule;
@@ -51,7 +54,7 @@ export interface GridFeature {
   type: FeatureType;
 }
 
-class FeatureModule {
+export class FeatureModule {
   private DEEPER_LAND = 3;
   private LANDLOCKED = 2;
   private LAND_COAST = 1;
@@ -97,11 +100,11 @@ class FeatureModule {
   /**
    * mark Grid features (ocean, lakes, islands) and calculate distance field
    */
-  markupGrid() {
-    TIME && console.time("markupGrid");
-    Math.random = Alea(seed); // get the same result on heightmap edit in Erase mode
+  markupGrid(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+    context.timing.shouldTime && console.time("markupGrid");
+    Math.random = Alea(context.seed); // get the same result on heightmap edit in Erase mode
 
-    const { h: heights, c: neighbors, b: borderCells, i } = grid.cells;
+    const { h: heights, c: neighbors, b: borderCells, i } = context.grid.cells;
     const cellsNumber = i.length;
     const distanceField = new Int8Array(cellsNumber); // gird.cells.t
     const featureIds = new Uint16Array(cellsNumber); // gird.cells.f
@@ -146,20 +149,25 @@ class FeatureModule {
       increment: -1,
       limit: -10,
     });
-    grid.cells.t = distanceField;
-    grid.cells.f = featureIds;
-    grid.features = [0, ...features];
+    context.grid.cells.t = distanceField;
+    context.grid.cells.f = featureIds;
+    context.grid.features = [0, ...features];
 
-    TIME && console.timeEnd("markupGrid");
+    context.timing.shouldTime && console.timeEnd("markupGrid");
   }
 
   /**
    * mark PackedGraph features (oceans, lakes, islands) and calculate distance field
    */
-  markupPack() {
+  markupPack(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+    const {
+      graphWidth: runtimeGraphWidth = graphWidth,
+      graphHeight: runtimeGraphHeight = graphHeight,
+    } = context.worldSettings;
+
     const defineHaven = (cellId: number) => {
       const waterCells = neighbors[cellId].filter((index: number) =>
-        isWater(index, pack),
+        isWater(index, context.pack),
       );
       const distances = waterCells.map((neibCellId: number) =>
         distanceSquared(cells.p[cellId], cells.p[neibCellId]),
@@ -234,8 +242,8 @@ class FeatureModule {
       const [startCell, featureVertices] = getCellsData(type, firstCell);
       const points = clipPoly(
         featureVertices.map((vertex: number) => vertices.p[vertex]),
-        graphWidth,
-        graphHeight,
+        runtimeGraphWidth,
+        runtimeGraphHeight,
       );
       const area = polygonArea(points); // feature perimiter area
       const absArea = Math.abs(rn(area));
@@ -258,10 +266,15 @@ class FeatureModule {
           feature.vertices = (feature.vertices as number[]).reverse();
         feature.shoreline = unique(
           (feature.vertices as number[]).flatMap((vertexIndex) =>
-            vertices.c[vertexIndex].filter((index) => isLand(index, pack)),
+            vertices.c[vertexIndex].filter((index) =>
+              isLand(index, context.pack),
+            ),
           ),
         );
-        feature.height = Lakes.getHeight(feature as PackedGraphFeature);
+        feature.height = Lakes.getHeight(
+          feature as PackedGraphFeature,
+          context,
+        );
       }
 
       return {
@@ -269,9 +282,9 @@ class FeatureModule {
       } as PackedGraphFeature;
     };
 
-    TIME && console.time("markupPack");
+    context.timing.shouldTime && console.time("markupPack");
 
-    const { cells, vertices } = pack;
+    const { cells, vertices } = context.pack;
     const { c: neighbors, b: borderCells, i } = cells;
     const packCellsNumber = i.length;
     if (!packCellsNumber) return; // no cells -> there is nothing to do
@@ -290,7 +303,7 @@ class FeatureModule {
       const firstCell = queue[0];
       featureIds[firstCell] = featureId;
 
-      const land = isLand(firstCell, pack);
+      const land = isLand(firstCell, context.pack);
       let border = Boolean(borderCells[firstCell]); // true if feature touches map border
       let totalCells = 1; // count cells in a feature
 
@@ -299,7 +312,7 @@ class FeatureModule {
         if (borderCells[cellId]) border = true;
 
         for (const neighborId of neighbors[cellId]) {
-          const isNeibLand = isLand(neighborId, pack);
+          const isNeibLand = isLand(neighborId, context.pack);
 
           if (land && !isNeibLand) {
             distanceField[cellId] = this.LAND_COAST;
@@ -346,26 +359,29 @@ class FeatureModule {
       limit: -10,
     }); // markup pack water
 
-    pack.cells.t = distanceField;
-    pack.cells.f = featureIds;
-    pack.cells.haven = haven;
-    pack.cells.harbor = harbor;
-    pack.features = [0 as unknown as PackedGraphFeature, ...features];
-    TIME && console.timeEnd("markupPack");
+    context.pack.cells.t = distanceField;
+    context.pack.cells.f = featureIds;
+    context.pack.cells.haven = haven;
+    context.pack.cells.harbor = harbor;
+    context.pack.features = [0 as unknown as PackedGraphFeature, ...features];
+    context.timing.shouldTime && console.timeEnd("markupPack");
   }
 
   /**
    * define feature groups (ocean, sea, gulf, continent, island, isle, freshwater lake, salt lake, etc.)
    */
-  defineGroups() {
-    const gridCellsNumber = grid.cells.i.length;
+  defineGroups(
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const gridCellsNumber = context.grid.cells.i.length;
     const OCEAN_MIN_SIZE = gridCellsNumber / 25;
     const SEA_MIN_SIZE = gridCellsNumber / 1000;
     const CONTINENT_MIN_SIZE = gridCellsNumber / 10;
     const ISLAND_MIN_SIZE = gridCellsNumber / 1000;
 
     const defineIslandGroup = (feature: PackedGraphFeature) => {
-      const prevFeature = pack.features[pack.cells.f[feature.firstCell - 1]];
+      const prevFeature =
+        context.pack.features[context.pack.cells.f[feature.firstCell - 1]];
       if (prevFeature && prevFeature.type === "lake") return "lake_island";
       if (feature.cells > CONTINENT_MIN_SIZE) return "continent";
       if (feature.cells > ISLAND_MIN_SIZE) return "island";
@@ -405,13 +421,16 @@ class FeatureModule {
       throw new Error(`Markup: unknown feature type ${feature.type}`);
     };
 
-    for (const feature of pack.features) {
+    for (const feature of context.pack.features) {
       if (!feature || feature.type === "ocean") continue;
 
-      if (feature.type === "lake") feature.height = Lakes.getHeight(feature);
+      if (feature.type === "lake")
+        feature.height = Lakes.getHeight(feature, context);
       feature.group = defineGroup(feature);
     }
   }
 }
 
-window.Features = new FeatureModule();
+if (typeof window !== "undefined") {
+  window.Features = new FeatureModule();
+}

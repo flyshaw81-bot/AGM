@@ -1,0 +1,27 @@
+{
+  "name": "com.agm.importers.unity",
+  "version": "0.1.0-preview.1",
+  "displayName": "AGM Unity Importers",
+  "description": "Preview Unity package for inspecting and importing AGM Engine Package data without bundling production plugins or assets into exported Engine Package ZIP files.",
+  "unity": "2022.3",
+  "documentationUrl": "https://docs.unity3d.com/2022.3/Documentation/Manual/upm-ui-local.html",
+  "keywords": [
+    "agm",
+    "engine-package",
+    "unity-importer",
+    "runtime-importer",
+    "terrain",
+    "world-generation"
+  ],
+  "author": {
+    "name": "AGM",
+    "url": "https://unity.com"
+  },
+  "samples": [
+    {
+      "displayName": "Importer Fixture",
+      "description": "Minimal fixture workspace for validating AGM Engine Package importer contracts.",
+      "path": "Samples~/ImporterFixture"
+    }
+  ]
+}

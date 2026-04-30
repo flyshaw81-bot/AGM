@@ -1,5 +1,11 @@
 import { max, mean } from "d3";
-import { gauss, getAdjective, P, ra, rand, rw } from "../utils";
+import { getAdjective } from "../utils/languageUtils";
+import { PriorityQueue } from "../utils/priorityQueue";
+import { gauss, P, ra, rand, rw } from "../utils/probabilityUtils";
+import {
+  type EngineRuntimeContext,
+  getGlobalEngineRuntimeContext,
+} from "./engine-runtime-context";
 
 declare global {
   var Zones: ZonesModule;
@@ -13,49 +19,61 @@ export interface Zone {
   color: string;
 }
 
-type ZoneGenerator = (usedCells: Uint8Array) => void;
+type ZoneGenerator = (
+  usedCells: Uint8Array,
+  context: EngineRuntimeContext,
+) => void;
 
 interface ZoneConfig {
   quantity: number;
   generate: ZoneGenerator;
 }
 
-class ZonesModule {
+export class ZonesModule {
   private config: Record<string, ZoneConfig>;
 
   constructor() {
     this.config = {
-      invasion: { quantity: 2, generate: (u) => this.addInvasion(u) },
-      rebels: { quantity: 1.5, generate: (u) => this.addRebels(u) },
-      proselytism: { quantity: 1.6, generate: (u) => this.addProselytism(u) },
-      crusade: { quantity: 1.6, generate: (u) => this.addCrusade(u) },
-      disease: { quantity: 1.4, generate: (u) => this.addDisease(u) },
-      disaster: { quantity: 1, generate: (u) => this.addDisaster(u) },
-      eruption: { quantity: 1, generate: (u) => this.addEruption(u) },
-      avalanche: { quantity: 0.8, generate: (u) => this.addAvalanche(u) },
-      fault: { quantity: 1, generate: (u) => this.addFault(u) },
-      flood: { quantity: 1, generate: (u) => this.addFlood(u) },
-      tsunami: { quantity: 1, generate: (u) => this.addTsunami(u) },
+      invasion: { quantity: 2, generate: (u, c) => this.addInvasion(u, c) },
+      rebels: { quantity: 1.5, generate: (u, c) => this.addRebels(u, c) },
+      proselytism: {
+        quantity: 1.6,
+        generate: (u, c) => this.addProselytism(u, c),
+      },
+      crusade: { quantity: 1.6, generate: (u, c) => this.addCrusade(u, c) },
+      disease: { quantity: 1.4, generate: (u, c) => this.addDisease(u, c) },
+      disaster: { quantity: 1, generate: (u, c) => this.addDisaster(u, c) },
+      eruption: { quantity: 1, generate: (u, c) => this.addEruption(u, c) },
+      avalanche: { quantity: 0.8, generate: (u, c) => this.addAvalanche(u, c) },
+      fault: { quantity: 1, generate: (u, c) => this.addFault(u, c) },
+      flood: { quantity: 1, generate: (u, c) => this.addFlood(u, c) },
+      tsunami: { quantity: 1, generate: (u, c) => this.addTsunami(u, c) },
     };
   }
 
-  generate(globalModifier = 1) {
-    TIME && console.time("generateZones");
+  generate(input: number | EngineRuntimeContext = 1, maybeGlobalModifier = 1) {
+    const context =
+      typeof input === "number" ? getGlobalEngineRuntimeContext() : input;
+    const globalModifier =
+      typeof input === "number" ? input : maybeGlobalModifier;
 
+    context.timing.shouldTime && console.time("generateZones");
+
+    const { pack } = context;
     const usedCells = new Uint8Array(pack.cells.i.length);
     pack.zones = [];
 
     Object.values(this.config).forEach((type) => {
       const expectedNumber = type.quantity * globalModifier;
       let number = gauss(expectedNumber, expectedNumber / 2, 0, 100);
-      while (number--) type.generate(usedCells);
+      while (number--) type.generate(usedCells, context);
     });
 
-    TIME && console.timeEnd("generateZones");
+    context.timing.shouldTime && console.timeEnd("generateZones");
   }
 
-  private addInvasion(usedCells: Uint8Array) {
-    const { cells, states } = pack;
+  private addInvasion(usedCells: Uint8Array, context: EngineRuntimeContext) {
+    const { cells, states } = context.pack;
 
     const ongoingConflicts = states
       .filter((s) => s.i && !s.removed && s.campaigns)
@@ -108,8 +126,8 @@ class ZonesModule {
     });
     const name = `${getAdjective(states[attacker].name)} ${subtype}`;
 
-    pack.zones.push({
-      i: pack.zones.length,
+    context.pack.zones.push({
+      i: context.pack.zones.length,
       name,
       type: "Invasion",
       cells: invasionCells,
@@ -117,8 +135,8 @@ class ZonesModule {
     });
   }
 
-  private addRebels(usedCells: Uint8Array) {
-    const { cells, states } = pack;
+  private addRebels(usedCells: Uint8Array, context: EngineRuntimeContext) {
+    const { cells, states } = context.pack;
 
     const state = ra(
       states.filter((s) => s.i && !s.removed && s.neighbors?.some(Boolean)),
@@ -174,8 +192,8 @@ class ZonesModule {
     });
 
     const name = `${getAdjective(states[neibStateId].name)} ${rebels}`;
-    pack.zones.push({
-      i: pack.zones.length,
+    context.pack.zones.push({
+      i: context.pack.zones.length,
       name,
       type: "Rebels",
       cells: cellsArray,
@@ -183,8 +201,8 @@ class ZonesModule {
     });
   }
 
-  private addProselytism(usedCells: Uint8Array) {
-    const { cells, religions } = pack;
+  private addProselytism(usedCells: Uint8Array, context: EngineRuntimeContext) {
+    const { cells, religions } = context.pack;
 
     const organizedReligions = religions.filter(
       (r) => r.i && !r.removed && r.type === "Organized",
@@ -222,8 +240,8 @@ class ZonesModule {
     }
 
     const name = `${getAdjective(religion.name.split(" ")[0])} Proselytism`;
-    pack.zones.push({
-      i: pack.zones.length,
+    context.pack.zones.push({
+      i: context.pack.zones.length,
       name,
       type: "Proselytism",
       cells: proselytismCells,
@@ -231,8 +249,8 @@ class ZonesModule {
     });
   }
 
-  private addCrusade(usedCells: Uint8Array) {
-    const { cells, religions } = pack;
+  private addCrusade(usedCells: Uint8Array, context: EngineRuntimeContext) {
+    const { cells, religions } = context.pack;
 
     const heresies = religions.filter((r) => !r.removed && r.type === "Heresy");
     if (!heresies.length) return;
@@ -247,8 +265,8 @@ class ZonesModule {
     }
 
     const name = `${getAdjective(heresy.name.split(" ")[0])} Crusade`;
-    pack.zones.push({
-      i: pack.zones.length,
+    context.pack.zones.push({
+      i: context.pack.zones.length,
       name,
       type: "Crusade",
       cells: Array.from(crusadeCells),
@@ -256,8 +274,8 @@ class ZonesModule {
     });
   }
 
-  private addDisease(usedCells: Uint8Array) {
-    const { cells, burgs } = pack;
+  private addDisease(usedCells: Uint8Array, context: EngineRuntimeContext) {
+    const { cells, burgs } = context.pack;
 
     const burg = ra(
       burgs.filter((b) => !usedCells[b.cell] && b.i && !b.removed),
@@ -268,7 +286,7 @@ class ZonesModule {
     const cost: number[] = [];
     const maxCells = rand(20, 40);
 
-    const queue = new FlatQueue();
+    const queue = new PriorityQueue<{ e: number; p: number }>();
     queue.push({ e: burg.cell, p: 0 }, 0);
 
     while (queue.length) {
@@ -277,7 +295,7 @@ class ZonesModule {
       usedCells[next.e] = 1;
 
       cells.c[next.e].forEach((nextCellId) => {
-        const c = Routes.getRoute(next.e, nextCellId) ? 5 : 100;
+        const c = context.routes.getRoute(next.e, nextCellId) ? 5 : 100;
         const p = next.p + c;
         if (p > maxCells) return;
 
@@ -317,8 +335,8 @@ class ZonesModule {
     });
     const name = `${prefix} ${disease}`;
 
-    pack.zones.push({
-      i: pack.zones.length,
+    context.pack.zones.push({
+      i: context.pack.zones.length,
       name,
       type: "Disease",
       cells: cellsArray,
@@ -399,8 +417,8 @@ class ZonesModule {
     ]);
   }
 
-  private addDisaster(usedCells: Uint8Array) {
-    const { cells, burgs } = pack;
+  private addDisaster(usedCells: Uint8Array, context: EngineRuntimeContext) {
+    const { cells, burgs } = context.pack;
 
     const burg = ra(
       burgs.filter((b) => !usedCells[b.cell] && b.i && !b.removed),
@@ -412,7 +430,7 @@ class ZonesModule {
     const cost: number[] = [];
     const maxCells = rand(5, 25);
 
-    const queue = new FlatQueue();
+    const queue = new PriorityQueue<{ e: number; p: number }>();
     queue.push({ e: burg.cell, p: 0 }, 0);
 
     while (queue.length) {
@@ -443,8 +461,8 @@ class ZonesModule {
       Blight: 1,
     });
     const name = `${getAdjective(burg.name!)} ${type}`;
-    pack.zones.push({
-      i: pack.zones.length,
+    context.pack.zones.push({
+      i: context.pack.zones.length,
       name,
       type: "Disaster",
       cells: cellsArray,
@@ -452,8 +470,8 @@ class ZonesModule {
     });
   }
 
-  private addEruption(usedCells: Uint8Array) {
-    const { cells, markers } = pack;
+  private addEruption(usedCells: Uint8Array, context: EngineRuntimeContext) {
+    const { cells, markers } = context.pack;
 
     const volcanoe = markers.find(
       (m) => m.type === "volcanoes" && !usedCells[m.cell],
@@ -461,7 +479,7 @@ class ZonesModule {
     if (!volcanoe) return;
     usedCells[volcanoe.cell] = 1;
 
-    const note = notes.find((n) => n.id === `marker${volcanoe.i}`);
+    const note = context.notes.find((n) => n.id === `marker${volcanoe.i}`);
     if (note)
       note.legend = note.legend.replace("Active volcano", "Erupting volcano");
     const name = note
@@ -484,8 +502,8 @@ class ZonesModule {
       });
     }
 
-    pack.zones.push({
-      i: pack.zones.length,
+    context.pack.zones.push({
+      i: context.pack.zones.length,
       name,
       type: "Eruption",
       cells: cellsArray,
@@ -493,11 +511,11 @@ class ZonesModule {
     });
   }
 
-  private addAvalanche(usedCells: Uint8Array) {
-    const { cells } = pack;
+  private addAvalanche(usedCells: Uint8Array, context: EngineRuntimeContext) {
+    const { cells } = context.pack;
 
     const routeCells = cells.i.filter(
-      (i) => !usedCells[i] && Routes.isConnected(i) && cells.h[i] >= 70,
+      (i) => !usedCells[i] && context.routes.isConnected(i) && cells.h[i] >= 70,
     );
     if (!routeCells.length) return;
 
@@ -520,9 +538,9 @@ class ZonesModule {
       });
     }
 
-    const name = `${getAdjective(Names.getCultureShort(cells.culture[startCell]))} Avalanche`;
-    pack.zones.push({
-      i: pack.zones.length,
+    const name = `${getAdjective(context.naming.getCultureShort(cells.culture[startCell]))} Avalanche`;
+    context.pack.zones.push({
+      i: context.pack.zones.length,
       name,
       type: "Avalanche",
       cells: cellsArray,
@@ -530,8 +548,8 @@ class ZonesModule {
     });
   }
 
-  private addFault(usedCells: Uint8Array) {
-    const cells = pack.cells;
+  private addFault(usedCells: Uint8Array, context: EngineRuntimeContext) {
+    const cells = context.pack.cells;
 
     const elevatedCells = cells.i.filter(
       (i) => !usedCells[i] && cells.h[i] > 50 && cells.h[i] < 70,
@@ -557,9 +575,9 @@ class ZonesModule {
       });
     }
 
-    const name = `${getAdjective(Names.getCultureShort(cells.culture[startCell]))} Fault`;
-    pack.zones.push({
-      i: pack.zones.length,
+    const name = `${getAdjective(context.naming.getCultureShort(cells.culture[startCell]))} Fault`;
+    context.pack.zones.push({
+      i: context.pack.zones.length,
       name,
       type: "Fault",
       cells: cellsArray,
@@ -567,8 +585,8 @@ class ZonesModule {
     });
   }
 
-  private addFlood(usedCells: Uint8Array) {
-    const cells = pack.cells;
+  private addFlood(usedCells: Uint8Array, context: EngineRuntimeContext) {
+    const { burgs, cells } = context.pack;
 
     const fl = cells.fl.filter(Boolean);
     const meanFlux = mean(fl) ?? 0;
@@ -612,9 +630,9 @@ class ZonesModule {
       });
     }
 
-    const name = `${getAdjective(pack.burgs[cells.burg[startCell]].name!)} Flood`;
-    pack.zones.push({
-      i: pack.zones.length,
+    const name = `${getAdjective(burgs[cells.burg[startCell]].name!)} Flood`;
+    context.pack.zones.push({
+      i: context.pack.zones.length,
       name,
       type: "Flood",
       cells: cellsArray,
@@ -622,8 +640,8 @@ class ZonesModule {
     });
   }
 
-  private addTsunami(usedCells: Uint8Array) {
-    const { cells, features } = pack;
+  private addTsunami(usedCells: Uint8Array, context: EngineRuntimeContext) {
+    const { cells, features } = context.pack;
 
     const coastalCells = cells.i.filter(
       (i) =>
@@ -648,15 +666,15 @@ class ZonesModule {
       cells.c[cellId].forEach((neibCellId) => {
         if (usedCells[neibCellId]) return;
         if (cells.t[neibCellId] > 2) return;
-        if (pack.features[cells.f[neibCellId]].type === "lake") return;
+        if (features[cells.f[neibCellId]].type === "lake") return;
         usedCells[neibCellId] = 1;
         queue.push(neibCellId);
       });
     }
 
-    const name = `${getAdjective(Names.getCultureShort(cells.culture[startCell]))} Tsunami`;
-    pack.zones.push({
-      i: pack.zones.length,
+    const name = `${getAdjective(context.naming.getCultureShort(cells.culture[startCell]))} Tsunami`;
+    context.pack.zones.push({
+      i: context.pack.zones.length,
       name,
       type: "Tsunami",
       cells: cellsArray,
@@ -665,4 +683,6 @@ class ZonesModule {
   }
 }
 
-window.Zones = new ZonesModule();
+if (typeof window !== "undefined") {
+  window.Zones = new ZonesModule();
+}

@@ -1,4 +1,4 @@
-import type {EditorAction} from "../bridge/legacyActions";
+import type { EditorAction } from "../bridge/engineActionTypes";
 
 export type PresetCategory = "desktop" | "mobile" | "custom";
 export type Orientation = "landscape" | "portrait";
@@ -13,9 +13,23 @@ export interface CanvasPreset {
   height: number;
 }
 
-export type GameWorldProfile = "rpg" | "strategy" | "4x" | "tabletop" | "open-world" | "city-kingdom-continent";
+export type GameWorldProfile =
+  | "rpg"
+  | "strategy"
+  | "4x"
+  | "tabletop"
+  | "open-world"
+  | "city-kingdom-continent";
 
-export type GenerationProfileOverrideKey = "spawnFairnessWeight" | "settlementDensityTarget" | "routeConnectivityScore" | "biomeFrictionWeight" | "resourceCoverageTarget";
+export type GenerationProfileOverrideKey =
+  | "spawnFairnessWeight"
+  | "settlementDensityTarget"
+  | "routeConnectivityScore"
+  | "biomeFrictionWeight"
+  | "resourceCoverageTarget";
+
+export type StudioLanguage = "zh-CN" | "en";
+export type StudioTheme = "daylight" | "night";
 
 export interface GenerationProfileOverrideState {
   profile: GameWorldProfile;
@@ -30,7 +44,15 @@ export interface GenerationProfileImpactChange {
 }
 
 export interface GenerationProfileImpactResultMetric {
-  key: "spawnCandidates" | "averageSpawnScore" | "states" | "burgs" | "provinces" | "routes" | "routePointCount" | "resourceTaggedBiomes";
+  key:
+    | "spawnCandidates"
+    | "averageSpawnScore"
+    | "states"
+    | "burgs"
+    | "provinces"
+    | "routes"
+    | "routePointCount"
+    | "resourceTaggedBiomes";
   before: number;
   after: number;
   delta: number;
@@ -50,9 +72,81 @@ export interface DocumentState {
   seed: string;
   stylePreset: string;
   dirty: boolean;
-  source: "legacy" | "agm";
+  source: "core" | "agm";
   gameProfile: GameWorldProfile;
   designIntent: string;
+}
+
+export type ProjectStatus = "draft" | "dirty" | "validated" | "export-ready";
+
+export interface RecentProjectEntry {
+  id: string;
+  name: string;
+  gameProfile: GameWorldProfile;
+  designIntent: string;
+  width: number;
+  height: number;
+  seed: string;
+  source: DocumentState["source"];
+  status: ProjectStatus;
+  updatedAt: number;
+  hasLocalSnapshot: boolean;
+  exportReady: boolean;
+}
+
+export interface ProjectCenterState {
+  recentProjects: RecentProjectEntry[];
+  activeProjectId: string;
+  lastSavedAt: number | null;
+}
+
+export interface ShellState {
+  navigationCollapsed: boolean;
+}
+
+export type CanvasToolMode =
+  | "select"
+  | "pan"
+  | "brush"
+  | "water"
+  | "terrain"
+  | "grid"
+  | "measure";
+
+export interface CanvasSelectionState {
+  targetType: "state" | "burg";
+  targetId: number;
+  label: string;
+  x: number;
+  y: number;
+}
+
+export interface CanvasPaintPreviewState {
+  tool: Extract<CanvasToolMode, "brush" | "water" | "terrain">;
+  cellId: number;
+  label: string;
+  x: number;
+  y: number;
+  height: number | null;
+  biomeId: number | null;
+  stateId: number | null;
+}
+
+export interface CanvasEditHistoryEntry {
+  id: number;
+  tool: CanvasPaintPreviewState["tool"] | "biome-slider";
+  cellId: number;
+  beforeHeight: number | null;
+  afterHeight: number | null;
+  beforeBiomeId: number | null;
+  afterBiomeId: number | null;
+  label: string;
+  undone: boolean;
+  batch?: Array<{
+    cellId: number;
+    beforeBiomeId: number;
+    afterBiomeId: number;
+  }>;
 }
 
 export interface ViewportState {
@@ -66,9 +160,21 @@ export interface ViewportState {
   panY: number;
   safeAreaEnabled: boolean;
   guidesEnabled: boolean;
+  canvasTool: CanvasToolMode;
+  selectedCanvasEntity: CanvasSelectionState | null;
+  paintPreview: CanvasPaintPreviewState | null;
+  canvasEditHistory: CanvasEditHistoryEntry[];
 }
 
-export type StudioSection = "project" | "canvas" | "style" | "layers" | "export" | "data" | "editors";
+export type StudioSection =
+  | "project"
+  | "canvas"
+  | "style"
+  | "layers"
+  | "export"
+  | "data"
+  | "editors"
+  | "repair";
 
 export interface ExportState {
   format: "svg" | "png" | "jpeg";
@@ -81,7 +187,15 @@ export interface EditorWorkflowState {
 }
 
 export interface BalanceFocusState {
-  targetType: "state" | "province" | "burg" | "biome";
+  targetType:
+    | "state"
+    | "province"
+    | "burg"
+    | "biome"
+    | "route"
+    | "culture"
+    | "religion"
+    | "zone";
   targetId: number;
   sourceLabel: string;
   action?: "focus" | "fix" | "adjust";
@@ -91,7 +205,7 @@ export interface BalanceFocusState {
   height?: number;
 }
 
-export interface AutoFixLegacyBiomeWritebackEntry {
+export interface AutoFixEngineBiomeWritebackEntry {
   biomeId: number;
   previousHabitability: number | null;
   nextHabitability: number;
@@ -101,7 +215,7 @@ export interface AutoFixLegacyBiomeWritebackEntry {
   nextAgmResourceTag: string;
 }
 
-export interface AutoFixLegacyStateWritebackEntry {
+export interface AutoFixEngineStateWritebackEntry {
   stateId: number;
   previousAgmFairStart: boolean | null;
   nextAgmFairStart: boolean;
@@ -111,7 +225,7 @@ export interface AutoFixLegacyStateWritebackEntry {
   nextAgmPriority: string;
 }
 
-export interface AutoFixLegacyProvinceWritebackEntry {
+export interface AutoFixEngineProvinceWritebackEntry {
   provinceId: number;
   previousAgmConnectorTarget: number | null;
   nextAgmConnectorTarget: number;
@@ -119,19 +233,19 @@ export interface AutoFixLegacyProvinceWritebackEntry {
   nextAgmConnectorType: string;
 }
 
-export interface AutoFixLegacyWritebackEntry {
+export interface AutoFixEngineWritebackEntry {
   createdBurgIds: number[];
   createdRouteIds: number[];
-  updatedBiomes: AutoFixLegacyBiomeWritebackEntry[];
-  updatedStates: AutoFixLegacyStateWritebackEntry[];
-  updatedProvinces: AutoFixLegacyProvinceWritebackEntry[];
+  updatedBiomes: AutoFixEngineBiomeWritebackEntry[];
+  updatedStates: AutoFixEngineStateWritebackEntry[];
+  updatedProvinces: AutoFixEngineProvinceWritebackEntry[];
 }
 
 export interface AutoFixPreviewHistoryEntry {
   draftId: string;
   action: "apply" | "discard";
   changeCount: number;
-  legacyWriteback?: AutoFixLegacyWritebackEntry;
+  engineWriteback?: AutoFixEngineWritebackEntry;
   rulesPackImportVersion?: number;
 }
 
@@ -142,12 +256,91 @@ export interface AutoFixPreviewState {
   redoStack: AutoFixPreviewHistoryEntry[];
 }
 
+export type DirectStateSortMode = "name" | "population" | "area" | "id";
+export type DirectStateFilterMode = "all" | "populated" | "neighbors";
+export type DirectBurgFilterMode = "all" | "selected-state" | "populated";
+export type DirectProvinceFilterMode = "all" | "selected-state" | "has-burg";
+export type DirectRouteFilterMode = "all" | "has-feature" | "has-points";
+export type DirectBiomeFilterMode = "all" | "resource-tagged" | "habitable";
+export type DirectCultureFilterMode = "all" | "populated" | "has-center";
+export type DirectReligionFilterMode = "all" | "populated" | "has-center";
+export type DirectZoneFilterMode = "all" | "populated" | "hidden";
+export type DirectDiplomacyFilterMode = "all" | "conflict" | "positive";
+
+export interface DirectRelationshipQueueUndoChangeState {
+  entity: "state" | "burg" | "province";
+  id: number;
+  field: string;
+  beforeValue: string;
+  afterValue: string;
+  payload: Record<string, string>;
+}
+
+export interface DirectRelationshipQueueHistoryState {
+  id: number;
+  count: number;
+  summary: string;
+  target: string;
+  resultText: string;
+  undoChanges: DirectRelationshipQueueUndoChangeState[];
+  undone: boolean;
+  undoBlockedReason: string | null;
+}
+
+export interface DirectEditorState {
+  selectedStateId: number | null;
+  stateSearchQuery: string;
+  stateSortMode: DirectStateSortMode;
+  stateFilterMode: DirectStateFilterMode;
+  lastAppliedStateId: number | null;
+  selectedBurgId: number | null;
+  burgSearchQuery: string;
+  burgFilterMode: DirectBurgFilterMode;
+  lastAppliedBurgId: number | null;
+  selectedProvinceId: number | null;
+  provinceSearchQuery: string;
+  provinceFilterMode: DirectProvinceFilterMode;
+  lastAppliedProvinceId: number | null;
+  selectedRouteId: number | null;
+  routeSearchQuery: string;
+  routeFilterMode: DirectRouteFilterMode;
+  lastAppliedRouteId: number | null;
+  selectedBiomeId: number | null;
+  biomeSearchQuery: string;
+  biomeFilterMode: DirectBiomeFilterMode;
+  lastAppliedBiomeId: number | null;
+  selectedCultureId: number | null;
+  cultureSearchQuery: string;
+  cultureFilterMode: DirectCultureFilterMode;
+  lastAppliedCultureId: number | null;
+  selectedReligionId: number | null;
+  religionSearchQuery: string;
+  religionFilterMode: DirectReligionFilterMode;
+  lastAppliedReligionId: number | null;
+  selectedZoneId: number | null;
+  zoneSearchQuery: string;
+  zoneFilterMode: DirectZoneFilterMode;
+  lastAppliedZoneId: number | null;
+  selectedDiplomacySubjectId: number | null;
+  selectedDiplomacyObjectId: number | null;
+  diplomacySearchQuery: string;
+  diplomacyFilterMode: DirectDiplomacyFilterMode;
+  lastAppliedDiplomacyPair: string | null;
+  relationshipQueueHistory: DirectRelationshipQueueHistoryState | null;
+  relationshipQueueHistoryLog: DirectRelationshipQueueHistoryState[];
+}
+
 export interface StudioState {
+  language: StudioLanguage;
+  theme: StudioTheme;
+  shell: ShellState;
   section: StudioSection;
   document: DocumentState;
+  projectCenter: ProjectCenterState;
   viewport: ViewportState;
   export: ExportState;
   editor: EditorWorkflowState;
+  directEditor: DirectEditorState;
   balanceFocus: BalanceFocusState | null;
   autoFixPreview: AutoFixPreviewState;
   generationProfileOverrides: GenerationProfileOverrideState;

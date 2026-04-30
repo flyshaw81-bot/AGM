@@ -1,14 +1,13 @@
 import { quadtree, sum } from "d3";
+import { findAllInQuadtree } from "../utils/graphUtils";
+import { nth } from "../utils/languageUtils";
+import { minmax, rn } from "../utils/numberUtils";
+import { gauss, ra, rand } from "../utils/probabilityUtils";
+import { si } from "../utils/unitUtils";
 import {
-  findAllInQuadtree,
-  gauss,
-  minmax,
-  nth,
-  ra,
-  rand,
-  rn,
-  si,
-} from "../utils";
+  type EngineRuntimeContext,
+  getGlobalEngineRuntimeContext,
+} from "./engine-runtime-context";
 import type { State } from "./states-generator";
 
 declare global {
@@ -48,13 +47,15 @@ interface Platoon {
   children?: Platoon[]; // merged platoons
 }
 
-class MilitaryModule {
-  generate() {
-    TIME && console.time("generateMilitary");
+export class MilitaryModule {
+  generate(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+    context.timing.shouldTime && console.time("generateMilitary");
+    const { options, pack, populationSettings } = context;
     const { cells, states } = pack;
     const { p } = cells;
     const valid = states.filter((s) => s.i && !s.removed); // valid states
     if (!options.military) options.military = this.getDefaultOptions();
+    const { populationRate, urbanization } = populationSettings;
 
     const expn = sum(valid.map((s) => s.expansionism)); // total expansion
     const area = sum(valid.map((s) => s.area)); // total area
@@ -221,9 +222,7 @@ class MilitaryModule {
             ? 0.5
             : 0.1; // peacefulness
       const neighborsRateRaw = s
-        .neighbors!.map((n) =>
-          n ? pack.states[n].diplomacy![s.i] : "Suspicion",
-        )
+        .neighbors!.map((n) => (n ? states[n].diplomacy![s.i] : "Suspicion"))
         .reduce((s, r) => s + rate[r as keyof typeof rate], 0.5);
       const neighborsRate = minmax(neighborsRateRaw, 0.3, 3); // neighbors rate
       s.alert = minmax(
@@ -430,7 +429,7 @@ class MilitaryModule {
       nodes.forEach((node) => {
         tree.remove(node);
         const overlap = tree.find(node.x, node.y, 20);
-        if (overlap && overlap.t && mergeable(node, overlap)) {
+        if (overlap?.t && mergeable(node, overlap)) {
           merge(node, overlap);
           return;
         }
@@ -475,18 +474,17 @@ class MilitaryModule {
         r.name = this.getName(
           r as MilitaryRegiment,
           regiments as MilitaryRegiment[],
+          context,
         );
-        r.icon = this.getEmblem(r as MilitaryRegiment);
-        this.generateNote(r as MilitaryRegiment, s);
+        r.icon = this.getEmblem(r as MilitaryRegiment, context);
+        this.generateNote(r as MilitaryRegiment, s, context);
       });
 
       return regiments as MilitaryRegiment[];
     };
 
     // remove all existing regiment notes before regenerating
-    for (let i = notes.length - 1; i >= 0; i--) {
-      if (notes[i].id.startsWith("regiment")) notes.splice(i, 1);
-    }
+    context.notes.removeWhere((note) => note.id.startsWith("regiment"));
 
     // get regiments for each state
     valid.forEach((s) => {
@@ -494,7 +492,7 @@ class MilitaryModule {
       delete s.temp; // do not store temp data
     });
 
-    TIME && console.timeEnd("generateMilitary");
+    context.timing.shouldTime && console.timeEnd("generateMilitary");
   }
 
   getDefaultOptions() {
@@ -552,7 +550,12 @@ class MilitaryModule {
     ];
   }
 
-  getName(r: MilitaryRegiment, regiments: MilitaryRegiment[]) {
+  getName(
+    r: MilitaryRegiment,
+    regiments: MilitaryRegiment[],
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { pack } = context;
     const cells = pack.cells;
     const proper = r.n
       ? null
@@ -573,7 +576,12 @@ class MilitaryModule {
     return reg.a > (reg.n ? 999 : 99999) ? si(reg.a) : reg.a;
   }
 
-  generateNote(r: MilitaryRegiment, s: State) {
+  generateNote(
+    r: MilitaryRegiment,
+    s: State,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { options, pack } = context;
     const cells = pack.cells;
     const base =
       cells.burg[r.cell] && pack.burgs[cells.burg[r.cell]]
@@ -601,17 +609,21 @@ class MilitaryModule {
     const conflict = campaign ? ` during the ${campaign.name}` : "";
     const legend = `Regiment was formed in ${year} ${options.era}${conflict}. ${station}${troops}`;
     const id = `regiment${s.i}-${r.i}`;
-    const existing = notes.find((n) => n.id === id);
+    const existing = context.notes.find((n) => n.id === id);
     if (existing) {
       existing.name = r.name;
       existing.legend = legend;
     } else {
-      notes.push({ id, name: r.name, legend });
+      context.notes.push({ id, name: r.name, legend });
     }
   }
 
   // get default regiment emblem
-  getEmblem(r: MilitaryRegiment) {
+  getEmblem(
+    r: MilitaryRegiment,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { options, pack } = context;
     if (!r.n && !Object.values(r.u).length) return "🔰"; // "Newbie" regiment without troops
     if (
       !r.n &&
@@ -627,4 +639,7 @@ class MilitaryModule {
     return unit ? unit.icon : "⚔️";
   }
 }
-window.Military = new MilitaryModule();
+
+if (typeof window !== "undefined") {
+  window.Military = new MilitaryModule();
+}

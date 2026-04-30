@@ -1,11 +1,16 @@
 import { mean, range } from "d3";
-import { rn } from "../utils";
+import { rn } from "../utils/numberUtils";
+import {
+  type EngineBiomeData,
+  type EngineRuntimeContext,
+  getGlobalEngineRuntimeContext,
+} from "./engine-runtime-context";
 
 declare global {
   var Biomes: BiomesModule;
 }
 
-class BiomesModule {
+export class BiomesModule {
   private MIN_LAND_HEIGHT = 20;
 
   getDefault() {
@@ -112,8 +117,8 @@ class BiomesModule {
     };
   }
 
-  define() {
-    TIME && console.time("defineBiomes");
+  define(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+    context.timing.shouldTime && console.time("defineBiomes");
 
     const {
       fl: flux,
@@ -121,9 +126,10 @@ class BiomesModule {
       h: heights,
       c: neighbors,
       g: gridReference,
-    } = pack.cells;
-    const { temp, prec } = grid.cells;
-    pack.cells.biome = new Uint8Array(pack.cells.i.length); // biomes array
+    } = context.pack.cells;
+    const { temp, prec } = context.grid.cells;
+    const biomesMatrix = context.biomesData.biomesMatrix;
+    context.pack.cells.biome = new Uint8Array(context.pack.cells.i.length); // biomes array
 
     const calculateMoisture = (cellId: number) => {
       let moisture = prec[gridReference[cellId]];
@@ -143,15 +149,16 @@ class BiomesModule {
       const moisture =
         height < this.MIN_LAND_HEIGHT ? 0 : calculateMoisture(cellId);
       const temperature = temp[gridReference[cellId]];
-      pack.cells.biome[cellId] = this.getId(
+      context.pack.cells.biome[cellId] = this.getId(
         moisture,
         temperature,
         height,
         Boolean(riverIds[cellId]),
+        biomesMatrix,
       );
     }
 
-    TIME && console.timeEnd("defineBiomes");
+    context.timing.shouldTime && console.timeEnd("defineBiomes");
   }
 
   getId(
@@ -159,6 +166,7 @@ class BiomesModule {
     temperature: number,
     height: number,
     hasRiver: boolean,
+    biomesMatrix: EngineBiomeData["biomesMatrix"] = biomesData.biomesMatrix,
   ) {
     if (height < 20) return 0; // all water cells: marine biome
     if (temperature < -5) return 11; // too cold: permafrost biome
@@ -168,7 +176,7 @@ class BiomesModule {
     // in other cases use biome matrix
     const moistureBand = Math.min((moisture / 5) | 0, 4); // [0-4]
     const temperatureBand = Math.min(Math.max(20 - temperature, 0), 25); // [0-25]
-    return biomesData.biomesMatrix[moistureBand][temperatureBand];
+    return biomesMatrix[moistureBand][temperatureBand];
   }
 
   private isWetland(moisture: number, temperature: number, height: number) {
@@ -179,4 +187,6 @@ class BiomesModule {
   }
 }
 
-window.Biomes = new BiomesModule();
+if (typeof window !== "undefined") {
+  window.Biomes = new BiomesModule();
+}

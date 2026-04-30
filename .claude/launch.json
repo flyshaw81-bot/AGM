@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "agm-studio-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "--host", "127.0.0.1"],
+      "port": 5173
+    },
+    {
+      "name": "agm-studio-dev-5174",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:5174"],
+      "port": 5174
+    },
+    {
+      "name": "agm-studio-preview",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "preview", "--", "--host", "127.0.0.1"],
+      "port": 4173
+    }
+  ]
+}

@@ -178,10 +178,7 @@ export const openURL = (url: string): void => {
  * @param page - The wiki page name/path to open
  */
 export const wiki = (page: string): void => {
-  window.open(
-    `docs/${page}`,
-    "_blank",
-  );
+  window.open(`docs/${page}`, "_blank");
 };
 
 /**
@@ -296,29 +293,57 @@ export interface PromptOptions {
   required?: boolean;
 }
 
+export type StudioInputCallback = (value: number | string) => void;
+export type StudioInputRequest = (
+  promptText?: string,
+  options?: PromptOptions,
+  callback?: StudioInputCallback,
+) => void;
+
+const studioInputDefaults: PromptOptions = {
+  default: 1,
+  step: 0.01,
+  min: 0,
+  max: 100,
+  required: true,
+};
+
+function createStudioInputDialog() {
+  const existing = document.getElementById("studioInputDialog");
+  if (existing) return existing;
+
+  const host = document.createElement("div");
+  host.id = "studioInputDialog";
+  host.className = "studio-input-dialog";
+  host.setAttribute("role", "dialog");
+  host.setAttribute("aria-modal", "true");
+  host.setAttribute("aria-labelledby", "studioInputDialogTitle");
+  host.style.display = "none";
+  host.innerHTML = /* html */ `
+    <div class="studio-input-dialog__scrim" data-studio-input-cancel></div>
+    <form class="studio-input-dialog__panel" id="studioInputForm">
+      <label class="studio-input-dialog__label" id="studioInputDialogTitle" for="studioInputValue"></label>
+      <input class="studio-input-dialog__input" id="studioInputValue" autocomplete="off" />
+      <div class="studio-input-dialog__actions">
+        <button class="studio-input-dialog__button" type="button" data-studio-input-cancel>Cancel</button>
+        <button class="studio-input-dialog__button studio-input-dialog__button--primary" type="submit">Apply</button>
+      </div>
+    </form>
+  `;
+  document.body.appendChild(host);
+  return host;
+}
+
 /**
- * Initialize custom prompt function (prompt does not work in Electron)
+ * Initialize Studio input dialog for old editor commands.
  * This should be called once when the DOM is ready
  */
 export const initializePrompt = (): void => {
-  const prompt = document.getElementById("prompt");
-  if (!prompt) return;
-
-  const form = prompt.querySelector("#promptForm");
-  if (!form) return;
-
   const defaultText = "Please provide an input";
-  const defaultOptions: PromptOptions = {
-    default: 1,
-    step: 0.01,
-    min: 0,
-    max: 100,
-    required: true,
-  };
 
-  (window as any).prompt = (
+  const requestStudioInput: StudioInputRequest = (
     promptText: string = defaultText,
-    options: PromptOptions = defaultOptions,
+    options: PromptOptions = studioInputDefaults,
     callback?: (value: number | string) => void,
   ) => {
     if (options.default === undefined)
@@ -329,17 +354,39 @@ export const initializePrompt = (): void => {
         )
       );
 
-    const input = prompt.querySelector("#promptInput") as HTMLInputElement;
-    const promptTextElement = prompt.querySelector(
-      "#promptText",
+    const dialog = createStudioInputDialog();
+    const form = dialog.querySelector("#studioInputForm") as HTMLFormElement;
+    const input = dialog.querySelector("#studioInputValue") as HTMLInputElement;
+    const label = dialog.querySelector(
+      "#studioInputDialogTitle",
     ) as HTMLElement;
-
-    if (!input || !promptTextElement) return;
-
-    promptTextElement.innerHTML = promptText;
+    const cancelButtons = Array.from(
+      dialog.querySelectorAll("[data-studio-input-cancel]"),
+    );
+    if (!form || !input || !label) return;
 
     const type = typeof options.default === "number" ? "number" : "text";
+    function onKeydown(event: KeyboardEvent) {
+      if (event.key === "Escape") close();
+    }
+
+    function close() {
+      dialog.style.display = "none";
+      document.removeEventListener("keydown", onKeydown);
+    }
+
+    function submit(event: Event) {
+      event.preventDefault();
+      const value = type === "number" ? +input.value : input.value;
+      close();
+      if (callback) callback(value);
+    }
+
+    label.innerHTML = promptText;
     input.type = type;
+    input.step = "";
+    input.min = "";
+    input.max = "";
 
     if (options.step !== undefined) input.step = options.step.toString();
     if (options.min !== undefined) input.min = options.min.toString();
@@ -348,32 +395,26 @@ export const initializePrompt = (): void => {
     input.required = options.required !== false;
     input.placeholder = `type a ${type}`;
     input.value = options.default.toString();
-    input.style.width = promptText.length > 10 ? "100%" : "auto";
-    prompt.style.display = "block";
 
-    form.addEventListener(
-      "submit",
-      (event: Event) => {
-        event.preventDefault();
-        prompt.style.display = "none";
-        const v = type === "number" ? +input.value : input.value;
-        if (callback) callback(v);
-      },
-      { once: true },
-    );
+    form.onsubmit = submit;
+    cancelButtons.forEach((button) => {
+      button.addEventListener("click", close, { once: true });
+    });
+    document.addEventListener("keydown", onKeydown);
+    dialog.style.display = "block";
+    input.focus();
+    input.select();
   };
 
-  const cancel = prompt.querySelector("#promptCancel");
-  if (cancel) {
-    cancel.addEventListener("click", () => {
-      prompt.style.display = "none";
-    });
-  }
+  document.getElementById("prompt")?.remove();
+  window.requestStudioInput = requestStudioInput;
+  (window as any).prompt = requestStudioInput;
 };
 
 declare global {
   interface Window {
     ERROR: boolean;
+    requestStudioInput: StudioInputRequest;
 
     clipPoly: typeof clipPoly;
     getSegmentId: typeof getSegmentId;

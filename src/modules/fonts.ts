@@ -1,4 +1,4 @@
-import { byId } from "../utils";
+import { byId } from "../utils/shorthands";
 
 declare global {
   var declareFont: (font: FontDefinition) => void;
@@ -18,6 +18,20 @@ type FontDefinition = {
   unicodeRange?: string;
   variant?: string;
 };
+
+type FontFeedbackType = "error" | "success" | "warn";
+
+function showFontToast(
+  message: string,
+  type: FontFeedbackType,
+  duration = 4000,
+) {
+  tip(message, true, type, duration);
+}
+
+function logFontError(error: unknown) {
+  globalThis.ERROR && console.error(error);
+}
 
 window.fonts = [
   { family: "Arial" },
@@ -317,7 +331,7 @@ async function fetchGoogleFont(family: string) {
 
     return fonts;
   } catch (err) {
-    ERROR && console.error(err);
+    logFontError(err);
     return null;
   }
 }
@@ -368,8 +382,8 @@ window.getUsedFonts = (svg: SVGSVGElement) => {
 window.addGoogleFont = async (family: string) => {
   const fontRanges = await fetchGoogleFont(family);
   if (!fontRanges)
-    return tip("Cannot fetch Google font for this value", true, "error", 4000);
-  tip(`Google font ${family} is loading...`, true, "warn", 4000);
+    return showFontToast("Cannot fetch Google font for this value", "error");
+  showFontToast(`Google font ${family} is loading...`, "warn");
 
   const promises = fontRanges.map((range) => {
     const { src, unicodeRange } = range;
@@ -386,15 +400,15 @@ window.addGoogleFont = async (family: string) => {
         document.fonts.add(fontFace);
       });
       fonts.push(...fontRanges);
-      tip(`Google font ${family} is added to the list`, true, "success", 4000);
+      showFontToast(`Google font ${family} is added to the list`, "success");
       addFontOption(family);
       const select = byId<HTMLSelectElement>("styleSelectFont");
       if (select) select.value = family;
       changeFont();
     })
     .catch((err) => {
-      tip(`Failed to load Google font ${family}`, true, "error", 4000);
-      ERROR && console.error(err);
+      showFontToast(`Failed to load Google font ${family}`, "error");
+      logFontError(err);
     });
 };
 
@@ -405,7 +419,7 @@ window.addLocalFont = (family: string) => {
     display: "block",
   });
   document.fonts.add(fontFace);
-  tip(`Local font ${family} is added to the fonts list`, true, "success", 4000);
+  showFontToast(`Local font ${family} is added to the fonts list`, "success");
   addFontOption(family);
   const select = byId<HTMLSelectElement>("styleSelectFont");
   if (select) select.value = family;
@@ -418,7 +432,7 @@ window.addWebFont = (family: string, url: string) => {
 
   const fontFace = new FontFace(family, src, { display: "block" });
   document.fonts.add(fontFace);
-  tip(`Font ${family} is added to the list`, true, "success", 4000);
+  showFontToast(`Font ${family} is added to the list`, "success");
   addFontOption(family);
   const select = byId<HTMLSelectElement>("styleSelectFont");
   if (select) select.value = family;

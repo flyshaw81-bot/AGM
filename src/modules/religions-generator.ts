@@ -1,18 +1,13 @@
 import { quadtree } from "d3";
+import { getMixedColor, getRandomColor } from "../utils/colorUtils";
+import { isWater } from "../utils/graphUtils";
+import { abbreviate, getAdjective, trimVowels } from "../utils/languageUtils";
+import { PriorityQueue } from "../utils/priorityQueue";
+import { each, gauss, ra, rand, rw } from "../utils/probabilityUtils";
 import {
-  abbreviate,
-  byId,
-  each,
-  gauss,
-  getAdjective,
-  getMixedColor,
-  getRandomColor,
-  isWater,
-  ra,
-  rand,
-  rw,
-  trimVowels,
-} from "../utils";
+  type EngineRuntimeContext,
+  getGlobalEngineRuntimeContext,
+} from "./engine-runtime-context";
 
 declare global {
   var Religions: ReligionsModule;
@@ -516,39 +511,45 @@ const expansionismMap: Record<string, () => number> = {
   Heresy: () => gauss(1, 0.5, 0, 5, 1),
 };
 
-class ReligionsModule {
-  generate() {
-    TIME && console.time("generateReligions");
+export class ReligionsModule {
+  generate(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+    const { pack } = context;
+    context.timing.shouldTime && console.time("generateReligions");
     const lockedReligions =
       pack.religions?.filter((r) => r.i && r.lock && !r.removed) || [];
 
-    const folkReligions = this.generateFolkReligions();
+    const folkReligions = this.generateFolkReligions(context);
     const organizedReligions = this.generateOrganizedReligions(
-      +religionsNumber.value,
+      context.generationSettings.religionsCount,
       lockedReligions,
+      context,
     );
 
-    const namedReligions = this.specifyReligions([
-      ...folkReligions,
-      ...organizedReligions,
-    ]);
+    const namedReligions = this.specifyReligions(
+      [...folkReligions, ...organizedReligions],
+      context,
+    );
     const indexedReligions = this.combineReligions(
       namedReligions,
       lockedReligions,
     );
-    const religionIds = this.expandReligions(indexedReligions);
-    const religions = this.defineOrigins(religionIds, indexedReligions);
+    const religionIds = this.expandReligions(indexedReligions, context);
+    const religions = this.defineOrigins(
+      religionIds,
+      indexedReligions,
+      context,
+    );
 
     pack.religions = religions;
     pack.cells.religion = religionIds;
 
-    this.checkCenters();
+    this.checkCenters(context);
 
-    TIME && console.timeEnd("generateReligions");
+    context.timing.shouldTime && console.timeEnd("generateReligions");
   }
 
-  private generateFolkReligions(): ReligionBase[] {
-    return pack.cultures
+  private generateFolkReligions(context: EngineRuntimeContext): ReligionBase[] {
+    return context.pack.cultures
       .filter((c) => c.i && !c.removed)
       .map((culture) => ({
         type: "Folk" as const,
@@ -561,7 +562,9 @@ class ReligionsModule {
   private generateOrganizedReligions(
     desiredReligionNumber: number,
     lockedReligions: Religion[],
+    context: EngineRuntimeContext,
   ): ReligionBase[] {
+    const { pack, worldSettings } = context;
     const cells = pack.cells;
     const lockedReligionCount =
       lockedReligions.filter(({ type }) => type !== "Folk").length || 0;
@@ -599,6 +602,8 @@ class ReligionsModule {
       }
 
       // min distance between religion inceptions
+      const graphWidth = worldSettings.graphWidth ?? 0;
+      const graphHeight = worldSettings.graphHeight ?? 0;
       const spacing = (graphWidth + graphHeight) / 2 / desiredReligionNumber;
 
       for (const cellId of candidateCells) {
@@ -613,10 +618,9 @@ class ReligionsModule {
         }
       }
 
-      WARN &&
-        console.warn(
-          `Placed only ${religionCells.length} of ${requiredReligionsNumber} religions`,
-        );
+      context.logs?.warn(
+        `Placed only ${religionCells.length} of ${requiredReligionsNumber} religions`,
+      );
       return religionCells;
     }
 
@@ -633,12 +637,15 @@ class ReligionsModule {
     }
   }
 
-  private specifyReligions(newReligions: ReligionBase[]): NamedReligion[] {
-    const { cells, cultures } = pack;
+  private specifyReligions(
+    newReligions: ReligionBase[],
+    context: EngineRuntimeContext,
+  ): NamedReligion[] {
+    const { cells, cultures } = context.pack;
 
     const rawReligions = newReligions.map(
       ({ type, form, culture: cultureId, center }) => {
-        const supreme = this.getDeityName(cultureId);
+        const supreme = this.getDeityNameForContext(cultureId, context);
         const deity: string | null =
           form === "Non-theism" || form === "Animism"
             ? null
@@ -651,6 +658,7 @@ class ReligionsModule {
           form,
           supreme!,
           center,
+          context,
         );
         if (expansion === "state" && !stateId) expansion = "global";
 
@@ -811,7 +819,9 @@ class ReligionsModule {
   private defineOrigins(
     religionIds: Uint16Array,
     indexedReligions: Religion[],
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
   ): Religion[] {
+    const { pack } = context;
     const religionOriginsParamsMap: Record<
       string,
       { clusterSize: number; maxReligions: number }
@@ -889,25 +899,35 @@ class ReligionsModule {
   }
 
   // growth algorithm to assign cells to religions
-  private expandReligions(religions: Religion[]): Uint16Array {
+  private expandReligions(
+    religions: Religion[],
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ): Uint16Array {
+    const { biomesData, pack } = context;
     const { cells } = pack;
-    const religionIds = this.spreadFolkReligions(religions);
+    const religionIds = this.spreadFolkReligions(religions, context);
+    const expandableReligions = religions.filter(
+      (r) => r.i && !r.lock && r.type !== "Folk" && !r.removed,
+    );
+    if (!expandableReligions.length) return religionIds;
 
-    const queue = new FlatQueue();
+    const queue = new PriorityQueue<{
+      e: number;
+      p: number;
+      r: number;
+      s: number;
+    }>();
     const cost: number[] = [];
 
     // limit cost for organized religions growth
     const maxExpansionCost =
-      (cells.i.length / 20) *
-      (byId("growthRate") as HTMLInputElement).valueAsNumber;
+      (cells.i.length / 20) * context.generationSettings.globalGrowthRate;
 
-    religions
-      .filter((r) => r.i && !r.lock && r.type !== "Folk" && !r.removed)
-      .forEach((r) => {
-        religionIds[r.center] = r.i;
-        queue.push({ e: r.center, p: 0, r: r.i, s: cells.state[r.center] }, 0);
-        cost[r.center] = 1;
-      });
+    expandableReligions.forEach((r) => {
+      religionIds[r.center] = r.i;
+      queue.push({ e: r.center, p: 0, r: r.i, s: cells.state[r.center] }, 0);
+      cost[r.center] = 1;
+    });
 
     const religionsMap = new Map(religions.map((r) => [r.i, r]));
 
@@ -942,7 +962,7 @@ class ReligionsModule {
     return religionIds;
 
     function getPassageCost(cellId: number, nextCellId: number): number {
-      const route = Routes.getRoute(cellId, nextCellId);
+      const route = context.routes.getRoute(cellId, nextCellId);
       if (isWater(cellId, pack)) return route ? 50 : 500;
 
       const biomePassageCost = biomesData.cost[cells.biome[nextCellId]];
@@ -957,8 +977,11 @@ class ReligionsModule {
   }
 
   // folk religions initially get all cells of their culture, and locked religions are retained
-  private spreadFolkReligions(religions: Religion[]): Uint16Array {
-    const cells = pack.cells;
+  private spreadFolkReligions(
+    religions: Religion[],
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ): Uint16Array {
+    const cells = context.pack.cells;
     const hasPrior = cells.religion && true;
     const religionIds = new Uint16Array(cells.i.length);
 
@@ -982,7 +1005,10 @@ class ReligionsModule {
     return religionIds;
   }
 
-  private checkCenters() {
+  private checkCenters(
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { pack } = context;
     const cells = pack.cells;
     pack.religions.forEach((r) => {
       if (!r.i) return;
@@ -997,10 +1023,11 @@ class ReligionsModule {
   }
 
   recalculate() {
-    const newReligionIds = this.expandReligions(pack.religions);
+    const context = getGlobalEngineRuntimeContext();
+    const newReligionIds = this.expandReligions(pack.religions, context);
     pack.cells.religion = newReligionIds;
 
-    this.checkCenters();
+    this.checkCenters(context);
   }
 
   add(center: number) {
@@ -1081,12 +1108,20 @@ class ReligionsModule {
 
   // get supreme deity name
   getDeityName(culture: number): string | undefined {
+    const context = getGlobalEngineRuntimeContext();
+    return this.getDeityNameForContext(culture, context);
+  }
+
+  private getDeityNameForContext(
+    culture: number,
+    context: EngineRuntimeContext,
+  ): string | undefined {
     if (culture === undefined) {
-      ERROR && console.error("Please define a culture");
+      context.logs?.error("Please define a culture");
       return;
     }
-    const meaning = this.generateMeaning();
-    const cultureName = Names.getCulture(culture);
+    const meaning = this.generateMeaning(context);
+    const cultureName = context.naming.getCulture(culture);
     return `${cultureName}, The ${meaning}`;
   }
 
@@ -1095,10 +1130,11 @@ class ReligionsModule {
     form: string,
     deity: string,
     center: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
   ): [string, string] {
-    const { cells, cultures, burgs, states } = pack;
+    const { cells, cultures, burgs, states } = context.pack;
 
-    const random = () => Names.getCulture(cells.culture[center]);
+    const random = () => context.naming.getCulture(cells.culture[center]);
     const type = rw(types[form]);
     const supreme = deity.split(/[ ,]+/)[0];
     const culture = cultures[cells.culture[center]].name;
@@ -1130,11 +1166,11 @@ class ReligionsModule {
     if (m === "Random + ian + type")
       return [`${getAdjective(random())} ${type}`, "global"];
     if (m === "Type + of the + meaning")
-      return [`${type} of the ${this.generateMeaning()}`, "global"];
+      return [`${type} of the ${this.generateMeaning(context)}`, "global"];
     return [`${trimVowels(random())}ism`, "global"]; // else
   }
 
-  private generateMeaning(): string {
+  private generateMeaning(context?: EngineRuntimeContext): string {
     const a = ra(approaches); // select generation approach
     if (a === "Number") return ra(base.number);
     if (a === "Being") return ra(base.being);
@@ -1160,9 +1196,11 @@ class ReligionsModule {
     if (a === "Adjective + Animal + of + Genitive")
       return `${ra(base.adjective)} ${ra(base.animal)} of ${ra(base.genitive)}`;
 
-    ERROR && console.error("Unknown generation approach");
+    context?.logs?.error("Unknown generation approach");
     return ra(base.being);
   }
 }
 
-window.Religions = new ReligionsModule();
+if (typeof window !== "undefined") {
+  window.Religions = new ReligionsModule();
+}

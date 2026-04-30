@@ -1,15 +1,13 @@
 import Alea from "alea";
 import { max } from "d3";
+import { getMixedColor } from "../utils/colorUtils";
+import { getPolesOfInaccessibility } from "../utils/pathUtils";
+import { PriorityQueue } from "../utils/priorityQueue";
+import { gauss, generateSeed, P, rand, rw } from "../utils/probabilityUtils";
 import {
-  byId,
-  gauss,
-  generateSeed,
-  getMixedColor,
-  getPolesOfInaccessibility,
-  P,
-  rand,
-  rw,
-} from "../utils";
+  type EngineRuntimeContext,
+  getGlobalEngineRuntimeContext,
+} from "./engine-runtime-context";
 
 declare global {
   var Provinces: ProvinceModule;
@@ -30,7 +28,7 @@ export interface Province {
   pole?: [number, number];
 }
 
-class ProvinceModule {
+export class ProvinceModule {
   forms: Record<string, Record<string, number>> = {
     Monarchy: {
       County: 22,
@@ -71,8 +69,16 @@ class ProvinceModule {
     },
   };
 
-  generate(regenerate = false, regenerateLockedStates = false) {
-    TIME && console.time("generateProvinces");
+  generate(
+    input: boolean | EngineRuntimeContext = false,
+    regenerateLockedStates = false,
+  ) {
+    const context =
+      typeof input === "boolean" ? getGlobalEngineRuntimeContext() : input;
+    const regenerate = typeof input === "boolean" ? input : false;
+    const { pack, seed, timing } = context;
+
+    timing.shouldTime && console.time("generateProvinces");
     const localSeed = regenerate ? generateSeed() : seed;
     Math.random = Alea(localSeed);
 
@@ -101,8 +107,7 @@ class ProvinceModule {
       });
     }
 
-    const provincesRatio = (byId("provincesRatio") as HTMLInputElement)
-      .valueAsNumber;
+    const provincesRatio = context.generationSettings.provincesRatio ?? 100;
     const maxGrowth =
       provincesRatio === 100
         ? 1000
@@ -138,15 +143,20 @@ class ProvinceModule {
         const nameByBurg = P(0.5);
         const name = nameByBurg
           ? stateBurgs[i].name!
-          : Names.getState(Names.getCultureShort(c), c);
+          : context.naming.getState(context.naming.getCultureShort(c), c);
         const formName = rw(form);
         form[formName] += 10;
         const fullName = `${name} ${formName}`;
         const color = getMixedColor(s.color!);
         const kinship = nameByBurg ? 0.8 : 0.4;
         const type = Burgs.getType(center, burg.port);
-        const coa = COA.generate(stateBurgs[i].coa, kinship, null, type);
-        coa.shield = COA.getShield(c, s.i);
+        const coa = context.heraldry.generate(
+          stateBurgs[i].coa,
+          kinship,
+          null,
+          type,
+        );
+        coa.shield = context.heraldry.getShield(c, s.i);
 
         s.provinces.push(provinceId);
         provinces.push({
@@ -164,7 +174,12 @@ class ProvinceModule {
     });
 
     // expand generated provinces
-    const queue = new FlatQueue();
+    const queue = new PriorityQueue<{
+      e: number;
+      province: number;
+      state: number;
+      p: number;
+    }>();
     const cost: number[] = [];
 
     provinces.forEach((p) => {
@@ -260,11 +275,12 @@ class ProvinceModule {
         provinceIds[center] = provinceId;
 
         // expand province
+        const wildQueue = new PriorityQueue<{ e: number; p: number }>();
         const cost: number[] = [];
         cost[center] = 1;
-        queue.push({ e: center, p: 0 }, 0);
-        while (queue.length) {
-          const { e, p } = queue.pop();
+        wildQueue.push({ e: center, p: 0 }, 0);
+        while (wildQueue.length) {
+          const { e, p } = wildQueue.pop();
 
           cells.c[e].forEach((nextCellId) => {
             if (provinceIds[nextCellId]) return;
@@ -285,7 +301,7 @@ class ProvinceModule {
               if (land && cells.state[nextCellId] === s.i)
                 provinceIds[nextCellId] = provinceId; // assign province to a cell
               cost[nextCellId] = totalCost;
-              queue.push({ e: nextCellId, p: totalCost }, totalCost);
+              wildQueue.push({ e: nextCellId, p: totalCost }, totalCost);
             }
           });
         }
@@ -311,14 +327,14 @@ class ProvinceModule {
           const colonyName = colony && P(0.8) && getColonyName();
           if (colonyName) return colonyName;
           if (burgCell && P(0.5)) return burgs[burg].name;
-          return Names.getState(Names.getCultureShort(c), c);
+          return context.naming.getState(context.naming.getCultureShort(c), c);
         })();
 
         const formName = (() => {
           if (singleIsle) return "Island";
           if (isleGroup) return "Islands";
           if (colony) return "Colony";
-          return rw(this.forms["Wild"]);
+          return rw(this.forms.Wild);
         })();
 
         const fullName = `${name} ${formName}`;
@@ -330,8 +346,13 @@ class ProvinceModule {
             : P(0.3);
         const kinship = dominion ? 0 : 0.4;
         const type = Burgs.getType(center, burgs[burg]?.port);
-        const coa = COA.generate(s.coa, kinship, dominion ? 1 : 0, type);
-        coa.shield = COA.getShield(c, s.i);
+        const coa = context.heraldry.generate(
+          s.coa,
+          kinship,
+          dominion ? 1 : 0,
+          type,
+        );
+        coa.shield = context.heraldry.getShield(c, s.i);
 
         provinces.push({
           i: provinceId,
@@ -375,11 +396,12 @@ class ProvinceModule {
     cells.province = provinceIds;
     pack.provinces = provinces;
 
-    TIME && console.timeEnd("generateProvinces");
+    timing.shouldTime && console.timeEnd("generateProvinces");
   }
 
   // calculate pole of inaccessibility for each province
-  getPoles() {
+  getPoles(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+    const { pack } = context;
     const getType = (cellId: number) => pack.cells.province[cellId];
     const poles = getPolesOfInaccessibility(pack, getType);
 
@@ -390,4 +412,6 @@ class ProvinceModule {
   }
 }
 
-window.Provinces = new ProvinceModule();
+if (typeof window !== "undefined") {
+  window.Provinces = new ProvinceModule();
+}

@@ -1,16 +1,14 @@
 import { max, quadtree, range } from "d3";
+import { getColors, getRandomColor } from "../utils/colorUtils";
+import { abbreviate } from "../utils/languageUtils";
+import { minmax, rn } from "../utils/numberUtils";
+import { PriorityQueue } from "../utils/priorityQueue";
+import { biased, P, rand } from "../utils/probabilityUtils";
 import {
-  abbreviate,
-  biased,
-  byId,
-  getColors,
-  getRandomColor,
-  minmax,
-  P,
-  rand,
-  rn,
-  rw,
-} from "../utils";
+  type EngineRuntimeContext,
+  getGlobalEngineRuntimeContext,
+} from "./engine-runtime-context";
+import type { NameBase } from "./names-generator";
 
 declare global {
   var Cultures: CulturesModule;
@@ -37,16 +35,56 @@ export interface Culture {
   urban?: number;
 }
 
-class CulturesModule {
+export class CulturesModule {
   cells: any;
 
-  getRandomShield() {
-    const type = rw(COA.shields.types);
-    return rw(COA.shields[type]);
+  private getNameBases(context: EngineRuntimeContext): NameBase[] {
+    const contextNameBases = context.naming.getNameBases?.();
+    if (contextNameBases?.length) return contextNameBases;
+
+    if (nameBases.length) return nameBases;
+
+    context.logs?.error(
+      "Name base is empty, default nameBases will be applied",
+    );
+    nameBases = Names.getNameBases();
+    return nameBases;
   }
 
-  getDefault(count: number = 0): Omit<Culture, "i">[] {
+  private showExtremeClimateWarning(
+    context: EngineRuntimeContext,
+    html: string,
+  ) {
+    const notices =
+      context.notices ??
+      (typeof window !== "undefined"
+        ? getGlobalEngineRuntimeContext().notices
+        : undefined);
+
+    if (notices) {
+      notices.showModal({
+        resizable: false,
+        title: "Extreme climate warning",
+        html,
+      });
+      return;
+    }
+
+    context.logs?.warn(html.replace(/<[^>]+>/g, " "));
+  }
+
+  getRandomShield(
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    return context.heraldry.getRandomShield();
+  }
+
+  getDefault(
+    count: number = 0,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ): Omit<Culture, "i">[] {
     // generic sorting functions
+    const { grid, pack } = context;
     const cells = pack.cells,
       s = cells.s,
       sMax = max(s) as number,
@@ -66,7 +104,11 @@ class CulturesModule {
         ? 1
         : fee; // not on sea coast fee
 
-    if (culturesSet.value === "european") {
+    const activeNameBases = this.getNameBases(context);
+    const cultureSet =
+      context.generationSettings.cultureSet ?? culturesSet.value;
+
+    if (cultureSet === "european") {
       return [
         {
           name: "Shwazen",
@@ -176,7 +218,7 @@ class CulturesModule {
       ];
     }
 
-    if (culturesSet.value === "oriental") {
+    if (cultureSet === "oriental") {
       return [
         {
           name: "Koryo",
@@ -272,8 +314,9 @@ class CulturesModule {
       ];
     }
 
-    if (culturesSet.value === "english") {
-      const getName = () => Names.getBase(1, 5, 9, "");
+    if (cultureSet === "english") {
+      const getName = () =>
+        context.naming.getBase?.(1, 5, 9, "") ?? Names.getBase(1, 5, 9, "");
       return [
         { name: getName(), base: 1, odd: 1, shield: "heater" },
         { name: getName(), base: 1, odd: 1, shield: "wedged" },
@@ -288,7 +331,7 @@ class CulturesModule {
       ];
     }
 
-    if (culturesSet.value === "antique") {
+    if (cultureSet === "antique") {
       return [
         {
           name: "Roman",
@@ -405,7 +448,7 @@ class CulturesModule {
       ];
     }
 
-    if (culturesSet.value === "highFantasy") {
+    if (cultureSet === "highFantasy") {
       return [
         // fantasy races
         {
@@ -531,7 +574,7 @@ class CulturesModule {
       ];
     }
 
-    if (culturesSet.value === "darkFantasy") {
+    if (cultureSet === "darkFantasy") {
       return [
         // common real-world English
         {
@@ -778,11 +821,17 @@ class CulturesModule {
       ];
     }
 
-    if (culturesSet.value === "random") {
+    if (cultureSet === "random") {
       return range(count).map(() => {
-        const rnd = rand(nameBases.length - 1);
-        const name = Names.getBaseShort(rnd);
-        return { name, base: rnd, odd: 1, shield: this.getRandomShield() };
+        const rnd = rand(activeNameBases.length - 1);
+        const name =
+          context.naming.getBaseShort?.(rnd) ?? Names.getBaseShort(rnd);
+        return {
+          name,
+          base: rnd,
+          odd: 1,
+          shield: this.getRandomShield(context),
+        };
       });
     }
 
@@ -1022,66 +1071,48 @@ class CulturesModule {
     ];
   }
 
-  generate() {
-    TIME && console.time("generateCultures");
+  generate(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+    context.timing.shouldTime && console.time("generateCultures");
+    const { pack, worldSettings } = context;
     this.cells = pack.cells;
     const cultureIds = new Uint16Array(this.cells.i.length); // cell cultures
 
-    const culturesInputNumber = +(byId("culturesInput") as HTMLInputElement)
-      .value;
-    const culturesInSetNumber = +(
-      (byId("culturesSet") as HTMLSelectElement).selectedOptions[0].dataset
-        .max ?? "0"
-    );
+    const culturesInputNumber = context.generationSettings.culturesCount ?? 0;
+    const culturesInSetNumber = context.generationSettings.cultureSetMax ?? 0;
     let count = Math.min(culturesInputNumber, culturesInSetNumber);
     const populated = this.cells.i.filter((i: number) => this.cells.s[i]); // populated cells
 
     if (populated.length < count * 25) {
       count = Math.floor(populated.length / 50);
       if (!count) {
-        WARN &&
-          console.warn(
-            `There are no populated cells. Cannot generate cultures`,
-          );
+        context.logs?.warn(
+          `There are no populated cells. Cannot generate cultures`,
+        );
         pack.cultures = [{ name: "Wildlands", i: 0, base: 1, shield: "round" }];
         this.cells.culture = cultureIds;
 
-        alertMessage.innerHTML = /* html */ `The climate is harsh and people cannot live in this world.<br />
+        this.showExtremeClimateWarning(
+          context,
+          /* html */ `The climate is harsh and people cannot live in this world.<br />
           No cultures, states and burgs will be created.<br />
-          Please consider changing climate settings in the World Configurator`;
-
-        $("#alert").dialog({
-          resizable: false,
-          title: "Extreme climate warning",
-          buttons: {
-            Ok: function () {
-              $(this).dialog("close");
-            },
-          },
-        });
+          Please consider changing climate settings in the World Configurator`,
+        );
         return;
       } else {
-        WARN &&
-          console.warn(
-            `Not enough populated cells (${populated.length}). Will generate only ${count} cultures`,
-          );
-        alertMessage.innerHTML = /* html */ ` There are only ${populated.length} populated cells and it's insufficient livable area.<br />
-          Only ${count} out of ${culturesInput.value} requested cultures will be generated.<br />
-          Please consider changing climate settings in the World Configurator`;
-        $("#alert").dialog({
-          resizable: false,
-          title: "Extreme climate warning",
-          buttons: {
-            Ok: function () {
-              $(this).dialog("close");
-            },
-          },
-        });
+        context.logs?.warn(
+          `Not enough populated cells (${populated.length}). Will generate only ${count} cultures`,
+        );
+        this.showExtremeClimateWarning(
+          context,
+          /* html */ ` There are only ${populated.length} populated cells and it's insufficient livable area.<br />
+          Only ${count} out of ${culturesInputNumber} requested cultures will be generated.<br />
+          Please consider changing climate settings in the World Configurator`,
+        );
       }
     }
 
     const selectCultures = (culturesNumber: number): Culture[] => {
-      const defaultCultures = this.getDefault(culturesNumber);
+      const defaultCultures = this.getDefault(culturesNumber, context);
       const cultures: Culture[] = [];
 
       pack.cultures?.forEach((culture) => {
@@ -1114,11 +1145,13 @@ class CulturesModule {
     pack.cultures = cultures;
     const centers = quadtree<number>();
     const colors = getColors(count);
-    const emblemShape = (byId("emblemShape") as HTMLInputElement).value;
+    const emblemShape = context.generationSettings.cultureEmblemShape ?? "";
 
     const codes: string[] = [];
 
     const placeCenter = (sortingFn: (i: number) => number) => {
+      const graphWidth = worldSettings.graphWidth ?? globalThis.graphWidth;
+      const graphHeight = worldSettings.graphHeight ?? globalThis.graphHeight;
       let spacing = (graphWidth + graphHeight) / 2 / count;
       const MAX_ATTEMPTS = 100;
 
@@ -1174,9 +1207,7 @@ class CulturesModule {
       else if (type === "Hunting") base = 0.7;
       else if (type === "Highland") base = 1.2;
       return rn(
-        ((Math.random() *
-          (byId("sizeVariety") as HTMLInputElement).valueAsNumber) /
-          2 +
+        ((Math.random() * context.generationSettings.stateSizeVariety) / 2 +
           1) *
           base,
         1,
@@ -1213,7 +1244,7 @@ class CulturesModule {
       c.code = abbreviate(c.name, codes);
       codes.push(c.code);
       cultureIds[center] = newId;
-      if (emblemShape === "random") c.shield = this.getRandomShield();
+      if (emblemShape === "random") c.shield = this.getRandomShield(context);
     });
 
     this.cells.culture = cultureIds;
@@ -1227,22 +1258,22 @@ class CulturesModule {
       shield: "round",
     });
 
-    // make sure all bases exist in nameBases
-    if (!nameBases.length) {
-      ERROR &&
-        console.error("Name base is empty, default nameBases will be applied");
-      nameBases = Names.getNameBases();
-    }
+    // make sure all bases exist in the active name base list
+    const activeNameBases = this.getNameBases(context);
 
     cultures.forEach((c: Culture) => {
-      c.base = c.base % nameBases.length;
+      c.base = c.base % activeNameBases.length;
     });
 
-    TIME && console.timeEnd("generateCultures");
+    context.timing.shouldTime && console.timeEnd("generateCultures");
   }
 
-  add(center: number) {
-    const defaultCultures = this.getDefault();
+  add(
+    center: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const { pack } = context;
+    const defaultCultures = this.getDefault(undefined, context);
     let culture: number, base: number, name: string;
 
     if (pack.cultures.length < defaultCultures.length) {
@@ -1253,7 +1284,7 @@ class CulturesModule {
     } else {
       // add random culture based on one of the current ones
       culture = rand(pack.cultures.length - 1);
-      name = Names.getCulture(culture, 5, 8, "");
+      name = context.naming.getCulture(culture, 5, 8, "");
       base = pack.cultures[culture].base;
     }
 
@@ -1262,9 +1293,9 @@ class CulturesModule {
     const color = getRandomColor();
 
     // define emblem shape
-    const emblemShape = (
-      document.getElementById("emblemShape") as HTMLInputElement
-    ).value;
+    const emblemShape =
+      context.generationSettings.cultureEmblemShape ??
+      (document.getElementById("emblemShape") as HTMLInputElement).value;
 
     pack.cultures.push({
       name,
@@ -1280,19 +1311,22 @@ class CulturesModule {
       urban: 0,
       origins: [pack.cells.culture[center]],
       code,
-      shield: emblemShape === "random" ? this.getRandomShield() : "",
+      shield: emblemShape === "random" ? this.getRandomShield(context) : "",
     });
   }
 
-  expand() {
-    TIME && console.time("expandCultures");
-    const { cells, cultures } = pack;
+  expand(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+    context.timing.shouldTime && console.time("expandCultures");
+    const { cells, cultures, features } = context.pack;
 
-    const queue = new FlatQueue();
+    const queue = new PriorityQueue<{
+      cellId: number;
+      cultureId: number;
+      priority: number;
+    }>();
     const cost: number[] = [];
 
-    const neutralRate =
-      (byId("neutralRate") as HTMLInputElement)?.valueAsNumber || 1;
+    const neutralRate = context.generationSettings.cultureNeutralRate ?? 1;
     const maxExpansionCost = cells.i.length * 0.6 * neutralRate; // limit cost for culture growth
 
     // remove culture from all cells except of locked
@@ -1309,6 +1343,7 @@ class CulturesModule {
 
     for (const culture of cultures) {
       if (!culture.i || culture.removed || culture.lock) continue;
+      if (culture.center === undefined) continue;
       queue.push(
         { cellId: culture.center, cultureId: culture.i, priority: 0 },
         0,
@@ -1317,15 +1352,15 @@ class CulturesModule {
 
     const getBiomeCost = (c: number, biome: number, type: string) => {
       if (cells.biome[cultures[c].center as number] === biome) return 10; // tiny penalty for native biome
-      if (type === "Hunting") return biomesData.cost[biome] * 5; // non-native biome penalty for hunters
+      if (type === "Hunting") return context.biomesData.cost[biome] * 5; // non-native biome penalty for hunters
       if (type === "Nomadic" && biome > 4 && biome < 10)
-        return biomesData.cost[biome] * 10; // forest biome penalty for nomads
-      return biomesData.cost[biome] * 2; // general non-native biome penalty
+        return context.biomesData.cost[biome] * 10; // forest biome penalty for nomads
+      return context.biomesData.cost[biome] * 2; // general non-native biome penalty
     };
 
     const getHeightCost = (i: number, h: number, type: string) => {
-      const f = pack.features[cells.f[i]],
-        a = cells.area[i];
+      const f = features[cells.f[i]];
+      const a = cells.area[i];
       if (type === "Lake" && f.type === "lake") return 10; // no lake crossing penalty for Lake cultures
       if (type === "Naval" && h < 20) return a * 2; // low sea/lake crossing penalty for Naval cultures
       if (type === "Nomadic" && h < 20) return a * 50; // giant sea/lake crossing penalty for Nomads
@@ -1398,8 +1433,10 @@ class CulturesModule {
       });
     }
 
-    TIME && console.timeEnd("expandCultures");
+    context.timing.shouldTime && console.timeEnd("expandCultures");
   }
 }
 
-window.Cultures = new CulturesModule();
+if (typeof window !== "undefined") {
+  window.Cultures = new CulturesModule();
+}
