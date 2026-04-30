@@ -70,6 +70,48 @@ describe("MarkersModule", () => {
     expect(context.pack.markers).toEqual([]);
   });
 
+  it("uses the runtime random service when selecting generated marker candidates", () => {
+    const context = createMarkersContext();
+    context.random = {
+      next: () => 0.99,
+    };
+    context.pack.cells = {
+      i: [0, 1, 2],
+      burg: new Uint16Array([0, 0, 0]),
+      p: [
+        [0, 0],
+        [10, 10],
+        [20, 20],
+      ],
+    } as any;
+    const markers = new MarkersModule();
+    markers.setConfig([
+      {
+        type: "test",
+        icon: "x",
+        min: 1,
+        each: 3,
+        multiplier: 1,
+        list: () => [0, 1, 2],
+        add: () => {},
+      },
+    ]);
+
+    markers.generate(context, false);
+
+    expect(context.pack.markers).toContainEqual({
+      i: 0,
+      type: "test",
+      icon: "x",
+      dx: undefined,
+      dy: undefined,
+      px: undefined,
+      cell: 2,
+      x: 20,
+      y: 20,
+    });
+  });
+
   it("adds and deletes manual markers against an explicit runtime context", () => {
     const context = createMarkersContext();
     const markers = new MarkersModule();

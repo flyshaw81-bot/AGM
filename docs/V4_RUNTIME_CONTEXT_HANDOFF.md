@@ -831,6 +831,9 @@ Completed:
 - Routed burg capital ranking randomness through `context.random.next()` as
   well. Remaining direct random calls are now mostly default random adapters or
   larger algorithm modules that need separate, higher-risk migration passes.
+- Routed generated marker candidate selection through `context.random.next()`;
+  marker generation can now be tested with deterministic runtime randomness
+  instead of relying on direct `Math.random()`.
 - Added `EngineRuntimeContext.optionsSession`. Generation session preparation
   now receives the active context and uses `context.optionsSession` for option
   randomization when available, instead of always reaching for the global

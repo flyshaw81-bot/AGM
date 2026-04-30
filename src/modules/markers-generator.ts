@@ -493,7 +493,7 @@ export class MarkersModule {
           // console.info(`${icon} ${type}: each ${each} of ${candidates.length}, min ${min} candidates. Got ${quantity}`);
 
           while (quantity && candidates.length) {
-            const [cell] = this.extractAnyElement(candidates);
+            const [cell] = this.extractAnyElement(candidates, context);
             const marker = this.addMarker(
               { icon, type, dx, dy, px },
               { cell },
@@ -524,8 +524,8 @@ export class MarkersModule {
     return array.length < requestQty ? array.length : requestQty;
   }
 
-  private extractAnyElement(array: any[]) {
-    const index = Math.floor(Math.random() * array.length);
+  private extractAnyElement(array: any[], context: EngineRuntimeContext) {
+    const index = Math.floor(context.random.next() * array.length);
     return array.splice(index, 1);
   }
 
