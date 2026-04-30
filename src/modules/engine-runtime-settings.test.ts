@@ -1,13 +1,16 @@
 import { afterEach, describe, expect, it } from "vitest";
+import type { EngineRuntimeContext } from "./engine-runtime-context";
 import {
   createGlobalPopulationSettings,
   createGlobalTimingSettings,
   createGlobalUnitSettings,
   createGlobalWorldSettings,
   createPopulationSettings,
+  createRuntimeWorldSettingsStore,
   createTimingSettings,
   createUnitSettings,
   createWorldSettings,
+  createWorldSettingsStore,
 } from "./engine-runtime-settings";
 
 const originalDocument = globalThis.document;
@@ -119,5 +122,67 @@ describe("runtime setting adapters", () => {
     expect(createTimingSettings({ getShouldTime: () => false })).toEqual({
       shouldTime: false,
     });
+  });
+
+  it("stores, patches, and refreshes world settings through a runtime store", () => {
+    const context = {
+      worldSettings: createWorldSettings({
+        getMapCoordinates: () => ({ latN: 40 }) as typeof mapCoordinates,
+        getGraphWidth: () => 800,
+        getGraphHeight: () => 600,
+        getInputNumber: () => 0,
+      }),
+    } as unknown as EngineRuntimeContext;
+    const store = createRuntimeWorldSettingsStore(context);
+
+    store.patch({ graphWidth: 1024, graphHeight: 768 });
+
+    expect(context.worldSettings.graphWidth).toBe(1024);
+    expect(store.get().graphHeight).toBe(768);
+
+    store.refresh({
+      getMapCoordinates: () => ({ latN: 20 }) as typeof mapCoordinates,
+      getGraphWidth: () => 1400,
+      getGraphHeight: () => 900,
+      getInputNumber: (id, fallback) =>
+        (
+          ({
+            mapSizeOutput: 66,
+            latitudeOutput: 33,
+          }) as Record<string, number>
+        )[id] ?? fallback,
+    });
+
+    expect(context.worldSettings.mapCoordinates).toEqual({ latN: 20 });
+    expect(context.worldSettings.graphWidth).toBe(1400);
+    expect(context.worldSettings.graphHeight).toBe(900);
+    expect(context.worldSettings.mapSizePercent).toBe(66);
+    expect(context.worldSettings.latitudePercent).toBe(33);
+  });
+
+  it("can compose a world settings store from explicit getters and setters", () => {
+    let settings = createWorldSettings({
+      getMapCoordinates: () => ({ latN: 1 }) as typeof mapCoordinates,
+      getGraphWidth: () => 100,
+      getGraphHeight: () => 100,
+      getInputNumber: () => 0,
+    });
+    const store = createWorldSettingsStore(
+      () => settings,
+      (nextSettings) => {
+        settings = nextSettings;
+      },
+      () =>
+        createWorldSettings({
+          getMapCoordinates: () => ({ latN: 2 }) as typeof mapCoordinates,
+          getGraphWidth: () => 200,
+          getGraphHeight: () => 300,
+          getInputNumber: () => 0,
+        }),
+    );
+
+    expect(store.patch({ longitudePercent: 44 }).longitudePercent).toBe(44);
+    expect(store.refresh().graphHeight).toBe(300);
+    expect(settings.mapCoordinates).toEqual({ latN: 2 });
   });
 });

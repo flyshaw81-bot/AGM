@@ -1,3 +1,5 @@
+import type { EngineRuntimeContext } from "./engine-runtime-context";
+
 export type EngineWorldSettings = {
   mapCoordinates?: typeof mapCoordinates;
   graphWidth?: number;
@@ -40,6 +42,13 @@ export type EngineUnitSettingsTargets = {
 
 export type EngineTimingSettingsTargets = {
   getShouldTime: () => boolean;
+};
+
+export type EngineWorldSettingsStore = {
+  get: () => EngineWorldSettings;
+  replace: (nextSettings: EngineWorldSettings) => EngineWorldSettings;
+  patch: (patch: Partial<EngineWorldSettings>) => EngineWorldSettings;
+  refresh: (targets?: EngineWorldSettingsTargets) => EngineWorldSettings;
 };
 
 export function createWorldSettings(
@@ -120,6 +129,44 @@ export function createGlobalTimingSettingsTargets(): EngineTimingSettingsTargets
 
 export function createGlobalWorldSettings(): EngineWorldSettings {
   return createWorldSettings(createGlobalWorldSettingsTargets());
+}
+
+export function createWorldSettingsStore(
+  getSettings: () => EngineWorldSettings,
+  setSettings: (nextSettings: EngineWorldSettings) => void,
+  readSettings: (
+    targets?: EngineWorldSettingsTargets,
+  ) => EngineWorldSettings = (targets = createGlobalWorldSettingsTargets()) =>
+    createWorldSettings(targets),
+): EngineWorldSettingsStore {
+  return {
+    get: getSettings,
+    replace: (nextSettings) => {
+      setSettings(nextSettings);
+      return nextSettings;
+    },
+    patch: (patch) => {
+      const nextSettings = { ...getSettings(), ...patch };
+      setSettings(nextSettings);
+      return nextSettings;
+    },
+    refresh: (targets) => {
+      const nextSettings = readSettings(targets);
+      setSettings(nextSettings);
+      return nextSettings;
+    },
+  };
+}
+
+export function createRuntimeWorldSettingsStore(
+  context: EngineRuntimeContext,
+): EngineWorldSettingsStore {
+  return createWorldSettingsStore(
+    () => context.worldSettings,
+    (nextSettings) => {
+      context.worldSettings = nextSettings;
+    },
+  );
 }
 
 export function createGlobalPopulationSettings(): EnginePopulationSettings {

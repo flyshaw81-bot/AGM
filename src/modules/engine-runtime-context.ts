@@ -73,10 +73,12 @@ import {
   createGlobalTimingSettings,
   createGlobalUnitSettings,
   createGlobalWorldSettings,
+  createRuntimeWorldSettingsStore,
   type EnginePopulationSettings,
   type EngineTimingSettings,
   type EngineUnitSettings,
   type EngineWorldSettings,
+  type EngineWorldSettingsStore,
 } from "./engine-runtime-settings";
 import {
   createRuntimeSeedSession,
@@ -117,6 +119,7 @@ export type EngineRuntimeContext = {
   options: typeof options;
   seed: typeof seed;
   worldSettings: EngineWorldSettings;
+  worldSettingsStore?: EngineWorldSettingsStore;
   generationSettings: EngineGenerationSettings;
   generationSettingsStore?: EngineGenerationSettingsStore;
   populationSettings: EnginePopulationSettings;
@@ -154,6 +157,7 @@ export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
     options,
     seed,
     worldSettings: createGlobalWorldSettings(),
+    worldSettingsStore: undefined as never,
     generationSettings: createGlobalGenerationSettings(),
     generationSettingsStore: undefined as never,
     populationSettings: createGlobalPopulationSettings(),
@@ -184,6 +188,7 @@ export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
   context.burgs = createRuntimeBurgService(context);
   context.routes = createRuntimeRouteService(context);
   context.mapStore = createRuntimeMapStore(context, () => context);
+  context.worldSettingsStore = createRuntimeWorldSettingsStore(context);
   context.generationSettingsStore =
     createRuntimeGenerationSettingsStore(context);
   context.seedSession = createRuntimeSeedSession(context);

@@ -65,6 +65,9 @@ describe("getGlobalEngineRuntimeContext", () => {
     expect(typeof context.burgs.add).toBe("function");
     expect(context.burgs.findById(2)).toBe(burg);
     expect(context.routes.findById(3)).toBe(route);
+    expect(context.worldSettingsStore?.get()).toBe(context.worldSettings);
+    context.worldSettingsStore?.patch({ graphWidth: 128 });
+    expect(context.worldSettings.graphWidth).toBe(128);
     expect(context.generationSettingsStore?.get()).toBe(
       context.generationSettings,
     );

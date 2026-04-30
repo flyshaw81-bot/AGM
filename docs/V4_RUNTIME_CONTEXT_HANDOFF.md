@@ -1801,6 +1801,10 @@ runtime capability. The global runtime context wires
 algorithm test contexts can omit it. `refresh` still reads through the existing
 generation settings targets by default, so DOM compatibility remains isolated
 behind the settings adapter.
+World settings now have the same optional store pattern through
+`EngineWorldSettingsStore`. The global runtime context wires
+`worldSettingsStore` for graph size/map coordinate `get/replace/patch/refresh`,
+while compatibility DOM/global reads remain behind `EngineWorldSettingsTargets`.
 
 ## Next Recommended Slice
 
