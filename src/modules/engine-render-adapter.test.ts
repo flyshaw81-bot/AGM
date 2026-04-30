@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createGlobalRenderAdapter } from "./engine-render-adapter";
+import {
+  createEngineRenderAdapter,
+  createGlobalRenderAdapter,
+  type EngineRenderTargets,
+} from "./engine-render-adapter";
 
 const originalWindow = globalThis.window;
 const originalPack = globalThis.pack;
@@ -121,5 +125,69 @@ describe("createGlobalRenderAdapter", () => {
     expect(redrawGlacier).toHaveBeenCalledWith(2);
     expect(svg.select).toHaveBeenCalledWith("#scaleBar");
     expect(drawScaleBar).toHaveBeenCalledWith(scaleBarSelection, 2);
+  });
+
+  it("composes render adapter from injected render targets", () => {
+    const scaleBarSelection = { id: "scaleBar" };
+    const route = { id: "route2" };
+    const burg = { i: 5 };
+    const targets: EngineRenderTargets = {
+      findCell: vi.fn(() => 24),
+      getPack: vi.fn(() => ({ cells: { i: [1] } }) as typeof pack),
+      addCoa: vi.fn(),
+      drawRoute: vi.fn(),
+      isLayerOn: vi.fn(() => false),
+      drawBurgIcon: vi.fn(),
+      drawBurgLabel: vi.fn(),
+      removeBurgIcon: vi.fn(),
+      removeBurgLabel: vi.fn(),
+      getElementById: vi.fn(
+        () => ({ remove: vi.fn() }) as unknown as HTMLElement,
+      ),
+      removeBurgEmblemUse: vi.fn(),
+      redrawIceberg: vi.fn(),
+      redrawGlacier: vi.fn(),
+      selectScaleBar: vi.fn(() => scaleBarSelection),
+      getScale: vi.fn(() => 3),
+      drawScaleBar: vi.fn(),
+    };
+    const rendering = createEngineRenderAdapter(targets);
+
+    expect(rendering.findCell(1, 2)).toBe(24);
+    rendering.addBurgCoa(8, { shield: "kite" }, 10, 11);
+    rendering.drawRoute(route);
+    expect(rendering.isLayerOn("toggleRoutes")).toBe(false);
+    rendering.drawBurg(burg);
+    rendering.removeBurg(5);
+    rendering.removeBurgCoa(8);
+    rendering.redrawIceberg(3);
+    rendering.redrawGlacier(4);
+    rendering.removeElementById("marker5");
+    rendering.drawScaleBar();
+
+    expect(targets.findCell).toHaveBeenCalledWith(
+      1,
+      2,
+      undefined,
+      expect.objectContaining({ cells: { i: [1] } }),
+    );
+    expect(targets.addCoa).toHaveBeenCalledWith(
+      "burg",
+      8,
+      { shield: "kite" },
+      10,
+      11,
+    );
+    expect(targets.drawRoute).toHaveBeenCalledWith(route);
+    expect(targets.drawBurgIcon).toHaveBeenCalledWith(burg);
+    expect(targets.drawBurgLabel).toHaveBeenCalledWith(burg);
+    expect(targets.removeBurgIcon).toHaveBeenCalledWith(5);
+    expect(targets.removeBurgLabel).toHaveBeenCalledWith(5);
+    expect(targets.getElementById).toHaveBeenCalledWith("burgCOA8");
+    expect(targets.removeBurgEmblemUse).toHaveBeenCalledWith(8);
+    expect(targets.redrawIceberg).toHaveBeenCalledWith(3);
+    expect(targets.redrawGlacier).toHaveBeenCalledWith(4);
+    expect(targets.getElementById).toHaveBeenCalledWith("marker5");
+    expect(targets.drawScaleBar).toHaveBeenCalledWith(scaleBarSelection, 3);
   });
 });

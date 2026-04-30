@@ -874,6 +874,11 @@ Completed:
   these side effects are no longer inline in `engine-runtime-context.ts`. Added
   focused tests for map/burg rendering calls, COA/element removal, ice redraws,
   and scale-bar forwarding.
+- `engine-render-adapter.ts` now also separates adapter composition from global
+  DOM/SVG helper lookup through `createEngineRenderAdapter(targets)`. The global
+  factory remains the compatibility layer over the current rendered map helpers,
+  while adapter behavior can be tested and replaced through injected render
+  targets.
 - Moved notice modal/error handling into `src/modules/engine-notice-service.ts`.
   The notice service now depends on `EngineNoticeDialogHost`; only the default
   `createJQueryNoticeDialogHost()` touches `alertMessage` and jQuery UI dialog.
@@ -995,7 +1000,8 @@ adapters with focused tests:
 - `engine-notice-service.ts` still delegates blocking/error modals to the
   current jQuery dialog host.
 - `engine-render-adapter.ts` still delegates map/SVG rendering side effects to
-  current DOM/SVG helpers.
+  current DOM/SVG helpers through its global compatibility factory, but the core
+  adapter now consumes explicit render targets.
 - `engine-naming-service.ts`, `engine-route-service.ts`,
   `engine-state-service.ts`, and `engine-heraldry-service.ts` still forward to
   compatibility-mounted AGM services.
