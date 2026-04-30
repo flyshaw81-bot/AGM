@@ -274,4 +274,31 @@ describe("createGlobalLifecycleAdapter", () => {
       longitudePercent: 30,
     });
   });
+
+  it("uses runtime map placement service from the context when available", () => {
+    const targets = createTargets();
+    const mapPlacement = {
+      defineMapSize: vi.fn(),
+      calculateMapCoordinates: vi.fn(),
+    };
+    const context = {
+      ...createContext(),
+      mapPlacement,
+    } as unknown as EngineRuntimeContext;
+    const adapter = createLifecycleAdapter(() => {
+      throw new Error("explicit context should be used");
+    }, targets);
+
+    adapter.defineMapSize(context);
+    adapter.calculateMapCoordinates(context);
+
+    expect(mapPlacement.defineMapSize).toHaveBeenCalledWith("archipelago");
+    expect(mapPlacement.calculateMapCoordinates).toHaveBeenCalledWith({
+      mapSizePercent: 80,
+      latitudePercent: 45,
+      longitudePercent: 55,
+    });
+    expect(targets.defineMapSize).not.toHaveBeenCalled();
+    expect(targets.calculateMapCoordinates).not.toHaveBeenCalled();
+  });
 });

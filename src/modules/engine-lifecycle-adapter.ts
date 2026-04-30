@@ -116,15 +116,24 @@ export function createLifecycleAdapter(
     },
     defineMapSize: (context = getCurrentContext()) => {
       const settings = createLifecycleSettingsSnapshot(context);
-      targets.defineMapSize(settings.heightmapTemplateId);
+      if (context.mapPlacement) {
+        context.mapPlacement.defineMapSize(settings.heightmapTemplateId);
+      } else {
+        targets.defineMapSize(settings.heightmapTemplateId);
+      }
     },
     calculateMapCoordinates: (context = getCurrentContext()) => {
       const settings = createLifecycleSettingsSnapshot(context);
-      targets.calculateMapCoordinates({
+      const mapCoordinates = {
         mapSizePercent: settings.mapSizePercent,
         latitudePercent: settings.latitudePercent,
         longitudePercent: settings.longitudePercent,
-      });
+      };
+      if (context.mapPlacement) {
+        context.mapPlacement.calculateMapCoordinates(mapCoordinates);
+      } else {
+        targets.calculateMapCoordinates(mapCoordinates);
+      }
     },
     rebuildGraph: () => {
       targets.rebuildGraph();

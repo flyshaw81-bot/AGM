@@ -1825,6 +1825,10 @@ compatibility targets for `defineMapSize` and `calculateMapCoordinates`.
 `getGlobalEngineRuntimeContext()` wires `mapPlacement`, and lifecycle targets
 can be composed from runtime services instead of directly owning those public
 helper calls.
+Lifecycle map placement calls now prefer `context.mapPlacement` when an
+explicit runtime context provides it, falling back to lifecycle targets for
+compatibility contexts. This keeps the generation path behavior stable while
+moving map size and coordinate placement behind a runtime-owned service.
 
 ## Next Recommended Slice
 
