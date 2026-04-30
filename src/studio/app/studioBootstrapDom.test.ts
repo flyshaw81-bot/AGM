@@ -1,8 +1,50 @@
 import { describe, expect, it, vi } from "vitest";
 import type { StudioViewportSync } from "./studioBootstrap";
-import { createGlobalStudioBootstrapDomTargets } from "./studioBootstrapDom";
+import {
+  createGlobalStudioBootstrapDomTargets,
+  createStudioBootstrapDomTargets,
+} from "./studioBootstrapDom";
 
 describe("createGlobalStudioBootstrapDomTargets", () => {
+  it("composes body, browser event, and viewport sync adapters", () => {
+    const body = {
+      enableStudioBody: vi.fn(),
+      removeLoadingIndicator: vi.fn(),
+    };
+    const browserEvents = {
+      addResizeListener: vi.fn(),
+      getDocumentReadyState: vi.fn(() => "loading" as const),
+      addDomContentLoadedListener: vi.fn(),
+    };
+    const viewportSync = {
+      setViewportSync: vi.fn(),
+    };
+
+    const targets = createStudioBootstrapDomTargets(
+      body,
+      browserEvents,
+      viewportSync,
+    );
+    const resize = vi.fn();
+    const ready = vi.fn();
+    const sync: StudioViewportSync = vi.fn();
+
+    targets.enableStudioBody();
+    targets.removeLoadingIndicator();
+    targets.addResizeListener(resize);
+    targets.addDomContentLoadedListener(ready);
+    targets.setViewportSync(sync);
+
+    expect(body.enableStudioBody).toHaveBeenCalled();
+    expect(body.removeLoadingIndicator).toHaveBeenCalled();
+    expect(browserEvents.addResizeListener).toHaveBeenCalledWith(resize);
+    expect(targets.getDocumentReadyState()).toBe("loading");
+    expect(browserEvents.addDomContentLoadedListener).toHaveBeenCalledWith(
+      ready,
+    );
+    expect(viewportSync.setViewportSync).toHaveBeenCalledWith(sync);
+  });
+
   it("wires browser DOM and window operations behind bootstrap targets", () => {
     const bodyClassList = { add: vi.fn() };
     const loading = { remove: vi.fn() };

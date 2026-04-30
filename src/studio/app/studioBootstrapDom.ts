@@ -1,15 +1,25 @@
 import type { StudioViewportSync } from "./studioBootstrapTargets";
 
-export type StudioBootstrapDomTargets = {
+export type StudioBootstrapBodyAdapter = {
   enableStudioBody: () => void;
   removeLoadingIndicator: () => void;
+};
+
+export type StudioBootstrapBrowserEventAdapter = {
   addResizeListener: (callback: () => void) => void;
   getDocumentReadyState: () => DocumentReadyState;
   addDomContentLoadedListener: (callback: () => void) => void;
+};
+
+export type StudioBootstrapViewportSyncAdapter = {
   setViewportSync: (sync: StudioViewportSync) => void;
 };
 
-export function createGlobalStudioBootstrapDomTargets(): StudioBootstrapDomTargets {
+export type StudioBootstrapDomTargets = StudioBootstrapBodyAdapter &
+  StudioBootstrapBrowserEventAdapter &
+  StudioBootstrapViewportSyncAdapter;
+
+export function createGlobalStudioBootstrapBodyAdapter(): StudioBootstrapBodyAdapter {
   return {
     enableStudioBody: () => {
       document.body.classList.add("studio-enabled");
@@ -17,6 +27,11 @@ export function createGlobalStudioBootstrapDomTargets(): StudioBootstrapDomTarge
     removeLoadingIndicator: () => {
       document.getElementById("loading")?.remove();
     },
+  };
+}
+
+export function createGlobalStudioBootstrapBrowserEventAdapter(): StudioBootstrapBrowserEventAdapter {
+  return {
     addResizeListener: (callback) => {
       window.addEventListener("resize", callback);
     },
@@ -24,8 +39,36 @@ export function createGlobalStudioBootstrapDomTargets(): StudioBootstrapDomTarge
     addDomContentLoadedListener: (callback) => {
       document.addEventListener("DOMContentLoaded", callback, { once: true });
     },
+  };
+}
+
+export function createGlobalStudioBootstrapViewportSyncAdapter(): StudioBootstrapViewportSyncAdapter {
+  return {
     setViewportSync: (sync) => {
       window.studioViewportSync = sync;
     },
   };
+}
+
+export function createStudioBootstrapDomTargets(
+  body: StudioBootstrapBodyAdapter,
+  browserEvents: StudioBootstrapBrowserEventAdapter,
+  viewportSync: StudioBootstrapViewportSyncAdapter,
+): StudioBootstrapDomTargets {
+  return {
+    enableStudioBody: body.enableStudioBody,
+    removeLoadingIndicator: body.removeLoadingIndicator,
+    addResizeListener: browserEvents.addResizeListener,
+    getDocumentReadyState: browserEvents.getDocumentReadyState,
+    addDomContentLoadedListener: browserEvents.addDomContentLoadedListener,
+    setViewportSync: viewportSync.setViewportSync,
+  };
+}
+
+export function createGlobalStudioBootstrapDomTargets(): StudioBootstrapDomTargets {
+  return createStudioBootstrapDomTargets(
+    createGlobalStudioBootstrapBodyAdapter(),
+    createGlobalStudioBootstrapBrowserEventAdapter(),
+    createGlobalStudioBootstrapViewportSyncAdapter(),
+  );
 }
