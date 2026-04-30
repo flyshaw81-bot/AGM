@@ -648,33 +648,39 @@ export class RoutesModule {
   }
 
   // utility functions
-  isConnected(cellId: number): boolean {
-    const routes = pack.cells.routes;
+  isConnected(
+    cellId: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ): boolean {
+    const routes = context.pack.cells.routes;
     return routes[cellId] && Object.keys(routes[cellId]).length > 0;
   }
 
-  getNextId() {
-    return pack.routes.length
-      ? Math.max(...pack.routes.map((r) => r.i)) + 1
-      : 0;
+  getNextId(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+    const routes = context.pack.routes;
+    return routes.length ? Math.max(...routes.map((route) => route.i)) + 1 : 0;
   }
 
   // connect cell with routes system by land
-  connect(cellId: number): Route | undefined {
-    const context = getGlobalEngineRuntimeContext();
+  connect(
+    cellId: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ): Route | undefined {
+    const { pack } = context;
     const getCost = this.createCostEvaluator({
       isWater: false,
       connections: new Map(),
       context,
     });
-    const isExit = (c: number) => isLand(c, pack) && this.isConnected(c);
+    const isExit = (c: number) =>
+      isLand(c, pack) && this.isConnected(c, context);
     const pathCells = findPath(cellId, isExit, getCost, pack);
     if (!pathCells) return;
 
     const pointsArray = this.preparePointsArray(context);
     const points = this.getPoints("trails", pathCells, pointsArray, context);
     const feature = pack.cells.f[cellId];
-    const routeId = this.getNextId();
+    const routeId = this.getNextId(context);
     const newRoute = { i: routeId, group: "trails", feature, points };
     pack.routes.push(newRoute as Route);
 
@@ -697,38 +703,52 @@ export class RoutesModule {
     return newRoute as Route;
   }
 
-  areConnected(from: number, to: number): boolean {
-    const routeId = pack.cells.routes[from]?.[to];
+  areConnected(
+    from: number,
+    to: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ): boolean {
+    const routeId = context.pack.cells.routes[from]?.[to];
     return routeId !== undefined;
   }
 
-  getRoute(from: number, to: number) {
-    const routeId = pack.cells.routes[from]?.[to];
+  getRoute(
+    from: number,
+    to: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ) {
+    const routeId = context.pack.cells.routes[from]?.[to];
     if (routeId === undefined) return null;
 
-    const route = pack.routes.find((route) => route.i === routeId);
+    const route = context.pack.routes.find((route) => route.i === routeId);
     if (!route) return null;
 
     return route;
   }
 
-  hasRoad(cellId: number): boolean {
-    const connections = pack.cells.routes[cellId];
+  hasRoad(
+    cellId: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ): boolean {
+    const connections = context.pack.cells.routes[cellId];
     if (!connections) return false;
 
     return Object.values(connections).some((routeId) => {
-      const route = pack.routes.find((route) => route.i === routeId);
+      const route = context.pack.routes.find((route) => route.i === routeId);
       if (!route) return false;
       return route.group === "roads";
     });
   }
 
-  isCrossroad(cellId: number): boolean {
-    const connections = pack.cells.routes[cellId];
+  isCrossroad(
+    cellId: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ): boolean {
+    const connections = context.pack.cells.routes[cellId];
     if (!connections) return false;
     if (Object.keys(connections).length > 3) return true;
     const roadConnections = Object.values(connections).filter((routeId) => {
-      const route = pack.routes.find((route) => route.i === routeId);
+      const route = context.pack.routes.find((route) => route.i === routeId);
       return route?.group === "roads";
     });
     return roadConnections.length > 2;
@@ -753,8 +773,11 @@ export class RoutesModule {
     viewbox.select(`#route${route.i}`).remove();
   }
 
-  getConnectivityRate(cellId: number): number {
-    const connections = pack.cells.routes[cellId];
+  getConnectivityRate(
+    cellId: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ): number {
+    const connections = context.pack.cells.routes[cellId];
     if (!connections) return 0;
 
     const connectivityRateMap = {
@@ -765,7 +788,7 @@ export class RoutesModule {
     };
 
     const connectivity = Object.values(connections).reduce((acc, routeId) => {
-      const route = pack.routes.find((route) => route.i === routeId);
+      const route = context.pack.routes.find((route) => route.i === routeId);
       if (!route) return acc;
       const rate =
         connectivityRateMap[route.group] || connectivityRateMap.default;
@@ -778,9 +801,11 @@ export class RoutesModule {
   generateName({
     group,
     points,
+    context = getGlobalEngineRuntimeContext(),
   }: {
     group: string;
     points: number[][];
+    context?: EngineRuntimeContext;
   }): string {
     if (points.length < 4) return "Unnamed route segment";
 
@@ -791,8 +816,8 @@ export class RoutesModule {
         points.slice(1, -1).reverse(),
       ];
       for (const [_x, _y, cellId] of priority as [number, number, number][]) {
-        const burgId = pack.cells.burg[cellId as number];
-        if (burgId) return getAdjective(pack.burgs[burgId].name!);
+        const burgId = context.pack.cells.burg[cellId as number];
+        if (burgId) return getAdjective(context.pack.burgs[burgId].name!);
       }
       return null;
     }

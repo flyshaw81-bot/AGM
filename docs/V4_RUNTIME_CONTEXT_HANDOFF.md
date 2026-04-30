@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 180 test files, 677 tests.
+- `npm.cmd run test -- --run` passed: 180 test files, 679 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2002,6 +2002,11 @@ focused tests cover the restoration behavior.
 `context.burgs.getType(...)` instead of calling the global `Burgs.getType`
 mount directly; the default burg service still delegates to the mounted module
 for compatibility.
+`routes-generator.ts` now accepts explicit runtime context for route query
+helpers (`isConnected`, `areConnected`, `getRoute`, `hasRoad`, `isCrossroad`,
+`getConnectivityRate`, `getNextId`, and route naming burg lookups). The runtime
+route service passes context into those module calls; rendered route removal and
+SVG length measurement remain deferred.
 
 `engine-runtime-settings.ts` now routes settings input lookups through
 `EngineSettingsDomTargets`, keeping the browser `document.getElementById`

@@ -47,13 +47,13 @@ describe("createGlobalRouteService", () => {
     expect(routes.findById(8)).toBe(packedRoute);
     expect(routes.findById(99)).toBeUndefined();
 
-    expect(Routes.isCrossroad).toHaveBeenCalledWith(10);
-    expect(Routes.isConnected).toHaveBeenCalledWith(11);
-    expect(Routes.hasRoad).toHaveBeenCalledWith(12);
-    expect(Routes.getRoute).toHaveBeenCalledWith(1, 2);
-    expect(Routes.getConnectivityRate).toHaveBeenCalledWith(13);
+    expect(Routes.isCrossroad).toHaveBeenCalledWith(10, undefined);
+    expect(Routes.isConnected).toHaveBeenCalledWith(11, undefined);
+    expect(Routes.hasRoad).toHaveBeenCalledWith(12, undefined);
+    expect(Routes.getRoute).toHaveBeenCalledWith(1, 2, undefined);
+    expect(Routes.getConnectivityRate).toHaveBeenCalledWith(13, undefined);
     expect(Routes.buildLinks).toHaveBeenCalledWith([]);
-    expect(Routes.connect).toHaveBeenCalledWith(14);
+    expect(Routes.connect).toHaveBeenCalledWith(14, undefined);
     expect(Routes.remove).toHaveBeenCalledWith(routeToRemove);
   });
 
@@ -85,6 +85,12 @@ describe("createGlobalRouteService", () => {
     routes.remove(packedRoute);
     expect(routes.findById(4)).toBe(packedRoute);
 
+    expect(routesModule.isCrossroad).toHaveBeenCalledWith(1, undefined);
+    expect(routesModule.isConnected).toHaveBeenCalledWith(2, undefined);
+    expect(routesModule.hasRoad).toHaveBeenCalledWith(3, undefined);
+    expect(routesModule.getRoute).toHaveBeenCalledWith(1, 2, undefined);
+    expect(routesModule.getConnectivityRate).toHaveBeenCalledWith(5, undefined);
+    expect(routesModule.connect).toHaveBeenCalledWith(6, undefined);
     expect(routesModule.remove).toHaveBeenCalledWith(packedRoute);
   });
 
@@ -110,7 +116,7 @@ describe("createGlobalRouteService", () => {
     expect(routes.findById(12)).not.toBe(globalRoute);
     expect(routes.hasRoad(4)).toBe(true);
     routes.remove(runtimeRoute);
-    expect(routesModule.hasRoad).toHaveBeenCalledWith(4);
+    expect(routesModule.hasRoad).toHaveBeenCalledWith(4, context);
     expect(routesModule.remove).toHaveBeenCalledWith(runtimeRoute);
   });
 });

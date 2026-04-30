@@ -121,4 +121,63 @@ describe("RoutesModule", () => {
     expect(routes[11][12]).toBe(3);
     expect(routes[12][11]).toBe(3);
   });
+
+  it("reads route queries from an explicit runtime context", () => {
+    const context = createRoutesContext();
+    context.pack.routes = [
+      {
+        i: 1,
+        group: "roads",
+        feature: 1,
+        points: [
+          [0, 0, 0],
+          [1, 1, 1],
+        ],
+      },
+      {
+        i: 4,
+        group: "trails",
+        feature: 1,
+        points: [
+          [1, 1, 1],
+          [2, 2, 2],
+        ],
+      },
+    ];
+    context.pack.cells.routes = {
+      0: { 1: 1 },
+      1: { 0: 1, 2: 4 },
+      2: { 1: 4 },
+    };
+
+    const routes = new RoutesModule();
+
+    expect(routes.getNextId(context)).toBe(5);
+    expect(routes.isConnected(1, context)).toBe(true);
+    expect(routes.areConnected(0, 1, context)).toBe(true);
+    expect(routes.getRoute(0, 1, context)).toBe(context.pack.routes[0]);
+    expect(routes.hasRoad(1, context)).toBe(true);
+    expect(routes.isCrossroad(1, context)).toBe(false);
+    expect(routes.getConnectivityRate(1, context)).toBe(1.1);
+  });
+
+  it("generates route names from context burg data", () => {
+    const context = createRoutesContext();
+    context.pack.cells.burg = new Uint16Array([0, 0, 0, 1]);
+    context.pack.burgs = [undefined, { i: 1, name: "Northwatch" }] as any;
+
+    const name = new RoutesModule().generateName({
+      group: "roads",
+      points: [
+        [0, 0, 0],
+        [1, 1, 1],
+        [2, 2, 2],
+        [3, 3, 3],
+      ],
+      context,
+    });
+
+    expect(name).toEqual(expect.any(String));
+    expect(name.length).toBeGreaterThan(0);
+  });
 });
