@@ -4,7 +4,7 @@
 > command-layer, and compatibility-boundary migration. It is not claiming that
 > all public UI, jQuery dialogs, or global compatibility adapters are gone.
 
-> **Codex current reply to V4:** 老检，收到。The current slice has moved well
+> **Codex current reply to V4:** V4, received. The current slice has moved well
 > past the old Cultures/FlatQueue checkpoint: generation pipeline/session
 > adapters, runtime context services, autofix command targets, entity mutation
 > targets, focus/resource/canvas access targets, project climate/control/form/
@@ -90,6 +90,9 @@
 > Generation profile default engine/draft/clock access now uses
 > `GenerationProfileTargets` from a dedicated adapter module, so profile logic
 > no longer owns engine pending-setting bridge calls or timestamps inline.
+> Document state sync/restore now uses `DocumentStateTargets`, so editor
+> workflow reads, document/style reads, document-name writes, and layer restore
+> writes are isolated from document state logic.
 > Please review whether each remaining global dependency is behind an explicit
 > compatibility adapter, and keep treating AGM `window.*` module mounts
 > separately from old public UI debt.
@@ -493,7 +496,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 152 test files, 494 tests.
+- `npm.cmd run test -- --run` passed: 153 test files, 498 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1347,6 +1350,11 @@ draft creation, pending generation setting writes, and clock access.
 `generationProfile.ts` continues to re-export the target type/factory for
 existing call sites, while profile override and impact logic no longer owns
 those direct bridge/timestamp calls inline.
+Document state sync/restore now has a dedicated `DocumentStateTargets`
+boundary for editor workflow reads, engine document/style reads, document name
+writes, and layer restore operations. `documentState.ts` continues to re-export
+the target type/factory while its sync/restore logic no longer owns direct
+bridge calls inline.
 Direct editor targets can also compose focus, entity mutation, and biome
 mutation commands directly from an injected `EngineRuntimeContext`. The default
 adapters still delegate to current entity mutation/focus bridge helpers, but

@@ -1,21 +1,25 @@
-import {
-  getEngineLayerStates,
-  setEngineLayersPreset,
-  syncEngineEditorState,
-  toggleEngineLayer,
-} from "../bridge/engineActions";
-import {
-  getEngineDocumentState,
-  setEngineDocumentName,
-} from "../bridge/engineMapHost";
-import { getEngineStylePreset } from "../bridge/engineStyle";
 import type { WorldDocumentDraft } from "../state/worldDocumentDraft";
 import type { StudioState } from "../types";
+import {
+  createGlobalDocumentStateTargets,
+  type DocumentStateTargets,
+} from "./documentStateTargets";
 
-export function syncEditorWorkflowState(state: StudioState) {
+export {
+  createGlobalDocumentStateTargets,
+  type DocumentStateTargets,
+} from "./documentStateTargets";
+
+export function syncEditorWorkflowState(
+  state: StudioState,
+  targets: Pick<
+    DocumentStateTargets,
+    "syncEditorState"
+  > = createGlobalDocumentStateTargets(),
+) {
   const previousActiveEditor = state.editor.activeEditor;
   const previousDialogOpen = state.editor.editorDialogOpen;
-  const nextEditorState = syncEngineEditorState();
+  const nextEditorState = targets.syncEditorState();
   const changed =
     previousActiveEditor !== nextEditorState.activeEditor ||
     previousDialogOpen !== nextEditorState.editorDialogOpen;
@@ -51,8 +55,14 @@ export function syncEditorWorkflowState(state: StudioState) {
   return changed;
 }
 
-export function syncDocumentState(state: StudioState) {
-  const engineDocument = getEngineDocumentState();
+export function syncDocumentState(
+  state: StudioState,
+  targets: Pick<
+    DocumentStateTargets,
+    "getDocumentState" | "getStylePreset"
+  > = createGlobalDocumentStateTargets(),
+) {
+  const engineDocument = targets.getDocumentState();
   const nextDocument = {
     ...state.document,
     ...engineDocument,
@@ -61,7 +71,7 @@ export function syncDocumentState(state: StudioState) {
         ? state.document.name
         : engineDocument.name,
     source: state.document.source,
-    stylePreset: getEngineStylePreset(),
+    stylePreset: targets.getStylePreset(),
   };
   const changed =
     state.document.name !== nextDocument.name ||
@@ -78,12 +88,18 @@ export function syncDocumentState(state: StudioState) {
   return changed;
 }
 
-function syncAgmLayerState(draftLayers: WorldDocumentDraft["layers"]) {
-  if (draftLayers.preset) setEngineLayersPreset(draftLayers.preset);
-  const currentLayers = getEngineLayerStates();
+function syncAgmLayerState(
+  draftLayers: WorldDocumentDraft["layers"],
+  targets: Pick<
+    DocumentStateTargets,
+    "getLayerStates" | "setLayersPreset" | "toggleLayer"
+  >,
+) {
+  if (draftLayers.preset) targets.setLayersPreset(draftLayers.preset);
+  const currentLayers = targets.getLayerStates();
   Object.entries(draftLayers.visible).forEach(([action, enabled]) => {
     if (currentLayers[action as keyof typeof currentLayers] !== enabled)
-      toggleEngineLayer(action as keyof typeof currentLayers);
+      targets.toggleLayer(action as keyof typeof currentLayers);
   });
 }
 
@@ -99,8 +115,12 @@ export function restoreAgmDocumentState(
     >;
   },
   onViewportRestored?: (state: StudioState) => void,
+  targets: Pick<
+    DocumentStateTargets,
+    "getLayerStates" | "setDocumentName" | "setLayersPreset" | "toggleLayer"
+  > = createGlobalDocumentStateTargets(),
 ) {
-  state.document.name = setEngineDocumentName(draft.document.name);
+  state.document.name = targets.setDocumentName(draft.document.name);
   state.document.gameProfile = draft.document.gameProfile;
   state.document.designIntent = draft.document.designIntent;
   state.document.source = "agm";
@@ -122,5 +142,5 @@ export function restoreAgmDocumentState(
       values: {},
     };
   }
-  if (draft.world?.layers) syncAgmLayerState(draft.world.layers);
+  if (draft.world?.layers) syncAgmLayerState(draft.world.layers, targets);
 }
