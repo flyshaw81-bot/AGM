@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 179 test files, 652 tests.
+- `npm.cmd run test -- --run` passed: 180 test files, 654 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1962,6 +1962,12 @@ global-control adapters.
 `EmblemShapeDomTargets`. The public `createGlobalEmblemShapeTargets()` default
 adapter preserves current browser behavior, while the generator can be tested
 with injected DOM shape targets.
+
+`fonts.ts` now composes its browser font compatibility adapter from
+`EngineBrowserFontResourceTargets`. Direct `document`, `FontFace`, toast,
+network, and province-font effects are concentrated in the default browser
+targets, while focused tests cover injected adapter composition and the global
+font runtime compatibility facade.
 
 ## Next Recommended Slice
 

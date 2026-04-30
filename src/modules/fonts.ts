@@ -1,4 +1,3 @@
-import { byId } from "../utils/shorthands";
 import {
   type EngineFontResourceAdapter,
   EngineFontResourceService,
@@ -15,7 +14,7 @@ export type EngineFontResourceRuntime = {
   addWebFont: (family: string, src: string) => void;
 };
 
-type EngineFontResourceCompatibilityTarget = typeof globalThis & {
+export type EngineFontResourceCompatibilityTarget = typeof globalThis & {
   AGMFontResources?: EngineFontResourceRuntime;
   declareFont?: (font: FontDefinition) => void;
   getUsedFonts?: (svg: SVGSVGElement) => FontDefinition[];
@@ -24,6 +23,25 @@ type EngineFontResourceCompatibilityTarget = typeof globalThis & {
   addLocalFont?: (family: string) => void;
   addWebFont?: (family: string, src: string) => void;
   fonts?: FontDefinition[];
+};
+
+export type EngineBrowserFontResourceTargets = {
+  getFontSelect: () => HTMLSelectElement | null;
+  createOption: () => HTMLOptionElement;
+  createFontFace: (font: FontDefinition) => FontFace | null;
+  addFontFace: (fontFace: FontFace) => void;
+  setSelectedFont: (family: string) => void;
+  applySelectedFont: () => void;
+  showToast: (
+    message: string,
+    type: "error" | "success" | "warn",
+    duration?: number,
+  ) => void;
+  logError: (error: unknown) => void;
+  fetchText: (url: string) => Promise<string>;
+  fetchBlob: (url: string) => Promise<Blob>;
+  readBlobAsDataUrl: (blob: Blob) => Promise<string>;
+  getProvinceFont: () => string | null;
 };
 
 const fontDefinitions: FontDefinition[] = [
@@ -286,38 +304,23 @@ function readBlobAsDataURL(blob: Blob) {
   });
 }
 
-function addFontOption(family: string) {
-  const options = document.getElementById("styleSelectFont");
-  if (!options) return;
-
-  const option = document.createElement("option");
-  option.value = family;
-  option.innerText = family;
-  option.style.fontFamily = family;
-  options.append(option);
-}
-
 function createFontFace(font: FontDefinition) {
   const { family, src, ...rest } = font;
   if (!src) return null;
   return new FontFace(family, src, { ...rest, display: "block" });
 }
 
-export function createBrowserFontResourceAdapter(): EngineFontResourceAdapter {
+export function createGlobalBrowserFontResourceTargets(): EngineBrowserFontResourceTargets {
   return {
-    addFontOption,
-    registerFontFace: (font) => {
-      const fontFace = createFontFace(font);
-      if (fontFace) document.fonts.add(fontFace);
-    },
-    loadFontFace: async (font) => {
-      const fontFace = createFontFace(font);
-      if (!fontFace) return;
-      await fontFace.load();
-      document.fonts.add(fontFace);
-    },
+    getFontSelect: () =>
+      document.getElementById("styleSelectFont") as HTMLSelectElement | null,
+    createOption: () => document.createElement("option"),
+    createFontFace,
+    addFontFace: (fontFace) => document.fonts.add(fontFace),
     setSelectedFont: (family) => {
-      const select = byId<HTMLSelectElement>("styleSelectFont");
+      const select = document.getElementById(
+        "styleSelectFont",
+      ) as HTMLSelectElement | null;
       if (select) select.value = family;
     },
     applySelectedFont: () => changeFont(),
@@ -336,6 +339,46 @@ export function createBrowserFontResourceAdapter(): EngineFontResourceAdapter {
     },
     readBlobAsDataUrl: readBlobAsDataURL,
     getProvinceFont: () => provs.attr("font-family") || null,
+  };
+}
+
+function addFontOption(
+  targets: EngineBrowserFontResourceTargets,
+  family: string,
+) {
+  const options = targets.getFontSelect();
+  if (!options) return;
+
+  const option = targets.createOption();
+  option.value = family;
+  option.innerText = family;
+  option.style.fontFamily = family;
+  options.append(option);
+}
+
+export function createBrowserFontResourceAdapter(
+  targets: EngineBrowserFontResourceTargets = createGlobalBrowserFontResourceTargets(),
+): EngineFontResourceAdapter {
+  return {
+    addFontOption: (family) => addFontOption(targets, family),
+    registerFontFace: (font) => {
+      const fontFace = targets.createFontFace(font);
+      if (fontFace) targets.addFontFace(fontFace);
+    },
+    loadFontFace: async (font) => {
+      const fontFace = targets.createFontFace(font);
+      if (!fontFace) return;
+      await fontFace.load();
+      targets.addFontFace(fontFace);
+    },
+    setSelectedFont: targets.setSelectedFont,
+    applySelectedFont: targets.applySelectedFont,
+    showToast: targets.showToast,
+    logError: targets.logError,
+    fetchText: targets.fetchText,
+    fetchBlob: targets.fetchBlob,
+    readBlobAsDataUrl: targets.readBlobAsDataUrl,
+    getProvinceFont: targets.getProvinceFont,
   };
 }
 
