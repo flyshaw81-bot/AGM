@@ -418,7 +418,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 123 test files, 373 tests.
+- `npm.cmd run test -- --run` passed: 124 test files, 378 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -505,10 +505,11 @@ Completed:
 - Manual ice editor methods are context-capable now, but the default rendering
   adapter still delegates to existing SVG redraw helpers. This is adapter
   isolation, not a replacement of the rendered ice editor lifecycle.
-- `fonts.ts` still owns several browser global font helpers. Treat it as a
-  later font/resource adapter task rather than a generation-runtime task. It no
-  longer imports the aggregate `../utils` barrel, so do not use the old
-  "remains the only" wording when reviewing this slice.
+- `fonts.ts` now owns only the browser font-resource compatibility adapter.
+  Font registration, Google font CSS parsing, data-URI conversion, and used-font
+  discovery are handled by `EngineFontResourceService`, so review remaining
+  font debt as `window.*` caller migration rather than missing service
+  creation.
 - The default/global `EngineNoticeService` still delegates to the old
   `alertMessage` + jQuery dialog implementation. That compatibility is now
   isolated in `engine-notice-service.ts`, not inside `CulturesModule`.
@@ -748,11 +749,11 @@ Completed:
   runtime-context assembler.
 - Burgs manual removal now uses `context.feedback.showToast` for missing-burg
   messages, leaving `EngineRenderAdapter` focused on map/SVG rendering effects.
-- `fonts.ts` is still a browser font/resource adapter, not part of the pure
-  generation runtime. Its toast and error calls are now isolated behind local
-  font feedback helpers, and it no longer imports the aggregate `../utils`
-  barrel. Direct `window.*` font registration remains by design until the font
-  resource layer is replaced.
+- `fonts.ts` now delegates font loading, used-font discovery, Google CSS
+  parsing, and data-URI conversion to
+  `src/modules/engine-font-resource-service.ts`. The module itself is the
+  browser compatibility adapter that mounts the existing `window.*` font API
+  and wires DOM/font-face/toast effects for old public UI callers.
 - `Cultures.generate(context)` still falls back to global `nameBases` /
   `Names.*` where optional naming adapters are absent. Global name-base access
   is reduced but not removed from the compatibility path.
@@ -1133,9 +1134,9 @@ order:
    mixing rendered editor state into pure generation migration.
 3. Defer `Rivers.remove(...)` until rendered river selection state is isolated
    behind a renderer/command adapter.
-4. Continue reducing module-level browser UI exits. `fonts.ts` is now
-   classified as a font/resource compatibility adapter; the next high-value
-   step is to create a formal font resource service before moving its
-   `window.*` API.
+4. Continue reducing module-level browser UI exits. `fonts.ts` now has a
+   formal `EngineFontResourceService`; the next high-value step is to move
+   public UI callers from the compatibility `window.*` font API onto injected
+   font-resource commands.
 5. Defer manual Burgs editor methods (`add/remove/changeGroup`) until the
    editor command layer can own rendered icons, labels, routes, and COA updates.
