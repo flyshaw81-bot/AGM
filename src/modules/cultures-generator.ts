@@ -55,14 +55,8 @@ export class CulturesModule {
     context: EngineRuntimeContext,
     html: string,
   ) {
-    const notices =
-      context.notices ??
-      (typeof window !== "undefined"
-        ? getGlobalEngineRuntimeContext().notices
-        : undefined);
-
-    if (notices) {
-      notices.showModal({
+    if (context.notices) {
+      context.notices.showModal({
         resizable: false,
         title: "Extreme climate warning",
         html,

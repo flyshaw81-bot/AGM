@@ -1848,6 +1848,10 @@ and map placement now go through `context.mapStore.getCurrentContext()` instead
 of direct `EngineGenerationPipeline.getCurrentContext()` calls. The behavior is
 unchanged for compatibility contexts, but the refresh boundary is now owned by
 the runtime map store instead of scattered through the pipeline.
+Culture extreme-climate warnings now use the explicit runtime context notice/log
+services only. The previous fallback to `getGlobalEngineRuntimeContext()` for
+notices was removed, so culture generation no longer reaches back into the
+global runtime just to display that warning.
 
 ## Next Recommended Slice
 

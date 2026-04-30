@@ -205,4 +205,27 @@ describe("CulturesModule", () => {
       "There are no populated cells. Cannot generate cultures",
     ]);
   });
+
+  it("keeps extreme-climate warning fallback on the explicit runtime log service", () => {
+    const warnings: string[] = [];
+    const context = createGenerateCultureContext();
+    context.pack.cells.i = [0];
+    context.pack.cells.s = new Float32Array([0]);
+    context.generationSettings.culturesCount = 2;
+    context.generationSettings.cultureSetMax = 2;
+    context.notices = undefined;
+    context.logs = {
+      warn: (message) => {
+        warnings.push(message);
+      },
+      error: () => {},
+    };
+
+    new CulturesModule().generate(context);
+
+    expect(warnings).toEqual([
+      "There are no populated cells. Cannot generate cultures",
+      expect.stringContaining("No cultures, states and burgs"),
+    ]);
+  });
 });
