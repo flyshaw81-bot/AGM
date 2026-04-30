@@ -136,6 +136,20 @@ describe("CulturesModule", () => {
     expect(context.pack.cells.culture).toBeInstanceOf(Uint16Array);
   });
 
+  it("uses the runtime random service for culture expansionism", () => {
+    const context = createGenerateCultureContext();
+    context.random = {
+      next: () => 0,
+    };
+    context.generationSettings.stateSizeVariety = 2;
+
+    new CulturesModule().generate(context);
+
+    expect(context.pack.cultures[1]).toMatchObject({
+      expansionism: 1,
+    });
+  });
+
   it("adds manual cultures through an explicit runtime context", () => {
     const context = createGenerateCultureContext();
     context.pack.cultures = [

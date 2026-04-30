@@ -44,6 +44,10 @@ import {
 } from "./engine-notice-service";
 import type { EngineOptionsSessionModule } from "./engine-options-session";
 import {
+  createGlobalRandomService,
+  type EngineRandomService,
+} from "./engine-random-service";
+import {
   createGlobalRenderAdapter,
   type EngineRenderAdapter,
 } from "./engine-render-adapter";
@@ -74,6 +78,7 @@ export type { EngineMapSnapshot, EngineMapStore } from "./engine-map-store";
 export type { EngineNamingService } from "./engine-naming-service";
 export type { EngineNote, EngineNoteService } from "./engine-note-service";
 export type { EngineNoticeService } from "./engine-notice-service";
+export type { EngineRandomService } from "./engine-random-service";
 export type { EngineRenderAdapter } from "./engine-render-adapter";
 export type { EngineRouteService } from "./engine-route-service";
 export type { EngineStateService } from "./engine-state-service";
@@ -114,6 +119,7 @@ export type EngineRuntimeContext = {
   notices?: EngineNoticeService;
   logs?: EngineLogService;
   feedback?: EngineFeedbackService;
+  random: EngineRandomService;
   rendering?: EngineRenderAdapter;
   climate?: ClimateRuntimeContext;
   profile?: string;
@@ -150,6 +156,7 @@ export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
     notices: createGlobalNoticeService(),
     logs: createGlobalLogService(),
     feedback,
+    random: createGlobalRandomService(),
     rendering: createGlobalRenderAdapter(),
     climate: createGlobalClimateContext(),
     timing: createGlobalTimingSettings(),

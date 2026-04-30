@@ -1207,7 +1207,8 @@ export class CulturesModule {
       else if (type === "Hunting") base = 0.7;
       else if (type === "Highland") base = 1.2;
       return rn(
-        ((Math.random() * context.generationSettings.stateSizeVariety) / 2 +
+        ((context.random.next() * context.generationSettings.stateSizeVariety) /
+          2 +
           1) *
           base,
         1,

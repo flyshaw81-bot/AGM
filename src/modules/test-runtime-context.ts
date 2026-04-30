@@ -37,6 +37,7 @@ export function createTestRuntimeAdapters(): Pick<
   | "generationSession"
   | "lifecycle"
   | "feedback"
+  | "random"
   | "rendering"
 > {
   return {
@@ -111,6 +112,9 @@ export function createTestRuntimeAdapters(): Pick<
     },
     feedback: {
       showToast: () => {},
+    },
+    random: {
+      next: () => 0.5,
     },
     rendering: {
       findCell: () => undefined,

@@ -821,6 +821,10 @@ Completed:
   `document` or `globalThis` inputs.
 - Removed the remaining `emblemShape` DOM fallback from manual culture add;
   culture emblem selection now uses `context.generationSettings` on that path.
+- Added `EngineRandomService` to `EngineRuntimeContext` and routed culture
+  expansionism randomness through `context.random.next()`. The default service
+  still preserves current seeded `Math.random()` behavior, but context-routed
+  culture generation no longer calls it directly on that path.
 - Added `EngineRuntimeContext.optionsSession`. Generation session preparation
   now receives the active context and uses `context.optionsSession` for option
   randomization when available, instead of always reaching for the global

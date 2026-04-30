@@ -95,6 +95,9 @@ function createPipelineContext(id: string): EngineRuntimeContext {
       removeWhere: () => {},
       splice: () => [],
     },
+    random: {
+      next: () => 0.5,
+    },
     timing: {
       shouldTime: false,
     },
