@@ -19,12 +19,34 @@ export type EngineEntityMutationTargets = {
   redrawZones: () => void;
 };
 
+export type EngineEntityLookupAdapter = {
+  getState: (stateId: number) => EngineMutableEntity | undefined;
+  getCulture: (cultureId: number) => EngineMutableEntity | undefined;
+  getReligion: (religionId: number) => EngineMutableEntity | undefined;
+  getBurg: (burgId: number) => EngineMutableEntity | undefined;
+  getProvince: (provinceId: number) => EngineMutableEntity | undefined;
+  getRoute: (routeId: number) => EngineMutableEntity | undefined;
+  getZone: (zoneId: number) => EngineMutableEntity | undefined;
+};
+
+export type EngineEntityRedrawAdapter = {
+  redrawStates: () => void;
+  redrawStateLabels: (stateIds?: number[]) => void;
+  redrawCultures: () => void;
+  redrawReligions: () => void;
+  redrawBurgs: () => void;
+  redrawLabels: () => void;
+  redrawProvinces: () => void;
+  redrawRoute: (route: EngineMutableEntity) => void;
+  redrawZones: () => void;
+};
+
 function callGlobalDraw(name: string, ...args: unknown[]) {
   const fn = (globalThis as Record<string, unknown>)[name];
   if (typeof fn === "function") fn(...args);
 }
 
-export function createGlobalEntityMutationTargets(): EngineEntityMutationTargets {
+export function createGlobalEntityLookupAdapter(): EngineEntityLookupAdapter {
   return {
     getState: (stateId) =>
       (
@@ -60,6 +82,11 @@ export function createGlobalEntityMutationTargets(): EngineEntityMutationTargets
       (
         globalThis.pack?.zones as unknown as EngineMutableEntity[] | undefined
       )?.find((zone) => zone?.i === zoneId),
+  };
+}
+
+export function createGlobalEntityRedrawAdapter(): EngineEntityRedrawAdapter {
+  return {
     redrawStates: () => callGlobalDraw("drawStates"),
     redrawStateLabels: (stateIds) =>
       callGlobalDraw("drawStateLabels", stateIds),
@@ -75,4 +102,35 @@ export function createGlobalEntityMutationTargets(): EngineEntityMutationTargets
     },
     redrawZones: () => callGlobalDraw("drawZones"),
   };
+}
+
+export function createEntityMutationTargets(
+  lookupAdapter: EngineEntityLookupAdapter,
+  redrawAdapter: EngineEntityRedrawAdapter,
+): EngineEntityMutationTargets {
+  return {
+    getState: lookupAdapter.getState,
+    getCulture: lookupAdapter.getCulture,
+    getReligion: lookupAdapter.getReligion,
+    getBurg: lookupAdapter.getBurg,
+    getProvince: lookupAdapter.getProvince,
+    getRoute: lookupAdapter.getRoute,
+    getZone: lookupAdapter.getZone,
+    redrawStates: redrawAdapter.redrawStates,
+    redrawStateLabels: redrawAdapter.redrawStateLabels,
+    redrawCultures: redrawAdapter.redrawCultures,
+    redrawReligions: redrawAdapter.redrawReligions,
+    redrawBurgs: redrawAdapter.redrawBurgs,
+    redrawLabels: redrawAdapter.redrawLabels,
+    redrawProvinces: redrawAdapter.redrawProvinces,
+    redrawRoute: redrawAdapter.redrawRoute,
+    redrawZones: redrawAdapter.redrawZones,
+  };
+}
+
+export function createGlobalEntityMutationTargets(): EngineEntityMutationTargets {
+  return createEntityMutationTargets(
+    createGlobalEntityLookupAdapter(),
+    createGlobalEntityRedrawAdapter(),
+  );
 }

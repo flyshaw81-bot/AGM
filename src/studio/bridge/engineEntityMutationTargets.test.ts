@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createGlobalEntityMutationTargets } from "./engineEntityMutationTargets";
+import {
+  createEntityMutationTargets,
+  createGlobalEntityMutationTargets,
+} from "./engineEntityMutationTargets";
 
 const originalPack = globalThis.pack;
 const originalDrawStates = (globalThis as any).drawStates;
@@ -49,5 +52,39 @@ describe("createGlobalEntityMutationTargets", () => {
     expect(drawStates).toHaveBeenCalledWith();
     expect(drawStateLabels).toHaveBeenCalledWith([1]);
     expect(drawRoute).toHaveBeenCalledWith(route);
+  });
+
+  it("composes entity mutation targets from injected lookup and redraw adapters", () => {
+    const state = { i: 1 };
+    const redrawStates = vi.fn();
+    const redrawRoute = vi.fn();
+    const targets = createEntityMutationTargets(
+      {
+        getState: () => state,
+        getCulture: () => undefined,
+        getReligion: () => undefined,
+        getBurg: () => undefined,
+        getProvince: () => undefined,
+        getRoute: () => undefined,
+        getZone: () => undefined,
+      },
+      {
+        redrawStates,
+        redrawStateLabels: vi.fn(),
+        redrawCultures: vi.fn(),
+        redrawReligions: vi.fn(),
+        redrawBurgs: vi.fn(),
+        redrawLabels: vi.fn(),
+        redrawProvinces: vi.fn(),
+        redrawRoute,
+        redrawZones: vi.fn(),
+      },
+    );
+
+    expect(targets.getState(1)).toBe(state);
+    targets.redrawStates();
+    targets.redrawRoute({ i: 4 });
+    expect(redrawStates).toHaveBeenCalledWith();
+    expect(redrawRoute).toHaveBeenCalledWith({ i: 4 });
   });
 });
