@@ -26,17 +26,47 @@ export type EngineCanvasAccessTargets = {
   invokeActiveZooming: () => void;
 };
 
+export type EngineCanvasDimensionAdapter = {
+  getGraphWidth: () => number | string | undefined;
+  getGraphHeight: () => number | string | undefined;
+};
+
+export type EngineCanvasMapDataAdapter = {
+  getPack: () => EngineCanvasPack | undefined;
+  getGridCells: () => unknown;
+};
+
+export type EngineCanvasRendererAdapter = {
+  drawHeightmap: () => void;
+  drawBiomes: () => void;
+  drawCells: () => void;
+  isLayerOn: (layer: string) => boolean;
+  invokeActiveZooming: () => void;
+};
+
 function engineCanvasWindow() {
   return globalThis as EngineCanvasWindow;
 }
 
-export function createGlobalEngineCanvasAccessTargets(): EngineCanvasAccessTargets {
+export function createGlobalEngineCanvasDimensionAdapter(): EngineCanvasDimensionAdapter {
   const engine = engineCanvasWindow();
   return {
     getGraphWidth: () => engine.graphWidth || engine.mapWidthInput?.value,
     getGraphHeight: () => engine.graphHeight || engine.mapHeightInput?.value,
+  };
+}
+
+export function createGlobalEngineCanvasMapDataAdapter(): EngineCanvasMapDataAdapter {
+  const engine = engineCanvasWindow();
+  return {
     getPack: () => engine.pack,
     getGridCells: () => engine.grid?.cells,
+  };
+}
+
+export function createGlobalEngineCanvasRendererAdapter(): EngineCanvasRendererAdapter {
+  const engine = engineCanvasWindow();
+  return {
     drawHeightmap: () => {
       if (typeof engine.drawHeightmap === "function") engine.drawHeightmap();
     },
@@ -52,6 +82,32 @@ export function createGlobalEngineCanvasAccessTargets(): EngineCanvasAccessTarge
         engine.invokeActiveZooming();
     },
   };
+}
+
+export function createEngineCanvasAccessTargets(
+  dimensionAdapter: EngineCanvasDimensionAdapter,
+  mapDataAdapter: EngineCanvasMapDataAdapter,
+  rendererAdapter: EngineCanvasRendererAdapter,
+): EngineCanvasAccessTargets {
+  return {
+    getGraphWidth: dimensionAdapter.getGraphWidth,
+    getGraphHeight: dimensionAdapter.getGraphHeight,
+    getPack: mapDataAdapter.getPack,
+    getGridCells: mapDataAdapter.getGridCells,
+    drawHeightmap: rendererAdapter.drawHeightmap,
+    drawBiomes: rendererAdapter.drawBiomes,
+    drawCells: rendererAdapter.drawCells,
+    isLayerOn: rendererAdapter.isLayerOn,
+    invokeActiveZooming: rendererAdapter.invokeActiveZooming,
+  };
+}
+
+export function createGlobalEngineCanvasAccessTargets(): EngineCanvasAccessTargets {
+  return createEngineCanvasAccessTargets(
+    createGlobalEngineCanvasDimensionAdapter(),
+    createGlobalEngineCanvasMapDataAdapter(),
+    createGlobalEngineCanvasRendererAdapter(),
+  );
 }
 
 export function getEngineCanvasGraphSize(

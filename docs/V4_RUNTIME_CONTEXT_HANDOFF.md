@@ -418,7 +418,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 124 test files, 391 tests.
+- `npm.cmd run test -- --run` passed: 124 test files, 392 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -865,7 +865,8 @@ services instead of reading `globalThis.Routes` inline:
   `globalThis.pack` / `biomesData` inline.
 - `src/studio/app/engineCanvasAccess.ts` now reads canvas graph size, pack/grid
   access, and edit-layer redraw helpers through `EngineCanvasAccessTargets`
-  instead of directly reading `globalThis` in every exported helper.
+  backed by dedicated dimension, map-data, and renderer adapters instead of
+  directly reading `globalThis` in every exported helper.
 - `src/studio/bridge/engineProjectClimateTargets.ts` now owns the Studio
   project climate redraw compatibility boundary: auto-apply DOM reads,
   climate/globe functions, AGM module calls, pack height preservation,
@@ -1011,7 +1012,8 @@ services instead of reading `globalThis.Routes` inline:
   summary generation, compatibility target adapters, and injected biome/pack
   adapter composition.
 - `src/studio/app/engineCanvasAccess.test.ts` covers canvas access target
-  injection and the default global adapter.
+  injection, injected dimension/map-data/renderer adapter composition, and the
+  default global adapter.
 - `src/studio/bridge/engineProjectClimate.test.ts` and
   `src/studio/bridge/engineProjectClimateTargets.test.ts` cover project climate
   redraw command execution and the default compatibility target adapter.
@@ -1096,7 +1098,8 @@ Known remaining debt for this slice: `EngineRouteWritebackTargets` still reads
 `EngineFocusGeometryTargets` still read the active global map/resources behind
 explicit adapters. `EngineResourceSummaryTargets` now splits biome data and
 pack resources through dedicated bridge adapters. `EngineCanvasAccessTargets`
-still reads canvas globals behind an app-level adapter.
+now splits canvas dimensions, map data, and renderer calls through dedicated
+app-level adapters.
 `EngineProjectClimateTargets` still reads climate, layer, pack-height, and 3D
 helpers behind a bridge-level adapter. `EngineProjectControlTargets` still
 reads project-control DOM/global helpers behind a bridge-level adapter.

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  createEngineCanvasAccessTargets,
   createGlobalEngineCanvasAccessTargets,
   type EngineCanvasAccessTargets,
   getEngineCanvasGraphSize,
@@ -84,6 +85,45 @@ describe("engineCanvasAccess", () => {
     expect(targets.isLayerOn).toHaveBeenCalledWith("toggleCells");
     expect(targets.drawCells).toHaveBeenCalledWith();
     expect(targets.invokeActiveZooming).toHaveBeenCalledWith();
+  });
+
+  it("composes canvas access targets from injected adapters", () => {
+    const pack = { cells: { i: [1] }, states: [] };
+    const gridCells = { i: [2] };
+    const drawHeightmap = vi.fn();
+    const drawBiomes = vi.fn();
+    const drawCells = vi.fn();
+    const invokeActiveZooming = vi.fn();
+
+    const targets = createEngineCanvasAccessTargets(
+      {
+        getGraphWidth: () => "1440",
+        getGraphHeight: () => 960,
+      },
+      {
+        getPack: () => pack,
+        getGridCells: () => gridCells,
+      },
+      {
+        drawHeightmap,
+        drawBiomes,
+        drawCells,
+        isLayerOn: () => true,
+        invokeActiveZooming,
+      },
+    );
+
+    expect(getEngineCanvasGraphSize(targets)).toEqual({
+      width: 1440,
+      height: 960,
+    });
+    expect(getEnginePack(targets)).toBe(pack);
+    expect(getEngineGridCells(targets)).toBe(gridCells);
+    redrawEngineCanvasEditLayers(targets);
+    expect(drawHeightmap).toHaveBeenCalledWith();
+    expect(drawBiomes).toHaveBeenCalledWith();
+    expect(drawCells).toHaveBeenCalledWith();
+    expect(invokeActiveZooming).toHaveBeenCalledWith();
   });
 
   it("creates a global adapter for the current engine canvas runtime", () => {
