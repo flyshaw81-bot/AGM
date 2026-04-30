@@ -104,6 +104,9 @@
 > and `getGlobalEngineRuntimeContext()` bootstraps context notes from the current
 > global notes array before keeping subsequent note mutations on the context
 > service.
+> Runtime context construction no longer creates global burg/route/mapStore/note
+> services before overriding them; these context-owned services now initialize
+> directly on the runtime path after compatibility bootstrap values are captured.
 > Studio style injection now uses `StudioStyleTargets`, so duplicate style
 > detection, style element creation, and head insertion are injectable.
 > Studio document theme sync now uses `StudioThemeSyncTargets`, so renderer

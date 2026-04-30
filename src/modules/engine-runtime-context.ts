@@ -1,7 +1,6 @@
 import type { PackedGraph } from "../types/PackedGraph";
 import type { ClimateRuntimeContext } from "./climate";
 import {
-  createGlobalBurgService,
   createRuntimeBurgService,
   type EngineBurgService,
 } from "./engine-burg-service";
@@ -34,17 +33,12 @@ import {
   createGlobalLogService,
   type EngineLogService,
 } from "./engine-log-service";
-import {
-  createGlobalMapStore,
-  createRuntimeMapStore,
-  type EngineMapStore,
-} from "./engine-map-store";
+import { createRuntimeMapStore, type EngineMapStore } from "./engine-map-store";
 import {
   createGlobalNamingService,
   type EngineNamingService,
 } from "./engine-naming-service";
 import {
-  createGlobalNoteService,
   createRuntimeNoteService,
   type EngineNoteService,
 } from "./engine-note-service";
@@ -62,7 +56,6 @@ import {
   type EngineRenderAdapter,
 } from "./engine-render-adapter";
 import {
-  createGlobalRouteService,
   createRuntimeRouteService,
   type EngineRouteService,
 } from "./engine-route-service";
@@ -152,12 +145,9 @@ export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
     generationSettings: createGlobalGenerationSettings(),
     populationSettings: createGlobalPopulationSettings(),
     naming: createGlobalNamingService(),
-    burgs: createGlobalBurgService(),
-    routes: createGlobalRouteService(),
     states: createGlobalStateService(),
     units: createGlobalUnitSettings(),
     heraldry: createGlobalHeraldryService(),
-    mapStore: createGlobalMapStore(getGlobalEngineRuntimeContext),
     seedSession: generationSessionServices.seedSession,
     graphSession: generationSessionServices.graphSession,
     optionsSession: generationSessionServices.optionsSession,
@@ -165,7 +155,7 @@ export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
     sessionLifecycle: generationSessionServices.sessionLifecycle,
     generationSession: createGlobalGenerationSessionAdapter(),
     lifecycle: createGlobalLifecycleAdapter(getGlobalEngineRuntimeContext),
-    notes: createGlobalNoteService(),
+    notes: createRuntimeNoteService(notes),
     notices: createGlobalNoticeService(),
     logs: createGlobalLogService(),
     feedback,
@@ -174,8 +164,7 @@ export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
     climate: createGlobalClimateContext(),
     timing: createGlobalTimingSettings(),
     biomesData,
-  };
-  context.notes = createRuntimeNoteService(notes);
+  } as EngineRuntimeContext;
   context.burgs = createRuntimeBurgService(context);
   context.routes = createRuntimeRouteService(context);
   context.mapStore = createRuntimeMapStore(context, () => context);
