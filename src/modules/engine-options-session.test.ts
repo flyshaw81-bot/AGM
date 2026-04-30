@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   type EngineOptionsControlAdapter,
   type EngineOptionsNamingAdapter,
+  type EngineOptionsRandomAdapter,
   type EngineOptionsReaderAdapter,
   EngineOptionsSessionModule,
   type EngineOptionsWriterAdapter,
@@ -66,6 +67,20 @@ function createNaming(
   };
 }
 
+function createRandom(
+  overrides: Partial<EngineOptionsRandomAdapter> = {},
+): EngineOptionsRandomAdapter {
+  return {
+    random: () => 0.25,
+    gauss: ((expected = 100) =>
+      expected) as EngineOptionsRandomAdapter["gauss"],
+    rand: ((min = 0) => min) as EngineOptionsRandomAdapter["rand"],
+    rw: ((weights) =>
+      Object.keys(weights)[0]) as EngineOptionsRandomAdapter["rw"],
+    ...overrides,
+  };
+}
+
 describe("shouldForceDefaultOptions", () => {
   it("detects URLs that should ignore stored options", () => {
     expect(
@@ -96,6 +111,12 @@ describe("EngineOptionsSessionModule", () => {
         }),
         getHeightmapTemplateName: (template) =>
           template === "continental" ? "Continental" : "Island",
+      }),
+      createNaming(),
+      createRandom({
+        rw: ((weights) =>
+          Object.keys(weights).find((key) => weights[key] > 0) ??
+          Object.keys(weights)[0]) as EngineOptionsRandomAdapter["rw"],
       }),
     ).randomizeHeightmapTemplate();
 
@@ -150,6 +171,7 @@ describe("EngineOptionsSessionModule", () => {
       writer,
       createReader(),
       createNaming(),
+      createRandom(),
     ).randomizeOptions();
 
     expect(writer.setDistanceUnit).toHaveBeenCalledWith("mi");
@@ -169,9 +191,52 @@ describe("EngineOptionsSessionModule", () => {
       createNaming({
         generateEraName: () => "Copper Moon Era",
       }),
+      createRandom(),
     ).generateEra();
 
     expect(writer.setEra).toHaveBeenCalledWith("Copper Moon Era");
+    expect(writer.syncEraOptions).toHaveBeenCalled();
+  });
+
+  it("routes option randomization through the random adapter", () => {
+    const writer = createWriter();
+
+    new EngineOptionsSessionModule(
+      createControls({
+        isStored: (settingId) => settingId === "year",
+      }),
+      writer,
+      createReader(),
+      createNaming(),
+      createRandom({
+        random: () => 0.234,
+        gauss: ((expected = 100) =>
+          expected + 1) as EngineOptionsRandomAdapter["gauss"],
+        rw: (() => "highFantasy") as EngineOptionsRandomAdapter["rw"],
+      }),
+    ).randomizeOptions();
+
+    expect(writer.setStatesCount).toHaveBeenCalledWith(19);
+    expect(writer.setGrowthRate).toHaveBeenCalledWith(1.2);
+    expect(writer.setCultureSet).toHaveBeenCalledWith("highFantasy");
+  });
+
+  it("routes generated years through the random adapter", () => {
+    const writer = createWriter();
+
+    new EngineOptionsSessionModule(
+      createControls({
+        isStored: (settingId) => settingId !== "year",
+      }),
+      writer,
+      createReader(),
+      createNaming(),
+      createRandom({
+        rand: (() => 1492) as EngineOptionsRandomAdapter["rand"],
+      }),
+    ).generateEra();
+
+    expect(writer.setYear).toHaveBeenCalledWith(1492);
     expect(writer.syncEraOptions).toHaveBeenCalled();
   });
 });

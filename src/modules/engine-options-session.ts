@@ -48,6 +48,13 @@ export type EngineOptionsNamingAdapter = {
   generateEraName: () => string;
 };
 
+export type EngineOptionsRandomAdapter = {
+  random: () => number;
+  gauss: typeof gauss;
+  rand: typeof rand;
+  rw: typeof rw;
+};
+
 export function createGlobalOptionsControlAdapter(): EngineOptionsControlAdapter {
   return {
     getSearchParams: () => new URL(location.href).searchParams,
@@ -85,6 +92,15 @@ export function createGlobalOptionsNamingAdapter(): EngineOptionsNamingAdapter {
   return {
     generateEraName: () =>
       `${Names.getBaseShort(P(0.7) ? 1 : rand(nameBases.length))} Era`,
+  };
+}
+
+export function createGlobalOptionsRandomAdapter(): EngineOptionsRandomAdapter {
+  return {
+    random: () => Math.random(),
+    gauss,
+    rand,
+    rw,
   };
 }
 
@@ -170,99 +186,104 @@ function syncEraOptions() {
 }
 
 export class EngineOptionsSessionModule {
+  randomizeOptions: (searchParams?: URLSearchParams) => void;
+  randomizeHeightmapTemplate: () => void;
+  randomizeCultureSet: () => void;
+  generateEra: () => void;
+
   constructor(
-    private readonly controls: EngineOptionsControlAdapter = createGlobalOptionsControlAdapter(),
-    private readonly writer: EngineOptionsWriterAdapter = createGlobalOptionsWriterAdapter(),
-    private readonly reader: EngineOptionsReaderAdapter = createGlobalOptionsReaderAdapter(),
-    private readonly naming: EngineOptionsNamingAdapter = createGlobalOptionsNamingAdapter(),
-  ) {}
+    controls: EngineOptionsControlAdapter = createGlobalOptionsControlAdapter(),
+    writer: EngineOptionsWriterAdapter = createGlobalOptionsWriterAdapter(),
+    reader: EngineOptionsReaderAdapter = createGlobalOptionsReaderAdapter(),
+    naming: EngineOptionsNamingAdapter = createGlobalOptionsNamingAdapter(),
+    random: EngineOptionsRandomAdapter = createGlobalOptionsRandomAdapter(),
+  ) {
+    const isEditable = (settingId: string, forceDefault: boolean): boolean =>
+      forceDefault || !controls.isLocked(settingId);
 
-  private isEditable(settingId: string, forceDefault: boolean): boolean {
-    return forceDefault || !this.controls.isLocked(settingId);
-  }
+    this.randomizeHeightmapTemplate = () => {
+      const template = random.rw(reader.getHeightmapTemplateWeights());
+      const name = reader.getHeightmapTemplateName(template);
+      writer.applyHeightmapTemplate(template, name);
+    };
 
-  randomizeOptions(searchParams = this.controls.getSearchParams()) {
-    const forceDefault = shouldForceDefaultOptions(searchParams);
+    this.randomizeCultureSet = () => {
+      writer.setCultureSet(random.rw(reader.getCultureSetWeights()));
+    };
 
-    if (this.isEditable("points", forceDefault)) {
-      this.writer.setCellsDensity(4);
-    }
-    if (this.isEditable("template", forceDefault)) {
-      this.randomizeHeightmapTemplate();
-    }
-    if (this.isEditable("statesNumber", forceDefault)) {
-      this.writer.setStatesCount(gauss(18, 5, 2, 30));
-    }
-    if (this.isEditable("provincesRatio", forceDefault)) {
-      this.writer.setProvincesRatio(gauss(20, 10, 20, 100));
-    }
-    if (this.isEditable("manors", forceDefault)) {
-      this.writer.setManorsAuto();
-    }
-    if (this.isEditable("religionsNumber", forceDefault)) {
-      this.writer.setReligionsCount(gauss(6, 3, 2, 10));
-    }
-    if (this.isEditable("sizeVariety", forceDefault)) {
-      this.writer.setSizeVariety(gauss(4, 2, 0, 10, 1));
-    }
-    if (this.isEditable("growthRate", forceDefault)) {
-      this.writer.setGrowthRate(rn(1 + Math.random(), 1));
-    }
-    if (this.isEditable("cultures", forceDefault)) {
-      this.writer.setCulturesCount(gauss(12, 3, 5, 30));
-    }
-    if (this.isEditable("culturesSet", forceDefault)) {
-      this.randomizeCultureSet();
-    }
+    this.generateEra = () => {
+      if (!controls.isStored("year")) {
+        writer.setYear(random.rand(100, 2000));
+      }
+      if (!controls.isStored("era")) {
+        writer.setEra(naming.generateEraName());
+      }
+      writer.syncEraOptions();
+    };
 
-    if (this.isEditable("temperatureEquator", forceDefault)) {
-      this.writer.setTemperatureEquator(gauss(25, 7, 20, 35, 0));
-    }
-    if (this.isEditable("temperatureNorthPole", forceDefault)) {
-      this.writer.setTemperatureNorthPole(gauss(-25, 7, -40, 10, 0));
-    }
-    if (this.isEditable("temperatureSouthPole", forceDefault)) {
-      this.writer.setTemperatureSouthPole(gauss(-15, 7, -40, 10, 0));
-    }
-    if (this.isEditable("prec", forceDefault)) {
-      this.writer.setPrecipitation(gauss(100, 40, 5, 500));
-    }
+    this.randomizeOptions = (searchParams = controls.getSearchParams()) => {
+      const forceDefault = shouldForceDefaultOptions(searchParams);
 
-    const usesUsUnits = this.controls.usesUsUnits();
-    if (this.isEditable("distanceScale", forceDefault)) {
-      this.writer.setDistanceScale(gauss(3, 1, 1, 5));
-    }
-    if (!this.controls.isStored("distanceUnit")) {
-      this.writer.setDistanceUnit(usesUsUnits ? "mi" : "km");
-    }
-    if (!this.controls.isStored("heightUnit")) {
-      this.writer.setHeightUnit(usesUsUnits ? "ft" : "m");
-    }
-    if (!this.controls.isStored("temperatureScale")) {
-      this.writer.setTemperatureScale(usesUsUnits ? "\u00b0F" : "\u00b0C");
-    }
+      if (isEditable("points", forceDefault)) {
+        writer.setCellsDensity(4);
+      }
+      if (isEditable("template", forceDefault)) {
+        this.randomizeHeightmapTemplate();
+      }
+      if (isEditable("statesNumber", forceDefault)) {
+        writer.setStatesCount(random.gauss(18, 5, 2, 30));
+      }
+      if (isEditable("provincesRatio", forceDefault)) {
+        writer.setProvincesRatio(random.gauss(20, 10, 20, 100));
+      }
+      if (isEditable("manors", forceDefault)) {
+        writer.setManorsAuto();
+      }
+      if (isEditable("religionsNumber", forceDefault)) {
+        writer.setReligionsCount(random.gauss(6, 3, 2, 10));
+      }
+      if (isEditable("sizeVariety", forceDefault)) {
+        writer.setSizeVariety(random.gauss(4, 2, 0, 10, 1));
+      }
+      if (isEditable("growthRate", forceDefault)) {
+        writer.setGrowthRate(rn(1 + random.random(), 1));
+      }
+      if (isEditable("cultures", forceDefault)) {
+        writer.setCulturesCount(random.gauss(12, 3, 5, 30));
+      }
+      if (isEditable("culturesSet", forceDefault)) {
+        this.randomizeCultureSet();
+      }
 
-    this.generateEra();
-  }
+      if (isEditable("temperatureEquator", forceDefault)) {
+        writer.setTemperatureEquator(random.gauss(25, 7, 20, 35, 0));
+      }
+      if (isEditable("temperatureNorthPole", forceDefault)) {
+        writer.setTemperatureNorthPole(random.gauss(-25, 7, -40, 10, 0));
+      }
+      if (isEditable("temperatureSouthPole", forceDefault)) {
+        writer.setTemperatureSouthPole(random.gauss(-15, 7, -40, 10, 0));
+      }
+      if (isEditable("prec", forceDefault)) {
+        writer.setPrecipitation(random.gauss(100, 40, 5, 500));
+      }
 
-  randomizeHeightmapTemplate() {
-    const template = rw(this.reader.getHeightmapTemplateWeights());
-    const name = this.reader.getHeightmapTemplateName(template);
-    this.writer.applyHeightmapTemplate(template, name);
-  }
+      const usesUsUnits = controls.usesUsUnits();
+      if (isEditable("distanceScale", forceDefault)) {
+        writer.setDistanceScale(random.gauss(3, 1, 1, 5));
+      }
+      if (!controls.isStored("distanceUnit")) {
+        writer.setDistanceUnit(usesUsUnits ? "mi" : "km");
+      }
+      if (!controls.isStored("heightUnit")) {
+        writer.setHeightUnit(usesUsUnits ? "ft" : "m");
+      }
+      if (!controls.isStored("temperatureScale")) {
+        writer.setTemperatureScale(usesUsUnits ? "\u00b0F" : "\u00b0C");
+      }
 
-  randomizeCultureSet() {
-    this.writer.setCultureSet(rw(this.reader.getCultureSetWeights()));
-  }
-
-  generateEra() {
-    if (!this.controls.isStored("year")) {
-      this.writer.setYear(rand(100, 2000));
-    }
-    if (!this.controls.isStored("era")) {
-      this.writer.setEra(this.naming.generateEraName());
-    }
-    this.writer.syncEraOptions();
+      this.generateEra();
+    };
   }
 }
 

@@ -811,6 +811,10 @@ Completed:
   template/culture-set reads and era naming are injectable. Default adapters
   still wrap current globals (`heightmapTemplates`, `Names`, `nameBases`) as
   compatibility debt.
+- Added `EngineOptionsRandomAdapter` so option randomization consumes injected
+  `random` / `gauss` / `rand` / `rw` functions. The default adapter preserves
+  the current seeded/public random behavior, but `EngineOptionsSessionModule`
+  no longer calls those globals directly from its core session logic.
 - Added `EngineRuntimeContext.optionsSession`. Generation session preparation
   now receives the active context and uses `context.optionsSession` for option
   randomization when available, instead of always reaching for the global
