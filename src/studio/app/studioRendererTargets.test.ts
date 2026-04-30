@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
+import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 import type { StudioState } from "../types";
 import {
   createGlobalStudioRendererTargets,
+  createRuntimeStudioRendererTargets,
   createStudioRendererTargets,
   type StudioRendererTargets,
 } from "./studioRendererTargets";
@@ -56,5 +58,56 @@ describe("studio renderer targets", () => {
     expect(targets.bindShellEvents).toEqual(expect.any(Function));
     expect(targets.syncProjectSummary).toEqual(expect.any(Function));
     expect(vi.isMockFunction(targets.syncProjectSummary)).toBe(false);
+  });
+
+  it("routes renderer canvas paint through runtime context", () => {
+    const drawHeightmap = vi.fn();
+    const context = {
+      worldSettings: {
+        graphWidth: 1000,
+        graphHeight: 600,
+      },
+      pack: {
+        cells: {
+          p: { 2: [200, 100] },
+          g: { 2: 9 },
+          h: { 2: 40 },
+          biome: { 2: 3 },
+        },
+      },
+      grid: {
+        cells: { h: { 9: 40 } },
+      },
+      rendering: {
+        drawHeightmap,
+        drawBiomes: vi.fn(),
+        drawCells: vi.fn(),
+        isLayerOn: () => false,
+        invokeActiveZooming: vi.fn(),
+      },
+    } as unknown as EngineRuntimeContext;
+    const state = {
+      document: { source: "loaded" },
+      viewport: { canvasEditHistory: [] },
+    } as unknown as StudioState;
+    const targets = createRuntimeStudioRendererTargets(context);
+
+    expect(
+      targets.applyCanvasPaintPreview(state, {
+        tool: "water",
+        cellId: 2,
+        label: "Cell #2",
+        x: 20,
+        y: 16,
+        height: 40,
+        biomeId: 3,
+        stateId: null,
+      }),
+    ).toBe(true);
+
+    expect(context.pack.cells.h[2]).toBe(15);
+    expect(context.grid.cells.h[9]).toBe(15);
+    expect(state.document.source).toBe("core");
+    expect(drawHeightmap).toHaveBeenCalledWith();
   });
 });

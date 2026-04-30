@@ -73,6 +73,9 @@
 > Canvas paint editing now uses `CanvasPaintEditingTargets`, so graph size,
 > pack/grid cell access, edit-layer redraw, and edit-entry timestamps are
 > injectable across preview, paint apply, undo, and biome coverage paths.
+> Studio shell and renderer target factories now also have runtime canvas paint
+> variants, so canvas paint edits can use `EngineRuntimeContext` pack/grid/
+> rendering services instead of falling back to global canvas access.
 > Studio style injection now uses `StudioStyleTargets`, so duplicate style
 > detection, style element creation, and head insertion are injectable.
 > Studio document theme sync now uses `StudioThemeSyncTargets`, so renderer

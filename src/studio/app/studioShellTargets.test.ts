@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 import type {
   EngineFocusGeometry,
   EngineFocusTarget,
@@ -20,6 +21,7 @@ import {
 import {
   createGlobalStudioShellDraftAdapter,
   createGlobalStudioShellPreferenceAdapter,
+  createRuntimeStudioShellCanvasAdapter,
   createStudioShellTargets,
 } from "./studioShellTargets";
 
@@ -184,5 +186,63 @@ describe("createGlobalStudioShellPreferenceAdapter", () => {
       STUDIO_NAVIGATION_COLLAPSED_STORAGE_KEY,
       "true",
     );
+  });
+});
+
+describe("createRuntimeStudioShellCanvasAdapter", () => {
+  it("routes canvas paint edits through the runtime context", () => {
+    const drawHeightmap = vi.fn();
+    const drawBiomes = vi.fn();
+    const drawCells = vi.fn();
+    const invokeActiveZooming = vi.fn();
+    const context = {
+      worldSettings: {
+        graphWidth: 1000,
+        graphHeight: 500,
+      },
+      pack: {
+        cells: {
+          p: { 1: [250, 100] },
+          g: { 1: 7 },
+          h: { 1: 20 },
+          biome: { 1: 4 },
+          state: { 1: 2 },
+        },
+      },
+      grid: {
+        cells: { h: { 7: 20 } },
+      },
+      rendering: {
+        drawHeightmap,
+        drawBiomes,
+        drawCells,
+        isLayerOn: () => true,
+        invokeActiveZooming,
+      },
+    } as unknown as EngineRuntimeContext;
+    const state = {
+      document: { source: "loaded" },
+      viewport: { canvasEditHistory: [] },
+    } as unknown as StudioState;
+
+    const adapter = createRuntimeStudioShellCanvasAdapter(context);
+    const preview = adapter.getCanvasPaintPreviewForCell("terrain", 1);
+
+    expect(preview).toMatchObject({
+      cellId: 1,
+      height: 20,
+      biomeId: 4,
+      stateId: 2,
+      x: 25,
+      y: 20,
+    });
+    expect(adapter.applyCanvasPaintPreview(state, preview!)).toBe(true);
+    expect(context.pack.cells.h[1]).toBe(25);
+    expect(context.grid.cells.h[7]).toBe(25);
+    expect(state.document.source).toBe("core");
+    expect(drawHeightmap).toHaveBeenCalledWith();
+    expect(drawBiomes).toHaveBeenCalledWith();
+    expect(drawCells).toHaveBeenCalledWith();
+    expect(invokeActiveZooming).toHaveBeenCalledWith();
   });
 });

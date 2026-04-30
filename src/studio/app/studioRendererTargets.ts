@@ -1,3 +1,4 @@
+import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 import {
   resolveEngineFocusGeometry,
   syncEngineProjectSummary,
@@ -15,6 +16,7 @@ import {
   syncCanvasSelectionHighlight,
   syncOverlays,
 } from "./canvasController";
+import { createRuntimeCanvasPaintEditingTargets } from "./canvasPaintEditing";
 import { syncDocumentState, syncEditorWorkflowState } from "./documentState";
 import {
   preserveEngineNode,
@@ -90,4 +92,15 @@ export function createGlobalStudioRendererTargets(): StudioRendererTargets {
     syncProjectSummary: syncEngineProjectSummary,
     updateViewportDimensions,
   });
+}
+
+export function createRuntimeStudioRendererTargets(
+  context: EngineRuntimeContext,
+): StudioRendererTargets {
+  const paintTargets = createRuntimeCanvasPaintEditingTargets(context);
+  return {
+    ...createGlobalStudioRendererTargets(),
+    applyCanvasPaintPreview: (state, preview) =>
+      applyCanvasPaintPreview(state, preview, paintTargets),
+  };
 }

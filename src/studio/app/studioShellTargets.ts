@@ -1,3 +1,4 @@
+import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 import type {
   EditorAction,
   EngineFocusGeometry,
@@ -18,7 +19,11 @@ import {
   importAgmRulesPackDraft,
   type WorldDocumentDraftImportTargets,
 } from "../state/worldDocumentDraft";
-import type { CanvasPaintPreviewState, StudioState } from "../types";
+import type {
+  CanvasEditHistoryEntry,
+  CanvasPaintPreviewState,
+  StudioState,
+} from "../types";
 import {
   applyAutoFixPreviewAction,
   applyManualBiomeRuleAdjustment,
@@ -33,6 +38,10 @@ import {
   isPaintCanvasTool,
   undoCanvasEditEntry,
 } from "./canvasController";
+import {
+  type CanvasPaintEditingTargets,
+  createRuntimeCanvasPaintEditingTargets,
+} from "./canvasPaintEditing";
 import {
   restoreAgmDocumentState,
   syncDocumentState,
@@ -115,14 +124,21 @@ export type StudioShellAutoFixAdapter = {
 };
 
 export type StudioShellCanvasAdapter = {
-  applyBiomeCoverageTarget: typeof applyBiomeCoverageTarget;
+  applyBiomeCoverageTarget: (
+    state: StudioState,
+    biomeId: number,
+    targetPercentage: number,
+  ) => boolean;
   isPaintCanvasTool: typeof isPaintCanvasTool;
-  getCanvasPaintPreviewForCell: typeof getCanvasPaintPreviewForCell;
+  getCanvasPaintPreviewForCell: (
+    tool: CanvasPaintPreviewState["tool"],
+    cellId: number,
+  ) => CanvasPaintPreviewState | null;
   applyCanvasPaintPreview: (
     state: StudioState,
     preview: CanvasPaintPreviewState,
   ) => boolean;
-  undoCanvasEditEntry: typeof undoCanvasEditEntry;
+  undoCanvasEditEntry: (entry: CanvasEditHistoryEntry) => boolean;
 };
 
 export type StudioShellWorkspaceAdapter = {
@@ -177,6 +193,23 @@ export function createGlobalStudioShellCanvasAdapter(): StudioShellCanvasAdapter
     getCanvasPaintPreviewForCell,
     applyCanvasPaintPreview,
     undoCanvasEditEntry,
+  };
+}
+
+export function createRuntimeStudioShellCanvasAdapter(
+  context: EngineRuntimeContext,
+): StudioShellCanvasAdapter {
+  const targets: CanvasPaintEditingTargets =
+    createRuntimeCanvasPaintEditingTargets(context);
+  return {
+    applyBiomeCoverageTarget: (state, biomeId, targetPercentage) =>
+      applyBiomeCoverageTarget(state, biomeId, targetPercentage, targets),
+    isPaintCanvasTool,
+    getCanvasPaintPreviewForCell: (tool, cellId) =>
+      getCanvasPaintPreviewForCell(tool, cellId, targets),
+    applyCanvasPaintPreview: (state, preview) =>
+      applyCanvasPaintPreview(state, preview, targets),
+    undoCanvasEditEntry: (entry) => undoCanvasEditEntry(entry, targets),
   };
 }
 
@@ -240,6 +273,20 @@ export function createGlobalStudioShellTargets(): StudioShellTargets {
     createGlobalStudioShellDraftAdapter(),
     createGlobalStudioShellAutoFixAdapter(),
     createGlobalStudioShellCanvasAdapter(),
+    createGlobalStudioShellWorkspaceAdapter(),
+    createGlobalStudioShellPreferenceAdapter(),
+  );
+}
+
+export function createRuntimeStudioShellTargets(
+  context: EngineRuntimeContext,
+): StudioShellTargets {
+  return createStudioShellTargets(
+    createGlobalStudioShellDocumentAdapter(),
+    createGlobalStudioShellEditorAdapter(),
+    createGlobalStudioShellDraftAdapter(),
+    createGlobalStudioShellAutoFixAdapter(),
+    createRuntimeStudioShellCanvasAdapter(context),
     createGlobalStudioShellWorkspaceAdapter(),
     createGlobalStudioShellPreferenceAdapter(),
   );
