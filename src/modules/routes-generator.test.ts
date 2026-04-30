@@ -215,4 +215,18 @@ describe("RoutesModule", () => {
     });
     expect(removeElementById).toHaveBeenCalledWith("route9");
   });
+
+  it("measures rendered route length through the runtime rendering adapter", () => {
+    const context = createRoutesContext();
+    const getElementTotalLengthById = vi.fn(() => 42);
+    context.rendering = {
+      ...context.rendering!,
+      getElementTotalLengthById,
+    };
+
+    const length = new RoutesModule().getLength(7, context);
+
+    expect(length).toBe(42);
+    expect(getElementTotalLengthById).toHaveBeenCalledWith("route7");
+  });
 });

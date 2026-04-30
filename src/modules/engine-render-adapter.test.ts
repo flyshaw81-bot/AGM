@@ -111,12 +111,14 @@ describe("createGlobalRenderAdapter", () => {
   it("removes rendered COA and generic elements through current DOM helpers", () => {
     const removeCoaElement = vi.fn();
     const removeGenericElement = vi.fn();
+    const getTotalLength = vi.fn(() => 45);
     const removeEmblemUse = vi.fn();
     const select = vi.fn(() => ({ remove: removeEmblemUse }));
     globalThis.document = {
       getElementById: (id: string) => {
         if (id === "burgCOA9") return { remove: removeCoaElement };
         if (id === "marker12") return { remove: removeGenericElement };
+        if (id === "route3") return { getTotalLength };
         return null;
       },
     } as unknown as Document;
@@ -125,11 +127,14 @@ describe("createGlobalRenderAdapter", () => {
     const rendering = createGlobalRenderAdapter();
     rendering.removeBurgCoa(9);
     rendering.removeElementById("marker12");
+    const routeLength = rendering.getElementTotalLengthById?.("route3");
 
     expect(removeCoaElement).toHaveBeenCalledWith();
     expect(select).toHaveBeenCalledWith("#burgEmblems > use[data-i='9']");
     expect(removeEmblemUse).toHaveBeenCalledWith();
     expect(removeGenericElement).toHaveBeenCalledWith();
+    expect(routeLength).toBe(45);
+    expect(getTotalLength).toHaveBeenCalledWith();
   });
 
   it("forwards ice redraws and scale-bar drawing to current render helpers", () => {

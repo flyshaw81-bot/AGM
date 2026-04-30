@@ -57,7 +57,7 @@ describe("createGlobalRouteService", () => {
     expect(Routes.buildLinks).toHaveBeenCalledWith([]);
     expect(Routes.connect).toHaveBeenCalledWith(14, undefined);
     expect(Routes.remove).toHaveBeenCalledWith(routeToRemove, undefined);
-    expect(Routes.getLength).toHaveBeenCalledWith(8);
+    expect(Routes.getLength).toHaveBeenCalledWith(8, undefined);
   });
 
   it("composes route service from injected runtime targets", () => {
@@ -97,7 +97,7 @@ describe("createGlobalRouteService", () => {
     expect(routesModule.getConnectivityRate).toHaveBeenCalledWith(5, undefined);
     expect(routesModule.connect).toHaveBeenCalledWith(6, undefined);
     expect(routesModule.remove).toHaveBeenCalledWith(packedRoute, undefined);
-    expect(routesModule.getLength).toHaveBeenCalledWith(4);
+    expect(routesModule.getLength).toHaveBeenCalledWith(4, undefined);
   });
 
   it("reads runtime routes from context pack instead of global pack", () => {
@@ -109,6 +109,7 @@ describe("createGlobalRouteService", () => {
     const routesModule = {
       hasRoad: vi.fn(() => true),
       remove: vi.fn(),
+      getLength: vi.fn(() => 12),
     };
     const context = {
       pack: {
@@ -124,6 +125,8 @@ describe("createGlobalRouteService", () => {
     routes.remove(runtimeRoute);
     expect(routesModule.hasRoad).toHaveBeenCalledWith(4, context);
     expect(routesModule.remove).toHaveBeenCalledWith(runtimeRoute, context);
+    expect(routes.getLength(12)).toBe(12);
+    expect(routesModule.getLength).toHaveBeenCalledWith(12, context);
   });
 
   it("returns zero for rendered route length when the route module is unavailable", () => {

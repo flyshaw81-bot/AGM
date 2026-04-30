@@ -854,7 +854,15 @@ export class RoutesModule {
     return path;
   }
 
-  getLength(routeId: number): number {
+  getLength(
+    routeId: number,
+    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+  ): number {
+    const renderedLength = context.rendering?.getElementTotalLengthById?.(
+      `route${routeId}`,
+    );
+    if (typeof renderedLength === "number") return renderedLength;
+
     const path = routes.select(`#route${routeId}`).node() as SVGPathElement;
     return path.getTotalLength();
   }

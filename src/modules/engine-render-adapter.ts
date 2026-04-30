@@ -16,6 +16,7 @@ export type EngineRenderAdapter = {
   redrawIceberg: (iceId: number) => void;
   redrawGlacier: (iceId: number) => void;
   removeElementById: (id: string) => void;
+  getElementTotalLengthById?: (id: string) => number | undefined;
   drawScaleBar: () => void;
   drawHeightmap?: () => void;
   drawBiomes?: () => void;
@@ -84,6 +85,12 @@ export function createEngineRenderAdapter(
     },
     removeElementById: (id) => {
       targets.getElementById(id)?.remove();
+    },
+    getElementTotalLengthById: (id) => {
+      const element = targets.getElementById(id) as
+        | (SVGElement & { getTotalLength?: () => number })
+        | null;
+      return element?.getTotalLength?.();
     },
     drawScaleBar: () => {
       targets.drawScaleBar(targets.selectScaleBar(), targets.getScale());
