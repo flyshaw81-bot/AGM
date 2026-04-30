@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 176 test files, 639 tests.
+- `npm.cmd run test -- --run` passed: 177 test files, 640 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1914,6 +1914,12 @@ draw-missing paths.
 canvas creation. `drawHeights()` keeps the browser default in
 `createGlobalDrawHeightsTargets()`, while focused tests verify pixel writes and
 data URL generation through injected canvas fakes.
+`utils/index.ts` no longer requires browser globals during pure module imports.
+Window compatibility assignments are still installed for browser builds, but
+`Node.prototype` patches and prompt initialization now guard missing
+`Node`/`document`. The utils barrel has a no-browser import regression test,
+and `emblem/generator.test.ts` no longer stubs browser globals just to import
+the module.
 
 ## Next Recommended Slice
 

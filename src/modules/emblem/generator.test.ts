@@ -1,11 +1,8 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import type EmblemGeneratorModuleType from "./generator";
 import type { EmblemShapeTargets } from "./generator";
 
 const originalPack = globalThis.pack;
-const originalWindow = globalThis.window;
-const originalNode = globalThis.Node;
-const originalDocument = globalThis.document;
 let EmblemGeneratorModule: typeof EmblemGeneratorModuleType;
 
 function createEmblemGenerator(targets: EmblemShapeTargets) {
@@ -21,25 +18,11 @@ function setPack() {
 
 describe("EmblemGeneratorModule", () => {
   beforeAll(async () => {
-    globalThis.window = globalThis as Window & typeof globalThis;
-    globalThis.Node = class {
-      addEventListener() {}
-    } as unknown as typeof Node;
-    globalThis.document = {
-      readyState: "loading",
-      addEventListener: () => {},
-    } as unknown as Document;
     EmblemGeneratorModule = (await import("./generator")).default;
   });
 
   afterEach(() => {
     globalThis.pack = originalPack;
-  });
-
-  afterAll(() => {
-    globalThis.window = originalWindow;
-    globalThis.Node = originalNode;
-    globalThis.document = originalDocument;
   });
 
   it("uses an injected fixed shield shape without reading document", () => {

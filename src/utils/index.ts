@@ -1,6 +1,11 @@
 import { lerp, lim, minmax, normalize, rn } from "./numberUtils";
 import "./polyfills";
 
+const window =
+  typeof globalThis.window === "undefined"
+    ? ({} as Window & typeof globalThis)
+    : globalThis.window;
+
 window.rn = rn;
 window.lim = lim;
 window.minmax = minmax;
@@ -135,14 +140,16 @@ JSON.safeParse = safeParseJSON;
 import { byId } from "./shorthands";
 
 window.byId = byId;
-Node.prototype.on = function (name, fn, options) {
-  this.addEventListener(name, fn, options);
-  return this;
-};
-Node.prototype.off = function (name, fn) {
-  this.removeEventListener(name, fn);
-  return this;
-};
+if (typeof Node !== "undefined") {
+  Node.prototype.on = function (name, fn, options) {
+    this.addEventListener(name, fn, options);
+    return this;
+  };
+  Node.prototype.off = function (name, fn) {
+    this.removeEventListener(name, fn);
+    return this;
+  };
+}
 
 declare global {
   interface JSON {
@@ -247,10 +254,12 @@ window.getCoordinates = (x: number, y: number, decimals?: number) =>
   getCoordinates(x, y, mapCoordinates, graphWidth, graphHeight, decimals);
 
 // Initialize prompt when DOM is ready
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initializePrompt);
-} else {
-  initializePrompt();
+if (typeof document !== "undefined") {
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initializePrompt);
+  } else {
+    initializePrompt();
+  }
 }
 
 import {
