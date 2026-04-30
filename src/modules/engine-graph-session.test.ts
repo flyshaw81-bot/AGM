@@ -101,7 +101,7 @@ describe("EngineGraphSessionModule", () => {
         graphWidth: 1600,
         graphHeight: 950,
       },
-    } as EngineRuntimeContext;
+    } as unknown as EngineRuntimeContext;
     const fallback: EngineGraphSessionTargets = {
       getMapWidth: () => 1200,
       getMapHeight: () => 800,
@@ -137,5 +137,56 @@ describe("EngineGraphSessionModule", () => {
       name: "height",
       value: 950,
     });
+  });
+
+  it("patches graph dimensions through the runtime world settings store when available", () => {
+    const calls: Call[] = [];
+    const root = createSelection(calls, "root");
+    const context = {
+      worldSettings: {
+        graphWidth: 1600,
+        graphHeight: 950,
+      },
+      worldSettingsStore: {
+        get: () => context.worldSettings,
+        replace: () => context.worldSettings,
+        patch: (patch: Partial<EngineRuntimeContext["worldSettings"]>) => {
+          context.worldSettings = { ...context.worldSettings, ...patch };
+          calls.push({ selector: "store", name: "patch", value: patch });
+          return context.worldSettings;
+        },
+        refresh: () => context.worldSettings,
+      },
+    } as unknown as EngineRuntimeContext;
+    const fallback: EngineGraphSessionTargets = {
+      getMapWidth: () => 1200,
+      getMapHeight: () => 800,
+      setGraphSize: (width, height) => {
+        calls.push({ selector: "graph", name: "width", value: width });
+        calls.push({ selector: "graph", name: "height", value: height });
+      },
+      setRectBounds: (target, width, height) => {
+        target.attr("width", width).attr("height", height);
+      },
+      getLandmassRect: () => root.select("landmass"),
+      getOceanPatternRect: () => root.select("oceanPattern"),
+      getOceanLayersRect: () => root.select("oceanLayers"),
+      getFoggingRects: () => root.selectAll("fogging"),
+      getFogMaskRect: () => root.select("mask#fog > rect"),
+      getWaterMaskRect: () => root.select("mask#water > rect"),
+    };
+
+    createRuntimeGraphSession(
+      context,
+      createRuntimeGraphSessionTargets(context, fallback),
+    ).applyGraphSize();
+
+    expect(calls).toContainEqual({
+      selector: "store",
+      name: "patch",
+      value: { graphWidth: 1600, graphHeight: 950 },
+    });
+    expect(context.worldSettings.graphWidth).toBe(1600);
+    expect(context.worldSettings.graphHeight).toBe(950);
   });
 });

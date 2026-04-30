@@ -239,36 +239,46 @@ export function createRuntimeOptionsWriterAdapter(
   context: EngineRuntimeContext,
   fallback: EngineOptionsWriterAdapter = createGlobalOptionsWriterAdapter(),
 ): EngineOptionsWriterAdapter {
+  const patchGenerationSettings = (
+    patch: Partial<EngineRuntimeContext["generationSettings"]>,
+  ) => {
+    if (context.generationSettingsStore) {
+      context.generationSettingsStore.patch(patch);
+      return;
+    }
+    context.generationSettings = { ...context.generationSettings, ...patch };
+  };
+
   return {
     setCellsDensity: fallback.setCellsDensity,
     applyHeightmapTemplate: fallback.applyHeightmapTemplate,
     setStatesCount: (value) => {
-      context.generationSettings.statesCount = value;
+      patchGenerationSettings({ statesCount: value });
       fallback.setStatesCount(value);
     },
     setProvincesRatio: (value) => {
-      context.generationSettings.provincesRatio = value;
+      patchGenerationSettings({ provincesRatio: value });
       fallback.setProvincesRatio(value);
     },
     setManorsAuto: fallback.setManorsAuto,
     setReligionsCount: (value) => {
-      context.generationSettings.religionsCount = value;
+      patchGenerationSettings({ religionsCount: value });
       fallback.setReligionsCount(value);
     },
     setSizeVariety: (value) => {
-      context.generationSettings.stateSizeVariety = value;
+      patchGenerationSettings({ stateSizeVariety: value });
       fallback.setSizeVariety(value);
     },
     setGrowthRate: (value) => {
-      context.generationSettings.globalGrowthRate = value;
+      patchGenerationSettings({ globalGrowthRate: value });
       fallback.setGrowthRate(value);
     },
     setCulturesCount: (value) => {
-      context.generationSettings.culturesCount = value;
+      patchGenerationSettings({ culturesCount: value });
       fallback.setCulturesCount(value);
     },
     setCultureSet: (value) => {
-      context.generationSettings.cultureSet = value;
+      patchGenerationSettings({ cultureSet: value });
       fallback.setCultureSet(value);
     },
     setTemperatureEquator: (value) => {

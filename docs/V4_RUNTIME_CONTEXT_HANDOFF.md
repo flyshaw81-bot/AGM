@@ -1805,6 +1805,11 @@ World settings now have the same optional store pattern through
 `EngineWorldSettingsStore`. The global runtime context wires
 `worldSettingsStore` for graph size/map coordinate `get/replace/patch/refresh`,
 while compatibility DOM/global reads remain behind `EngineWorldSettingsTargets`.
+Runtime options and graph session writes now use those stores when available:
+`createRuntimeOptionsWriterAdapter` patches `generationSettingsStore` for
+generated counts/growth/culture settings, and `createRuntimeGraphSessionTargets`
+patches `worldSettingsStore` for graph dimensions. Lightweight contexts still
+fall back to direct context field updates.
 
 ## Next Recommended Slice
 

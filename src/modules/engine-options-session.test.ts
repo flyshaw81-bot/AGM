@@ -335,4 +335,33 @@ describe("EngineOptionsSessionModule", () => {
     expect(fallback.setHeightUnit).toHaveBeenCalledWith("ft");
     expect(fallback.syncEraOptions).toHaveBeenCalled();
   });
+
+  it("patches generation settings through the runtime store when available", () => {
+    const context = createRuntimeContext();
+    const patch = vi.fn((nextPatch) => {
+      context.generationSettings = {
+        ...context.generationSettings,
+        ...nextPatch,
+      };
+      return context.generationSettings;
+    });
+    context.generationSettingsStore = {
+      get: () => context.generationSettings,
+      replace: vi.fn(),
+      patch,
+      refresh: vi.fn(),
+    };
+    const fallback = createWriter();
+    const writer = createRuntimeOptionsWriterAdapter(context, fallback);
+
+    writer.setStatesCount(21);
+    writer.setGrowthRate(1.4);
+
+    expect(patch).toHaveBeenCalledWith({ statesCount: 21 });
+    expect(patch).toHaveBeenCalledWith({ globalGrowthRate: 1.4 });
+    expect(context.generationSettings.statesCount).toBe(21);
+    expect(context.generationSettings.globalGrowthRate).toBe(1.4);
+    expect(fallback.setStatesCount).toHaveBeenCalledWith(21);
+    expect(fallback.setGrowthRate).toHaveBeenCalledWith(1.4);
+  });
 });

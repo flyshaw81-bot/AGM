@@ -100,8 +100,12 @@ export function createRuntimeGraphSessionTargets(
     getMapHeight: () =>
       Number(context.worldSettings.graphHeight) || fallback.getMapHeight(),
     setGraphSize: (width, height) => {
-      context.worldSettings.graphWidth = width;
-      context.worldSettings.graphHeight = height;
+      const patch = { graphWidth: width, graphHeight: height };
+      if (context.worldSettingsStore) {
+        context.worldSettingsStore.patch(patch);
+      } else {
+        context.worldSettings = { ...context.worldSettings, ...patch };
+      }
       fallback.setGraphSize(width, height);
     },
     setRectBounds: fallback.setRectBounds,
