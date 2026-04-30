@@ -10,6 +10,7 @@ import {
 
 export {
   createGlobalStudioStyleTargets,
+  createStudioStyleTargets,
   type StudioStyleTargets,
 } from "./stylesTargets";
 

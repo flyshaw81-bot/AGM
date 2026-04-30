@@ -4,12 +4,18 @@ export type StudioStyleTargets = {
   appendToHead: (element: HTMLStyleElement) => void;
 };
 
+export function createStudioStyleTargets(
+  targets: StudioStyleTargets,
+): StudioStyleTargets {
+  return targets;
+}
+
 export function createGlobalStudioStyleTargets(): StudioStyleTargets {
-  return {
+  return createStudioStyleTargets({
     getStyleElement: (id) => document.getElementById(id),
     createStyleElement: () => document.createElement("style"),
     appendToHead: (element) => {
       document.head.appendChild(element);
     },
-  };
+  });
 }

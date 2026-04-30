@@ -147,6 +147,9 @@
 > Studio style injection default DOM dependencies now live in
 > `StudioStyleTargets`, so stylesheet composition no longer owns style-element
 > lookup, creation, or head insertion inline.
+> `StudioStyleTargets` now also exposes an explicit `createStudioStyleTargets`
+> composer, so injected style-document adapters stay separate from the global
+> browser document factory.
 > Studio document theme sync default DOM dependencies now live in
 > `StudioThemeSyncTargets`, so theme sync no longer owns document-element
 > dataset writes inline.
@@ -565,7 +568,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 165 test files, 524 tests.
+- `npm.cmd run test -- --run` passed: 165 test files, 525 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1500,6 +1503,9 @@ Studio style injection default DOM access now has a dedicated
 `stylesTargets.ts` adapter for style element lookup, creation, and head
 insertion. `styles.ts` continues to re-export the target type/factory while
 stylesheet composition no longer owns those document calls inline.
+`stylesTargets.ts` now also exposes `createStudioStyleTargets` for explicit
+style-document target composition, keeping injected targets separate from the
+global browser document factory.
 Studio document theme sync default DOM access now has a dedicated
 `studioThemeSyncTargets.ts` adapter for document-element theme dataset writes.
 `studioThemeSync.ts` continues to re-export the target type/factory while

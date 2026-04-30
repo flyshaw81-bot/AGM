@@ -1,8 +1,21 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { createGlobalStudioStyleTargets } from "./stylesTargets";
+import {
+  createGlobalStudioStyleTargets,
+  createStudioStyleTargets,
+} from "./stylesTargets";
 
 describe("stylesTargets", () => {
+  it("composes style targets from injected document adapters", () => {
+    const targets = {
+      getStyleElement: vi.fn(() => null),
+      createStyleElement: vi.fn(() => ({ id: "" }) as HTMLStyleElement),
+      appendToHead: vi.fn(),
+    };
+
+    expect(createStudioStyleTargets(targets)).toBe(targets);
+  });
+
   it("composes default style document adapters", () => {
     const appended: HTMLStyleElement[] = [];
     const existing = { id: "studioShellStyles" } as HTMLElement;
