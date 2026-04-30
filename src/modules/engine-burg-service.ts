@@ -1,4 +1,5 @@
 import type { Burg } from "./burgs-generator";
+import type { EngineRuntimeContext } from "./engine-runtime-context";
 
 type EngineBurgModule = {
   add?: (point: [number, number]) => number | null;
@@ -32,5 +33,15 @@ export function createGlobalBurgService(): EngineBurgService {
   return createEngineBurgService({
     getBurgModule: () => globalThis.Burgs,
     getBurgs: () => globalThis.pack?.burgs as (Burg | undefined)[] | undefined,
+  });
+}
+
+export function createRuntimeBurgService(
+  context: EngineRuntimeContext,
+  burgModule: EngineBurgModule | undefined = globalThis.Burgs,
+): EngineBurgService {
+  return createEngineBurgService({
+    getBurgModule: () => burgModule,
+    getBurgs: () => context.pack.burgs as (Burg | undefined)[] | undefined,
   });
 }

@@ -1,4 +1,5 @@
 import type { PackedGraph } from "../types/PackedGraph";
+import type { EngineRuntimeContext } from "./engine-runtime-context";
 
 type EngineRouteModule = {
   isCrossroad?: (cell: number) => boolean;
@@ -57,5 +58,15 @@ export function createGlobalRouteService(): EngineRouteService {
   return createEngineRouteService({
     getRoutesModule: () => globalThis.Routes,
     getPackedRoutes: () => globalThis.pack?.routes,
+  });
+}
+
+export function createRuntimeRouteService(
+  context: EngineRuntimeContext,
+  routesModule: EngineRouteModule | undefined = globalThis.Routes,
+): EngineRouteService {
+  return createEngineRouteService({
+    getRoutesModule: () => routesModule,
+    getPackedRoutes: () => context.pack.routes,
   });
 }

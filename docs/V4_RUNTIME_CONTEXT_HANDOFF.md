@@ -90,6 +90,10 @@
 > Engine host dialog compatibility now uses `EngineHostDialogDomAdapter`, so
 > old `.ui-dialog` wrapper queries are isolated from host relocation and dialog
 > positioning targets.
+> Burg and route services now expose runtime factories, and
+> `getGlobalEngineRuntimeContext()` wires them back to the context pack, so
+> `findById` reads no longer need to fall through `globalThis.pack` once a
+> runtime context exists.
 > Studio style injection now uses `StudioStyleTargets`, so duplicate style
 > detection, style element creation, and head insertion are injectable.
 > Studio document theme sync now uses `StudioThemeSyncTargets`, so renderer

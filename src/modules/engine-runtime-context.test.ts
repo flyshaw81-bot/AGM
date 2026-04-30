@@ -9,7 +9,12 @@ describe("getGlobalEngineRuntimeContext", () => {
       getElementById: () => null,
     } as unknown as Document;
     globalThis.grid = { cells: {} };
-    globalThis.pack = {} as typeof pack;
+    const burg = { i: 2, name: "Runtime Burg" };
+    const route = { i: 3, group: "roads" };
+    globalThis.pack = {
+      burgs: [undefined, undefined, burg],
+      routes: [route],
+    } as unknown as typeof pack;
     globalThis.options = {};
     globalThis.seed = "runtime";
     globalThis.mapCoordinates = {} as typeof mapCoordinates;
@@ -57,6 +62,8 @@ describe("getGlobalEngineRuntimeContext", () => {
     const context = getGlobalEngineRuntimeContext();
 
     expect(typeof context.burgs.add).toBe("function");
+    expect(context.burgs.findById(2)).toBe(burg);
+    expect(context.routes.findById(3)).toBe(route);
     expect(context.seedSession).toBe(globalThis.EngineSeedSession);
     expect(context.graphSession).toBe(globalThis.EngineGraphSession);
     expect(typeof context.optionsSession.randomizeOptions).toBe("function");

@@ -2,6 +2,7 @@ import type { PackedGraph } from "../types/PackedGraph";
 import type { ClimateRuntimeContext } from "./climate";
 import {
   createGlobalBurgService,
+  createRuntimeBurgService,
   type EngineBurgService,
 } from "./engine-burg-service";
 import { createGlobalClimateContext } from "./engine-climate-context";
@@ -57,6 +58,7 @@ import {
 } from "./engine-render-adapter";
 import {
   createGlobalRouteService,
+  createRuntimeRouteService,
   type EngineRouteService,
 } from "./engine-route-service";
 import {
@@ -136,8 +138,7 @@ export type EngineRuntimeContext = {
 export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
   const feedback = createGlobalFeedbackService();
   const generationSessionServices = createGlobalGenerationSessionServices();
-
-  return {
+  const context = {
     grid,
     pack,
     options,
@@ -169,4 +170,7 @@ export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
     timing: createGlobalTimingSettings(),
     biomesData,
   };
+  context.burgs = createRuntimeBurgService(context);
+  context.routes = createRuntimeRouteService(context);
+  return context;
 }

@@ -2,7 +2,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createEngineRouteService,
   createGlobalRouteService,
+  createRuntimeRouteService,
 } from "./engine-route-service";
+import type { EngineRuntimeContext } from "./engine-runtime-context";
 
 const originalRoutes = globalThis.Routes;
 const originalPack = globalThis.pack;
@@ -84,5 +86,31 @@ describe("createGlobalRouteService", () => {
     expect(routes.findById(4)).toBe(packedRoute);
 
     expect(routesModule.remove).toHaveBeenCalledWith(packedRoute);
+  });
+
+  it("reads runtime routes from context pack instead of global pack", () => {
+    const runtimeRoute = { i: 12, group: "runtime-roads" };
+    const globalRoute = { i: 12, group: "global-roads" };
+    globalThis.pack = {
+      routes: [globalRoute],
+    } as typeof pack;
+    const routesModule = {
+      hasRoad: vi.fn(() => true),
+      remove: vi.fn(),
+    };
+    const context = {
+      pack: {
+        routes: [runtimeRoute],
+      },
+    } as unknown as EngineRuntimeContext;
+
+    const routes = createRuntimeRouteService(context, routesModule);
+
+    expect(routes.findById(12)).toBe(runtimeRoute);
+    expect(routes.findById(12)).not.toBe(globalRoute);
+    expect(routes.hasRoad(4)).toBe(true);
+    routes.remove(runtimeRoute);
+    expect(routesModule.hasRoad).toHaveBeenCalledWith(4);
+    expect(routesModule.remove).toHaveBeenCalledWith(runtimeRoute);
   });
 });
