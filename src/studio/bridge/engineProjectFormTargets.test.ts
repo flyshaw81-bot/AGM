@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { createGlobalProjectFormTargets } from "./engineProjectFormTargets";
+import {
+  createGlobalProjectFormTargets,
+  createProjectFormTargets,
+} from "./engineProjectFormTargets";
 
 type TestFormGlobals = typeof globalThis & {
   options?: {
@@ -79,5 +82,31 @@ describe("createGlobalProjectFormTargets", () => {
     expect(targets.getWindTierRotation(0)).toBe("225");
     expect(targets.getWindTierRotation(1)).toBe("");
     expect(targets.getWindOption(1)).toBe("45");
+  });
+
+  it("can read form values from injected DOM and runtime adapters", () => {
+    const elements = new Map<string, HTMLElement>([
+      ["pointsInput", { value: "20000" } as HTMLInputElement],
+      ["savePresetButton", { style: { display: "none" } } as HTMLElement],
+    ]);
+    const targets = createProjectFormTargets(
+      {
+        getElementById: (id) => elements.get(id) ?? null,
+        querySelector: (selector) =>
+          selector.includes("data-tier='2'")
+            ? ({
+                getAttribute: () => "rotate(180 210 6)",
+              } as unknown as Element)
+            : null,
+      },
+      {
+        getWinds: () => [0, 45, 90],
+      },
+    );
+
+    expect(targets.getInputValue("pointsInput")).toBe("20000");
+    expect(targets.hasVisibleInlineDisplay("savePresetButton")).toBe(false);
+    expect(targets.getWindOption(2)).toBe("90");
+    expect(targets.getWindTierRotation(2)).toBe("180");
   });
 });

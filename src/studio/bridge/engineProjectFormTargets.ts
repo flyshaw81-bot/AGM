@@ -13,6 +13,15 @@ export type EngineCultureSetOption = EngineSelectOption & {
   max: string;
 };
 
+export type EngineProjectFormDomAdapter = {
+  getElementById: (id: string) => HTMLElement | null;
+  querySelector: (selector: string) => Element | null;
+};
+
+export type EngineProjectFormRuntimeAdapter = {
+  getWinds: () => unknown[] | undefined;
+};
+
 export type EngineProjectFormTargets = {
   getInputValue: (id: string, fallback?: string) => string;
   getOutputValue: (id: string, fallback?: string) => string;
@@ -43,25 +52,35 @@ function getDocument(): Document | undefined {
   return globalThis.document;
 }
 
-export function createGlobalProjectFormTargets(): EngineProjectFormTargets {
+export function createGlobalProjectFormDomAdapter(): EngineProjectFormDomAdapter {
+  return {
+    getElementById: (id) => getDocument()?.getElementById(id) ?? null,
+    querySelector: (selector) => getDocument()?.querySelector(selector) ?? null,
+  };
+}
+
+export function createGlobalProjectFormRuntimeAdapter(): EngineProjectFormRuntimeAdapter {
+  return {
+    getWinds: () => getFormWindow().options?.winds,
+  };
+}
+
+export function createProjectFormTargets(
+  domAdapter: EngineProjectFormDomAdapter,
+  runtimeAdapter: EngineProjectFormRuntimeAdapter,
+): EngineProjectFormTargets {
   return {
     getInputValue: (id, fallback = "") =>
-      (getDocument()?.getElementById(id) as HTMLInputElement | null | undefined)
-        ?.value || fallback,
+      (domAdapter.getElementById(id) as HTMLInputElement | null)?.value ||
+      fallback,
     getOutputValue: (id, fallback = "") => {
-      const output = getDocument()?.getElementById(id) as
-        | HTMLOutputElement
-        | null
-        | undefined;
+      const output = domAdapter.getElementById(id) as HTMLOutputElement | null;
       return output?.value || output?.textContent?.trim() || fallback;
     },
     getTextValue: (id, fallback = "") =>
-      getDocument()?.getElementById(id)?.textContent?.trim() || fallback,
+      domAdapter.getElementById(id)?.textContent?.trim() || fallback,
     getSelect: (id) =>
-      (getDocument()?.getElementById(id) as
-        | HTMLSelectElement
-        | null
-        | undefined) ?? null,
+      (domAdapter.getElementById(id) as HTMLSelectElement | null) ?? null,
     getSelectValue: (select, fallback = "") => select?.value || fallback,
     getSelectedOptionLabel: (select, fallback = "") =>
       select?.selectedOptions?.[0]?.textContent?.trim() || fallback,
@@ -77,18 +96,25 @@ export function createGlobalProjectFormTargets(): EngineProjectFormTargets {
         max: option.dataset.max || "",
       })),
     hasVisibleInlineDisplay: (id, fallback = false) =>
-      ((getDocument()?.getElementById(id) as HTMLElement | null | undefined)
-        ?.style.display || (fallback ? "inline-block" : "none")) !== "none",
+      (domAdapter.getElementById(id)?.style.display ||
+        (fallback ? "inline-block" : "none")) !== "none",
     getWindOption: (tier) => {
-      const winds = getFormWindow().options?.winds;
+      const winds = runtimeAdapter.getWinds();
       return Array.isArray(winds) ? String(winds[tier] ?? "") : "";
     },
     getWindTierRotation: (tier) =>
       (
-        getDocument()
-          ?.querySelector(`#globeWindArrows path[data-tier='${tier}']`)
+        domAdapter
+          .querySelector(`#globeWindArrows path[data-tier='${tier}']`)
           ?.getAttribute("transform")
           ?.match(/rotate\(([-\d.]+)/)?.[1] || ""
       ).trim(),
   };
+}
+
+export function createGlobalProjectFormTargets(): EngineProjectFormTargets {
+  return createProjectFormTargets(
+    createGlobalProjectFormDomAdapter(),
+    createGlobalProjectFormRuntimeAdapter(),
+  );
 }

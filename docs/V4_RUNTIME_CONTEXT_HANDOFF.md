@@ -418,7 +418,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 124 test files, 382 tests.
+- `npm.cmd run test -- --run` passed: 124 test files, 383 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -881,9 +881,10 @@ services instead of reading `globalThis.Routes` inline:
   events still use the existing DOM pair helpers, but runtime/global effects
   are injected through `EngineProjectControlTargets`.
 - `src/studio/bridge/engineProjectFormTargets.ts` now owns the Studio project
-  form compatibility boundary for input/output/text reads, select option
+  form compatibility boundary through `EngineProjectFormDomAdapter` and
+  `EngineProjectFormRuntimeAdapter`. Input/output/text reads, select option
   metadata, visible-inline checks, wind SVG rotation reads, and wind-option
-  fallback reads.
+  fallback reads can now be tested without direct document/global access.
 - `src/studio/bridge/engineProjectForm.ts` now builds project summary form
   state through injected targets instead of directly reading `document`,
   `window.options`, or wind SVG paths inline.
@@ -1010,8 +1011,8 @@ services instead of reading `globalThis.Routes` inline:
   target forwarding, wind transform forwarding, and wind-option persistence.
 - `src/studio/bridge/engineProjectForm.test.ts` and
   `src/studio/bridge/engineProjectFormTargets.test.ts` cover project form
-  summary reads, cached-summary fallbacks, helper forwarding, default DOM reads,
-  select metadata, and wind rotation/options fallback behavior.
+  summary reads, cached-summary fallbacks, helper forwarding, injected/default
+  DOM reads, select metadata, and wind rotation/options fallback behavior.
 - `src/studio/bridge/engineProjectSummary.test.ts` and
   `src/studio/bridge/engineProjectSummaryTargets.test.ts` cover project summary
   sync, storage/local database snapshot fallback, cached-summary merging, global
@@ -1085,8 +1086,8 @@ still reads canvas globals behind an app-level adapter.
 `EngineProjectClimateTargets` still reads climate, layer, pack-height, and 3D
 helpers behind a bridge-level adapter. `EngineProjectControlTargets` still
 reads project-control DOM/global helpers behind a bridge-level adapter.
-`EngineProjectFormTargets` still reads project-form DOM/global helpers behind a
-bridge-level adapter. `EngineProjectSummaryTargets` still reads project summary
+`EngineProjectFormTargets` now splits project-form DOM reads and runtime wind
+state through dedicated bridge adapters. `EngineProjectSummaryTargets` still reads project summary
 storage/document/cache helpers behind a bridge-level adapter.
 `EngineProjectActionTargets` still reads project action DOM/template helpers
 behind a bridge-level adapter. `EngineLayerTargets` still reads layer DOM/global
