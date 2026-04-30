@@ -114,6 +114,10 @@
 > Generation session lifecycle now uses
 > `EngineGenerationSessionLifecycleTargets`, so active-view reset wiring is
 > isolated from the default `invokeActiveZooming()` compatibility call.
+> Grid session now exposes `createRuntimeGridSessionService(context)`, and the
+> runtime context wires `gridSession` through context `grid`/`seed`/
+> `worldSettings`. Grid generation/regeneration utilities are injectable so
+> tests and future runtime flows can avoid DOM-backed graph utilities.
 > Studio style injection now uses `StudioStyleTargets`, so duplicate style
 > detection, style element creation, and head insertion are injectable.
 > Studio document theme sync now uses `StudioThemeSyncTargets`, so renderer

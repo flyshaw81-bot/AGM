@@ -103,6 +103,29 @@ export function createGlobalGridSessionService(): EngineGridSessionService {
   });
 }
 
+export function createRuntimeGridSessionService(
+  context: EngineRuntimeContext,
+  utilities: Pick<
+    EngineGridSessionTargets,
+    "generateGrid" | "shouldRegenerateGrid"
+  > = {
+    generateGrid,
+    shouldRegenerateGrid,
+  },
+): EngineGridSessionService {
+  return createGridSessionService({
+    getGrid: () => context.grid,
+    setGrid: (nextGrid) => {
+      context.grid = nextGrid;
+    },
+    getSeed: () => context.seed,
+    getGraphWidth: () => Number(context.worldSettings.graphWidth) || 0,
+    getGraphHeight: () => Number(context.worldSettings.graphHeight) || 0,
+    generateGrid: utilities.generateGrid,
+    shouldRegenerateGrid: utilities.shouldRegenerateGrid,
+  });
+}
+
 export function createGlobalGenerationSessionLifecycleTargets(): EngineGenerationSessionLifecycleTargets {
   return {
     invokeActiveZooming: () => {

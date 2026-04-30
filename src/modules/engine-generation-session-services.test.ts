@@ -6,8 +6,10 @@ import {
   createGlobalGenerationSessionLifecycleTargets,
   createGlobalGenerationSessionServices,
   createGridSessionService,
+  createRuntimeGridSessionService,
 } from "./engine-generation-session-services";
 import { EngineOptionsSession } from "./engine-options-session";
+import type { EngineRuntimeContext } from "./engine-runtime-context";
 
 describe("createGlobalGenerationSessionServices", () => {
   afterEach(() => {
@@ -80,6 +82,37 @@ describe("createGlobalGenerationSessionServices", () => {
     }).prepareGrid({ seed: "target-seed" });
 
     expect(currentGrid.cells.h).toBeUndefined();
+  });
+
+  it("prepares runtime context grid without mutating global grid", () => {
+    const originalGrid = { cells: { i: [99] } } as typeof grid;
+    const currentGrid = {
+      seed: "runtime-seed",
+      cellsDesired: 100,
+      spacing: 10,
+      cellsX: 10,
+      cellsY: 10,
+      cells: {
+        h: new Uint8Array([1, 2, 3]),
+      },
+    } as typeof grid;
+    globalThis.grid = originalGrid;
+    const context = {
+      grid: currentGrid,
+      seed: "runtime-seed",
+      worldSettings: {
+        graphWidth: 100,
+        graphHeight: 100,
+      },
+    } as unknown as EngineRuntimeContext;
+
+    createRuntimeGridSessionService(context, {
+      generateGrid: vi.fn(),
+      shouldRegenerateGrid: vi.fn(() => false),
+    }).prepareGrid({ seed: "runtime-seed" });
+
+    expect(context.grid.cells.h).toBeUndefined();
+    expect(globalThis.grid).toBe(originalGrid);
   });
 
   it("composes session lifecycle from injected targets", () => {

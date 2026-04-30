@@ -71,6 +71,16 @@ describe("getGlobalEngineRuntimeContext", () => {
     expect(snapshot.notes).toEqual(runtimeNotes);
     context.notes.push({ id: "n2", name: "Context", legend: "Note" });
     expect(context.notes.all().map((note) => note.id)).toEqual(["n1", "n2"]);
+    context.grid = {
+      seed: "runtime",
+      cellsDesired: 100,
+      spacing: 10,
+      cellsX: 10,
+      cellsY: 10,
+      cells: { h: new Uint8Array([1]) },
+    } as typeof grid;
+    context.gridSession.prepareGrid({ seed: "runtime" });
+    expect(context.grid.cells.h).toBeUndefined();
     expect(context.seedSession).toBe(globalThis.EngineSeedSession);
     expect(context.graphSession).toBe(globalThis.EngineGraphSession);
     expect(typeof context.optionsSession.randomizeOptions).toBe("function");

@@ -12,6 +12,7 @@ import {
 import {
   createGlobalGenerationSessionAdapter,
   createGlobalGenerationSessionServices,
+  createRuntimeGridSessionService,
   type EngineGenerationSessionAdapter,
   type EngineGenerationSessionLifecycle,
   type EngineGridSessionService,
@@ -168,5 +169,6 @@ export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
   context.burgs = createRuntimeBurgService(context);
   context.routes = createRuntimeRouteService(context);
   context.mapStore = createRuntimeMapStore(context, () => context);
+  context.gridSession = createRuntimeGridSessionService(context);
   return context;
 }
