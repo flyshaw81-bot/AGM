@@ -418,7 +418,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 124 test files, 399 tests.
+- `npm.cmd run test -- --run` passed: 124 test files, 400 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -813,9 +813,10 @@ services instead of reading `globalThis.Routes` inline:
   `EngineRouteWritebackTargets`, but route creation and rendered route refresh
   are behind adapters.
 - `src/studio/bridge/engineAutoFixRouteTargets.ts` now owns the route
-  writeback target lookup. It is still a compatibility adapter over
-  `globalThis.pack`, but the logic has focused tests for province and state
-  fallback behavior instead of being embedded in the command execution path.
+  writeback target lookup through a dedicated map adapter. The default adapter
+  still reads `globalThis.pack`, but the logic has focused tests for province
+  and state fallback behavior instead of being embedded in the command
+  execution path.
 - `src/studio/bridge/engineAutoFixUndo.ts` now removes created routes through
   the injected `EngineRouteService` instead of directly calling
   `globalThis.Routes.remove`.
@@ -990,7 +991,8 @@ services instead of reading `globalThis.Routes` inline:
   writeback and undo with injected services, so this path can keep moving
   toward command-layer isolation without requiring a full public editor rewrite.
 - `src/studio/bridge/engineAutoFixRouteTargets.test.ts` covers the remaining
-  route target compatibility lookup while it still reads the active global map.
+  route target compatibility lookup and injected map adapter composition while
+  the default adapter still reads the active global map.
 - `src/modules/engine-burg-service.test.ts` and
   `src/studio/bridge/engineAutoFixSettlementCommands.test.ts` cover the burg
   command adapter and settlement writeback service injection.
@@ -1103,9 +1105,10 @@ services instead of reading `globalThis.Routes` inline:
   biome rule writeback, rules-pack import writeback, and undo/redo through
   injected autofix preview targets.
 
-Known remaining debt for this slice: `EngineRouteWritebackTargets` still reads
-`globalThis.pack`; `EngineSettlementWritebackTargets` still reads
-`globalThis.pack`; `EngineAutoFixUndoTargets`, `EngineStateWritebackTargets`,
+Known remaining debt for this slice: `EngineRouteWritebackTargets` now splits
+route cell/province lookup through a dedicated map adapter.
+`EngineSettlementWritebackTargets` still reads `globalThis.pack`;
+`EngineAutoFixUndoTargets`, `EngineStateWritebackTargets`,
 `EngineBiomeWritebackTargets` now splits biome-data lookup and redraw
 forwarding through dedicated bridge adapters. `EngineFocusGeometryTargets` now
 splits focus dimensions, cell geometry, and entity lookups through dedicated

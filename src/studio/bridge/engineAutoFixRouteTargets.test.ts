@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest";
 import type { EngineAutoFixPreviewChange } from "./engineActionTypes";
-import { createGlobalRouteWritebackTargets } from "./engineAutoFixRouteTargets";
+import {
+  createGlobalRouteWritebackTargets,
+  createRouteWritebackTargets,
+} from "./engineAutoFixRouteTargets";
 
 const originalPack = globalThis.pack;
 
@@ -83,5 +86,31 @@ describe("createGlobalRouteWritebackTargets", () => {
     expect(createGlobalRouteWritebackTargets().resolveRouteCell(change)).toBe(
       31,
     );
+  });
+
+  it("composes route writeback targets from an injected map adapter", () => {
+    const province = { i: 4, center: 10 };
+    const targets = createRouteWritebackTargets({
+      getCellIds: () => [10, 11],
+      getCellHeight: () => 30,
+      getCellProvince: () => 4,
+      getCellState: () => undefined,
+      getCellRoutes: (cellId) => (cellId === 11 ? {} : { 11: 1 }),
+      getProvince: (provinceId) =>
+        provinceId === 4
+          ? province
+          : ({ i: provinceId, removed: true } as Record<string, unknown>),
+    });
+    const change = {
+      id: "route:4",
+      operation: "link",
+      entity: "route",
+      summary: "Connect province",
+      refs: { provinces: [4] },
+    } satisfies EngineAutoFixPreviewChange;
+
+    expect(targets.resolveRouteCell(change)).toBe(11);
+    expect(targets.getWritableProvince(4)).toBe(province);
+    expect(targets.getWritableProvince(5)).toBeUndefined();
   });
 });
