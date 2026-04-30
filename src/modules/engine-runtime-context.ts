@@ -45,6 +45,7 @@ import {
 } from "./engine-naming-service";
 import {
   createGlobalNoteService,
+  createRuntimeNoteService,
   type EngineNoteService,
 } from "./engine-note-service";
 import {
@@ -174,6 +175,7 @@ export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
     timing: createGlobalTimingSettings(),
     biomesData,
   };
+  context.notes = createRuntimeNoteService(notes);
   context.burgs = createRuntimeBurgService(context);
   context.routes = createRuntimeRouteService(context);
   context.mapStore = createRuntimeMapStore(context, () => context);

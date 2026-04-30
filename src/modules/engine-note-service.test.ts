@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
   createGlobalNoteService,
+  createMemoryNoteStorageAdapter,
   createNoteService,
+  createRuntimeNoteService,
 } from "./engine-note-service";
 
 const originalNotes = globalThis.notes;
@@ -57,6 +59,33 @@ describe("createGlobalNoteService", () => {
     noteService.removeWhere((note) => note.id === "b");
 
     expect(injectedNotes.map((note) => note.id)).toEqual(["a", "c"]);
+    expect(globalThis.notes.map((note) => note.id)).toEqual(["global"]);
+  });
+
+  it("creates memory-backed note storage independent from global notes", () => {
+    globalThis.notes = [{ id: "global", name: "Global", legend: "" }];
+    const initialNotes = [{ id: "a", name: "A", legend: "Alpha" }];
+    const storage = createMemoryNoteStorageAdapter(initialNotes);
+
+    expect(storage.getNotes()).toBe(initialNotes);
+    storage.setNotes([{ id: "b", name: "B", legend: "Beta" }]);
+
+    expect(storage.getNotes()).toEqual([
+      { id: "b", name: "B", legend: "Beta" },
+    ]);
+    expect(globalThis.notes.map((note) => note.id)).toEqual(["global"]);
+  });
+
+  it("creates a runtime note service with isolated note state", () => {
+    globalThis.notes = [{ id: "global", name: "Global", legend: "" }];
+    const noteService = createRuntimeNoteService([
+      { id: "a", name: "A", legend: "Alpha" },
+    ]);
+
+    noteService.push({ id: "b", name: "B", legend: "Beta" });
+    noteService.removeWhere((note) => note.id === "a");
+
+    expect(noteService.all()).toEqual([{ id: "b", name: "B", legend: "Beta" }]);
     expect(globalThis.notes.map((note) => note.id)).toEqual(["global"]);
   });
 });

@@ -27,6 +27,18 @@ export function createGlobalNoteStorageAdapter(): EngineNoteStorageAdapter {
   };
 }
 
+export function createMemoryNoteStorageAdapter(
+  initialNotes: EngineNote[] = [],
+): EngineNoteStorageAdapter {
+  let currentNotes = initialNotes;
+  return {
+    getNotes: () => currentNotes,
+    setNotes: (nextNotes) => {
+      currentNotes = nextNotes;
+    },
+  };
+}
+
 export function createNoteService(
   storageAdapter: EngineNoteStorageAdapter,
 ): EngineNoteService {
@@ -49,4 +61,10 @@ export function createNoteService(
 
 export function createGlobalNoteService(): EngineNoteService {
   return createNoteService(createGlobalNoteStorageAdapter());
+}
+
+export function createRuntimeNoteService(
+  initialNotes: EngineNote[] = [],
+): EngineNoteService {
+  return createNoteService(createMemoryNoteStorageAdapter(initialNotes));
 }

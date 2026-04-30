@@ -30,7 +30,8 @@ describe("getGlobalEngineRuntimeContext", () => {
       value: "100",
     } as HTMLInputElement;
     globalThis.prec = {} as typeof prec;
-    globalThis.notes = [];
+    const runtimeNotes = [{ id: "n1", name: "Runtime", legend: "Note" }];
+    globalThis.notes = runtimeNotes;
     globalThis.populationRate = 1;
     globalThis.urbanDensity = 1;
     globalThis.urbanization = 1;
@@ -67,6 +68,9 @@ describe("getGlobalEngineRuntimeContext", () => {
     const snapshot = context.mapStore.createSnapshot();
     expect(snapshot.grid).toEqual(globalThis.grid);
     expect(snapshot.pack).toEqual(globalThis.pack);
+    expect(snapshot.notes).toEqual(runtimeNotes);
+    context.notes.push({ id: "n2", name: "Context", legend: "Note" });
+    expect(context.notes.all().map((note) => note.id)).toEqual(["n1", "n2"]);
     expect(context.seedSession).toBe(globalThis.EngineSeedSession);
     expect(context.graphSession).toBe(globalThis.EngineGraphSession);
     expect(typeof context.optionsSession.randomizeOptions).toBe("function");

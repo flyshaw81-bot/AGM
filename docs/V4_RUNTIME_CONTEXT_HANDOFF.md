@@ -100,6 +100,10 @@
 > `getGlobalEngineRuntimeContext()` now wires its `mapStore` through
 > `createRuntimeMapStore()`, so context snapshots and resample resets can stay
 > on the runtime context path after the initial global compatibility bootstrap.
+> Notes now expose memory-backed runtime storage via `createRuntimeNoteService()`,
+> and `getGlobalEngineRuntimeContext()` bootstraps context notes from the current
+> global notes array before keeping subsequent note mutations on the context
+> service.
 > Studio style injection now uses `StudioStyleTargets`, so duplicate style
 > detection, style element creation, and head insertion are injectable.
 > Studio document theme sync now uses `StudioThemeSyncTargets`, so renderer
