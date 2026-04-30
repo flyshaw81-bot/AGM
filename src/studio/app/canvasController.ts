@@ -22,6 +22,7 @@ export {
   type CanvasInteractionTargets,
   createCanvasInteractionTargets,
   createGlobalCanvasInteractionTargets,
+  createRuntimeCanvasInteractionTargets,
 } from "./canvasInteractionTargets";
 
 export function bindCanvasToolInteractions(

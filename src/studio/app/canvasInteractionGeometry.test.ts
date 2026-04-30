@@ -68,6 +68,7 @@ function createTargets(
         7: { name: "Westreach" },
       },
     })),
+    getPaintPreviewForCell: vi.fn(() => null),
     ...overrides,
   };
 }

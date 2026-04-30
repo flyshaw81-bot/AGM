@@ -1,6 +1,8 @@
+import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 import { syncEngineViewport } from "../bridge/engineMapHost";
 import type { StudioState } from "../types";
 import {
+  createRuntimeCanvasInteractionGeometryTargets,
   getCanvasPaintPreviewAt,
   getCanvasSelectionAt,
 } from "./canvasInteractionGeometry";
@@ -43,6 +45,26 @@ export function createGlobalCanvasInteractionTargets(): CanvasInteractionTargets
     isControlEvent: isCanvasControlEvent,
     getPaintPreviewAt: getCanvasPaintPreviewAt,
     getSelectionAt: getCanvasSelectionAt,
+    syncPaintPreview: syncCanvasPaintPreview,
+    syncToolHud: syncCanvasToolHud,
+    syncViewport: syncEngineViewport,
+    isPaintTool: isPaintCanvasTool,
+  });
+}
+
+export function createRuntimeCanvasInteractionTargets(
+  context: EngineRuntimeContext,
+): CanvasInteractionTargets {
+  const geometryTargets =
+    createRuntimeCanvasInteractionGeometryTargets(context);
+  return createCanvasInteractionTargets({
+    getCanvasFrame: () => document.getElementById("studioCanvasFrame"),
+    getMapHost: () => document.getElementById("studioMapHost"),
+    isControlEvent: isCanvasControlEvent,
+    getPaintPreviewAt: (event, state) =>
+      getCanvasPaintPreviewAt(event, state, geometryTargets),
+    getSelectionAt: (event, state) =>
+      getCanvasSelectionAt(event, state, geometryTargets),
     syncPaintPreview: syncCanvasPaintPreview,
     syncToolHud: syncCanvasToolHud,
     syncViewport: syncEngineViewport,

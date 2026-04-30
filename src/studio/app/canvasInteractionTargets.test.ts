@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
+import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 import type { CanvasToolMode } from "../types";
 import {
   createCanvasInteractionTargets,
   createGlobalCanvasInteractionTargets,
+  createRuntimeCanvasInteractionTargets,
 } from "./canvasInteractionTargets";
 
 describe("canvas interaction targets", () => {
@@ -43,6 +45,40 @@ describe("canvas interaction targets", () => {
       expect(targets.syncToolHud).toEqual(expect.any(Function));
       expect(targets.syncViewport).toEqual(expect.any(Function));
       expect(targets.isPaintTool).toEqual(expect.any(Function));
+    } finally {
+      globalThis.document = originalDocument;
+    }
+  });
+
+  it("composes runtime canvas interaction geometry adapters", () => {
+    const originalDocument = globalThis.document;
+    globalThis.document = {
+      getElementById: vi.fn((id: string) => ({ id })),
+    } as unknown as Document;
+    const context = {
+      worldSettings: {
+        graphWidth: 1000,
+        graphHeight: 500,
+      },
+      pack: {
+        cells: {
+          p: { 4: [500, 250] },
+          h: { 4: 30 },
+          biome: { 4: 2 },
+        },
+      },
+      grid: { cells: {} },
+    } as unknown as EngineRuntimeContext;
+
+    try {
+      const targets = createRuntimeCanvasInteractionTargets(context);
+
+      expect(targets.getCanvasFrame()).toMatchObject({
+        id: "studioCanvasFrame",
+      });
+      expect(targets.getMapHost()).toMatchObject({ id: "studioMapHost" });
+      expect(targets.getPaintPreviewAt).toEqual(expect.any(Function));
+      expect(targets.getSelectionAt).toEqual(expect.any(Function));
     } finally {
       globalThis.document = originalDocument;
     }

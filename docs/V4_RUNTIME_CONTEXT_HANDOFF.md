@@ -76,6 +76,10 @@
 > Studio shell and renderer target factories now also have runtime canvas paint
 > variants, so canvas paint edits can use `EngineRuntimeContext` pack/grid/
 > rendering services instead of falling back to global canvas access.
+> Canvas interaction geometry and interaction binding now also have runtime
+> variants, so paint preview and selection hit-testing can read graph/pack data
+> from `EngineRuntimeContext` instead of splitting preview reads from paint
+> writes.
 > Studio style injection now uses `StudioStyleTargets`, so duplicate style
 > detection, style element creation, and head insertion are injectable.
 > Studio document theme sync now uses `StudioThemeSyncTargets`, so renderer

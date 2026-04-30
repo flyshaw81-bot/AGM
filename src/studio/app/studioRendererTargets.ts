@@ -13,6 +13,7 @@ import type {
 import {
   applyCanvasPaintPreview,
   bindCanvasToolInteractions,
+  createRuntimeCanvasInteractionTargets,
   syncCanvasSelectionHighlight,
   syncOverlays,
 } from "./canvasController";
@@ -100,6 +101,19 @@ export function createRuntimeStudioRendererTargets(
   const paintTargets = createRuntimeCanvasPaintEditingTargets(context);
   return {
     ...createGlobalStudioRendererTargets(),
+    bindCanvasToolInteractions: (
+      state,
+      onViewportPatch,
+      onSelection,
+      onCanvasPaint,
+    ) =>
+      bindCanvasToolInteractions(
+        state,
+        onViewportPatch,
+        onSelection,
+        onCanvasPaint,
+        createRuntimeCanvasInteractionTargets(context),
+      ),
     applyCanvasPaintPreview: (state, preview) =>
       applyCanvasPaintPreview(state, preview, paintTargets),
   };

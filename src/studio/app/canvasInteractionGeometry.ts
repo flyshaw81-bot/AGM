@@ -12,15 +12,13 @@ import {
   type CanvasInteractionGeometryTargets,
   createGlobalCanvasInteractionGeometryTargets,
 } from "./canvasInteractionGeometryTargets";
-import {
-  getCanvasPaintPreviewForCell,
-  isPaintCanvasTool,
-} from "./canvasPaintEditing";
+import { isPaintCanvasTool } from "./canvasPaintEditing";
 
 export {
   type CanvasInteractionGeometryTargets,
   createCanvasInteractionGeometryTargets,
   createGlobalCanvasInteractionGeometryTargets,
+  createRuntimeCanvasInteractionGeometryTargets,
 } from "./canvasInteractionGeometryTargets";
 
 function getCanvasFramePoint(
@@ -82,7 +80,7 @@ export function getCanvasPaintPreviewAt(
   if (!isPaintCanvasTool(state.viewport.canvasTool)) return null;
   const nearest = getNearestCanvasCell(event, state, targets);
   if (!nearest) return null;
-  return getCanvasPaintPreviewForCell(
+  return targets.getPaintPreviewForCell(
     state.viewport.canvasTool,
     nearest.cellId,
   );
