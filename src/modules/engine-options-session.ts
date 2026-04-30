@@ -21,6 +21,8 @@ export type EngineOptionsLocaleTargets = {
 };
 
 export type EngineOptionsBrowserControlTargets = {
+  setCellsDensity: (density: number) => void;
+  applyHeightmapTemplate: (template: string, name: string) => void;
   setStatesCount: (value: number) => void;
   setProvincesRatio: (value: number) => void;
   setManorsAuto: () => void;
@@ -29,6 +31,9 @@ export type EngineOptionsBrowserControlTargets = {
   setGrowthRate: (value: number) => void;
   setCulturesCount: (value: number) => void;
   setCultureSet: (value: string) => void;
+  setTemperatureEquator: (value: number) => void;
+  setTemperatureNorthPole: (value: number) => void;
+  setTemperatureSouthPole: (value: number) => void;
   setPrecipitation: (value: number) => void;
   setDistanceScale: (value: number) => void;
   setDistanceUnit: (value: string) => void;
@@ -47,6 +52,16 @@ export function createGlobalOptionsLocaleTargets(): EngineOptionsLocaleTargets {
 
 export function createGlobalOptionsBrowserControlTargets(): EngineOptionsBrowserControlTargets {
   return {
+    setCellsDensity: (density) => {
+      (globalThis as any).changeCellsDensity(density);
+    },
+    applyHeightmapTemplate: (template, name) => {
+      (globalThis as any).applyOption(
+        (globalThis as any).byId("templateInput"),
+        template,
+        name,
+      );
+    },
     setStatesCount: (value) => {
       (globalThis as any).statesNumber.value = value;
     },
@@ -73,6 +88,15 @@ export function createGlobalOptionsBrowserControlTargets(): EngineOptionsBrowser
     setCultureSet: (value) => {
       culturesSet.value = value;
       (globalThis as any).changeCultureSet();
+    },
+    setTemperatureEquator: (value) => {
+      options.temperatureEquator = value;
+    },
+    setTemperatureNorthPole: (value) => {
+      options.temperatureNorthPole = value;
+    },
+    setTemperatureSouthPole: (value) => {
+      options.temperatureSouthPole = value;
     },
     setPrecipitation: (value) => {
       precInput.value = (globalThis as any).precOutput.value = String(value);
@@ -260,14 +284,9 @@ export function createGlobalOptionsWriterAdapter(
   browserTargets: EngineOptionsBrowserControlTargets = createGlobalOptionsBrowserControlTargets(),
 ): EngineOptionsWriterAdapter {
   return {
-    setCellsDensity: (density) =>
-      (globalThis as any).changeCellsDensity(density),
+    setCellsDensity: (density) => browserTargets.setCellsDensity(density),
     applyHeightmapTemplate: (template, name) =>
-      (globalThis as any).applyOption(
-        (globalThis as any).byId("templateInput"),
-        template,
-        name,
-      ),
+      browserTargets.applyHeightmapTemplate(template, name),
     setStatesCount: (value) => browserTargets.setStatesCount(value),
     setProvincesRatio: (value) => browserTargets.setProvincesRatio(value),
     setManorsAuto: () => browserTargets.setManorsAuto(),
@@ -276,15 +295,12 @@ export function createGlobalOptionsWriterAdapter(
     setGrowthRate: (value) => browserTargets.setGrowthRate(value),
     setCulturesCount: (value) => browserTargets.setCulturesCount(value),
     setCultureSet: (value) => browserTargets.setCultureSet(value),
-    setTemperatureEquator: (value) => {
-      options.temperatureEquator = value;
-    },
-    setTemperatureNorthPole: (value) => {
-      options.temperatureNorthPole = value;
-    },
-    setTemperatureSouthPole: (value) => {
-      options.temperatureSouthPole = value;
-    },
+    setTemperatureEquator: (value) =>
+      browserTargets.setTemperatureEquator(value),
+    setTemperatureNorthPole: (value) =>
+      browserTargets.setTemperatureNorthPole(value),
+    setTemperatureSouthPole: (value) =>
+      browserTargets.setTemperatureSouthPole(value),
     setPrecipitation: (value) => browserTargets.setPrecipitation(value),
     setDistanceScale: (value) => browserTargets.setDistanceScale(value),
     setDistanceUnit: (value) => browserTargets.setDistanceUnit(value),

@@ -230,6 +230,8 @@ describe("EngineOptionsSessionModule", () => {
 
   it("writes unit and climate controls through injected browser targets", () => {
     const targets: EngineOptionsBrowserControlTargets = {
+      setCellsDensity: vi.fn(),
+      applyHeightmapTemplate: vi.fn(),
       setStatesCount: vi.fn(),
       setProvincesRatio: vi.fn(),
       setManorsAuto: vi.fn(),
@@ -238,6 +240,9 @@ describe("EngineOptionsSessionModule", () => {
       setGrowthRate: vi.fn(),
       setCulturesCount: vi.fn(),
       setCultureSet: vi.fn(),
+      setTemperatureEquator: vi.fn(),
+      setTemperatureNorthPole: vi.fn(),
+      setTemperatureSouthPole: vi.fn(),
       setPrecipitation: vi.fn(),
       setDistanceScale: vi.fn(),
       setDistanceUnit: vi.fn(),
@@ -249,6 +254,8 @@ describe("EngineOptionsSessionModule", () => {
     };
     const writer = createGlobalOptionsWriterAdapter(targets);
 
+    writer.setCellsDensity(4);
+    writer.applyHeightmapTemplate("continental", "Continental");
     writer.setStatesCount(24);
     writer.setProvincesRatio(60);
     writer.setManorsAuto();
@@ -257,6 +264,9 @@ describe("EngineOptionsSessionModule", () => {
     writer.setGrowthRate(1.2);
     writer.setCulturesCount(14);
     writer.setCultureSet("highFantasy");
+    writer.setTemperatureEquator(31);
+    writer.setTemperatureNorthPole(-20);
+    writer.setTemperatureSouthPole(-10);
     writer.setPrecipitation(120);
     writer.setDistanceScale(2.5);
     writer.setDistanceUnit("mi");
@@ -266,6 +276,11 @@ describe("EngineOptionsSessionModule", () => {
     writer.setEra("Copper Moon");
     writer.syncEraOptions();
 
+    expect(targets.setCellsDensity).toHaveBeenCalledWith(4);
+    expect(targets.applyHeightmapTemplate).toHaveBeenCalledWith(
+      "continental",
+      "Continental",
+    );
     expect(targets.setStatesCount).toHaveBeenCalledWith(24);
     expect(targets.setProvincesRatio).toHaveBeenCalledWith(60);
     expect(targets.setManorsAuto).toHaveBeenCalled();
@@ -274,6 +289,9 @@ describe("EngineOptionsSessionModule", () => {
     expect(targets.setGrowthRate).toHaveBeenCalledWith(1.2);
     expect(targets.setCulturesCount).toHaveBeenCalledWith(14);
     expect(targets.setCultureSet).toHaveBeenCalledWith("highFantasy");
+    expect(targets.setTemperatureEquator).toHaveBeenCalledWith(31);
+    expect(targets.setTemperatureNorthPole).toHaveBeenCalledWith(-20);
+    expect(targets.setTemperatureSouthPole).toHaveBeenCalledWith(-10);
     expect(targets.setPrecipitation).toHaveBeenCalledWith(120);
     expect(targets.setDistanceScale).toHaveBeenCalledWith(2.5);
     expect(targets.setDistanceUnit).toHaveBeenCalledWith("mi");

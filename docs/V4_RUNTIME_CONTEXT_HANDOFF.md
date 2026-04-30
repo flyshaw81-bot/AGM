@@ -1015,7 +1015,8 @@ Completed:
 - `EngineGraphSessionModule` now accepts explicit graph-session targets for map
   size reads, graph size writes, rect bound writes, and fog/water mask updates.
   The global module mount still uses the current public SVG/d3 adapters.
-- `EngineOptionsSessionModule` now routes generation option controls,
+- `EngineOptionsSessionModule` now routes heightmap template application,
+  cells-density changes, generation option controls, climate option writes,
   precipitation, distance scale, distance unit, height unit, temperature scale,
   and era/year browser writes through `EngineOptionsBrowserControlTargets`. The
   global writer still updates the current public controls for compatibility,
