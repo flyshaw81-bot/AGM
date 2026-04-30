@@ -42,6 +42,9 @@
 > Project center persistence now uses `ProjectCenterTargets`, so recent-project
 > storage, project summary reads, and timestamp generation are isolated behind
 > app-level project center adapters.
+> Initial Studio state creation now uses `InitialStateTargets`, so document
+> state reads, style preset reads, preset lookup, preference application, and
+> project-center loading can be tested without browser globals.
 > Please review whether each remaining global dependency is behind an explicit
 > compatibility adapter, and keep treating AGM `window.*` module mounts
 > separately from old public UI debt.
@@ -445,7 +448,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 136 test files, 455 tests.
+- `npm.cmd run test -- --run` passed: 137 test files, 457 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1220,6 +1223,11 @@ bridge, focus geometry, draft import, autofix, canvas, workspace, and
 preference helpers, but `studioShellHandlers.ts` no longer owns those direct
 calls inline. `DirectEditorActionTargets` now splits document sync, focus
 geometry, and entity mutation commands through dedicated app-level adapters.
+Initial Studio state creation now has a dedicated `InitialStateTargets`
+boundary for engine document reads, style preset reads, canvas preset lookup,
+preference reads/application, and project-center loading; the default adapter
+still uses the current engine/browser sources, while tests can exercise startup
+state without touching `document` or `localStorage`.
 Direct editor targets can also compose focus, entity mutation, and biome
 mutation commands directly from an injected `EngineRuntimeContext`. The default
 adapters still delegate to current entity mutation/focus bridge helpers, but

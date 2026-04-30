@@ -57,6 +57,18 @@ export function getInitialTheme(
   return theme === "daylight" ? "daylight" : "night";
 }
 
+export function applyDocumentPreferences(
+  language: StudioLanguage,
+  theme: StudioTheme,
+  targets: Pick<
+    StudioPreferenceTargets,
+    "setDocumentLanguage" | "setDocumentTheme"
+  > = createGlobalStudioPreferenceTargets(),
+) {
+  targets.setDocumentLanguage(language);
+  targets.setDocumentTheme(theme);
+}
+
 export function persistTheme(
   theme: StudioTheme,
   targets: Pick<

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  applyDocumentPreferences,
   getInitialLanguage,
   getInitialNavigationCollapsed,
   getInitialTheme,
@@ -46,6 +47,15 @@ describe("studio preferences", () => {
     expect(getInitialLanguage(targets)).toBe("zh-CN");
     expect(getInitialTheme(targets)).toBe("night");
     expect(getInitialNavigationCollapsed(targets)).toBe(false);
+  });
+
+  it("applies document preferences through injected document targets", () => {
+    const targets = createTargets();
+
+    applyDocumentPreferences("en", "daylight", targets);
+
+    expect(targets.setDocumentLanguage).toHaveBeenCalledWith("en");
+    expect(targets.setDocumentTheme).toHaveBeenCalledWith("daylight");
   });
 
   it("persists language, theme, and navigation through injected targets", () => {

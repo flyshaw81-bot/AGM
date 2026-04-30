@@ -3,23 +3,49 @@ import { getEngineStylePreset } from "../bridge/engineStyle";
 import { getPresetById } from "../canvas/presets";
 import type { StudioState } from "../types";
 import {
+  applyDocumentPreferences,
+  createGlobalStudioPreferenceTargets,
   getInitialLanguage,
   getInitialNavigationCollapsed,
   getInitialTheme,
+  type StudioPreferenceTargets,
 } from "./preferences";
-import { loadProjectCenterState } from "./projectCenter";
+import {
+  createGlobalProjectCenterTargets,
+  loadProjectCenterState,
+  type ProjectCenterTargets,
+} from "./projectCenter";
 
-export function createInitialState(): StudioState {
-  const documentState = getEngineDocumentState();
-  const initialPreset = getPresetById("desktop-landscape");
-  const language = getInitialLanguage();
-  const theme = getInitialTheme();
-  document.documentElement.lang = language;
-  document.documentElement.dataset.studioTheme = theme;
+export type InitialStateTargets = {
+  getEngineDocumentState: typeof getEngineDocumentState;
+  getEngineStylePreset: typeof getEngineStylePreset;
+  getPresetById: typeof getPresetById;
+  preferences: StudioPreferenceTargets;
+  projectCenter: Pick<ProjectCenterTargets, "getStorageItem">;
+};
+
+export function createGlobalInitialStateTargets(): InitialStateTargets {
+  return {
+    getEngineDocumentState,
+    getEngineStylePreset,
+    getPresetById,
+    preferences: createGlobalStudioPreferenceTargets(),
+    projectCenter: createGlobalProjectCenterTargets(),
+  };
+}
+
+export function createInitialState(
+  targets: InitialStateTargets = createGlobalInitialStateTargets(),
+): StudioState {
+  const documentState = targets.getEngineDocumentState();
+  const initialPreset = targets.getPresetById("desktop-landscape");
+  const language = getInitialLanguage(targets.preferences);
+  const theme = getInitialTheme(targets.preferences);
+  applyDocumentPreferences(language, theme, targets.preferences);
 
   const initialDocument: StudioState["document"] = {
     ...documentState,
-    stylePreset: getEngineStylePreset(),
+    stylePreset: targets.getEngineStylePreset(),
     gameProfile: "rpg",
     designIntent: "",
   };
@@ -28,11 +54,14 @@ export function createInitialState(): StudioState {
     language,
     theme,
     shell: {
-      navigationCollapsed: getInitialNavigationCollapsed(),
+      navigationCollapsed: getInitialNavigationCollapsed(targets.preferences),
     },
     section: "project",
     document: initialDocument,
-    projectCenter: loadProjectCenterState(initialDocument),
+    projectCenter: loadProjectCenterState(
+      initialDocument,
+      targets.projectCenter,
+    ),
     viewport: {
       presetId: initialPreset.id,
       width: initialPreset.width,
