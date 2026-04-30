@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 175 test files, 638 tests.
+- `npm.cmd run test -- --run` passed: 176 test files, 639 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1910,6 +1910,10 @@ checks, and emblem layer state. The default browser behavior remains in
 `createGlobalEmblemRendererTargets()`, `window.COArenderer` is guarded for
 non-browser imports, and renderer tests cover injected add, skip-existing, and
 draw-missing paths.
+`utils/graphUtils.ts` now uses `DrawHeightsTargets` for raster height preview
+canvas creation. `drawHeights()` keeps the browser default in
+`createGlobalDrawHeightsTargets()`, while focused tests verify pixel writes and
+data URL generation through injected canvas fakes.
 
 ## Next Recommended Slice
 

@@ -555,6 +555,33 @@ export const isWater = (i: number, packedGraph: PackedGraph) => {
   return packedGraph.cells.h[i] < 20;
 };
 
+export type DrawHeightsCanvas = {
+  width: number;
+  height: number;
+  getContext: (
+    contextId: "2d",
+  ) => Pick<
+    CanvasRenderingContext2D,
+    "createImageData" | "putImageData"
+  > | null;
+  toDataURL: (type?: string) => string;
+};
+
+export type DrawHeightsTargets = {
+  createCanvas: (width: number, height: number) => DrawHeightsCanvas;
+};
+
+export function createGlobalDrawHeightsTargets(): DrawHeightsTargets {
+  return {
+    createCanvas: (width, height) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      return canvas;
+    },
+  };
+}
+
 // draw raster heightmap preview (not used in main generation)
 /**
  * Draws a raster heightmap preview based on given heights and rendering options
@@ -572,17 +599,18 @@ export const drawHeights = ({
   height,
   scheme,
   renderOcean,
+  targets = createGlobalDrawHeightsTargets(),
 }: {
   heights: number[];
   width: number;
   height: number;
   scheme: (value: number) => string;
   renderOcean: boolean;
+  targets?: DrawHeightsTargets;
 }) => {
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
+  const canvas = targets.createCanvas(width, height);
   const ctx = canvas.getContext("2d")!;
+  if (!ctx) throw new Error("Cannot draw heights without a 2D canvas context");
   const imageData = ctx.createImageData(width, height);
 
   const getHeight = (height: number) =>
