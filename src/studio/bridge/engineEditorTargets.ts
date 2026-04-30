@@ -71,9 +71,9 @@ export function createJQueryEngineEditorDialogAdapter(): EngineEditorDialogAdapt
   };
 }
 
-export function createGlobalEngineEditorTargets(
-  handlerRuntime: EngineEditorHandlerRuntime = createGlobalEngineEditorHandlerRuntime(),
-  dialogAdapter: EngineEditorDialogAdapter = createJQueryEngineEditorDialogAdapter(),
+export function createEngineEditorTargets(
+  handlerRuntime: EngineEditorHandlerRuntime,
+  dialogAdapter: EngineEditorDialogAdapter,
 ): EngineEditorTargets {
   return {
     hasEditorHandler: (action) => Boolean(handlerRuntime.getHandler(action)),
@@ -84,4 +84,11 @@ export function createGlobalEngineEditorTargets(
     isDialogOpen: (dialogId) => dialogAdapter.isOpen(dialogId),
     closeDialog: (dialogId) => dialogAdapter.close(dialogId),
   };
+}
+
+export function createGlobalEngineEditorTargets(
+  handlerRuntime: EngineEditorHandlerRuntime = createGlobalEngineEditorHandlerRuntime(),
+  dialogAdapter: EngineEditorDialogAdapter = createJQueryEngineEditorDialogAdapter(),
+): EngineEditorTargets {
+  return createEngineEditorTargets(handlerRuntime, dialogAdapter);
 }

@@ -87,6 +87,9 @@
 > Engine host targets now expose an explicit `createEngineHostTargets`
 > composer, so injected DOM and dialog adapters are distinct from the global
 > default host factory.
+> Engine editor targets now expose an explicit `createEngineEditorTargets`
+> composer, so injected handler runtimes and dialog adapters are distinct from
+> the global editor handler / jQuery-dialog compatibility factory.
 > Project center default storage/summary/clock access now uses
 > `ProjectCenterTargets` from a dedicated adapter module, so project-center
 > state logic no longer owns `localStorage`, engine summary, or clock calls.
@@ -553,7 +556,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 164 test files, 520 tests.
+- `npm.cmd run test -- --run` passed: 164 test files, 521 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1399,6 +1402,10 @@ Engine host target composition now has an explicit `createEngineHostTargets`
 composer for injected DOM and dialog adapters, while
 `createGlobalEngineHostTargets` remains the default browser/jQuery-dialog
 compatibility factory.
+Engine editor target composition now has an explicit `createEngineEditorTargets`
+composer for injected handler runtimes and dialog adapters, while
+`createGlobalEngineEditorTargets` remains the default editor handler and
+jQuery-dialog compatibility factory.
 Project center default browser/runtime access now has a dedicated
 `projectCenterTargets.ts` adapter for recent-project storage, engine project
 summary reads, and clock access. `projectCenter.ts` continues to re-export the

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  createEngineEditorTargets,
   createGlobalEngineEditorTargets,
   createJQueryEngineEditorDialogAdapter,
   type EngineEditorDialogAdapter,
@@ -8,7 +9,7 @@ import {
 const originalDocument = globalThis.document;
 const originalWindow = globalThis.window;
 
-describe("createGlobalEngineEditorTargets", () => {
+describe("createEngineEditorTargets", () => {
   afterEach(() => {
     globalThis.document = originalDocument;
     globalThis.window = originalWindow;
@@ -21,7 +22,7 @@ describe("createGlobalEngineEditorTargets", () => {
       close: vi.fn(),
     };
 
-    const targets = createGlobalEngineEditorTargets(
+    const targets = createEngineEditorTargets(
       {
         getHandler: (action) =>
           action === "editStates" ? editStates : undefined,
@@ -42,7 +43,7 @@ describe("createGlobalEngineEditorTargets", () => {
       isOpen: vi.fn(() => true),
       close: vi.fn(),
     };
-    const targets = createGlobalEngineEditorTargets(
+    const targets = createEngineEditorTargets(
       { getHandler: () => undefined },
       dialogAdapter,
     );
@@ -50,6 +51,30 @@ describe("createGlobalEngineEditorTargets", () => {
     expect(targets.isDialogOpen("statesEditor")).toBe(true);
     targets.closeDialog("statesEditor");
 
+    expect(dialogAdapter.close).toHaveBeenCalledWith("statesEditor");
+  });
+
+  it("keeps the global factory as compatibility wiring over injected adapters", async () => {
+    const editStates = vi.fn(async () => undefined);
+    const dialogAdapter: EngineEditorDialogAdapter = {
+      isOpen: vi.fn(() => true),
+      close: vi.fn(),
+    };
+
+    const targets = createGlobalEngineEditorTargets(
+      {
+        getHandler: (action) =>
+          action === "editStates" ? editStates : undefined,
+      },
+      dialogAdapter,
+    );
+
+    expect(targets.hasEditorHandler("editStates")).toBe(true);
+    await targets.runEditorHandler("editStates");
+    expect(targets.isDialogOpen("statesEditor")).toBe(true);
+    targets.closeDialog("statesEditor");
+
+    expect(editStates).toHaveBeenCalledTimes(1);
     expect(dialogAdapter.close).toHaveBeenCalledWith("statesEditor");
   });
 
