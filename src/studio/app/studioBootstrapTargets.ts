@@ -46,11 +46,17 @@ export type StudioBootstrapTargets = {
   setViewportSync: (sync: StudioViewportSync) => void;
 };
 
+export function createStudioBootstrapTargets(
+  targets: StudioBootstrapTargets,
+): StudioBootstrapTargets {
+  return targets;
+}
+
 export function createGlobalStudioBootstrapTargets(
   render: RenderStudioApp,
 ): StudioBootstrapTargets {
   const domTargets = createGlobalStudioBootstrapDomTargets();
-  return {
+  return createStudioBootstrapTargets({
     injectStyles: injectStudioStyles,
     enableStudioBody: domTargets.enableStudioBody,
     removeLoadingIndicator: domTargets.removeLoadingIndicator,
@@ -67,5 +73,5 @@ export function createGlobalStudioBootstrapTargets(
     getDocumentReadyState: domTargets.getDocumentReadyState,
     addDomContentLoadedListener: domTargets.addDomContentLoadedListener,
     setViewportSync: domTargets.setViewportSync,
-  };
+  });
 }

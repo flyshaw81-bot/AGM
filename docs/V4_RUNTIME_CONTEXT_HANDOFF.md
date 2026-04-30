@@ -122,6 +122,9 @@
 > `StudioBootstrapTargets`, so startup orchestration no longer owns style,
 > DOM, initial-state, workflow-watcher, project-summary, document-sync, root,
 > or viewport-sync default adapter wiring inline.
+> `StudioBootstrapTargets` now also exposes an explicit
+> `createStudioBootstrapTargets` composer, so injected startup dependency sets
+> stay separate from the global Studio/browser bridge factory.
 > Studio renderer default dependencies now live in `StudioRendererTargets`, so
 > render orchestration no longer owns shell, canvas, document, project-center,
 > viewport, focus, dialog-position, or event-binding default adapter wiring
@@ -574,7 +577,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 165 test files, 527 tests.
+- `npm.cmd run test -- --run` passed: 165 test files, 528 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1470,6 +1473,9 @@ initial state creation, viewport dimension updates, root creation, project
 summary sync, document sync, workflow watching, and viewport sync.
 `studioBootstrap.ts` continues to re-export the target type/factory while
 bootstrap orchestration no longer owns those default adapter imports inline.
+`studioBootstrapTargets.ts` now also exposes `createStudioBootstrapTargets` for
+explicit startup target composition, keeping injected bootstrap dependency sets
+separate from the global Studio/browser bridge factory.
 Studio renderer default runtime access now has a dedicated
 `studioRendererTargets.ts` adapter for editor/document sync, project center
 updates, shell rendering, root writes, document theme writes, map/dialog host

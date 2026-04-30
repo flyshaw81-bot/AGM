@@ -6,6 +6,7 @@ import type {
 
 export {
   createGlobalStudioBootstrapTargets,
+  createStudioBootstrapTargets,
   type StudioBootstrapTargets,
   type StudioViewportSync,
 } from "./studioBootstrapTargets";
