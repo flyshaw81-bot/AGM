@@ -12,6 +12,34 @@ declare global {
   var COA: EmblemGeneratorModule;
 }
 
+export type EmblemShapeSelection = {
+  value: string;
+  group: string;
+};
+
+export type EmblemShapeTargets = {
+  getSelectedShape: () => EmblemShapeSelection | null;
+};
+
+export function createGlobalEmblemShapeTargets(): EmblemShapeTargets {
+  return {
+    getSelectedShape: () => {
+      const emblemShape = document.getElementById(
+        "emblemShape",
+      ) as HTMLSelectElement | null;
+      if (!emblemShape) return null;
+
+      return {
+        value: emblemShape.value,
+        group:
+          emblemShape.selectedOptions[0]?.parentElement?.getAttribute(
+            "label",
+          ) || "Diversiform",
+      };
+    },
+  };
+}
+
 export interface EmblemCharge {
   charge: string;
   t: string;
@@ -48,6 +76,10 @@ export interface Emblem {
 }
 
 class EmblemGeneratorModule {
+  constructor(
+    private readonly shapeTargets: EmblemShapeTargets = createGlobalEmblemShapeTargets(),
+  ) {}
+
   generate(
     parent: Emblem | null,
     kinship: number | null,
@@ -554,15 +586,11 @@ class EmblemGeneratorModule {
   }
 
   getShield(culture: number, state?: number): string {
-    const emblemShape = document.getElementById(
-      "emblemShape",
-    ) as HTMLSelectElement | null;
-    const shapeGroup =
-      emblemShape?.selectedOptions[0]?.parentElement?.getAttribute("label") ||
-      "Diversiform";
-    if (shapeGroup !== "Diversiform") return emblemShape!.value;
+    const selectedShape = this.shapeTargets.getSelectedShape();
+    const shapeGroup = selectedShape?.group || "Diversiform";
+    if (shapeGroup !== "Diversiform") return selectedShape?.value || "heater";
 
-    if (emblemShape?.value === "state" && state && pack.states[state].coa)
+    if (selectedShape?.value === "state" && state && pack.states[state].coa)
       return pack.states[state].coa!.shield!;
     if (pack.cultures[culture].shield) return pack.cultures[culture].shield!;
     ERROR &&
@@ -588,4 +616,6 @@ class EmblemGeneratorModule {
 
 export default EmblemGeneratorModule;
 
-window.COA = new EmblemGeneratorModule();
+if (typeof window !== "undefined") {
+  window.COA = new EmblemGeneratorModule();
+}
