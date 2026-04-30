@@ -10,8 +10,7 @@ import {
   type EngineFeedbackService,
 } from "./engine-feedback-service";
 import {
-  createGlobalGenerationSessionAdapter,
-  createGlobalGenerationSessionServices,
+  createGlobalGenerationSessionLifecycle,
   createRuntimeGenerationSessionAdapter,
   createRuntimeGridSessionService,
   type EngineGenerationSessionAdapter,
@@ -146,7 +145,6 @@ export type EngineRuntimeContext = {
 
 export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
   const feedback = createGlobalFeedbackService();
-  const generationSessionServices = createGlobalGenerationSessionServices();
   const context = {
     grid,
     pack,
@@ -156,15 +154,18 @@ export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
     generationSettings: createGlobalGenerationSettings(),
     populationSettings: createGlobalPopulationSettings(),
     naming: createGlobalNamingService(),
+    burgs: undefined as never,
+    routes: undefined as never,
     states: createGlobalStateService(),
     units: createGlobalUnitSettings(),
     heraldry: createGlobalHeraldryService(),
-    seedSession: generationSessionServices.seedSession,
-    graphSession: generationSessionServices.graphSession,
-    optionsSession: generationSessionServices.optionsSession,
-    gridSession: generationSessionServices.gridSession,
-    sessionLifecycle: generationSessionServices.sessionLifecycle,
-    generationSession: createGlobalGenerationSessionAdapter(),
+    mapStore: undefined as never,
+    seedSession: undefined as never,
+    graphSession: undefined as never,
+    optionsSession: undefined as never,
+    gridSession: undefined as never,
+    sessionLifecycle: createGlobalGenerationSessionLifecycle(),
+    generationSession: undefined as never,
     lifecycle: createGlobalLifecycleAdapter(getGlobalEngineRuntimeContext),
     notes: createRuntimeNoteService(notes),
     notices: createGlobalNoticeService(),

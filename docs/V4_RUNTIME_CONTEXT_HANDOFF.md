@@ -1791,6 +1791,10 @@ pass the same context back as a second argument. The global adapter remains for
 compatibility entry points.
 `EngineGenerationPipeline.prepareGenerationSession()` now relies on that bound
 runtime adapter and no longer passes the context as a second argument.
+`getGlobalEngineRuntimeContext()` no longer creates the full global generation
+session service set just to overwrite it. Runtime-owned session services
+(`seedSession`, `graphSession`, `gridSession`, `optionsSession`, and
+`generationSession`) are initialized after the context object exists.
 
 ## Next Recommended Slice
 
