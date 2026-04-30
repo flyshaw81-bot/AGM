@@ -1,4 +1,4 @@
-﻿# V4 Runtime Context Handoff
+# V4 Runtime Context Handoff
 
 > **V4 review note:** This handoff is intentionally scoped to runtime/context,
 > command-layer, and compatibility-boundary migration. It is not claiming that
@@ -15,9 +15,13 @@
 > entity mutation, diplomacy update, focus resolution, and document sync behind
 > a direct editor target boundary. The latest autofix pass also moves project
 > summary reads, world draft construction, engine preview writebacks, and
-> writeback undo behind an autofix target boundary. Please review whether each
-> remaining global dependency is behind an explicit compatibility adapter, and
-> keep treating AGM `window.*` module mounts separately from old public UI debt.
+> writeback undo behind an autofix target boundary. The latest draft/export
+> pass also splits world document draft construction targets from storage,
+> download, blob, and engine package export targets so project exports can
+> compose injected runtime summaries without touching the default global bridge.
+> Please review whether each remaining global dependency is behind an explicit
+> compatibility adapter, and keep treating AGM `window.*` module mounts
+> separately from old public UI debt.
 
 ## Scope
 
@@ -418,7 +422,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 133 test files, 431 tests.
+- `npm.cmd run test -- --run` passed: 133 test files, 432 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,

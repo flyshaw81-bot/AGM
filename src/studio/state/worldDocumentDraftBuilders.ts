@@ -27,14 +27,14 @@ function numberOrNull(value: string) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-export type WorldDocumentDraftTargets = {
+export type WorldDocumentDraftBuilderTargets = {
   getEntities: () => EngineEntitySummary;
   getResources: () => EngineWorldResourceSummary;
   getLayerStates: () => Record<LayerAction, boolean>;
   getLayerDetails: () => ReturnType<typeof getEngineLayerDetails>;
 };
 
-export function createGlobalWorldDocumentDraftBuilderTargets(): WorldDocumentDraftTargets {
+export function createGlobalWorldDocumentDraftBuilderTargets(): WorldDocumentDraftBuilderTargets {
   return {
     getEntities: getEngineEntitySummary,
     getResources: getEngineWorldResourceSummary,
@@ -46,7 +46,7 @@ export function createGlobalWorldDocumentDraftBuilderTargets(): WorldDocumentDra
 export function createWorldDocumentDraft(
   state: StudioState,
   projectSummary: EngineProjectSummary,
-  targets: WorldDocumentDraftTargets = createGlobalWorldDocumentDraftBuilderTargets(),
+  targets: WorldDocumentDraftBuilderTargets = createGlobalWorldDocumentDraftBuilderTargets(),
 ) {
   const entities = targets.getEntities();
   const resources = targets.getResources();
@@ -169,7 +169,7 @@ export type AgmDocumentDraft = {
 export function createAgmDocumentDraft(
   state: StudioState,
   projectSummary: EngineProjectSummary,
-  targets: WorldDocumentDraftTargets = createGlobalWorldDocumentDraftBuilderTargets(),
+  targets: WorldDocumentDraftBuilderTargets = createGlobalWorldDocumentDraftBuilderTargets(),
 ): AgmDocumentDraft {
   return {
     schema: "agm.document.v0",

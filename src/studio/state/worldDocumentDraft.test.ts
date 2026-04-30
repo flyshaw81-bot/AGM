@@ -3,12 +3,16 @@ import type { EngineProjectSummary } from "../bridge/engineActionTypes";
 import type { StudioState } from "../types";
 import {
   AGM_DRAFT_STORAGE_KEY,
+  createGlobalWorldDocumentDraftTargets,
   exportAgmDocumentDraft,
   exportHeightmapRaw16Draft,
   saveAgmDocumentDraft,
   type WorldDocumentDraftTargets,
 } from "./worldDocumentDraft";
-import type { AgmDocumentDraft } from "./worldDocumentDraftBuilders";
+import type {
+  AgmDocumentDraft,
+  WorldDocumentDraftBuilderTargets,
+} from "./worldDocumentDraftBuilders";
 
 function createDraft(): AgmDocumentDraft {
   return {
@@ -74,6 +78,102 @@ function createTargets(draft: AgmDocumentDraft): WorldDocumentDraftTargets {
   } as unknown as WorldDocumentDraftTargets;
 }
 
+function createState(): StudioState {
+  return {
+    document: {
+      name: "Northwatch",
+      source: "agm",
+      gameProfile: "strategy",
+      designIntent: "balanced fantasy campaign",
+      seed: "42",
+      documentWidth: 1200,
+      documentHeight: 800,
+      stylePreset: "default",
+    },
+    generationProfileOverrides: {
+      profile: "strategy",
+      values: {},
+    },
+    generationProfileImpact: null,
+    autoFixPreview: {
+      appliedDraftIds: [],
+      discardedDraftIds: [],
+      undoStack: [],
+      redoStack: [],
+    },
+    viewport: {
+      presetId: "desktop",
+      orientation: "landscape",
+      fitMode: "contain",
+    },
+    export: {
+      format: "png",
+    },
+  } as unknown as StudioState;
+}
+
+function createSummary(): EngineProjectSummary {
+  return {
+    pendingSeed: "42",
+    pendingPoints: "1000",
+    pendingCellsLabel: "10K",
+    pendingStates: "4",
+    pendingProvincesRatio: "60",
+    pendingGrowthRate: "1",
+    pendingSizeVariety: "5",
+    pendingTemplate: "volcano",
+    pendingTemplateLabel: "Volcano",
+    pendingWidth: "1200",
+    pendingHeight: "800",
+    pendingTemperatureEquator: "30",
+    pendingTemperatureNorthPole: "-10",
+    pendingTemperatureSouthPole: "-12",
+    pendingPrecipitation: "100",
+    pendingMapSize: "50",
+    pendingLatitude: "45",
+    pendingLongitude: "0",
+    pendingWindTier0: "0",
+    pendingWindTier1: "45",
+    pendingWindTier2: "90",
+    pendingWindTier3: "135",
+    pendingWindTier4: "180",
+    pendingWindTier5: "225",
+    pendingCultures: "3",
+    pendingBurgs: "20",
+    pendingBurgsLabel: "20",
+    pendingReligions: "2",
+    pendingStateLabelsMode: "auto",
+    pendingStateLabelsModeLabel: "Auto",
+    pendingCultureSet: "fantasy",
+    pendingCultureSetLabel: "Fantasy",
+    lastLayersPreset: "custom",
+  } as EngineProjectSummary;
+}
+
+function createBuilderTargets(): WorldDocumentDraftBuilderTargets {
+  return {
+    getEntities: vi.fn(() => ({
+      states: [{ id: 1, name: "Northwatch" }],
+      burgs: [],
+      cultures: [],
+      religions: [],
+    })),
+    getResources: vi.fn(() => ({
+      biomes: [],
+      provinces: [],
+      routes: [],
+      zones: [],
+    })),
+    getLayerStates: vi.fn(
+      () =>
+        ({
+          toggleBorders: true,
+        }) as ReturnType<WorldDocumentDraftBuilderTargets["getLayerStates"]>,
+    ),
+    getLayerDetails: vi.fn(() => []),
+  };
+}
+
 describe("worldDocumentDraft", () => {
   it("saves AGM drafts through injected storage targets", () => {
     const draft = createDraft();
@@ -122,5 +222,17 @@ describe("worldDocumentDraft", () => {
       result.filename,
       expect.any(Blob),
     );
+  });
+
+  it("composes default draft targets from injected builder targets", () => {
+    const builderTargets = createBuilderTargets();
+    const targets = createGlobalWorldDocumentDraftTargets({ builderTargets });
+
+    const draft = targets.createDraft(createState(), createSummary());
+
+    expect(draft.world.entities.states[0]?.name).toBe("Northwatch");
+    expect(draft.world.layers.visible.toggleBorders).toBe(true);
+    expect(builderTargets.getEntities).toHaveBeenCalledWith();
+    expect(builderTargets.getLayerStates).toHaveBeenCalledWith();
   });
 });

@@ -8,7 +8,11 @@ import {
 } from "./draftFileIo";
 import { AGM_DRAFT_STORAGE_KEY } from "./worldDocumentConstants";
 import type { AgmDocumentDraft } from "./worldDocumentDraftBuilders";
-import { createAgmDocumentDraft } from "./worldDocumentDraftBuilders";
+import {
+  createAgmDocumentDraft,
+  createGlobalWorldDocumentDraftBuilderTargets,
+  type WorldDocumentDraftBuilderTargets,
+} from "./worldDocumentDraftBuilders";
 import { createEngineManifestExport } from "./worldDocumentEngineExports";
 import {
   type EnginePackageBundleTargets,
@@ -51,15 +55,27 @@ export type WorldDocumentDraftTargets = {
   enginePackageTargets?: EnginePackageBundleTargets;
 };
 
-export function createGlobalWorldDocumentDraftTargets(): WorldDocumentDraftTargets {
+export type GlobalWorldDocumentDraftTargetOptions = {
+  builderTargets?: WorldDocumentDraftBuilderTargets;
+  enginePackageTargets?: EnginePackageBundleTargets;
+};
+
+export function createGlobalWorldDocumentDraftTargets(
+  options: GlobalWorldDocumentDraftTargetOptions = {},
+): WorldDocumentDraftTargets {
+  const builderTargets =
+    options.builderTargets ?? createGlobalWorldDocumentDraftBuilderTargets();
+
   return {
-    createDraft: createAgmDocumentDraft,
+    createDraft: (state, projectSummary) =>
+      createAgmDocumentDraft(state, projectSummary, builderTargets),
     setStorageItem: (key, value) => localStorage.setItem(key, value),
     downloadJson: downloadJsonDraft,
     downloadBlob: downloadBlobDraft,
     createPngBlob: createHeightmapPngBlob,
     createRaw16Blob: createHeightmapRaw16Blob,
     exportEnginePackage: exportEnginePackageBundle,
+    enginePackageTargets: options.enginePackageTargets,
   };
 }
 

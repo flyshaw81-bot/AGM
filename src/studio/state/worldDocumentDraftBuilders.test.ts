@@ -9,7 +9,7 @@ import type { StudioState } from "../types";
 import {
   createAgmDocumentDraft,
   createWorldDocumentDraft,
-  type WorldDocumentDraftTargets,
+  type WorldDocumentDraftBuilderTargets,
 } from "./worldDocumentDraftBuilders";
 
 function createState(): StudioState {
@@ -84,7 +84,7 @@ function createSummary(): EngineProjectSummary {
   } as EngineProjectSummary;
 }
 
-function createTargets(): WorldDocumentDraftTargets {
+function createTargets(): WorldDocumentDraftBuilderTargets {
   const entities: EngineEntitySummary = {
     states: [{ id: 1, name: "Northwatch" }],
     burgs: [{ id: 2, name: "Harbor", state: 1 }],
@@ -114,7 +114,7 @@ function createTargets(): WorldDocumentDraftTargets {
             label: "Borders",
             active: true,
           },
-        ] as ReturnType<WorldDocumentDraftTargets["getLayerDetails"]>,
+        ] as ReturnType<WorldDocumentDraftBuilderTargets["getLayerDetails"]>,
     ),
   };
 }
