@@ -1,7 +1,32 @@
 import { describe, expect, it, vi } from "vitest";
-import { createGlobalStudioPreferenceTargets } from "./preferenceTargets";
+import {
+  createGlobalStudioPreferenceTargets,
+  createStudioPreferenceTargets,
+} from "./preferenceTargets";
 
 describe("createGlobalStudioPreferenceTargets", () => {
+  it("composes storage and document preference adapters", () => {
+    const storage = {
+      getStorageItem: vi.fn(() => "zh-CN"),
+      setStorageItem: vi.fn(),
+    };
+    const documentAdapter = {
+      setDocumentLanguage: vi.fn(),
+      setDocumentTheme: vi.fn(),
+    };
+
+    const targets = createStudioPreferenceTargets(storage, documentAdapter);
+
+    expect(targets.getStorageItem("language")).toBe("zh-CN");
+    targets.setStorageItem("theme", "night");
+    targets.setDocumentLanguage("en");
+    targets.setDocumentTheme("daylight");
+
+    expect(storage.setStorageItem).toHaveBeenCalledWith("theme", "night");
+    expect(documentAdapter.setDocumentLanguage).toHaveBeenCalledWith("en");
+    expect(documentAdapter.setDocumentTheme).toHaveBeenCalledWith("daylight");
+  });
+
   it("wires browser storage and document writes behind preference targets", () => {
     const storage = {
       getItem: vi.fn(() => "en"),
