@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   type BrowserBlobReaderTargets,
+  type BrowserEnvironmentTargets,
   type BrowserNavigationTargets,
   getBase64,
   getCoordinates,
@@ -8,6 +9,7 @@ import {
   getLongitude,
   initializePrompt,
   openURL,
+  parseError,
   type StudioInputPromptTargets,
   type StudioInputRequest,
   wiki,
@@ -146,6 +148,22 @@ describe("getCoordinates", () => {
       2,
     );
     expect(result).toEqual([0, 0]); // center of the world
+  });
+});
+
+describe("parseError", () => {
+  it("uses injected browser environment targets for Firefox stack parsing", () => {
+    const targets: BrowserEnvironmentTargets = {
+      getUserAgent: vi.fn(() => "Mozilla/5.0 Firefox/120.0"),
+    };
+    const error = new Error("Broken map");
+    error.stack = "open file:///D:/AGM/AGM-Studio/src/map.ts";
+
+    const parsed = parseError(error, targets);
+
+    expect(targets.getUserAgent).toHaveBeenCalled();
+    expect(parsed).toContain("Error: Broken map");
+    expect(parsed).toContain("<i>map.ts</i>");
   });
 });
 

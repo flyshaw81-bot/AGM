@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 177 test files, 643 tests.
+- `npm.cmd run test -- --run` passed: 177 test files, 644 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1932,6 +1932,9 @@ opening and URL-to-data-URI conversion. `openURL()` and `wiki()` route through
 `BrowserBlobReaderTargets`; default browser behavior remains backed by
 `window.open`, `XMLHttpRequest`, and `FileReader`, and focused tests cover the
 injected paths.
+`parseError()` now reads browser user-agent information through
+`BrowserEnvironmentTargets`; default behavior still uses `navigator.userAgent`,
+and focused tests cover Firefox stack parsing through an injected environment.
 
 ## Next Recommended Slice
 

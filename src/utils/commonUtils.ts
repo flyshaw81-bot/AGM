@@ -128,8 +128,21 @@ export const throttle = <T extends (...args: any[]) => any>(
  * @param error - The error object to parse
  * @returns Formatted error string with HTML formatting
  */
-export const parseError = (error: Error): string => {
-  const isFirefox = navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
+export type BrowserEnvironmentTargets = {
+  getUserAgent: () => string;
+};
+
+export function createGlobalBrowserEnvironmentTargets(): BrowserEnvironmentTargets {
+  return {
+    getUserAgent: () => navigator.userAgent,
+  };
+}
+
+export const parseError = (
+  error: Error,
+  targets: BrowserEnvironmentTargets = createGlobalBrowserEnvironmentTargets(),
+): string => {
+  const isFirefox = targets.getUserAgent().toLowerCase().includes("firefox");
   const errorString = isFirefox
     ? `${error.toString()} ${error.stack}`
     : error.stack || "";
