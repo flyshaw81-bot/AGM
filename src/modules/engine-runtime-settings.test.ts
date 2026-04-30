@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
 import {
+  createGlobalPopulationRuntimeTargets,
   createGlobalPopulationSettings,
+  createGlobalPopulationSettingsTargets,
   createGlobalTimingSettings,
   createGlobalUnitSettings,
   createGlobalWorldRuntimeTargets,
@@ -14,6 +16,7 @@ import {
   createUnitSettings,
   createWorldSettings,
   createWorldSettingsStore,
+  type EnginePopulationRuntimeTargets,
   type EngineSettingsDomTargets,
   type EngineWorldRuntimeTargets,
 } from "./engine-runtime-settings";
@@ -195,6 +198,36 @@ describe("runtime setting adapters", () => {
     expect(targets.getMapCoordinates()).toEqual({ latN: 12 });
     expect(targets.getGraphWidth()).toBe(960);
     expect(targets.getGraphHeight()).toBe(540);
+  });
+
+  it("composes population settings from explicit runtime targets", () => {
+    const runtimeTargets: EnginePopulationRuntimeTargets = {
+      getPopulationRate: () => 8,
+      getUrbanDensity: () => 9,
+      getUrbanization: () => 10,
+    };
+
+    expect(
+      createPopulationSettings(
+        createGlobalPopulationSettingsTargets(runtimeTargets),
+      ),
+    ).toEqual({
+      populationRate: 8,
+      urbanDensity: 9,
+      urbanization: 10,
+    });
+  });
+
+  it("reads population runtime values through the explicit global runtime target", () => {
+    globalThis.populationRate = 11;
+    globalThis.urbanDensity = 12;
+    globalThis.urbanization = 13;
+
+    const targets = createGlobalPopulationRuntimeTargets();
+
+    expect(targets.getPopulationRate()).toBe(11);
+    expect(targets.getUrbanDensity()).toBe(12);
+    expect(targets.getUrbanization()).toBe(13);
   });
 
   it("stores, patches, and refreshes world settings through a runtime store", () => {

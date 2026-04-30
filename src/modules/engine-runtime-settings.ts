@@ -56,6 +56,12 @@ export type EngineWorldRuntimeTargets = {
   getGraphHeight: () => number;
 };
 
+export type EnginePopulationRuntimeTargets = {
+  getPopulationRate: () => number;
+  getUrbanDensity: () => number;
+  getUrbanization: () => number;
+};
+
 export type EngineWorldSettingsStore = {
   get: () => EngineWorldSettings;
   replace: (nextSettings: EngineWorldSettings) => EngineWorldSettings;
@@ -116,6 +122,14 @@ export function createGlobalWorldRuntimeTargets(): EngineWorldRuntimeTargets {
   };
 }
 
+export function createGlobalPopulationRuntimeTargets(): EnginePopulationRuntimeTargets {
+  return {
+    getPopulationRate: () => populationRate,
+    getUrbanDensity: () => urbanDensity,
+    getUrbanization: () => urbanization,
+  };
+}
+
 export function createSettingsInputNumberReader(
   domTargets: EngineSettingsDomTargets,
 ): (id: string, fallback: number) => number {
@@ -138,11 +152,13 @@ export function createGlobalWorldSettingsTargets(
   };
 }
 
-export function createGlobalPopulationSettingsTargets(): EnginePopulationSettingsTargets {
+export function createGlobalPopulationSettingsTargets(
+  runtimeTargets: EnginePopulationRuntimeTargets = createGlobalPopulationRuntimeTargets(),
+): EnginePopulationSettingsTargets {
   return {
-    getPopulationRate: () => populationRate,
-    getUrbanDensity: () => urbanDensity,
-    getUrbanization: () => urbanization,
+    getPopulationRate: runtimeTargets.getPopulationRate,
+    getUrbanDensity: runtimeTargets.getUrbanDensity,
+    getUrbanization: runtimeTargets.getUrbanization,
   };
 }
 
