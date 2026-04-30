@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createGlobalStyleTargets } from "./engineStyleTargets";
+import {
+  createGlobalStyleTargets,
+  createStyleTargets,
+  type EngineStyleRuntimeAdapter,
+  type EngineStyleStorageAdapter,
+  type EngineStyleToggleAdapter,
+} from "./engineStyleTargets";
 
 type TestStyleGlobals = typeof globalThis & {
   stylePreset?: {
@@ -90,6 +96,48 @@ describe("createGlobalStyleTargets", () => {
 
     createGlobalStyleTargets().invokeActiveZooming();
 
+    expect(invokeActiveZooming).toHaveBeenCalledWith();
+  });
+
+  it("composes style targets from injected runtime, storage, and toggle adapters", () => {
+    const requestStylePresetChange = vi.fn(() => true);
+    const changeStyle = vi.fn(() => true);
+    const invokeActiveZooming = vi.fn();
+    const storePresetValue = vi.fn();
+    const dispatchChange = vi.fn();
+    const runtimeAdapter: EngineStyleRuntimeAdapter = {
+      getCurrentPresetValue: () => "night",
+      requestStylePresetChange,
+      changeStyle,
+      invokeActiveZooming,
+    };
+    const storageAdapter: EngineStyleStorageAdapter = {
+      getStoredPresetValue: () => "atlas",
+      storePresetValue,
+    };
+    const toggleAdapter: EngineStyleToggleAdapter = {
+      isToggleChecked: (id) => id === "hideLabels",
+      setToggleChecked: vi.fn(() => true),
+      dispatchChange,
+    };
+
+    const targets = createStyleTargets(
+      runtimeAdapter,
+      storageAdapter,
+      toggleAdapter,
+    );
+
+    expect(targets.getCurrentPresetValue()).toBe("night");
+    expect(targets.getStoredPresetValue()).toBe("atlas");
+    targets.storePresetValue("custom");
+    expect(storePresetValue).toHaveBeenCalledWith("custom");
+    expect(targets.isToggleChecked("hideLabels")).toBe(true);
+    expect(targets.setToggleChecked("hideLabels", false)).toBe(true);
+    expect(targets.requestStylePresetChange("atlas")).toBe(true);
+    expect(requestStylePresetChange).toHaveBeenCalledWith("atlas");
+    expect(targets.changeStyle("night")).toBe(true);
+    expect(changeStyle).toHaveBeenCalledWith("night");
+    targets.invokeActiveZooming();
     expect(invokeActiveZooming).toHaveBeenCalledWith();
   });
 });

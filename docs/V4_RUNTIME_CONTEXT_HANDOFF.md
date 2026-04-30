@@ -418,7 +418,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 124 test files, 385 tests.
+- `npm.cmd run test -- --run` passed: 124 test files, 386 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -913,9 +913,11 @@ services instead of reading `globalThis.Routes` inline:
   toggles layers through injected targets instead of directly reading
   `window`, `document`, or `layerIsOn` inline.
 - `src/studio/bridge/engineStyleTargets.ts` now owns the Studio style
-  compatibility boundary for active/stored preset reads, preset storage writes,
-  style apply hooks, label toggle checkbox reads/writes, change dispatch, and
-  active zoom refresh.
+  compatibility boundary through runtime, storage, and toggle adapters. Active
+  preset reads, style apply hooks, active zoom refresh, stored preset
+  reads/writes, and label toggle checkbox reads/writes are split into
+  replaceable adapters while the default adapters remain compatible with the
+  old `window`, `localStorage`, and DOM sources.
 - `src/studio/bridge/engineStyle.ts` now builds style settings, applies style
   presets, and updates label toggles through injected targets instead of
   directly reading `window`, `document`, or `localStorage` inline.
@@ -1030,7 +1032,8 @@ services instead of reading `globalThis.Routes` inline:
 - `src/studio/bridge/engineStyle.test.ts` and
   `src/studio/bridge/engineStyleTargets.test.ts` cover preset priority,
   system/custom classification, style apply hook priority, storage fallback,
-  checkbox updates, change dispatch, and active zoom forwarding.
+  checkbox updates, change dispatch, active zoom forwarding, and injected
+  runtime/storage/toggle adapter composition.
 - `src/studio/bridge/engineDataActions.test.ts` and
   `src/studio/bridge/engineDataActionTargets.test.ts` cover data action
   availability, Dropbox state reads, quick load/save/load-from-Dropbox/new-map
@@ -1093,8 +1096,9 @@ state through dedicated bridge adapters. `EngineProjectSummaryTargets` still rea
 storage/document/cache helpers behind a bridge-level adapter.
 `EngineProjectActionTargets` still reads project action DOM/template helpers
 behind a bridge-level adapter. `EngineLayerTargets` now splits layer DOM and
-runtime helpers through dedicated bridge adapters. `EngineStyleTargets` still reads style
-DOM/storage/global helpers behind a bridge-level adapter.
+runtime helpers through dedicated bridge adapters. `EngineStyleTargets` now
+splits style runtime, storage, and toggle helpers through dedicated bridge
+adapters.
 `EngineDataActionTargets` still reads data panel DOM/runtime helpers and
 uses `engineDocumentSource.ts` through a bridge-level adapter. The document
 source default target still wraps current global runtime functions for

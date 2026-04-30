@@ -19,6 +19,24 @@ export type EngineStyleTargets = {
   invokeActiveZooming: () => void;
 };
 
+export type EngineStyleRuntimeAdapter = {
+  getCurrentPresetValue: () => string;
+  requestStylePresetChange: (preset: string) => boolean;
+  changeStyle: (preset: string) => boolean;
+  invokeActiveZooming: () => void;
+};
+
+export type EngineStyleStorageAdapter = {
+  getStoredPresetValue: () => string | null;
+  storePresetValue: (preset: string) => void;
+};
+
+export type EngineStyleToggleAdapter = {
+  isToggleChecked: (id: string) => boolean;
+  setToggleChecked: (id: string, enabled: boolean) => boolean;
+  dispatchChange: (element: HTMLElement) => void;
+};
+
 function getStyleWindow(): EngineStyleWindow {
   return (globalThis.window ?? globalThis) as EngineStyleWindow;
 }
@@ -42,23 +60,9 @@ function dispatchChange(element: HTMLElement) {
   element.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
-export function createGlobalStyleTargets(): EngineStyleTargets {
+export function createGlobalStyleRuntimeAdapter(): EngineStyleRuntimeAdapter {
   return {
     getCurrentPresetValue: () => getStyleWindow().stylePreset?.value || "",
-    getStoredPresetValue: () =>
-      getLocalStorage()?.getItem("presetStyle") ?? null,
-    storePresetValue: (preset) => {
-      getLocalStorage()?.setItem("presetStyle", preset);
-    },
-    isToggleChecked: (id) => Boolean(getInput(id)?.checked),
-    setToggleChecked: (id, enabled) => {
-      const input = getInput(id);
-      if (!input) return false;
-      input.checked = enabled;
-      dispatchChange(input);
-      return true;
-    },
-    dispatchChange,
     requestStylePresetChange: (preset) => {
       const requestChange = getStyleWindow().requestStylePresetChange;
       if (typeof requestChange !== "function") return false;
@@ -73,4 +77,54 @@ export function createGlobalStyleTargets(): EngineStyleTargets {
     },
     invokeActiveZooming: () => getStyleWindow().invokeActiveZooming?.(),
   };
+}
+
+export function createGlobalStyleStorageAdapter(): EngineStyleStorageAdapter {
+  return {
+    getStoredPresetValue: () =>
+      getLocalStorage()?.getItem("presetStyle") ?? null,
+    storePresetValue: (preset) => {
+      getLocalStorage()?.setItem("presetStyle", preset);
+    },
+  };
+}
+
+export function createGlobalStyleToggleAdapter(): EngineStyleToggleAdapter {
+  return {
+    isToggleChecked: (id) => Boolean(getInput(id)?.checked),
+    setToggleChecked: (id, enabled) => {
+      const input = getInput(id);
+      if (!input) return false;
+      input.checked = enabled;
+      dispatchChange(input);
+      return true;
+    },
+    dispatchChange,
+  };
+}
+
+export function createStyleTargets(
+  runtimeAdapter: EngineStyleRuntimeAdapter,
+  storageAdapter: EngineStyleStorageAdapter,
+  toggleAdapter: EngineStyleToggleAdapter,
+): EngineStyleTargets {
+  return {
+    getCurrentPresetValue: runtimeAdapter.getCurrentPresetValue,
+    getStoredPresetValue: storageAdapter.getStoredPresetValue,
+    storePresetValue: storageAdapter.storePresetValue,
+    isToggleChecked: toggleAdapter.isToggleChecked,
+    setToggleChecked: toggleAdapter.setToggleChecked,
+    dispatchChange: toggleAdapter.dispatchChange,
+    requestStylePresetChange: runtimeAdapter.requestStylePresetChange,
+    changeStyle: runtimeAdapter.changeStyle,
+    invokeActiveZooming: runtimeAdapter.invokeActiveZooming,
+  };
+}
+
+export function createGlobalStyleTargets(): EngineStyleTargets {
+  return createStyleTargets(
+    createGlobalStyleRuntimeAdapter(),
+    createGlobalStyleStorageAdapter(),
+    createGlobalStyleToggleAdapter(),
+  );
 }
