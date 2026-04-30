@@ -1839,6 +1839,10 @@ Map graph lifecycle preparation now has a formal
 `preparePackGraph()` passes the active runtime context into lifecycle calls, so
 explicit contexts can route graph rebuild/ruler creation through
 `context.mapGraphLifecycle` without falling back to global helpers.
+Generation statistics now has a formal `EngineGenerationStatisticsService` for
+`showStatistics`. `getGlobalEngineRuntimeContext()` wires
+`generationStatistics`, and lifecycle statistics display prefers the explicit
+context service before falling back to compatibility lifecycle targets.
 
 ## Next Recommended Slice
 

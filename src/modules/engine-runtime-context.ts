@@ -24,6 +24,10 @@ import {
   type EngineGenerationSettingsStore,
 } from "./engine-generation-settings";
 import {
+  createGlobalGenerationStatisticsService,
+  type EngineGenerationStatisticsService,
+} from "./engine-generation-statistics-service";
+import {
   createRuntimeGraphSession,
   type EngineGraphSessionModule as EngineGraphSessionService,
 } from "./engine-graph-session";
@@ -103,6 +107,7 @@ import {
 
 export type { EngineBurgService } from "./engine-burg-service";
 export type { EngineFeedbackService } from "./engine-feedback-service";
+export type { EngineGenerationStatisticsService } from "./engine-generation-statistics-service";
 export type { EngineHeraldryService } from "./engine-heraldry-service";
 export type { EngineLogService } from "./engine-log-service";
 export type { EngineMapGraphLifecycleService } from "./engine-map-graph-lifecycle-service";
@@ -137,6 +142,7 @@ export type EngineRuntimeContext = {
   worldSettingsStore?: EngineWorldSettingsStore;
   generationSettings: EngineGenerationSettings;
   generationSettingsStore?: EngineGenerationSettingsStore;
+  generationStatistics?: EngineGenerationStatisticsService;
   populationSettings: EnginePopulationSettings;
   naming: EngineNamingService;
   burgs: EngineBurgService;
@@ -178,6 +184,7 @@ export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
     worldSettingsStore: undefined as never,
     generationSettings: createGlobalGenerationSettings(),
     generationSettingsStore: undefined as never,
+    generationStatistics: undefined,
     populationSettings: createGlobalPopulationSettings(),
     naming: createGlobalNamingService(),
     burgs: undefined as never,
@@ -215,6 +222,7 @@ export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
   context.worldSettingsStore = createRuntimeWorldSettingsStore(context);
   context.generationSettingsStore =
     createRuntimeGenerationSettingsStore(context);
+  context.generationStatistics = createGlobalGenerationStatisticsService();
   context.seedSession = createRuntimeSeedSession(context);
   context.graphSession = createRuntimeGraphSession(context);
   context.gridSession = createRuntimeGridSessionService(context);

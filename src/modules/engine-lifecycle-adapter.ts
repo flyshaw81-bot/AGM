@@ -1,4 +1,8 @@
 import {
+  createGlobalGenerationStatisticsService,
+  type EngineGenerationStatisticsService,
+} from "./engine-generation-statistics-service";
+import {
   createGlobalMapGraphLifecycleService,
   type EngineMapGraphLifecycleService,
 } from "./engine-map-graph-lifecycle-service";
@@ -41,6 +45,7 @@ export type EngineLifecycleTargets = {
 };
 
 export type EngineLifecycleRuntimeServices = {
+  generationStatistics: EngineGenerationStatisticsService;
   mapGraphLifecycle: EngineMapGraphLifecycleService;
   mapPlacement: EngineMapPlacementService;
   waterFeatures: EngineWaterFeatureService;
@@ -73,6 +78,7 @@ export function createLifecycleSettingsSnapshot(
 
 export function createGlobalLifecycleTargets(): EngineLifecycleTargets {
   return createLifecycleTargets({
+    generationStatistics: createGlobalGenerationStatisticsService(),
     mapGraphLifecycle: createGlobalMapGraphLifecycleService(),
     mapPlacement: createGlobalMapPlacementService(),
     waterFeatures: createGlobalWaterFeatureService(),
@@ -105,7 +111,7 @@ export function createLifecycleTargets(
       services.mapGraphLifecycle.createDefaultRuler();
     },
     showStatistics: (heightmapTemplateId) => {
-      showStatistics(heightmapTemplateId);
+      services.generationStatistics.showStatistics(heightmapTemplateId);
     },
   };
 }
@@ -177,7 +183,13 @@ export function createLifecycleAdapter(
     },
     showStatistics: (context = getCurrentContext()) => {
       const settings = createLifecycleSettingsSnapshot(context);
-      targets.showStatistics(settings.heightmapTemplateId);
+      if (context.generationStatistics) {
+        context.generationStatistics.showStatistics(
+          settings.heightmapTemplateId,
+        );
+      } else {
+        targets.showStatistics(settings.heightmapTemplateId);
+      }
     },
   };
 }

@@ -254,6 +254,9 @@ describe("createGlobalLifecycleAdapter", () => {
   });
 
   it("can compose lifecycle targets from runtime services", () => {
+    const generationStatistics = {
+      showStatistics: vi.fn(),
+    };
     const mapPlacement = {
       defineMapSize: vi.fn(),
       calculateMapCoordinates: vi.fn(),
@@ -268,6 +271,7 @@ describe("createGlobalLifecycleAdapter", () => {
       drawOceanLayers: vi.fn(),
     };
     const targets = createLifecycleTargets({
+      generationStatistics,
       mapGraphLifecycle,
       mapPlacement,
       waterFeatures,
@@ -284,6 +288,7 @@ describe("createGlobalLifecycleAdapter", () => {
     });
     targets.rebuildGraph();
     targets.createDefaultRuler();
+    targets.showStatistics("volcano");
 
     expect(waterFeatures.addLakesInDeepDepressions).toHaveBeenCalledWith(25);
     expect(waterFeatures.openNearSeaLakes).toHaveBeenCalledWith("volcano");
@@ -296,6 +301,7 @@ describe("createGlobalLifecycleAdapter", () => {
     });
     expect(mapGraphLifecycle.rebuildGraph).toHaveBeenCalledWith();
     expect(mapGraphLifecycle.createDefaultRuler).toHaveBeenCalledWith();
+    expect(generationStatistics.showStatistics).toHaveBeenCalledWith("volcano");
   });
 
   it("uses runtime map placement service from the context when available", () => {
@@ -373,5 +379,26 @@ describe("createGlobalLifecycleAdapter", () => {
     expect(mapGraphLifecycle.createDefaultRuler).toHaveBeenCalledWith();
     expect(targets.rebuildGraph).not.toHaveBeenCalled();
     expect(targets.createDefaultRuler).not.toHaveBeenCalled();
+  });
+
+  it("uses runtime generation statistics service from the context when available", () => {
+    const targets = createTargets();
+    const generationStatistics = {
+      showStatistics: vi.fn(),
+    };
+    const context = {
+      ...createContext(),
+      generationStatistics,
+    } as unknown as EngineRuntimeContext;
+    const adapter = createLifecycleAdapter(() => {
+      throw new Error("explicit context should be used");
+    }, targets);
+
+    adapter.showStatistics(context);
+
+    expect(generationStatistics.showStatistics).toHaveBeenCalledWith(
+      "archipelago",
+    );
+    expect(targets.showStatistics).not.toHaveBeenCalled();
   });
 });

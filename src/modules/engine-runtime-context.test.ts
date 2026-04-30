@@ -100,6 +100,9 @@ describe("getGlobalEngineRuntimeContext", () => {
     expect(context.seedSession).not.toBe(globalThis.EngineSeedSession);
     expect(context.graphSession).not.toBe(globalThis.EngineGraphSession);
     expect(typeof context.optionsSession.randomizeOptions).toBe("function");
+    expect(typeof context.generationStatistics?.showStatistics).toBe(
+      "function",
+    );
     expect(typeof context.gridSession.prepareGrid).toBe("function");
     expect(typeof context.sessionLifecycle.resetActiveView).toBe("function");
     expect(typeof context.generationSession.prepare).toBe("function");

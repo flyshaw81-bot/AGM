@@ -1,0 +1,44 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  createGenerationStatisticsService,
+  createGlobalGenerationStatisticsService,
+  createGlobalGenerationStatisticsTargets,
+} from "./engine-generation-statistics-service";
+
+const originalShowStatistics = globalThis.showStatistics;
+
+describe("EngineGenerationStatisticsService", () => {
+  afterEach(() => {
+    globalThis.showStatistics = originalShowStatistics;
+  });
+
+  it("routes statistics display through injected targets", () => {
+    const targets = {
+      showStatistics: vi.fn(),
+    };
+    const service = createGenerationStatisticsService(targets);
+
+    service.showStatistics("archipelago");
+
+    expect(targets.showStatistics).toHaveBeenCalledWith("archipelago");
+  });
+
+  it("keeps public statistics helper behind global targets", () => {
+    globalThis.showStatistics = vi.fn();
+    const targets = createGlobalGenerationStatisticsTargets();
+
+    targets.showStatistics("volcano");
+
+    expect(globalThis.showStatistics).toHaveBeenCalledWith("volcano");
+  });
+
+  it("creates a global statistics service from explicit targets", () => {
+    const targets = {
+      showStatistics: vi.fn(),
+    };
+
+    createGlobalGenerationStatisticsService(targets).showStatistics("islands");
+
+    expect(targets.showStatistics).toHaveBeenCalledWith("islands");
+  });
+});
