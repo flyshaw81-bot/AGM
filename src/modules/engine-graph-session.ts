@@ -1,3 +1,5 @@
+import type { EngineRuntimeContext } from "./engine-runtime-context";
+
 declare global {
   var EngineGraphSession: EngineGraphSessionModule;
 }
@@ -86,6 +88,39 @@ export function createGlobalGraphSessionTargets(): EngineGraphSessionTargets {
     getWaterMaskRect: () =>
       (globalThis as any).defs.select("mask#water > rect"),
   };
+}
+
+export function createRuntimeGraphSessionTargets(
+  context: EngineRuntimeContext,
+  fallback: EngineGraphSessionTargets = createGlobalGraphSessionTargets(),
+): EngineGraphSessionTargets {
+  return {
+    getMapWidth: () =>
+      Number(context.worldSettings.graphWidth) || fallback.getMapWidth(),
+    getMapHeight: () =>
+      Number(context.worldSettings.graphHeight) || fallback.getMapHeight(),
+    setGraphSize: (width, height) => {
+      context.worldSettings.graphWidth = width;
+      context.worldSettings.graphHeight = height;
+      fallback.setGraphSize(width, height);
+    },
+    setRectBounds: fallback.setRectBounds,
+    getLandmassRect: fallback.getLandmassRect,
+    getOceanPatternRect: fallback.getOceanPatternRect,
+    getOceanLayersRect: fallback.getOceanLayersRect,
+    getFoggingRects: fallback.getFoggingRects,
+    getFogMaskRect: fallback.getFogMaskRect,
+    getWaterMaskRect: fallback.getWaterMaskRect,
+  };
+}
+
+export function createRuntimeGraphSession(
+  context: EngineRuntimeContext,
+  targets: EngineGraphSessionTargets = createRuntimeGraphSessionTargets(
+    context,
+  ),
+): EngineGraphSessionModule {
+  return new EngineGraphSessionModule(targets);
 }
 
 if (typeof window !== "undefined") {

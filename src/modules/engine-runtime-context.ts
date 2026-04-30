@@ -21,7 +21,10 @@ import {
   createGlobalGenerationSettings,
   type EngineGenerationSettings,
 } from "./engine-generation-settings";
-import type { EngineGraphSessionModule as EngineGraphSessionService } from "./engine-graph-session";
+import {
+  createRuntimeGraphSession,
+  type EngineGraphSessionModule as EngineGraphSessionService,
+} from "./engine-graph-session";
 import {
   createGlobalHeraldryService,
   type EngineHeraldryService,
@@ -176,6 +179,7 @@ export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
   context.routes = createRuntimeRouteService(context);
   context.mapStore = createRuntimeMapStore(context, () => context);
   context.seedSession = createRuntimeSeedSession(context);
+  context.graphSession = createRuntimeGraphSession(context);
   context.gridSession = createRuntimeGridSessionService(context);
   context.optionsSession = createRuntimeOptionsSession(context);
   return context;

@@ -1777,6 +1777,11 @@ before delegating to the compatibility seed targets. Runtime-generated seeds
 use `context.random.next()`. The remaining compatibility pieces are the URL /
 history reads, `optionsSeed` input synchronization, and seeded `Math.random`
 installation.
+Graph session now exposes `createRuntimeGraphSession(context)` and runtime
+targets that read/write graph dimensions through `context.worldSettings` before
+delegating SVG rect/mask updates to the compatibility graph targets. The
+remaining compatibility pieces are the map size DOM inputs and rendered SVG
+selection targets.
 
 ## Next Recommended Slice
 

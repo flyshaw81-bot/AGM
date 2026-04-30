@@ -82,7 +82,7 @@ describe("getGlobalEngineRuntimeContext", () => {
     context.gridSession.prepareGrid({ seed: "runtime" });
     expect(context.grid.cells.h).toBeUndefined();
     expect(context.seedSession).not.toBe(globalThis.EngineSeedSession);
-    expect(context.graphSession).toBe(globalThis.EngineGraphSession);
+    expect(context.graphSession).not.toBe(globalThis.EngineGraphSession);
     expect(typeof context.optionsSession.randomizeOptions).toBe("function");
     expect(typeof context.gridSession.prepareGrid).toBe("function");
     expect(typeof context.sessionLifecycle.resetActiveView).toBe("function");
