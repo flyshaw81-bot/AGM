@@ -828,6 +828,9 @@ Completed:
 - Routed state expansionism randomness through the same runtime random service.
   This keeps the seeded default behavior while moving another context-aware
   generation step off direct `Math.random()` calls.
+- Routed burg capital ranking randomness through `context.random.next()` as
+  well. Remaining direct random calls are now mostly default random adapters or
+  larger algorithm modules that need separate, higher-risk migration passes.
 - Added `EngineRuntimeContext.optionsSession`. Generation session preparation
   now receives the active context and uses `context.optionsSession` for option
   randomization when available, instead of always reaching for the global

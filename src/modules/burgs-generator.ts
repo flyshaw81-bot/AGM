@@ -129,7 +129,8 @@ export class BurgModule {
     let burgsQuadtree = quadtree();
 
     const generateCapitals = () => {
-      const randomize = (score: number) => score * (0.5 + Math.random() * 0.5);
+      const randomize = (score: number) =>
+        score * (0.5 + context.random.next() * 0.5);
       const score = new Int16Array(cells.s.map(randomize));
       const sorted = populatedCells.sort((a, b) => score[b] - score[a]);
 

@@ -133,6 +133,53 @@ function createBurgContext(): EngineRuntimeContext {
 }
 
 describe("BurgModule", () => {
+  it("uses the runtime random service when ranking capitals", () => {
+    const context = createBurgContext();
+    let randomCalls = 0;
+    context.random = {
+      next: () => {
+        randomCalls++;
+        return 0;
+      },
+    };
+    context.worldSettings = {
+      graphWidth: 100,
+      graphHeight: 100,
+    };
+    context.generationSettings.statesCount = 1;
+    context.generationSettings.manorsCount = 0;
+    context.grid = {
+      cells: {
+        temp: new Int8Array(11).fill(12),
+      },
+      points: Array.from({ length: 11 }, (_, index) => [index, index]),
+    } as any;
+    context.pack.cells = {
+      i: Array.from({ length: 11 }, (_, index) => index),
+      s: new Int16Array(11).fill(100),
+      culture: new Uint16Array(11).fill(1),
+      burg: new Uint16Array(11),
+      p: Array.from({ length: 11 }, (_, index) => [index * 10, index * 10]),
+      f: new Uint16Array(11),
+      haven: [],
+      harbor: new Uint8Array(11),
+      h: new Uint8Array(11).fill(30),
+      r: new Uint16Array(11),
+      fl: new Uint16Array(11),
+    } as any;
+    context.pack.features = [{ i: 0, type: "land", cells: 1 }] as any;
+
+    new BurgModule().generate(context);
+
+    expect(randomCalls).toBe(11);
+    expect(context.pack.burgs).toHaveLength(2);
+    expect(context.pack.burgs[1]).toMatchObject({
+      i: 1,
+      capital: 1,
+      culture: 1,
+    });
+  });
+
   it("routes generation errors through runtime logs", () => {
     const context = createBurgContext();
     const errors: string[] = [];
