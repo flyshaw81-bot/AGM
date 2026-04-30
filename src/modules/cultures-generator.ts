@@ -1292,10 +1292,7 @@ export class CulturesModule {
     const i = pack.cultures.length;
     const color = getRandomColor();
 
-    // define emblem shape
-    const emblemShape =
-      context.generationSettings.cultureEmblemShape ??
-      (document.getElementById("emblemShape") as HTMLInputElement).value;
+    const emblemShape = context.generationSettings.cultureEmblemShape ?? "";
 
     pack.cultures.push({
       name,

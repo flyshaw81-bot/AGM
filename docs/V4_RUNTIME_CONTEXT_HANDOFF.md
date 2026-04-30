@@ -819,6 +819,8 @@ Completed:
   `createGlobalGenerationSettingsTargets()`. The default targets still read
   current DOM/global controls, but the settings mapper is now testable without
   `document` or `globalThis` inputs.
+- Removed the remaining `emblemShape` DOM fallback from manual culture add;
+  culture emblem selection now uses `context.generationSettings` on that path.
 - Added `EngineRuntimeContext.optionsSession`. Generation session preparation
   now receives the active context and uses `context.optionsSession` for option
   randomization when available, instead of always reaching for the global
