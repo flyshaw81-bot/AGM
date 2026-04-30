@@ -93,6 +93,9 @@
 > Document state sync/restore now uses `DocumentStateTargets`, so editor
 > workflow reads, document/style reads, document-name writes, and layer restore
 > writes are isolated from document state logic.
+> Project workspace changes now use `ProjectWorkspaceActionTargets`, so project
+> setting setters, document-name writes, canvas-size writes, autosave writes,
+> and project-summary sync are isolated from workspace action routing.
 > Please review whether each remaining global dependency is behind an explicit
 > compatibility adapter, and keep treating AGM `window.*` module mounts
 > separately from old public UI debt.
@@ -496,7 +499,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 153 test files, 498 tests.
+- `npm.cmd run test -- --run` passed: 154 test files, 504 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1355,6 +1358,11 @@ boundary for editor workflow reads, engine document/style reads, document name
 writes, and layer restore operations. `documentState.ts` continues to re-export
 the target type/factory while its sync/restore logic no longer owns direct
 bridge calls inline.
+Project workspace setting changes now have a dedicated
+`ProjectWorkspaceActionTargets` boundary for project setting setters, document
+name writes, canvas-size writes, autosave writes, and project-summary sync.
+`projectWorkspaceActions.ts` continues to re-export the target type/factory
+while its action routing logic no longer owns direct bridge setter maps inline.
 Direct editor targets can also compose focus, entity mutation, and biome
 mutation commands directly from an injected `EngineRuntimeContext`. The default
 adapters still delegate to current entity mutation/focus bridge helpers, but
