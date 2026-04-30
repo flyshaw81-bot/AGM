@@ -1,32 +1,33 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createGlobalEngineEditorTargets } from "./engineEditorTargets";
+import {
+  createGlobalEngineEditorTargets,
+  createJQueryEngineEditorDialogAdapter,
+  type EngineEditorDialogAdapter,
+} from "./engineEditorTargets";
 
-type TestEditorGlobals = typeof globalThis & {
-  editStates?: () => Promise<void>;
-  editBiomes?: () => void;
-};
-
-const testGlobals = globalThis as TestEditorGlobals;
-const testGlobalRecord = globalThis as Record<string, unknown>;
 const originalDocument = globalThis.document;
 const originalWindow = globalThis.window;
-const originalEditStates = testGlobals.editStates;
-const originalEditBiomes = testGlobals.editBiomes;
 
 describe("createGlobalEngineEditorTargets", () => {
   afterEach(() => {
     globalThis.document = originalDocument;
     globalThis.window = originalWindow;
-    testGlobals.editStates = originalEditStates;
-    testGlobals.editBiomes = originalEditBiomes;
   });
 
   it("detects and runs editor handlers from the active runtime", async () => {
     const editStates = vi.fn(async () => undefined);
-    testGlobals.editStates = editStates;
-    testGlobalRecord.editBiomes = undefined;
+    const dialogAdapter: EngineEditorDialogAdapter = {
+      isOpen: vi.fn(),
+      close: vi.fn(),
+    };
 
-    const targets = createGlobalEngineEditorTargets();
+    const targets = createGlobalEngineEditorTargets(
+      {
+        getHandler: (action) =>
+          action === "editStates" ? editStates : undefined,
+      },
+      dialogAdapter,
+    );
 
     expect(targets.hasEditorHandler("editStates")).toBe(true);
     expect(targets.hasEditorHandler("editBiomes")).toBe(false);
@@ -34,6 +35,22 @@ describe("createGlobalEngineEditorTargets", () => {
     await targets.runEditorHandler("editBiomes");
 
     expect(editStates).toHaveBeenCalledTimes(1);
+  });
+
+  it("delegates dialog visibility and closing to the injected dialog adapter", () => {
+    const dialogAdapter: EngineEditorDialogAdapter = {
+      isOpen: vi.fn(() => true),
+      close: vi.fn(),
+    };
+    const targets = createGlobalEngineEditorTargets(
+      { getHandler: () => undefined },
+      dialogAdapter,
+    );
+
+    expect(targets.isDialogOpen("statesEditor")).toBe(true);
+    targets.closeDialog("statesEditor");
+
+    expect(dialogAdapter.close).toHaveBeenCalledWith("statesEditor");
   });
 
   it("reads dialog visibility and closes via jQuery UI wrapper controls", () => {
@@ -58,10 +75,10 @@ describe("createGlobalEngineEditorTargets", () => {
       })),
     } as unknown as Window & typeof globalThis;
 
-    const targets = createGlobalEngineEditorTargets();
+    const adapter = createJQueryEngineEditorDialogAdapter();
 
-    expect(targets.isDialogOpen("statesEditor")).toBe(true);
-    targets.closeDialog("statesEditor");
+    expect(adapter.isOpen("statesEditor")).toBe(true);
+    adapter.close("statesEditor");
 
     expect(closeButton.click).toHaveBeenCalledWith();
     expect(wrapper.setAttribute).not.toHaveBeenCalled();
@@ -80,8 +97,8 @@ describe("createGlobalEngineEditorTargets", () => {
       getElementById: vi.fn(() => dialog),
     } as unknown as Document;
 
-    const targets = createGlobalEngineEditorTargets();
-    targets.closeDialog("statesEditor");
+    const adapter = createJQueryEngineEditorDialogAdapter();
+    adapter.close("statesEditor");
 
     expect(wrapper.setAttribute).toHaveBeenCalledWith("aria-hidden", "true");
     expect(wrapper.style.display).toBe("none");

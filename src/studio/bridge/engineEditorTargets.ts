@@ -2,6 +2,15 @@ import type { EditorAction } from "./engineActionTypes";
 
 type EngineEditorRuntime = Partial<Record<EditorAction, () => unknown>>;
 
+export type EngineEditorHandlerRuntime = {
+  getHandler: (action: EditorAction) => (() => unknown) | undefined;
+};
+
+export type EngineEditorDialogAdapter = {
+  isOpen: (dialogId: string) => boolean;
+  close: (dialogId: string) => void;
+};
+
 export type EngineEditorTargets = {
   hasEditorHandler: (action: EditorAction) => boolean;
   runEditorHandler: (action: EditorAction) => Promise<void>;
@@ -12,6 +21,15 @@ export type EngineEditorTargets = {
 function getGlobalEditorRuntime(): EngineEditorRuntime {
   return ((globalThis as typeof globalThis & { window?: EngineEditorRuntime })
     .window ?? globalThis) as EngineEditorRuntime;
+}
+
+export function createGlobalEngineEditorHandlerRuntime(): EngineEditorHandlerRuntime {
+  return {
+    getHandler: (action) => {
+      const handler = getGlobalEditorRuntime()[action];
+      return typeof handler === "function" ? handler : undefined;
+    },
+  };
 }
 
 function isElementVisible(element: HTMLElement) {
@@ -25,20 +43,14 @@ function getDialogElement(dialogId: string) {
   return globalThis.document?.getElementById(dialogId) ?? null;
 }
 
-export function createGlobalEngineEditorTargets(): EngineEditorTargets {
+export function createJQueryEngineEditorDialogAdapter(): EngineEditorDialogAdapter {
   return {
-    hasEditorHandler: (action) =>
-      typeof getGlobalEditorRuntime()[action] === "function",
-    runEditorHandler: async (action) => {
-      const handler = getGlobalEditorRuntime()[action];
-      if (typeof handler === "function") await handler();
-    },
-    isDialogOpen: (dialogId) => {
+    isOpen: (dialogId) => {
       const dialog = getDialogElement(dialogId);
       if (!dialog) return false;
       return isElementVisible(dialog);
     },
-    closeDialog: (dialogId) => {
+    close: (dialogId) => {
       const dialog = getDialogElement(dialogId);
       if (!dialog) return;
 
@@ -56,5 +68,20 @@ export function createGlobalEngineEditorTargets(): EngineEditorTargets {
       wrapper.setAttribute("aria-hidden", "true");
       (wrapper as HTMLElement).style.display = "none";
     },
+  };
+}
+
+export function createGlobalEngineEditorTargets(
+  handlerRuntime: EngineEditorHandlerRuntime = createGlobalEngineEditorHandlerRuntime(),
+  dialogAdapter: EngineEditorDialogAdapter = createJQueryEngineEditorDialogAdapter(),
+): EngineEditorTargets {
+  return {
+    hasEditorHandler: (action) => Boolean(handlerRuntime.getHandler(action)),
+    runEditorHandler: async (action) => {
+      const handler = handlerRuntime.getHandler(action);
+      if (handler) await handler();
+    },
+    isDialogOpen: (dialogId) => dialogAdapter.isOpen(dialogId),
+    closeDialog: (dialogId) => dialogAdapter.close(dialogId),
   };
 }

@@ -418,7 +418,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 124 test files, 379 tests.
+- `npm.cmd run test -- --run` passed: 124 test files, 380 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -941,8 +941,10 @@ services instead of reading `globalThis.Routes` inline:
   maps new/open/save actions through injected targets instead of directly
   coupling to Data action functions.
 - `src/studio/bridge/engineEditorTargets.ts` now owns the Studio editor
-  compatibility boundary for public editor handler lookup/execution, dialog
-  visibility checks, and old jQuery UI wrapper close behavior.
+  compatibility boundary through injectable handler-runtime and dialog-adapter
+  interfaces. The default `createJQueryEngineEditorDialogAdapter()` still reads
+  old jQuery UI wrapper state, but the target orchestration no longer embeds
+  those selectors directly.
 - `src/studio/bridge/engineEditorActions.ts` now builds editor availability,
   open-state sync, close behavior, and open-before-close sequencing through
   injected targets instead of directly reading `window`, `document`, or
@@ -1040,8 +1042,9 @@ services instead of reading `globalThis.Routes` inline:
   composition and new/open/save command mapping through injected targets.
 - `src/studio/bridge/engineEditorActions.test.ts` and
   `src/studio/bridge/engineEditorTargets.test.ts` cover editor availability,
-  open-state resolution, close/open sequencing, default handler forwarding,
-  dialog visibility reads, and jQuery UI wrapper close fallback behavior.
+  open-state resolution, close/open sequencing, injected handler forwarding,
+  injected dialog adapter delegation, dialog visibility reads, and jQuery UI
+  wrapper close fallback behavior.
 - `src/studio/app/engineHost.test.ts` covers Studio root/dialog creation,
   engine node preservation, map host relocation, and dialog position clamping
   through injected targets.
@@ -1093,9 +1096,9 @@ source default target still wraps current global runtime functions for
 compatibility, but the tracking logic is now testable through injected targets.
 `EngineExportTargets` still reads export setting DOM inputs and export runtime
 helpers behind a bridge-level adapter. `EngineTopbarTargets` still delegates to
-Data action functions behind a bridge-level adapter. `EngineEditorTargets` still
-reads public editor handlers and old jQuery UI dialog wrappers behind a
-bridge-level adapter. `EngineHostTargets` still owns app-level DOM host and old
+Data action functions behind a bridge-level adapter. `EngineEditorTargets` now
+splits public editor handlers from old jQuery UI dialog wrappers through
+dedicated bridge adapters. `EngineHostTargets` still owns app-level DOM host and old
 dialog wrapper queries behind an app-level adapter. `EngineMapHostTargets` now
 owns the document-state part of the map host plus the first viewport sizing
 adapter, content transform target, and SVG compatibility target. The map host
