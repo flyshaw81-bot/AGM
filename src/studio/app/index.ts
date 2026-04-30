@@ -3,7 +3,6 @@ import {
   syncEngineProjectSummary,
 } from "../bridge/engineActions";
 import { syncEngineViewport } from "../bridge/engineMapHost";
-import { getPresetById } from "../canvas/presets";
 import { bindStudioShellEvents, renderStudioShell } from "../layout/shell";
 import type { FitMode, Orientation, StudioState } from "../types";
 import {
@@ -23,6 +22,7 @@ import { createInitialState } from "./initialState";
 import { updateProjectCenterState } from "./projectCenter";
 import { createStudioShellEventHandlers } from "./studioShellHandlers";
 import { injectStudioStyles } from "./styles";
+import { updateViewportDimensions } from "./viewportState";
 
 async function syncProjectSummaryState() {
   return syncEngineProjectSummary();
@@ -47,20 +47,6 @@ function watchEditorWorkflow(root: HTMLElement, state: StudioState) {
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") void syncAndRender();
   });
-}
-
-function updateViewportDimensions(state: StudioState) {
-  const preset = getPresetById(state.viewport.presetId);
-  const width =
-    state.viewport.orientation === preset.orientation
-      ? preset.width
-      : preset.height;
-  const height =
-    state.viewport.orientation === preset.orientation
-      ? preset.height
-      : preset.width;
-  state.viewport.width = width;
-  state.viewport.height = height;
 }
 
 function render(root: HTMLElement, state: StudioState) {

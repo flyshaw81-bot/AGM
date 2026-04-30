@@ -45,6 +45,9 @@
 > Initial Studio state creation now uses `InitialStateTargets`, so document
 > state reads, style preset reads, preset lookup, preference application, and
 > project-center loading can be tested without browser globals.
+> Viewport dimension updates now use `ViewportPresetTargets`, so orientation
+> sizing can be tested without reaching directly into the canvas preset module
+> from the Studio bootstrap path.
 > Please review whether each remaining global dependency is behind an explicit
 > compatibility adapter, and keep treating AGM `window.*` module mounts
 > separately from old public UI debt.
@@ -448,7 +451,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 137 test files, 457 tests.
+- `npm.cmd run test -- --run` passed: 138 test files, 459 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1228,6 +1231,9 @@ boundary for engine document reads, style preset reads, canvas preset lookup,
 preference reads/application, and project-center loading; the default adapter
 still uses the current engine/browser sources, while tests can exercise startup
 state without touching `document` or `localStorage`.
+Viewport dimension updates now use a dedicated `ViewportPresetTargets`
+boundary, moving preset lookup out of the Studio bootstrap file and covering
+matching/swapped orientation sizing with focused tests.
 Direct editor targets can also compose focus, entity mutation, and biome
 mutation commands directly from an injected `EngineRuntimeContext`. The default
 adapters still delegate to current entity mutation/focus bridge helpers, but
