@@ -104,6 +104,10 @@
 > `StudioBootstrapTargets`, so startup orchestration no longer owns style,
 > DOM, initial-state, workflow-watcher, project-summary, document-sync, root,
 > or viewport-sync default adapter wiring inline.
+> Studio renderer default dependencies now live in `StudioRendererTargets`, so
+> render orchestration no longer owns shell, canvas, document, project-center,
+> viewport, focus, dialog-position, or event-binding default adapter wiring
+> inline.
 > Please review whether each remaining global dependency is behind an explicit
 > compatibility adapter, and keep treating AGM `window.*` module mounts
 > separately from old public UI debt.
@@ -507,7 +511,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 156 test files, 506 tests.
+- `npm.cmd run test -- --run` passed: 157 test files, 507 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1382,6 +1386,14 @@ initial state creation, viewport dimension updates, root creation, project
 summary sync, document sync, workflow watching, and viewport sync.
 `studioBootstrap.ts` continues to re-export the target type/factory while
 bootstrap orchestration no longer owns those default adapter imports inline.
+Studio renderer default runtime access now has a dedicated
+`studioRendererTargets.ts` adapter for editor/document sync, project center
+updates, shell rendering, root writes, document theme writes, map/dialog host
+sync, overlay sync, viewport sync, canvas selection/paint interaction binding,
+focus resolution, shell event binding, project-summary sync, and viewport
+dimension updates. `studioRenderer.ts` continues to re-export the target
+type/factory while render orchestration no longer owns those default adapter
+imports inline.
 Direct editor targets can also compose focus, entity mutation, and biome
 mutation commands directly from an injected `EngineRuntimeContext`. The default
 adapters still delegate to current entity mutation/focus bridge helpers, but
