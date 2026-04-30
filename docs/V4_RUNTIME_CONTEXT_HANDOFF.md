@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 180 test files, 663 tests.
+- `npm.cmd run test -- --run` passed: 180 test files, 665 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -959,6 +959,9 @@ Completed:
 - `engine-runtime-settings.ts` now also separates population runtime globals
   (`populationRate`, `urbanDensity`, `urbanization`) into
   `EnginePopulationRuntimeTargets`, matching the world runtime target split.
+- `engine-runtime-settings.ts` now separates unit/timing runtime globals
+  (`heightUnit.value`, `TIME`) into `EngineUnitRuntimeTargets` and
+  `EngineTimingRuntimeTargets`.
 - Moved global climate-context construction into
   `src/modules/engine-climate-context.ts`. Both `getGlobalEngineRuntimeContext()`
   and `Climate.getGlobalClimateRuntimeContext()` now use the same adapter,

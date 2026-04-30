@@ -4,8 +4,12 @@ import {
   createGlobalPopulationRuntimeTargets,
   createGlobalPopulationSettings,
   createGlobalPopulationSettingsTargets,
+  createGlobalTimingRuntimeTargets,
   createGlobalTimingSettings,
+  createGlobalTimingSettingsTargets,
+  createGlobalUnitRuntimeTargets,
   createGlobalUnitSettings,
+  createGlobalUnitSettingsTargets,
   createGlobalWorldRuntimeTargets,
   createGlobalWorldSettings,
   createGlobalWorldSettingsTargets,
@@ -18,6 +22,8 @@ import {
   createWorldSettingsStore,
   type EnginePopulationRuntimeTargets,
   type EngineSettingsDomTargets,
+  type EngineTimingRuntimeTargets,
+  type EngineUnitRuntimeTargets,
   type EngineWorldRuntimeTargets,
 } from "./engine-runtime-settings";
 
@@ -228,6 +234,30 @@ describe("runtime setting adapters", () => {
     expect(targets.getPopulationRate()).toBe(11);
     expect(targets.getUrbanDensity()).toBe(12);
     expect(targets.getUrbanization()).toBe(13);
+  });
+
+  it("composes unit and timing settings from explicit runtime targets", () => {
+    const unitTargets: EngineUnitRuntimeTargets = {
+      getHeightUnit: () => "ft",
+    };
+    const timingTargets: EngineTimingRuntimeTargets = {
+      getShouldTime: () => true,
+    };
+
+    expect(
+      createUnitSettings(createGlobalUnitSettingsTargets(unitTargets)),
+    ).toEqual({ height: "ft" });
+    expect(
+      createTimingSettings(createGlobalTimingSettingsTargets(timingTargets)),
+    ).toEqual({ shouldTime: true });
+  });
+
+  it("reads unit and timing values through explicit global runtime targets", () => {
+    globalThis.heightUnit = { value: "m" } as HTMLSelectElement;
+    globalThis.TIME = false;
+
+    expect(createGlobalUnitRuntimeTargets().getHeightUnit()).toBe("m");
+    expect(createGlobalTimingRuntimeTargets().getShouldTime()).toBe(false);
   });
 
   it("stores, patches, and refreshes world settings through a runtime store", () => {

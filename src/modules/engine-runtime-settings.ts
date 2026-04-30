@@ -62,6 +62,14 @@ export type EnginePopulationRuntimeTargets = {
   getUrbanization: () => number;
 };
 
+export type EngineUnitRuntimeTargets = {
+  getHeightUnit: () => string;
+};
+
+export type EngineTimingRuntimeTargets = {
+  getShouldTime: () => boolean;
+};
+
 export type EngineWorldSettingsStore = {
   get: () => EngineWorldSettings;
   replace: (nextSettings: EngineWorldSettings) => EngineWorldSettings;
@@ -130,6 +138,18 @@ export function createGlobalPopulationRuntimeTargets(): EnginePopulationRuntimeT
   };
 }
 
+export function createGlobalUnitRuntimeTargets(): EngineUnitRuntimeTargets {
+  return {
+    getHeightUnit: () => heightUnit.value,
+  };
+}
+
+export function createGlobalTimingRuntimeTargets(): EngineTimingRuntimeTargets {
+  return {
+    getShouldTime: () => TIME,
+  };
+}
+
 export function createSettingsInputNumberReader(
   domTargets: EngineSettingsDomTargets,
 ): (id: string, fallback: number) => number {
@@ -162,15 +182,19 @@ export function createGlobalPopulationSettingsTargets(
   };
 }
 
-export function createGlobalUnitSettingsTargets(): EngineUnitSettingsTargets {
+export function createGlobalUnitSettingsTargets(
+  runtimeTargets: EngineUnitRuntimeTargets = createGlobalUnitRuntimeTargets(),
+): EngineUnitSettingsTargets {
   return {
-    getHeightUnit: () => heightUnit.value,
+    getHeightUnit: runtimeTargets.getHeightUnit,
   };
 }
 
-export function createGlobalTimingSettingsTargets(): EngineTimingSettingsTargets {
+export function createGlobalTimingSettingsTargets(
+  runtimeTargets: EngineTimingRuntimeTargets = createGlobalTimingRuntimeTargets(),
+): EngineTimingSettingsTargets {
   return {
-    getShouldTime: () => TIME,
+    getShouldTime: runtimeTargets.getShouldTime,
   };
 }
 
