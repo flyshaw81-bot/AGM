@@ -1,3 +1,5 @@
+import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
+
 type EngineCanvasPack = { cells?: unknown; states?: unknown[] };
 
 type EngineCanvasWindow = typeof globalThis & {
@@ -64,6 +66,24 @@ export function createGlobalEngineCanvasMapDataAdapter(): EngineCanvasMapDataAda
   };
 }
 
+export function createRuntimeEngineCanvasDimensionAdapter(
+  context: EngineRuntimeContext,
+): EngineCanvasDimensionAdapter {
+  return {
+    getGraphWidth: () => context.worldSettings.graphWidth,
+    getGraphHeight: () => context.worldSettings.graphHeight,
+  };
+}
+
+export function createRuntimeEngineCanvasMapDataAdapter(
+  context: EngineRuntimeContext,
+): EngineCanvasMapDataAdapter {
+  return {
+    getPack: () => context.pack,
+    getGridCells: () => context.grid?.cells,
+  };
+}
+
 export function createGlobalEngineCanvasRendererAdapter(): EngineCanvasRendererAdapter {
   const engine = engineCanvasWindow();
   return {
@@ -107,6 +127,17 @@ export function createGlobalEngineCanvasAccessTargets(): EngineCanvasAccessTarge
     createGlobalEngineCanvasDimensionAdapter(),
     createGlobalEngineCanvasMapDataAdapter(),
     createGlobalEngineCanvasRendererAdapter(),
+  );
+}
+
+export function createRuntimeEngineCanvasAccessTargets(
+  context: EngineRuntimeContext,
+  rendererAdapter: EngineCanvasRendererAdapter = createGlobalEngineCanvasRendererAdapter(),
+): EngineCanvasAccessTargets {
+  return createEngineCanvasAccessTargets(
+    createRuntimeEngineCanvasDimensionAdapter(context),
+    createRuntimeEngineCanvasMapDataAdapter(context),
+    rendererAdapter,
   );
 }
 

@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 import {
   createEngineCanvasAccessTargets,
   createGlobalEngineCanvasAccessTargets,
+  createRuntimeEngineCanvasAccessTargets,
   type EngineCanvasAccessTargets,
   getEngineCanvasGraphSize,
   getEngineGridCells,
@@ -157,5 +159,42 @@ describe("engineCanvasAccess", () => {
     expect(drawBiomes).toHaveBeenCalledWith();
     expect(drawCells).toHaveBeenCalledWith();
     expect(invokeActiveZooming).toHaveBeenCalledWith();
+  });
+
+  it("creates runtime canvas access targets from an injected context", () => {
+    const pack = { cells: { i: [1] }, states: [] };
+    const grid = { cells: { i: [2] } };
+    const renderer = createTargets({
+      getGraphWidth: vi.fn(),
+      getGraphHeight: vi.fn(),
+      getPack: vi.fn(),
+      getGridCells: vi.fn(),
+      drawHeightmap: vi.fn(),
+      drawBiomes: vi.fn(),
+      drawCells: vi.fn(),
+      isLayerOn: vi.fn(() => true),
+      invokeActiveZooming: vi.fn(),
+    });
+    const context = {
+      worldSettings: {
+        graphWidth: 1600,
+        graphHeight: 900,
+      },
+      pack,
+      grid,
+    } as unknown as EngineRuntimeContext;
+
+    const targets = createRuntimeEngineCanvasAccessTargets(context, renderer);
+
+    expect(getEngineCanvasGraphSize(targets)).toEqual({
+      width: 1600,
+      height: 900,
+    });
+    expect(getEnginePack(targets)).toBe(pack);
+    expect(getEngineGridCells(targets)).toBe(grid.cells);
+    redrawEngineCanvasEditLayers(targets);
+    expect(renderer.drawHeightmap).toHaveBeenCalledWith();
+    expect(renderer.drawBiomes).toHaveBeenCalledWith();
+    expect(renderer.drawCells).toHaveBeenCalledWith();
   });
 });
