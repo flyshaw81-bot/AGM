@@ -1,3 +1,5 @@
+import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
+
 export type EngineResourceSummaryTargets = {
   getBiomeData: () => unknown;
   setBiomeData: (data: unknown) => void;
@@ -62,6 +64,44 @@ export function createGlobalResourcePackAdapter(): EngineResourcePackAdapter {
     getCellPopulation: (cellId) =>
       finiteNumberOrUndefined(globalThis.pack?.cells?.pop?.[cellId]),
   };
+}
+
+export function createRuntimeResourceBiomeAdapter(
+  context: EngineRuntimeContext,
+): EngineResourceBiomeAdapter {
+  return {
+    getBiomeData: () => context.biomesData,
+    setBiomeData: (data) => {
+      if (data) context.biomesData = data as EngineRuntimeContext["biomesData"];
+    },
+  };
+}
+
+export function createRuntimeResourcePackAdapter(
+  context: EngineRuntimeContext,
+): EngineResourcePackAdapter {
+  return {
+    getStates: () => context.pack?.states,
+    getBurgs: () => context.pack?.burgs,
+    getCultures: () => context.pack?.cultures,
+    getReligions: () => context.pack?.religions,
+    getProvinces: () => context.pack?.provinces,
+    getRoutes: () => context.pack?.routes,
+    getZones: () => context.pack?.zones,
+    getCellArea: (cellId) =>
+      finiteNumberOrUndefined(context.pack?.cells?.area?.[cellId]),
+    getCellPopulation: (cellId) =>
+      finiteNumberOrUndefined(context.pack?.cells?.pop?.[cellId]),
+  };
+}
+
+export function createRuntimeResourceSummaryTargets(
+  context: EngineRuntimeContext,
+): EngineResourceSummaryTargets {
+  return createResourceSummaryTargets(
+    createRuntimeResourceBiomeAdapter(context),
+    createRuntimeResourcePackAdapter(context),
+  );
 }
 
 export function createResourceSummaryTargets(

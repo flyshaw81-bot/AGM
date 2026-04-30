@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 import {
   createGlobalResourceSummaryTargets,
   createResourceSummaryTargets,
+  createRuntimeResourceSummaryTargets,
 } from "./engineResourceSummaryTargets";
 
 const originalPack = globalThis.pack;
@@ -74,6 +76,30 @@ describe("createGlobalResourceSummaryTargets", () => {
     targets.setBiomeData(biomeData);
     expect(setBiomeData).toHaveBeenCalledWith(biomeData);
     expect(targets.getStates()).toBe(states);
+    expect(targets.getCellArea(7)).toBe(12);
+    expect(targets.getCellPopulation(7)).toBe(3);
+  });
+
+  it("creates resource summary targets from an injected runtime context", () => {
+    const nextBiomeData = { i: [2] };
+    const context = {
+      biomesData: { i: [1] },
+      pack: {
+        states: [{ i: 1, name: "Aurelia" }],
+        routes: [{ i: 3, group: "roads" }],
+        cells: {
+          area: { 7: 12 },
+          pop: { 7: 3 },
+        },
+      },
+    } as unknown as EngineRuntimeContext;
+    const targets = createRuntimeResourceSummaryTargets(context);
+
+    expect(targets.getBiomeData()).toBe(context.biomesData);
+    targets.setBiomeData(nextBiomeData);
+    expect(context.biomesData).toBe(nextBiomeData);
+    expect(targets.getStates()).toBe(context.pack.states);
+    expect(targets.getRoutes()).toBe(context.pack.routes);
     expect(targets.getCellArea(7)).toBe(12);
     expect(targets.getCellPopulation(7)).toBe(3);
   });
