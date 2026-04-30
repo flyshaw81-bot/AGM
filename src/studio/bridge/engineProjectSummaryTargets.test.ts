@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { EngineProjectSummary } from "./engineActionTypes";
-import { createGlobalProjectSummaryTargets } from "./engineProjectSummaryTargets";
+import type { EngineProjectFormTargets } from "./engineProjectFormTargets";
+import {
+  createGlobalProjectSummaryTargets,
+  createProjectSummaryTargets,
+} from "./engineProjectSummaryTargets";
 
 type TestSummaryGlobal = typeof globalThis & {
   __studioProjectSummary?: EngineProjectSummary;
@@ -71,6 +75,40 @@ describe("createGlobalProjectSummaryTargets", () => {
     expect(targets.hasElement("optionsSeed")).toBe(true);
     await expect(targets.readLocalDatabaseSnapshot()).resolves.toEqual({
       id: "lastMap",
+    });
+  });
+
+  it("composes project summary targets from injected adapters", async () => {
+    const summary = { pendingSeed: "abc" } as EngineProjectSummary;
+    const setCachedSummary = vi.fn();
+    const form = {} as EngineProjectFormTargets;
+    const targets = createProjectSummaryTargets(
+      form,
+      {
+        getCachedSummary: () => summary,
+        setCachedSummary,
+      },
+      {
+        getLocalStorageItem: (key) => (key === "lastMap" ? "local" : null),
+        getSessionStorageItem: (key) => (key === "lastMap" ? "session" : null),
+      },
+      {
+        hasElement: (id) => id === "optionsSeed",
+      },
+      {
+        readLocalDatabaseSnapshot: async () => ({ id: "db" }),
+      },
+    );
+
+    expect(targets.form).toBe(form);
+    expect(targets.getCachedSummary()).toBe(summary);
+    targets.setCachedSummary(summary);
+    expect(setCachedSummary).toHaveBeenCalledWith(summary);
+    expect(targets.getLocalStorageItem("lastMap")).toBe("local");
+    expect(targets.getSessionStorageItem("lastMap")).toBe("session");
+    expect(targets.hasElement("optionsSeed")).toBe(true);
+    await expect(targets.readLocalDatabaseSnapshot()).resolves.toEqual({
+      id: "db",
     });
   });
 });

@@ -418,7 +418,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 124 test files, 386 tests.
+- `npm.cmd run test -- --run` passed: 124 test files, 387 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -889,9 +889,10 @@ services instead of reading `globalThis.Routes` inline:
   state through injected targets instead of directly reading `document`,
   `window.options`, or wind SVG paths inline.
 - `src/studio/bridge/engineProjectSummaryTargets.ts` now owns the Studio
-  project summary compatibility boundary for cached summary state, local/session
-  storage reads, element existence checks, local database snapshot lookup, and
-  the shared project form target.
+  project summary compatibility boundary through cache, storage, document, and
+  database adapters. Cached summary state, local/session storage reads, element
+  existence checks, local database snapshot lookup, and the shared project form
+  target can now be composed independently.
 - `src/studio/bridge/engineProjectSummary.ts` now syncs and reads project
   summary state through injected targets instead of directly reading
   `document`, `localStorage`, `sessionStorage`, `globalThis`, or `ldb` inline.
@@ -1020,7 +1021,8 @@ services instead of reading `globalThis.Routes` inline:
 - `src/studio/bridge/engineProjectSummary.test.ts` and
   `src/studio/bridge/engineProjectSummaryTargets.test.ts` cover project summary
   sync, storage/local database snapshot fallback, cached-summary merging, global
-  cache forwarding, storage reads, and element checks.
+  cache forwarding, storage reads, element checks, and injected adapter
+  composition.
 - `src/studio/bridge/engineProjectActions.test.ts` and
   `src/studio/bridge/engineProjectActionTargets.test.ts` cover project action
   clamping, button mapping, pending template apply/fallback behavior, default
@@ -1092,8 +1094,9 @@ still reads canvas globals behind an app-level adapter.
 helpers behind a bridge-level adapter. `EngineProjectControlTargets` still
 reads project-control DOM/global helpers behind a bridge-level adapter.
 `EngineProjectFormTargets` now splits project-form DOM reads and runtime wind
-state through dedicated bridge adapters. `EngineProjectSummaryTargets` still reads project summary
-storage/document/cache helpers behind a bridge-level adapter.
+state through dedicated bridge adapters. `EngineProjectSummaryTargets` now
+splits project summary storage, document, cache, and database helpers through
+dedicated bridge adapters.
 `EngineProjectActionTargets` still reads project action DOM/template helpers
 behind a bridge-level adapter. `EngineLayerTargets` now splits layer DOM and
 runtime helpers through dedicated bridge adapters. `EngineStyleTargets` now
