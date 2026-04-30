@@ -100,20 +100,25 @@ export function createRuntimeAutoFixWritebackAdapter(
     applySettlementPreviewChanges: (changes) =>
       applyEngineSettlementPreviewChanges(
         changes,
-        undefined,
+        context.burgs,
         settlementTargets,
       ),
     applyRoutePreviewChanges: (changes) =>
       applyEngineRoutePreviewChanges(
         changes,
-        undefined,
-        undefined,
+        context.routes,
+        context.rendering,
         routeTargets,
       ),
     applyBiomePreviewChanges: (changes) =>
       applyEngineBiomePreviewChanges(changes, biomeTargets),
     undoWriteback: (writeback) =>
-      undoEngineAutoFixWriteback(writeback, undefined, undefined, undoTargets),
+      undoEngineAutoFixWriteback(
+        writeback,
+        context.routes,
+        context.burgs,
+        undoTargets,
+      ),
   };
 }
 

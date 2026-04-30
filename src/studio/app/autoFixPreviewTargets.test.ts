@@ -57,11 +57,39 @@ describe("createAutoFixPreviewTargets", () => {
       agmRuleWeight: { 2: 1 },
       agmResourceTag: { 2: "grain" },
     };
+    const createdBurg = { i: 7 };
+    const burgs = {
+      add: vi.fn(() => 7),
+      remove: vi.fn(),
+      findById: vi.fn(() => createdBurg),
+    };
+    const routes = {
+      isCrossroad: vi.fn(() => false),
+      isConnected: vi.fn(() => false),
+      hasRoad: vi.fn(() => false),
+      getRoute: vi.fn(),
+      getConnectivityRate: vi.fn(() => 0),
+      buildLinks: vi.fn(() => []),
+      connect: vi.fn(),
+      remove: vi.fn(),
+      findById: vi.fn(),
+    };
     const context = {
       pack: {
         states: [undefined, state],
-        provinces: [],
+        provinces: [{ i: 0 }, { i: 1, center: 4 }],
+        cells: {
+          p: [
+            [0, 0],
+            [10, 10],
+            [20, 20],
+            [30, 30],
+            [40, 40],
+          ],
+        },
       },
+      burgs,
+      routes,
       biomesData: biomeData,
     } as unknown as EngineRuntimeContext;
     const targets = createRuntimeAutoFixPreviewTargets(context);
@@ -92,12 +120,26 @@ describe("createAutoFixPreviewTargets", () => {
 
     const stateWriteback = targets.applyStatePreviewChanges([stateChange]);
     const biomeWriteback = targets.applyBiomePreviewChanges([biomeChange]);
+    const settlementWriteback = targets.applySettlementPreviewChanges([
+      {
+        id: "burg-1",
+        operation: "create",
+        entity: "burg",
+        summary: "add burg",
+        refs: { provinces: [1] },
+        fields: {
+          provisionalName: "Northwatch",
+        },
+      },
+    ]);
 
     expect(state.agmFairStart).toBe(true);
     expect(state.agmPriority).toBe("high");
     expect(biomeData.habitability[2]).toBe(30);
+    expect(burgs.add).toHaveBeenCalledWith([40, 40]);
+    expect(createdBurg).toMatchObject({ name: "Northwatch" });
     targets.undoWriteback({
-      createdBurgIds: [],
+      createdBurgIds: settlementWriteback.createdBurgIds,
       createdRouteIds: [],
       updatedBiomes: biomeWriteback.updatedBiomes,
       updatedStates: stateWriteback.updatedStates,
@@ -108,5 +150,6 @@ describe("createAutoFixPreviewTargets", () => {
     expect(state.agmPriority).toBe("low");
     expect(biomeData.habitability[2]).toBe(10);
     expect(biomeData.agmResourceTag[2]).toBe("grain");
+    expect(burgs.remove).toHaveBeenCalledWith(7);
   });
 });

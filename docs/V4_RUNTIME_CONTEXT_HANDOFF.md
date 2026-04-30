@@ -829,6 +829,9 @@ Completed:
   compatibility-backed command/query boundary over the current AGM `Burgs`
   module mount, but runtime callers can now depend on `context.burgs` instead
   of constructing the global service directly.
+- Routed runtime autofix writeback composition through `context.burgs` and
+  `context.routes` for settlement creation, route creation, and undo instead of
+  falling back to the global service factories on the runtime path.
 - Routed state expansionism randomness through the same runtime random service.
   This keeps the seeded default behavior while moving another context-aware
   generation step off direct `Math.random()` calls.
