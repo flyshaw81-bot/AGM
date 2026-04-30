@@ -20,9 +20,22 @@ export type EngineOptionsLocaleTargets = {
   getLanguage: () => string;
 };
 
+export type EngineOptionsDistanceScaleTargets = {
+  setDistanceScale: (value: number) => void;
+};
+
 export function createGlobalOptionsLocaleTargets(): EngineOptionsLocaleTargets {
   return {
     getLanguage: () => navigator.language,
+  };
+}
+
+export function createGlobalOptionsDistanceScaleTargets(): EngineOptionsDistanceScaleTargets {
+  return {
+    setDistanceScale: (value) => {
+      globalThis.distanceScale = value;
+      (globalThis as any).distanceScaleInput.value = value;
+    },
   };
 }
 
@@ -175,7 +188,9 @@ export function createRuntimeOptionsNamingAdapter(
   };
 }
 
-export function createGlobalOptionsWriterAdapter(): EngineOptionsWriterAdapter {
+export function createGlobalOptionsWriterAdapter(
+  distanceScaleTargets: EngineOptionsDistanceScaleTargets = createGlobalOptionsDistanceScaleTargets(),
+): EngineOptionsWriterAdapter {
   return {
     setCellsDensity: (density) =>
       (globalThis as any).changeCellsDensity(density),
@@ -224,10 +239,7 @@ export function createGlobalOptionsWriterAdapter(): EngineOptionsWriterAdapter {
     setPrecipitation: (value) => {
       precInput.value = (globalThis as any).precOutput.value = String(value);
     },
-    setDistanceScale: (value) => {
-      globalThis.distanceScale = (globalThis as any).distanceScaleInput.value =
-        value;
-    },
+    setDistanceScale: (value) => distanceScaleTargets.setDistanceScale(value),
     setDistanceUnit: (value) => {
       distanceUnitInput.value = value;
     },

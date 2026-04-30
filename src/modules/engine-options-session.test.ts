@@ -1,11 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createGlobalOptionsControlAdapter,
+  createGlobalOptionsWriterAdapter,
   createRuntimeOptionsNamingAdapter,
   createRuntimeOptionsRandomAdapter,
   createRuntimeOptionsSession,
   createRuntimeOptionsWriterAdapter,
   type EngineOptionsControlAdapter,
+  type EngineOptionsDistanceScaleTargets,
   type EngineOptionsNamingAdapter,
   type EngineOptionsRandomAdapter,
   type EngineOptionsReaderAdapter,
@@ -224,6 +226,16 @@ describe("EngineOptionsSessionModule", () => {
     });
 
     expect(controls.usesUsUnits()).toBe(true);
+  });
+
+  it("writes distance scale through injected browser targets", () => {
+    const targets: EngineOptionsDistanceScaleTargets = {
+      setDistanceScale: vi.fn(),
+    };
+
+    createGlobalOptionsWriterAdapter(targets).setDistanceScale(2.5);
+
+    expect(targets.setDistanceScale).toHaveBeenCalledWith(2.5);
   });
 
   it("routes era generation through the naming adapter", () => {
