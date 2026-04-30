@@ -418,7 +418,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 129 test files, 411 tests.
+- `npm.cmd run test -- --run` passed: 129 test files, 412 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1131,7 +1131,8 @@ Known remaining debt for this slice: `EngineRouteWritebackTargets` now splits
 route cell/province lookup through a dedicated map adapter, and can also compose
 targets directly from an injected `EngineRuntimeContext`.
 `EngineSettlementWritebackTargets` now splits settlement point lookup through a
-dedicated map adapter.
+dedicated map adapter, and can also compose targets directly from an injected
+`EngineRuntimeContext`.
 `EngineAutoFixUndoTargets`, `EngineStateWritebackTargets`,
 `EngineBiomeWritebackTargets` now splits biome-data lookup and redraw
 forwarding through dedicated bridge adapters. `EngineFocusGeometryTargets` now

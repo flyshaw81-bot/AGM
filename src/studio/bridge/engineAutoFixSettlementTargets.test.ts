@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest";
+import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 import type { EngineAutoFixPreviewChange } from "./engineActionTypes";
 import {
   createGlobalSettlementWritebackTargets,
+  createRuntimeSettlementWritebackTargets,
   createSettlementWritebackTargets,
 } from "./engineAutoFixSettlementTargets";
 
@@ -100,5 +102,31 @@ describe("createGlobalSettlementWritebackTargets", () => {
       x: 120,
       y: 140,
     });
+  });
+
+  it("creates settlement writeback targets from an injected runtime context", () => {
+    const context = {
+      pack: {
+        burgs: [],
+        cells: {
+          i: [10, 11, 12],
+          state: { 10: 4, 11: 4, 12: 4 },
+          p: { 10: [100, 100], 11: [120, 140], 12: [160, 180] },
+        },
+      },
+    } as unknown as EngineRuntimeContext;
+    const change = {
+      id: "burg:runtime:4",
+      operation: "create",
+      entity: "burg",
+      summary: "Add support settlement",
+      refs: { states: [4] },
+    } satisfies EngineAutoFixPreviewChange;
+
+    expect(
+      createRuntimeSettlementWritebackTargets(context).resolveSettlementPoint(
+        change,
+      ),
+    ).toEqual({ x: 120, y: 140 });
   });
 });

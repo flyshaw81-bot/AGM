@@ -1,3 +1,4 @@
+import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 import type { EngineAutoFixPreviewChange } from "./engineActionTypes";
 
 export type EngineSettlementWritebackPoint = {
@@ -84,6 +85,32 @@ export function createGlobalSettlementWritebackMapAdapter(): EngineSettlementWri
   };
 }
 
+export function createRuntimeSettlementWritebackMapAdapter(
+  context: EngineRuntimeContext,
+): EngineSettlementWritebackMapAdapter {
+  return {
+    findStateBurg: (stateId) => {
+      const burg = context.pack?.burgs?.find(
+        (item) =>
+          item &&
+          !item.removed &&
+          item.state === stateId &&
+          typeof item.x === "number" &&
+          typeof item.y === "number",
+      );
+      return burg ? { x: burg.x, y: burg.y } : undefined;
+    },
+    getStateCellIds: (stateId) =>
+      Array.from(context.pack?.cells?.i || []).filter(
+        (cellId) => context.pack?.cells?.state?.[cellId] === stateId,
+      ),
+    getCellPoint: (cellId) =>
+      pointOrUndefined(context.pack?.cells?.p?.[cellId]),
+    getProvinceCenterCell: (provinceId) =>
+      context.pack?.provinces?.[provinceId]?.center,
+  };
+}
+
 export function createSettlementWritebackTargets(
   mapAdapter: EngineSettlementWritebackMapAdapter,
 ): EngineSettlementWritebackTargets {
@@ -96,5 +123,13 @@ export function createSettlementWritebackTargets(
 export function createGlobalSettlementWritebackTargets(): EngineSettlementWritebackTargets {
   return createSettlementWritebackTargets(
     createGlobalSettlementWritebackMapAdapter(),
+  );
+}
+
+export function createRuntimeSettlementWritebackTargets(
+  context: EngineRuntimeContext,
+): EngineSettlementWritebackTargets {
+  return createSettlementWritebackTargets(
+    createRuntimeSettlementWritebackMapAdapter(context),
   );
 }
