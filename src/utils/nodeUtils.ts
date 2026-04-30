@@ -12,14 +12,28 @@ export const getComposedPath = (node: any): Array<Node | Window> => {
   return [node];
 };
 
+export type NodeIdTargets = {
+  getElementById: (id: string) => Element | null;
+};
+
+export function createGlobalNodeIdTargets(): NodeIdTargets {
+  return {
+    getElementById: (id) => document.getElementById(id),
+  };
+}
+
 /**
  * Generate a unique ID for a given core string
  * @param {string} core - The core string for the ID
  * @param {number} [i=1] - The starting index
  * @returns {string} - The unique ID
  */
-export const getNextId = (core: string, i: number = 1): string => {
-  while (document.getElementById(core + i)) i++;
+export const getNextId = (
+  core: string,
+  i: number = 1,
+  targets: NodeIdTargets = createGlobalNodeIdTargets(),
+): string => {
+  while (targets.getElementById(core + i)) i++;
   return core + i;
 };
 

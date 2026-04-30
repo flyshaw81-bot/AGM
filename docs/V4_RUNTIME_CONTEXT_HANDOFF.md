@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 177 test files, 644 tests.
+- `npm.cmd run test -- --run` passed: 179 test files, 647 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1935,6 +1935,11 @@ injected paths.
 `parseError()` now reads browser user-agent information through
 `BrowserEnvironmentTargets`; default behavior still uses `navigator.userAgent`,
 and focused tests cover Firefox stack parsing through an injected environment.
+`clipPoly()`, `getNextId()`, and `byId()` now route their remaining browser
+global lookups through small injectable targets. Default behavior still reads
+the current browser `window.ERROR` / `document.getElementById`, while focused
+tests cover undefined-point warnings, unique ID lookup, and shorthand DOM
+lookup through fakes.
 
 ## Next Recommended Slice
 

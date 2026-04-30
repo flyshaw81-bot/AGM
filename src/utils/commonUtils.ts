@@ -4,6 +4,20 @@ import { distanceSquared } from "./functionUtils";
 import { rn } from "./numberUtils";
 import { rand } from "./probabilityUtils";
 
+export type UtilityWarningTargets = {
+  isErrorEnabled: () => boolean;
+  warnUndefinedPoint: (points: [number, number][]) => void;
+};
+
+export function createGlobalUtilityWarningTargets(): UtilityWarningTargets {
+  return {
+    isErrorEnabled: () => Boolean(window.ERROR),
+    warnUndefinedPoint: (points) => {
+      console.error("Undefined point in clipPoly", points);
+    },
+  };
+}
+
 /**
  * Clip polygon points to graph boundaries
  * @param points - Array of points [[x1, y1], [x2, y2], ...]
@@ -15,10 +29,11 @@ export const clipPoly = (
   points: [number, number][],
   graphWidth: number,
   graphHeight: number,
+  targets: UtilityWarningTargets = createGlobalUtilityWarningTargets(),
 ) => {
   if (points.length < 2) return points;
   if (points.some((point) => point === undefined)) {
-    window.ERROR && console.error("Undefined point in clipPoly", points);
+    if (targets.isErrorEnabled()) targets.warnUndefinedPoint(points);
     return points;
   }
 

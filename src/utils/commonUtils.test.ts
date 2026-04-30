@@ -3,6 +3,7 @@ import {
   type BrowserBlobReaderTargets,
   type BrowserEnvironmentTargets,
   type BrowserNavigationTargets,
+  clipPoly,
   getBase64,
   getCoordinates,
   getLatitude,
@@ -12,6 +13,7 @@ import {
   parseError,
   type StudioInputPromptTargets,
   type StudioInputRequest,
+  type UtilityWarningTargets,
   wiki,
 } from "./commonUtils";
 
@@ -164,6 +166,21 @@ describe("parseError", () => {
     expect(targets.getUserAgent).toHaveBeenCalled();
     expect(parsed).toContain("Error: Broken map");
     expect(parsed).toContain("<i>map.ts</i>");
+  });
+});
+
+describe("clipPoly", () => {
+  it("reports undefined points through injected warning targets", () => {
+    const targets: UtilityWarningTargets = {
+      isErrorEnabled: vi.fn(() => true),
+      warnUndefinedPoint: vi.fn(),
+    };
+    const points = [[1, 1], undefined, [2, 2]] as unknown as [number, number][];
+
+    const result = clipPoly(points, 100, 100, targets);
+
+    expect(result).toBe(points);
+    expect(targets.warnUndefinedPoint).toHaveBeenCalledWith(points);
   });
 });
 
