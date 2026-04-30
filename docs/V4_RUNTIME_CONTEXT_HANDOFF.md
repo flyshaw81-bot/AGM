@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 180 test files, 655 tests.
+- `npm.cmd run test -- --run` passed: 180 test files, 656 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -1973,6 +1973,11 @@ font runtime compatibility facade.
 `OceanLayerLogTargets`, keeping the default `globalThis.ERROR` compatibility
 behavior isolated while making stalled-chain reporting testable without browser
 globals.
+
+`heightmap-generator.ts` now routes invalid range diagnostics through
+`HeightmapLogTargets`. The default target preserves the existing
+`globalThis.ERROR` behavior, and tests can assert diagnostics without reading
+browser globals.
 
 ## Next Recommended Slice
 

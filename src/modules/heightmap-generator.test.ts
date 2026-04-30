@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   type HeightmapImageTargets,
   HeightmapModule,
@@ -84,5 +84,20 @@ describe("HeightmapModule", () => {
     );
 
     expect(heights).toEqual(new Uint8Array([0, 29, 58, 100]));
+  });
+
+  it("reports invalid point ranges through injected log targets", () => {
+    const error = vi.fn();
+    const heightmap = new HeightmapModule(
+      createImageTargets(new Uint8ClampedArray()),
+      {
+        error,
+      },
+    ) as unknown as {
+      getPointInRange: (range: unknown, length: number) => number | undefined;
+    };
+
+    expect(heightmap.getPointInRange(42, 10)).toBeUndefined();
+    expect(error).toHaveBeenCalledWith("Range should be a string");
   });
 });

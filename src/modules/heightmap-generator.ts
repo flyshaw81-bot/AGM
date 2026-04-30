@@ -14,8 +14,16 @@ declare global {
   var HeightmapGenerator: HeightmapModule;
 }
 
-function logEngineError(message: string) {
-  globalThis.ERROR && console.error(message);
+export type HeightmapLogTargets = {
+  error: (message: string) => void;
+};
+
+export function createGlobalHeightmapLogTargets(): HeightmapLogTargets {
+  return {
+    error: (message) => {
+      globalThis.ERROR && console.error(message);
+    },
+  };
 }
 
 export type HeightmapImageTargets = {
@@ -51,6 +59,7 @@ export class HeightmapModule {
 
   constructor(
     private readonly imageTargets: HeightmapImageTargets = createGlobalHeightmapImageTargets(),
+    private readonly logTargets: HeightmapLogTargets = createGlobalHeightmapLogTargets(),
   ) {}
 
   private clearData() {
@@ -103,7 +112,7 @@ export class HeightmapModule {
 
   private getPointInRange(range: string, length: number): number | undefined {
     if (typeof range !== "string") {
-      logEngineError("Range should be a string");
+      this.logTargets.error("Range should be a string");
       return;
     }
 
