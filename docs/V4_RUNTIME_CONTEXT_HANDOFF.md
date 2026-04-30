@@ -834,6 +834,9 @@ Completed:
 - Routed generated marker candidate selection through `context.random.next()`;
   marker generation can now be tested with deterministic runtime randomness
   instead of relying on direct `Math.random()`.
+- Added a random adapter slot to `NamesGenerator` and routed state suffix
+  selection through it. Other probability helpers in names remain compatible
+  with the existing seeded random behavior for now.
 - Added `EngineRuntimeContext.optionsSession`. Generation session preparation
   now receives the active context and uses `context.optionsSession` for option
   randomization when available, instead of always reaching for the global

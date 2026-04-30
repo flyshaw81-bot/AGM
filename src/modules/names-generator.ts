@@ -2,6 +2,7 @@ import { last } from "../utils/arrayUtils";
 import { isVowel } from "../utils/languageUtils";
 import { P, ra, rand } from "../utils/probabilityUtils";
 import { capitalize } from "../utils/stringUtils";
+import type { EngineRandomService } from "./engine-random-service";
 
 declare global {
   var Names: NamesGenerator;
@@ -26,6 +27,7 @@ export type NamesRuntimeAdapters = {
     warn: (message: string) => void;
     error: (message: string) => void;
   };
+  random?: EngineRandomService;
   showTip?: (message: string, isSuccess?: boolean, type?: string) => void;
 };
 
@@ -58,6 +60,10 @@ export class NamesGenerator {
     if (typeof globalThis.tip === "function") {
       globalThis.tip(message, isSuccess, type as any);
     }
+  }
+
+  private random() {
+    return this.adapters.random?.next() ?? Math.random();
   }
 
   calculateChain(namesList: string): MarkovChain {
@@ -303,7 +309,7 @@ export class NamesGenerator {
     // define suffix
     let suffix = "ia"; // standard suffix
 
-    const rnd = Math.random(),
+    const rnd = this.random(),
       l = name.length;
     if (base === 3 && rnd < 0.03 && l < 7) suffix = "terra";
     // Italian
