@@ -1,29 +1,18 @@
 import type { StudioLanguage, StudioTheme } from "../types";
+import {
+  createGlobalStudioPreferenceTargets,
+  type StudioPreferenceTargets,
+} from "./preferenceTargets";
+
+export {
+  createGlobalStudioPreferenceTargets,
+  type StudioPreferenceTargets,
+} from "./preferenceTargets";
 
 export const STUDIO_LANGUAGE_STORAGE_KEY = "agm-studio-language";
 export const STUDIO_THEME_STORAGE_KEY = "agm-studio-theme";
 export const STUDIO_NAVIGATION_COLLAPSED_STORAGE_KEY =
   "agm-studio-navigation-collapsed";
-
-export type StudioPreferenceTargets = {
-  getStorageItem: (key: string) => string | null;
-  setStorageItem: (key: string, value: string) => void;
-  setDocumentLanguage: (language: StudioLanguage) => void;
-  setDocumentTheme: (theme: StudioTheme) => void;
-};
-
-export function createGlobalStudioPreferenceTargets(): StudioPreferenceTargets {
-  return {
-    getStorageItem: (key) => localStorage.getItem(key),
-    setStorageItem: (key, value) => localStorage.setItem(key, value),
-    setDocumentLanguage: (language) => {
-      document.documentElement.lang = language;
-    },
-    setDocumentTheme: (theme) => {
-      document.documentElement.dataset.studioTheme = theme;
-    },
-  };
-}
 
 export function getInitialLanguage(
   targets: Pick<
