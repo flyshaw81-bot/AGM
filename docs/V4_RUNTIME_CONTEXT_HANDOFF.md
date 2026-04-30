@@ -832,6 +832,9 @@ Completed:
 - Routed runtime autofix writeback composition through `context.burgs` and
   `context.routes` for settlement creation, route creation, and undo instead of
   falling back to the global service factories on the runtime path.
+- Extended `EngineRenderAdapter` with optional canvas redraw hooks and made
+  runtime canvas access prefer `context.rendering` for heightmap/biome/cell
+  redraws and active zoom sync before falling back to compatibility globals.
 - Routed state expansionism randomness through the same runtime random service.
   This keeps the seeded default behavior while moving another context-aware
   generation step off direct `Math.random()` calls.

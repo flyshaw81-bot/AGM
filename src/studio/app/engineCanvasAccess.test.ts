@@ -4,6 +4,7 @@ import {
   createEngineCanvasAccessTargets,
   createGlobalEngineCanvasAccessTargets,
   createRuntimeEngineCanvasAccessTargets,
+  createRuntimeEngineCanvasRendererAdapter,
   type EngineCanvasAccessTargets,
   getEngineCanvasGraphSize,
   getEngineGridCells,
@@ -196,5 +197,39 @@ describe("engineCanvasAccess", () => {
     expect(renderer.drawHeightmap).toHaveBeenCalledWith();
     expect(renderer.drawBiomes).toHaveBeenCalledWith();
     expect(renderer.drawCells).toHaveBeenCalledWith();
+  });
+
+  it("prefers runtime render adapters for canvas redraws", () => {
+    const fallback = createTargets({
+      drawHeightmap: vi.fn(),
+      drawBiomes: vi.fn(),
+      drawCells: vi.fn(),
+      isLayerOn: vi.fn(() => false),
+      invokeActiveZooming: vi.fn(),
+    });
+    const rendering = {
+      drawHeightmap: vi.fn(),
+      drawBiomes: vi.fn(),
+      drawCells: vi.fn(),
+      isLayerOn: vi.fn(() => true),
+      invokeActiveZooming: vi.fn(),
+    };
+    const renderer = createRuntimeEngineCanvasRendererAdapter(
+      { rendering } as unknown as EngineRuntimeContext,
+      fallback,
+    );
+
+    renderer.drawHeightmap();
+    renderer.drawBiomes();
+    renderer.drawCells();
+    expect(renderer.isLayerOn("toggleCells")).toBe(true);
+    renderer.invokeActiveZooming();
+
+    expect(rendering.drawHeightmap).toHaveBeenCalledWith();
+    expect(rendering.drawBiomes).toHaveBeenCalledWith();
+    expect(rendering.drawCells).toHaveBeenCalledWith();
+    expect(rendering.isLayerOn).toHaveBeenCalledWith("toggleCells");
+    expect(rendering.invokeActiveZooming).toHaveBeenCalledWith();
+    expect(fallback.drawHeightmap).not.toHaveBeenCalled();
   });
 });

@@ -17,6 +17,10 @@ export type EngineRenderAdapter = {
   redrawGlacier: (iceId: number) => void;
   removeElementById: (id: string) => void;
   drawScaleBar: () => void;
+  drawHeightmap?: () => void;
+  drawBiomes?: () => void;
+  drawCells?: () => void;
+  invokeActiveZooming?: () => void;
 };
 
 export type EngineRenderTargets = {
@@ -41,6 +45,10 @@ export type EngineRenderTargets = {
   selectScaleBar: () => unknown;
   getScale: () => number;
   drawScaleBar: (scaleBar: unknown, scale: number) => void;
+  drawHeightmap?: () => void;
+  drawBiomes?: () => void;
+  drawCells?: () => void;
+  invokeActiveZooming?: () => void;
 };
 
 export function createEngineRenderAdapter(
@@ -79,6 +87,18 @@ export function createEngineRenderAdapter(
     },
     drawScaleBar: () => {
       targets.drawScaleBar(targets.selectScaleBar(), targets.getScale());
+    },
+    drawHeightmap: () => {
+      targets.drawHeightmap?.();
+    },
+    drawBiomes: () => {
+      targets.drawBiomes?.();
+    },
+    drawCells: () => {
+      targets.drawCells?.();
+    },
+    invokeActiveZooming: () => {
+      targets.invokeActiveZooming?.();
     },
   };
 }
@@ -120,6 +140,18 @@ export function createGlobalRenderAdapter(): EngineRenderAdapter {
     getScale: () => scale,
     drawScaleBar: (scaleBar, scale) => {
       drawScaleBar(scaleBar as any, scale);
+    },
+    drawHeightmap: () => {
+      drawHeightmap();
+    },
+    drawBiomes: () => {
+      (globalThis as any).drawBiomes?.();
+    },
+    drawCells: () => {
+      (globalThis as any).drawCells?.();
+    },
+    invokeActiveZooming: () => {
+      invokeActiveZooming();
     },
   });
 }

@@ -21,6 +21,10 @@ const originalRedrawGlacier = globalThis.redrawGlacier;
 const originalSvg = globalThis.svg;
 const originalScale = globalThis.scale;
 const originalDrawScaleBar = globalThis.drawScaleBar;
+const originalDrawHeightmap = globalThis.drawHeightmap;
+const originalDrawBiomes = (globalThis as any).drawBiomes;
+const originalDrawCells = (globalThis as any).drawCells;
+const originalInvokeActiveZooming = globalThis.invokeActiveZooming;
 
 describe("createGlobalRenderAdapter", () => {
   afterEach(() => {
@@ -40,6 +44,10 @@ describe("createGlobalRenderAdapter", () => {
     globalThis.svg = originalSvg;
     globalThis.scale = originalScale;
     globalThis.drawScaleBar = originalDrawScaleBar;
+    globalThis.drawHeightmap = originalDrawHeightmap;
+    (globalThis as any).drawBiomes = originalDrawBiomes;
+    (globalThis as any).drawCells = originalDrawCells;
+    globalThis.invokeActiveZooming = originalInvokeActiveZooming;
   });
 
   it("forwards map and burg rendering calls to current DOM/SVG helpers", () => {
@@ -125,6 +133,24 @@ describe("createGlobalRenderAdapter", () => {
     expect(redrawGlacier).toHaveBeenCalledWith(2);
     expect(svg.select).toHaveBeenCalledWith("#scaleBar");
     expect(drawScaleBar).toHaveBeenCalledWith(scaleBarSelection, 2);
+  });
+
+  it("forwards canvas redraw helpers when available", () => {
+    globalThis.drawHeightmap = vi.fn();
+    (globalThis as any).drawBiomes = vi.fn();
+    (globalThis as any).drawCells = vi.fn();
+    globalThis.invokeActiveZooming = vi.fn();
+
+    const rendering = createGlobalRenderAdapter();
+    rendering.drawHeightmap?.();
+    rendering.drawBiomes?.();
+    rendering.drawCells?.();
+    rendering.invokeActiveZooming?.();
+
+    expect(drawHeightmap).toHaveBeenCalledWith();
+    expect((globalThis as any).drawBiomes).toHaveBeenCalledWith();
+    expect((globalThis as any).drawCells).toHaveBeenCalledWith();
+    expect(invokeActiveZooming).toHaveBeenCalledWith();
   });
 
   it("composes render adapter from injected render targets", () => {

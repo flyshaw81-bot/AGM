@@ -1,3 +1,4 @@
+import type { EngineRenderAdapter } from "../../modules/engine-render-adapter";
 import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 
 type EngineCanvasPack = { cells?: unknown; states?: unknown[] };
@@ -104,6 +105,33 @@ export function createGlobalEngineCanvasRendererAdapter(): EngineCanvasRendererA
   };
 }
 
+export function createRuntimeEngineCanvasRendererAdapter(
+  context: EngineRuntimeContext,
+  fallbackAdapter: EngineCanvasRendererAdapter = createGlobalEngineCanvasRendererAdapter(),
+): EngineCanvasRendererAdapter {
+  const rendering: EngineRenderAdapter | undefined = context.rendering;
+  return {
+    drawHeightmap: () =>
+      rendering?.drawHeightmap
+        ? rendering.drawHeightmap()
+        : fallbackAdapter.drawHeightmap(),
+    drawBiomes: () =>
+      rendering?.drawBiomes
+        ? rendering.drawBiomes()
+        : fallbackAdapter.drawBiomes(),
+    drawCells: () =>
+      rendering?.drawCells
+        ? rendering.drawCells()
+        : fallbackAdapter.drawCells(),
+    isLayerOn: (layer) =>
+      rendering?.isLayerOn(layer) ?? fallbackAdapter.isLayerOn(layer),
+    invokeActiveZooming: () =>
+      rendering?.invokeActiveZooming
+        ? rendering.invokeActiveZooming()
+        : fallbackAdapter.invokeActiveZooming(),
+  };
+}
+
 export function createEngineCanvasAccessTargets(
   dimensionAdapter: EngineCanvasDimensionAdapter,
   mapDataAdapter: EngineCanvasMapDataAdapter,
@@ -132,7 +160,9 @@ export function createGlobalEngineCanvasAccessTargets(): EngineCanvasAccessTarge
 
 export function createRuntimeEngineCanvasAccessTargets(
   context: EngineRuntimeContext,
-  rendererAdapter: EngineCanvasRendererAdapter = createGlobalEngineCanvasRendererAdapter(),
+  rendererAdapter: EngineCanvasRendererAdapter = createRuntimeEngineCanvasRendererAdapter(
+    context,
+  ),
 ): EngineCanvasAccessTargets {
   return createEngineCanvasAccessTargets(
     createRuntimeEngineCanvasDimensionAdapter(context),
