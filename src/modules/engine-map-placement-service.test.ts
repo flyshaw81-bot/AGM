@@ -56,6 +56,23 @@ describe("EngineMapPlacementService", () => {
     });
   });
 
+  it("keeps global placement targets safe when public helpers are absent", () => {
+    globalThis.defineMapSize =
+      undefined as unknown as typeof globalThis.defineMapSize;
+    globalThis.calculateMapCoordinates =
+      undefined as unknown as typeof globalThis.calculateMapCoordinates;
+    const targets = createGlobalMapPlacementTargets();
+
+    expect(() => targets.defineMapSize("volcano")).not.toThrow();
+    expect(() =>
+      targets.calculateMapCoordinates({
+        mapSizePercent: 60,
+        latitudePercent: 20,
+        longitudePercent: 70,
+      }),
+    ).not.toThrow();
+  });
+
   it("creates a global map placement service from explicit targets", () => {
     const targets = {
       defineMapSize: vi.fn(),

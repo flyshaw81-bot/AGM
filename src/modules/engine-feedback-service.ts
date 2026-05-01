@@ -19,7 +19,7 @@ export function createEngineFeedbackService(
 export function createGlobalFeedbackService(): EngineFeedbackService {
   return createEngineFeedbackService({
     showToast: (message, isSuccess, type) => {
-      tip(message, isSuccess, type as any);
+      globalThis.tip?.(message, isSuccess, type as any);
     },
   });
 }

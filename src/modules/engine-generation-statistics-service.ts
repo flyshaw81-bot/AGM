@@ -18,7 +18,7 @@ export function createGenerationStatisticsService(
 export function createGlobalGenerationStatisticsTargets(): EngineGenerationStatisticsTargets {
   return {
     showStatistics: (heightmapTemplateId) => {
-      showStatistics(heightmapTemplateId);
+      globalThis.showStatistics?.(heightmapTemplateId);
     },
   };
 }

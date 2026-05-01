@@ -26,10 +26,10 @@ export function createMapPlacementService(
 export function createGlobalMapPlacementTargets(): EngineMapPlacementTargets {
   return {
     defineMapSize: (heightmapTemplateId) => {
-      defineMapSize(heightmapTemplateId);
+      globalThis.defineMapSize?.(heightmapTemplateId);
     },
     calculateMapCoordinates: (settings) => {
-      calculateMapCoordinates(settings);
+      globalThis.calculateMapCoordinates?.(settings);
     },
   };
 }

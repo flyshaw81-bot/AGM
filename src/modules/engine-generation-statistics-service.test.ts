@@ -32,6 +32,14 @@ describe("EngineGenerationStatisticsService", () => {
     expect(globalThis.showStatistics).toHaveBeenCalledWith("volcano");
   });
 
+  it("keeps global statistics targets safe when public helpers are absent", () => {
+    globalThis.showStatistics =
+      undefined as unknown as typeof globalThis.showStatistics;
+    const targets = createGlobalGenerationStatisticsTargets();
+
+    expect(() => targets.showStatistics("volcano")).not.toThrow();
+  });
+
   it("creates a global statistics service from explicit targets", () => {
     const targets = {
       showStatistics: vi.fn(),

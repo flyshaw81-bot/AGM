@@ -19,6 +19,14 @@ describe("createGlobalFeedbackService", () => {
     expect(globalThis.tip).toHaveBeenCalledWith("Saved", true, "success");
   });
 
+  it("keeps global feedback service safe when tip is absent", () => {
+    globalThis.tip = undefined as unknown as typeof globalThis.tip;
+
+    expect(() =>
+      createGlobalFeedbackService().showToast("Saved", true, "success"),
+    ).not.toThrow();
+  });
+
   it("composes feedback service from injected targets", () => {
     const showToast = vi.fn();
 
