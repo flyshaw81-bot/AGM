@@ -10,6 +10,7 @@ import {
   createCompositeEngineHostDialogAdapter,
   createEngineHostTargets,
   createGlobalEngineHostDialogDomAdapter,
+  createGlobalEngineHostDomAdapter,
   createGlobalEngineHostTargets,
   createJQueryEngineHostDialogAdapter,
   createStudioEngineHostDialogAdapter,
@@ -220,6 +221,22 @@ describe("engine host", () => {
         dialog,
       ]);
       expect(querySelectorAll).toHaveBeenCalledWith("#dialogs > .ui-dialog");
+    } finally {
+      globalThis.document = originalDocument;
+    }
+  });
+
+  it("keeps global host DOM adapter safe when document is absent", () => {
+    const originalDocument = globalThis.document;
+    globalThis.document = undefined as unknown as Document;
+
+    try {
+      const adapter = createGlobalEngineHostDomAdapter();
+      const element = adapter.createElement("div");
+
+      expect(adapter.getElementById("studioRoot")).toBeNull();
+      expect(element.id).toBe("");
+      expect(() => adapter.appendToBody(element)).not.toThrow();
     } finally {
       globalThis.document = originalDocument;
     }

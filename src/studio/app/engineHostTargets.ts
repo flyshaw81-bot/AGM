@@ -17,9 +17,11 @@ export type EngineHostTargets = EngineHostDomAdapter & EngineHostDialogAdapter;
 export function createGlobalEngineHostDomAdapter(): EngineHostDomAdapter {
   return {
     getElementById: (id) => globalThis.document?.getElementById(id) ?? null,
-    createElement: (tagName) => globalThis.document.createElement(tagName),
+    createElement: (tagName) =>
+      globalThis.document?.createElement(tagName) ??
+      ({ id: "", dataset: {}, style: {} } as HTMLElement),
     appendToBody: (element) => {
-      globalThis.document.body.appendChild(element);
+      globalThis.document?.body?.appendChild(element);
     },
   };
 }

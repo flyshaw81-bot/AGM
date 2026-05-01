@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { StudioState } from "../types";
 import {
+  createGlobalStudioWorkflowBrowserAdapter,
   createStudioWorkflowRenderAdapter,
   createStudioWorkflowWatcherTargets,
   type StudioWorkflowWatcherTargets,
@@ -115,5 +116,34 @@ describe("studio workflow watcher", () => {
     visibilityCallback?.();
 
     expect(targets.syncEditorWorkflow).not.toHaveBeenCalled();
+  });
+
+  it("keeps global browser workflow adapter safe when window and document are absent", () => {
+    const originalDocument = globalThis.document;
+    const originalWindow = globalThis.window;
+    const originalSetInterval = globalThis.setInterval;
+    const setIntervalMock = vi.fn();
+    globalThis.document = undefined as unknown as Document;
+    globalThis.window = undefined as unknown as Window & typeof globalThis;
+    globalThis.setInterval = setIntervalMock as unknown as typeof setInterval;
+
+    try {
+      const adapter = createGlobalStudioWorkflowBrowserAdapter();
+      const callback = vi.fn();
+
+      adapter.setInterval(callback, 500);
+      expect(() =>
+        adapter.addWindowEventListener("focus", callback),
+      ).not.toThrow();
+      expect(() =>
+        adapter.addDocumentEventListener("visibilitychange", callback),
+      ).not.toThrow();
+      expect(adapter.getDocumentVisibilityState()).toBe("visible");
+      expect(setIntervalMock).toHaveBeenCalledWith(callback, 500);
+    } finally {
+      globalThis.document = originalDocument;
+      globalThis.window = originalWindow;
+      globalThis.setInterval = originalSetInterval;
+    }
   });
 });

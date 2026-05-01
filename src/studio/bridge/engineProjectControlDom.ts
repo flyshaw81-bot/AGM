@@ -17,6 +17,7 @@ function dispatchEngineFormEvent(
   element: HTMLInputElement | HTMLSelectElement,
   type: "input" | "change",
 ) {
+  if (typeof globalThis.Event !== "function") return;
   element.dispatchEvent(new Event(type, { bubbles: true }));
 }
 
@@ -50,10 +51,10 @@ export function setEngineNumberPair(
   value: number,
   options: EngineNumberPairOptions,
 ): EngineNumberPair | null {
-  const input = document.getElementById(
+  const input = globalThis.document?.getElementById(
     options.inputId,
   ) as HTMLInputElement | null;
-  const output = document.getElementById(
+  const output = globalThis.document?.getElementById(
     options.outputId,
   ) as HTMLInputElement | null;
   if (!input || !output || !Number.isFinite(value)) return null;
@@ -80,6 +81,8 @@ export function lockEngineStoredSetting(
   fallback: string,
 ) {
   const stored = input.dataset.stored || output.dataset.stored || fallback;
-  const lock = (window as Window & typeof globalThis & { lock?: unknown }).lock;
+  const lock = (
+    globalThis.window as Window & typeof globalThis & { lock?: unknown }
+  )?.lock;
   if (typeof lock === "function") lock(stored);
 }

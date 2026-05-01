@@ -22,10 +22,10 @@ export type StudioBootstrapDomTargets = StudioBootstrapBodyAdapter &
 export function createGlobalStudioBootstrapBodyAdapter(): StudioBootstrapBodyAdapter {
   return {
     enableStudioBody: () => {
-      document.body.classList.add("studio-enabled");
+      globalThis.document?.body?.classList.add("studio-enabled");
     },
     removeLoadingIndicator: () => {
-      document.getElementById("loading")?.remove();
+      globalThis.document?.getElementById("loading")?.remove();
     },
   };
 }
@@ -33,11 +33,13 @@ export function createGlobalStudioBootstrapBodyAdapter(): StudioBootstrapBodyAda
 export function createGlobalStudioBootstrapBrowserEventAdapter(): StudioBootstrapBrowserEventAdapter {
   return {
     addResizeListener: (callback) => {
-      window.addEventListener("resize", callback);
+      globalThis.window?.addEventListener("resize", callback);
     },
-    getDocumentReadyState: () => document.readyState,
+    getDocumentReadyState: () => globalThis.document?.readyState ?? "complete",
     addDomContentLoadedListener: (callback) => {
-      document.addEventListener("DOMContentLoaded", callback, { once: true });
+      globalThis.document?.addEventListener("DOMContentLoaded", callback, {
+        once: true,
+      });
     },
   };
 }
@@ -45,7 +47,7 @@ export function createGlobalStudioBootstrapBrowserEventAdapter(): StudioBootstra
 export function createGlobalStudioBootstrapViewportSyncAdapter(): StudioBootstrapViewportSyncAdapter {
   return {
     setViewportSync: (sync) => {
-      window.studioViewportSync = sync;
+      if (globalThis.window) globalThis.window.studioViewportSync = sync;
     },
   };
 }

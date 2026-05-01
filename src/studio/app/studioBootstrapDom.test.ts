@@ -92,4 +92,28 @@ describe("createGlobalStudioBootstrapDomTargets", () => {
       globalThis.window = originalWindow;
     }
   });
+
+  it("keeps bootstrap DOM targets safe when window and document are absent", () => {
+    const originalDocument = globalThis.document;
+    const originalWindow = globalThis.window;
+    globalThis.document = undefined as unknown as Document;
+    globalThis.window = undefined as unknown as Window & typeof globalThis;
+
+    try {
+      const targets = createGlobalStudioBootstrapDomTargets();
+      const resize = vi.fn();
+      const ready = vi.fn();
+      const sync: StudioViewportSync = vi.fn();
+
+      expect(() => targets.enableStudioBody()).not.toThrow();
+      expect(() => targets.removeLoadingIndicator()).not.toThrow();
+      expect(() => targets.addResizeListener(resize)).not.toThrow();
+      expect(targets.getDocumentReadyState()).toBe("complete");
+      expect(() => targets.addDomContentLoadedListener(ready)).not.toThrow();
+      expect(() => targets.setViewportSync(sync)).not.toThrow();
+    } finally {
+      globalThis.document = originalDocument;
+      globalThis.window = originalWindow;
+    }
+  });
 });

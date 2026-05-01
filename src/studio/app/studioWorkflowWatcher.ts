@@ -46,12 +46,15 @@ export function createStudioWorkflowRenderAdapter(
 
 export function createGlobalStudioWorkflowBrowserAdapter(): StudioWorkflowBrowserAdapter {
   return {
-    setInterval: (callback, delay) => window.setInterval(callback, delay),
+    setInterval: (callback, delay) =>
+      globalThis.window?.setInterval(callback, delay) ??
+      globalThis.setInterval?.(callback, delay),
     addWindowEventListener: (type, callback) =>
-      window.addEventListener(type, callback),
+      globalThis.window?.addEventListener(type, callback),
     addDocumentEventListener: (type, callback) =>
-      document.addEventListener(type, callback),
-    getDocumentVisibilityState: () => document.visibilityState,
+      globalThis.document?.addEventListener(type, callback),
+    getDocumentVisibilityState: () =>
+      globalThis.document?.visibilityState ?? "visible",
   };
 }
 
