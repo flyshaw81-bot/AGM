@@ -19,18 +19,22 @@ export type StudioPreferenceTargets = {
 
 export function createGlobalStudioPreferenceStorageAdapter(): StudioPreferenceStorageAdapter {
   return {
-    getStorageItem: (key) => localStorage.getItem(key),
-    setStorageItem: (key, value) => localStorage.setItem(key, value),
+    getStorageItem: (key) => globalThis.localStorage?.getItem(key) ?? null,
+    setStorageItem: (key, value) => {
+      globalThis.localStorage?.setItem(key, value);
+    },
   };
 }
 
 export function createGlobalStudioPreferenceDocumentAdapter(): StudioPreferenceDocumentAdapter {
   return {
     setDocumentLanguage: (language) => {
-      document.documentElement.lang = language;
+      const documentElement = globalThis.document?.documentElement;
+      if (documentElement) documentElement.lang = language;
     },
     setDocumentTheme: (theme) => {
-      document.documentElement.dataset.studioTheme = theme;
+      const documentElement = globalThis.document?.documentElement;
+      if (documentElement) documentElement.dataset.studioTheme = theme;
     },
   };
 }

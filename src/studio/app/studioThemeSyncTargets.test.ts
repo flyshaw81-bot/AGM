@@ -30,4 +30,17 @@ describe("studioThemeSyncTargets", () => {
       globalThis.document = originalDocument;
     }
   });
+
+  it("keeps default document theme adapter safe when document is absent", () => {
+    const originalDocument = globalThis.document;
+    globalThis.document = undefined as unknown as Document;
+
+    try {
+      expect(() =>
+        createGlobalStudioThemeSyncTargets().setDocumentTheme("night"),
+      ).not.toThrow();
+    } finally {
+      globalThis.document = originalDocument;
+    }
+  });
 });

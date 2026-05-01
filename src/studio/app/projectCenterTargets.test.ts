@@ -65,4 +65,24 @@ describe("createGlobalProjectCenterTargets", () => {
       Date.now = originalDateNow;
     }
   });
+
+  it("keeps global project center storage safe when localStorage is absent", () => {
+    const originalLocalStorage = globalThis.localStorage;
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      value: undefined,
+    });
+
+    try {
+      const targets = createGlobalProjectCenterTargets();
+
+      expect(targets.getStorageItem("recent")).toBeNull();
+      expect(() => targets.setStorageItem("recent", "[]")).not.toThrow();
+    } finally {
+      Object.defineProperty(globalThis, "localStorage", {
+        configurable: true,
+        value: originalLocalStorage,
+      });
+    }
+  });
 });

@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 180 test files, 721 tests.
+- `npm.cmd run test -- --run` passed: 180 test files, 725 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2061,6 +2061,10 @@ Canvas interaction, overlay, selection highlight, and interaction geometry
 targets now guard default DOM/SVG lookups when `document`, `Element`, or
 `SVGElement` are absent; browser behavior is unchanged, while no-browser target
 tests receive null/empty results instead of import-time adapter failures.
+Preference, project-center, theme-sync, and style-injection app targets now
+guard missing `localStorage`, `document`, `documentElement`, and `head`
+adapters. Reads return null, writes become safe no-ops, and style creation
+falls back to an inert style-like element in no-browser tests.
 `getEngineWorldDimensions(context)` now centralizes the compatibility fallback
 from runtime world settings to browser graph globals. Burgs, Cultures, and
 Rivers consume that helper instead of reading `globalThis.graphWidth` /

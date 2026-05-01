@@ -12,10 +12,12 @@ export function createStudioStyleTargets(
 
 export function createGlobalStudioStyleTargets(): StudioStyleTargets {
   return createStudioStyleTargets({
-    getStyleElement: (id) => document.getElementById(id),
-    createStyleElement: () => document.createElement("style"),
+    getStyleElement: (id) => globalThis.document?.getElementById(id) ?? null,
+    createStyleElement: () =>
+      globalThis.document?.createElement("style") ??
+      ({ id: "", textContent: "" } as HTMLStyleElement),
     appendToHead: (element) => {
-      document.head.appendChild(element);
+      globalThis.document?.head?.appendChild(element);
     },
   });
 }

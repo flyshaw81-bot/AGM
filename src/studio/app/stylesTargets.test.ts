@@ -44,4 +44,20 @@ describe("stylesTargets", () => {
       globalThis.document = originalDocument;
     }
   });
+
+  it("keeps default style document adapters safe when document is absent", () => {
+    const originalDocument = globalThis.document;
+    globalThis.document = undefined as unknown as Document;
+
+    try {
+      const targets = createGlobalStudioStyleTargets();
+      const style = targets.createStyleElement();
+
+      expect(targets.getStyleElement("studioShellStyles")).toBeNull();
+      expect(style.id).toBe("");
+      expect(() => targets.appendToHead(style)).not.toThrow();
+    } finally {
+      globalThis.document = originalDocument;
+    }
+  });
 });

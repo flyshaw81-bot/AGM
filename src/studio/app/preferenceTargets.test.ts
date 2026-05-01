@@ -66,4 +66,29 @@ describe("createGlobalStudioPreferenceTargets", () => {
       globalThis.document = originalDocument;
     }
   });
+
+  it("keeps global preference targets safe when storage and document are absent", () => {
+    const originalLocalStorage = globalThis.localStorage;
+    const originalDocument = globalThis.document;
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      value: undefined,
+    });
+    globalThis.document = undefined as unknown as Document;
+
+    try {
+      const targets = createGlobalStudioPreferenceTargets();
+
+      expect(targets.getStorageItem("language")).toBeNull();
+      expect(() => targets.setStorageItem("theme", "night")).not.toThrow();
+      expect(() => targets.setDocumentLanguage("en")).not.toThrow();
+      expect(() => targets.setDocumentTheme("night")).not.toThrow();
+    } finally {
+      Object.defineProperty(globalThis, "localStorage", {
+        configurable: true,
+        value: originalLocalStorage,
+      });
+      globalThis.document = originalDocument;
+    }
+  });
 });

@@ -20,8 +20,10 @@ export type ProjectCenterTargets = ProjectCenterStorageAdapter &
 
 export function createGlobalProjectCenterStorageAdapter(): ProjectCenterStorageAdapter {
   return {
-    getStorageItem: (key) => localStorage.getItem(key),
-    setStorageItem: (key, value) => localStorage.setItem(key, value),
+    getStorageItem: (key) => globalThis.localStorage?.getItem(key) ?? null,
+    setStorageItem: (key, value) => {
+      globalThis.localStorage?.setItem(key, value);
+    },
   };
 }
 

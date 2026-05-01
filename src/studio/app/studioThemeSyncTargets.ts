@@ -13,7 +13,8 @@ export function createStudioThemeSyncTargets(
 export function createGlobalStudioThemeSyncTargets(): StudioThemeSyncTargets {
   return createStudioThemeSyncTargets({
     setDocumentTheme: (theme) => {
-      document.documentElement.dataset.studioTheme = theme;
+      const documentElement = globalThis.document?.documentElement;
+      if (documentElement) documentElement.dataset.studioTheme = theme;
     },
   });
 }
