@@ -13,9 +13,14 @@ export function createCanvasOverlayTargets(
 export function createGlobalCanvasOverlayTargets(): CanvasOverlayTargets {
   return createCanvasOverlayTargets({
     getPaintPreviewOverlay: () =>
-      document.querySelector<HTMLElement>("[data-canvas-paint-preview='true']"),
+      globalThis.document?.querySelector<HTMLElement>(
+        "[data-canvas-paint-preview='true']",
+      ) ?? null,
     getToolHud: () =>
-      document.querySelector<HTMLElement>("[data-canvas-tool-hud='true']"),
-    getCanvasFrame: () => document.getElementById("studioCanvasFrame"),
+      globalThis.document?.querySelector<HTMLElement>(
+        "[data-canvas-tool-hud='true']",
+      ) ?? null,
+    getCanvasFrame: () =>
+      globalThis.document?.getElementById("studioCanvasFrame") ?? null,
   });
 }

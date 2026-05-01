@@ -39,6 +39,19 @@ describe("canvas interaction geometry targets", () => {
     }
   });
 
+  it("keeps global frame lookup safe when document is absent", () => {
+    const originalDocument = globalThis.document;
+    globalThis.document = undefined as unknown as Document;
+
+    try {
+      const targets = createGlobalCanvasInteractionGeometryTargets();
+
+      expect(targets.getCanvasFrame()).toBeNull();
+    } finally {
+      globalThis.document = originalDocument;
+    }
+  });
+
   it("composes runtime graph, pack, and paint preview adapters", () => {
     const frame = { id: "studioCanvasFrame" };
     const originalDocument = globalThis.document;
@@ -75,6 +88,28 @@ describe("canvas interaction geometry targets", () => {
         x: 50,
         y: 50,
       });
+    } finally {
+      globalThis.document = originalDocument;
+    }
+  });
+
+  it("keeps runtime frame lookup safe when document is absent", () => {
+    const originalDocument = globalThis.document;
+    globalThis.document = undefined as unknown as Document;
+    const context = {
+      worldSettings: {
+        graphWidth: 1400,
+        graphHeight: 900,
+      },
+      pack: { cells: {} },
+      grid: { cells: {} },
+    } as unknown as EngineRuntimeContext;
+
+    try {
+      const targets = createRuntimeCanvasInteractionGeometryTargets(context);
+
+      expect(targets.getCanvasFrame()).toBeNull();
+      expect(targets.getGraphSize()).toEqual({ width: 1400, height: 900 });
     } finally {
       globalThis.document = originalDocument;
     }

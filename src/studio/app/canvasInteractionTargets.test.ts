@@ -50,6 +50,35 @@ describe("canvas interaction targets", () => {
     }
   });
 
+  it("keeps default canvas DOM lookups safe when document is absent", () => {
+    const originalDocument = globalThis.document;
+    globalThis.document = undefined as unknown as Document;
+
+    try {
+      const targets = createGlobalCanvasInteractionTargets();
+
+      expect(targets.getCanvasFrame()).toBeNull();
+      expect(targets.getMapHost()).toBeNull();
+    } finally {
+      globalThis.document = originalDocument;
+    }
+  });
+
+  it("treats control events as non-control when Element is absent", () => {
+    const originalElement = globalThis.Element;
+    globalThis.Element = undefined as unknown as typeof Element;
+
+    try {
+      const targets = createGlobalCanvasInteractionTargets();
+
+      expect(targets.isControlEvent({ target: {} } as unknown as Event)).toBe(
+        false,
+      );
+    } finally {
+      globalThis.Element = originalElement;
+    }
+  });
+
   it("composes runtime canvas interaction geometry adapters", () => {
     const originalDocument = globalThis.document;
     globalThis.document = {
@@ -79,6 +108,28 @@ describe("canvas interaction targets", () => {
       expect(targets.getMapHost()).toMatchObject({ id: "studioMapHost" });
       expect(targets.getPaintPreviewAt).toEqual(expect.any(Function));
       expect(targets.getSelectionAt).toEqual(expect.any(Function));
+    } finally {
+      globalThis.document = originalDocument;
+    }
+  });
+
+  it("keeps runtime canvas DOM lookups safe when document is absent", () => {
+    const originalDocument = globalThis.document;
+    globalThis.document = undefined as unknown as Document;
+    const context = {
+      worldSettings: {
+        graphWidth: 1000,
+        graphHeight: 500,
+      },
+      pack: { cells: {} },
+      grid: { cells: {} },
+    } as unknown as EngineRuntimeContext;
+
+    try {
+      const targets = createRuntimeCanvasInteractionTargets(context);
+
+      expect(targets.getCanvasFrame()).toBeNull();
+      expect(targets.getMapHost()).toBeNull();
     } finally {
       globalThis.document = originalDocument;
     }

@@ -41,4 +41,19 @@ describe("canvas overlay targets", () => {
       globalThis.document = originalDocument;
     }
   });
+
+  it("keeps default overlay DOM lookups safe when document is absent", () => {
+    const originalDocument = globalThis.document;
+    globalThis.document = undefined as unknown as Document;
+
+    try {
+      const targets = createGlobalCanvasOverlayTargets();
+
+      expect(targets.getPaintPreviewOverlay()).toBeNull();
+      expect(targets.getToolHud()).toBeNull();
+      expect(targets.getCanvasFrame()).toBeNull();
+    } finally {
+      globalThis.document = originalDocument;
+    }
+  });
 });

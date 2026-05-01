@@ -39,7 +39,7 @@ export function createCanvasInteractionGeometryTargets(
 
 export function createGlobalCanvasInteractionGeometryTargets(): CanvasInteractionGeometryTargets {
   return createCanvasInteractionGeometryTargets({
-    getCanvasFrame: () => document.getElementById("studioCanvasFrame"),
+    getCanvasFrame: () => getCanvasFrameElement(),
     getGraphSize: getEngineCanvasGraphSize,
     getPack: () => getEnginePack() as CanvasInteractionPack | undefined,
     getPaintPreviewForCell: getCanvasPaintPreviewForCell,
@@ -52,7 +52,7 @@ export function createRuntimeCanvasInteractionGeometryTargets(
   const paintTargets: CanvasPaintEditingTargets =
     createRuntimeCanvasPaintEditingTargets(context);
   return createCanvasInteractionGeometryTargets({
-    getCanvasFrame: () => document.getElementById("studioCanvasFrame"),
+    getCanvasFrame: () => getCanvasFrameElement(),
     getGraphSize: () => ({
       width: Number(context.worldSettings.graphWidth) || 0,
       height: Number(context.worldSettings.graphHeight) || 0,
@@ -61,4 +61,8 @@ export function createRuntimeCanvasInteractionGeometryTargets(
     getPaintPreviewForCell: (tool, cellId) =>
       getCanvasPaintPreviewForCell(tool, cellId, paintTargets),
   });
+}
+
+function getCanvasFrameElement(): HTMLElement | null {
+  return globalThis.document?.getElementById("studioCanvasFrame") ?? null;
 }

@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 180 test files, 713 tests.
+- `npm.cmd run test -- --run` passed: 180 test files, 721 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2057,6 +2057,10 @@ default adapters: absent `Event`, `window.getComputedStyle`, `window`, or
 Export, project action, and style bridge targets now guard form event dispatch
 and option creation when `Event` or `Option` constructors are absent; values
 still update, while dispatch/option creation becomes a safe no-op.
+Canvas interaction, overlay, selection highlight, and interaction geometry
+targets now guard default DOM/SVG lookups when `document`, `Element`, or
+`SVGElement` are absent; browser behavior is unchanged, while no-browser target
+tests receive null/empty results instead of import-time adapter failures.
 `getEngineWorldDimensions(context)` now centralizes the compatibility fallback
 from runtime world settings to browser graph globals. Burgs, Cultures, and
 Rivers consume that helper instead of reading `globalThis.graphWidth` /

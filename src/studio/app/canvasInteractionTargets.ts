@@ -28,6 +28,7 @@ export function createCanvasInteractionTargets(
 }
 
 function isCanvasControlEvent(event: Event) {
+  if (typeof globalThis.Element !== "function") return false;
   return (
     event.target instanceof Element &&
     Boolean(
@@ -40,8 +41,8 @@ function isCanvasControlEvent(event: Event) {
 
 export function createGlobalCanvasInteractionTargets(): CanvasInteractionTargets {
   return createCanvasInteractionTargets({
-    getCanvasFrame: () => document.getElementById("studioCanvasFrame"),
-    getMapHost: () => document.getElementById("studioMapHost"),
+    getCanvasFrame: () => getCanvasFrameElement(),
+    getMapHost: () => getMapHostElement(),
     isControlEvent: isCanvasControlEvent,
     getPaintPreviewAt: getCanvasPaintPreviewAt,
     getSelectionAt: getCanvasSelectionAt,
@@ -58,8 +59,8 @@ export function createRuntimeCanvasInteractionTargets(
   const geometryTargets =
     createRuntimeCanvasInteractionGeometryTargets(context);
   return createCanvasInteractionTargets({
-    getCanvasFrame: () => document.getElementById("studioCanvasFrame"),
-    getMapHost: () => document.getElementById("studioMapHost"),
+    getCanvasFrame: () => getCanvasFrameElement(),
+    getMapHost: () => getMapHostElement(),
     isControlEvent: isCanvasControlEvent,
     getPaintPreviewAt: (event, state) =>
       getCanvasPaintPreviewAt(event, state, geometryTargets),
@@ -70,4 +71,12 @@ export function createRuntimeCanvasInteractionTargets(
     syncViewport: syncEngineViewport,
     isPaintTool: isPaintCanvasTool,
   });
+}
+
+function getCanvasFrameElement(): HTMLElement | null {
+  return globalThis.document?.getElementById("studioCanvasFrame") ?? null;
+}
+
+function getMapHostElement(): HTMLElement | null {
+  return globalThis.document?.getElementById("studioMapHost") ?? null;
 }
