@@ -30,23 +30,24 @@ export type EngineNoticeService = {
 export function createJQueryNoticeDialogHost(): EngineNoticeDialogHost {
   return {
     setHtml: (html) => {
-      alertMessage.innerHTML = html;
+      if (globalThis.alertMessage) globalThis.alertMessage.innerHTML = html;
     },
     open: (notice) => {
-      $("#alert").dialog(notice);
+      globalThis.$?.("#alert")?.dialog?.(notice);
     },
     close: (dialog) => {
-      $(dialog).dialog("close");
+      globalThis.$?.(dialog)?.dialog?.("close");
     },
   };
 }
 
 export function createGlobalNoticeActionTargets(): EngineNoticeActionTargets {
   return {
-    parseError: (error) => parseError(error),
-    clearMainTip: () => clearMainTip(),
-    cleanupData: () => cleanupData(),
-    regenerateMap: (reason) => regenerateMap(reason),
+    parseError: (error) =>
+      globalThis.parseError?.(error) ?? error.stack ?? error.message,
+    clearMainTip: () => globalThis.clearMainTip?.(),
+    cleanupData: () => globalThis.cleanupData?.(),
+    regenerateMap: (reason) => globalThis.regenerateMap?.(reason),
   };
 }
 

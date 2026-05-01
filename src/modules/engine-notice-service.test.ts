@@ -136,6 +136,24 @@ describe("createGlobalNoticeService", () => {
     expect(globalThis.regenerateMap).toHaveBeenCalledWith("generation error");
   });
 
+  it("keeps generation action targets safe when public helpers are absent", () => {
+    globalThis.parseError =
+      undefined as unknown as typeof globalThis.parseError;
+    globalThis.clearMainTip =
+      undefined as unknown as typeof globalThis.clearMainTip;
+    globalThis.cleanupData =
+      undefined as unknown as typeof globalThis.cleanupData;
+    globalThis.regenerateMap =
+      undefined as unknown as typeof globalThis.regenerateMap;
+    const targets = createGlobalNoticeActionTargets();
+    const error = new Error("Boom");
+
+    expect(targets.parseError(error)).toContain("Boom");
+    expect(() => targets.clearMainTip()).not.toThrow();
+    expect(() => targets.cleanupData()).not.toThrow();
+    expect(() => targets.regenerateMap("generation error")).not.toThrow();
+  });
+
   it("keeps jQuery UI access inside the default compatibility host", () => {
     const dialog = vi.fn();
     const close = vi.fn();
@@ -155,6 +173,17 @@ describe("createGlobalNoticeService", () => {
     expect(dollar).toHaveBeenCalledWith("#alert");
     expect(dialog).toHaveBeenCalledWith({ title: "Notice", resizable: false });
     expect(close).toHaveBeenCalledWith("close");
+  });
+
+  it("keeps the default compatibility host safe when dialog globals are absent", () => {
+    globalThis.alertMessage =
+      undefined as unknown as typeof globalThis.alertMessage;
+    globalThis.$ = undefined as unknown as typeof globalThis.$;
+    const host = createJQueryNoticeDialogHost();
+
+    expect(() => host.setHtml("<p>Body</p>")).not.toThrow();
+    expect(() => host.open({ title: "Notice" })).not.toThrow();
+    expect(() => host.close("dialog-node")).not.toThrow();
   });
 
   it("composes the global service through the default compatibility host", () => {
