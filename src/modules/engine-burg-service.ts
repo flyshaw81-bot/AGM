@@ -2,8 +2,11 @@ import type { Burg } from "./burgs-generator";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
 
 type EngineBurgModule = {
-  add?: (point: [number, number]) => number | null;
-  remove?: (burgId: number) => void;
+  add?: (
+    point: [number, number],
+    context?: EngineRuntimeContext,
+  ) => number | null;
+  remove?: (burgId: number, context?: EngineRuntimeContext) => void;
   getType?: (
     cellId: number,
     port?: number,
@@ -14,7 +17,7 @@ type EngineBurgModule = {
 export type EngineBurgServiceTargets = {
   getBurgModule: () => EngineBurgModule | undefined;
   getBurgs: () => (Burg | undefined)[] | undefined;
-  getTypeContext?: () => EngineRuntimeContext | undefined;
+  getBurgContext?: () => EngineRuntimeContext | undefined;
 };
 
 export type EngineBurgService = {
@@ -28,15 +31,16 @@ export function createEngineBurgService(
   targets: EngineBurgServiceTargets,
 ): EngineBurgService {
   return {
-    add: (point) => targets.getBurgModule()?.add?.(point) ?? null,
+    add: (point) =>
+      targets.getBurgModule()?.add?.(point, targets.getBurgContext?.()) ?? null,
     remove: (burgId) => {
-      targets.getBurgModule()?.remove?.(burgId);
+      targets.getBurgModule()?.remove?.(burgId, targets.getBurgContext?.());
     },
     findById: (burgId) => targets.getBurgs()?.[burgId],
     getType: (cellId, port) =>
       targets
         .getBurgModule()
-        ?.getType?.(cellId, port, targets.getTypeContext?.()) ?? "Generic",
+        ?.getType?.(cellId, port, targets.getBurgContext?.()) ?? "Generic",
   };
 }
 
@@ -54,6 +58,6 @@ export function createRuntimeBurgService(
   return createEngineBurgService({
     getBurgModule: () => burgModule,
     getBurgs: () => context.pack.burgs as (Burg | undefined)[] | undefined,
-    getTypeContext: () => context,
+    getBurgContext: () => context,
   });
 }

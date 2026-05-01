@@ -2022,6 +2022,9 @@ a compatibility fallback.
 `context.pack` / `context.grid` and removes rendered river paths through
 `context.rendering.removeElementById` when available; the old
 `rivers.select(...).remove()` path remains only as a compatibility fallback.
+`EngineBurgService` now forwards runtime context into `Burgs.add(...)`,
+`Burgs.remove(...)`, and `Burgs.getType(...)`, so manual burg commands routed
+through the service use the same explicit context as the generator methods.
 `getEngineWorldDimensions(context)` now centralizes the compatibility fallback
 from runtime world settings to browser graph globals. Burgs, Cultures, and
 Rivers consume that helper instead of reading `globalThis.graphWidth` /

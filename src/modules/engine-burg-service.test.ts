@@ -34,8 +34,8 @@ describe("createGlobalBurgService", () => {
     expect(burgs.findById(99)).toBeUndefined();
     expect(burgs.getType(12, 0)).toBe("River");
 
-    expect(Burgs.add).toHaveBeenCalledWith([10, 20]);
-    expect(Burgs.remove).toHaveBeenCalledWith(3);
+    expect(Burgs.add).toHaveBeenCalledWith([10, 20], undefined);
+    expect(Burgs.remove).toHaveBeenCalledWith(3, undefined);
     expect(Burgs.getType).toHaveBeenCalledWith(12, 0, undefined);
   });
 
@@ -56,8 +56,8 @@ describe("createGlobalBurgService", () => {
     expect(burgs.findById(2)).toBe(burg);
     expect(burgs.getType(7, 1)).toBe("Highland");
 
-    expect(burgModule.add).toHaveBeenCalledWith([30, 40]);
-    expect(burgModule.remove).toHaveBeenCalledWith(2);
+    expect(burgModule.add).toHaveBeenCalledWith([30, 40], undefined);
+    expect(burgModule.remove).toHaveBeenCalledWith(2, undefined);
     expect(burgModule.getType).toHaveBeenCalledWith(7, 1, undefined);
   });
 
@@ -111,8 +111,8 @@ describe("createGlobalBurgService", () => {
     expect(burgs.add([1, 2])).toBe(5);
     burgs.remove(5);
     expect(burgs.getType(5, 1)).toBe("Lake");
-    expect(burgModule.add).toHaveBeenCalledWith([1, 2]);
-    expect(burgModule.remove).toHaveBeenCalledWith(5);
+    expect(burgModule.add).toHaveBeenCalledWith([1, 2], context);
+    expect(burgModule.remove).toHaveBeenCalledWith(5, context);
     expect(burgModule.getType).toHaveBeenCalledWith(5, 1, context);
   });
 });
