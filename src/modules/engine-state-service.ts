@@ -1,10 +1,13 @@
+import type { EngineRuntimeContext } from "./engine-runtime-context";
+
 type EngineStatesModule = {
-  generateCampaign: (state: any) => any[];
-  getPoles: () => void;
+  generateCampaign: (state: any, context?: EngineRuntimeContext) => any[];
+  getPoles: (context?: EngineRuntimeContext) => void;
 };
 
 export type EngineStateServiceTargets = {
-  getStatesModule: () => EngineStatesModule;
+  getStatesModule: () => EngineStatesModule | undefined;
+  getStateContext?: () => EngineRuntimeContext | undefined;
 };
 
 export type EngineStateService = {
@@ -17,15 +20,27 @@ export function createEngineStateService(
 ): EngineStateService {
   return {
     generateCampaign: (state) =>
-      targets.getStatesModule().generateCampaign(state),
+      targets
+        .getStatesModule()
+        ?.generateCampaign(state, targets.getStateContext?.()) ?? [],
     getPoles: () => {
-      targets.getStatesModule().getPoles();
+      targets.getStatesModule()?.getPoles(targets.getStateContext?.());
     },
   };
 }
 
 export function createGlobalStateService(): EngineStateService {
   return createEngineStateService({
-    getStatesModule: () => States,
+    getStatesModule: () => globalThis.States,
+  });
+}
+
+export function createRuntimeStateService(
+  context: EngineRuntimeContext,
+  statesModule: EngineStatesModule | undefined = globalThis.States,
+): EngineStateService {
+  return createEngineStateService({
+    getStatesModule: () => statesModule,
+    getStateContext: () => context,
   });
 }

@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 180 test files, 685 tests.
+- `npm.cmd run test -- --run` passed: 180 test files, 687 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2025,6 +2025,10 @@ a compatibility fallback.
 `EngineBurgService` now forwards runtime context into `Burgs.add(...)`,
 `Burgs.remove(...)`, and `Burgs.getType(...)`, so manual burg commands routed
 through the service use the same explicit context as the generator methods.
+`EngineStateService` now has a runtime-context factory and forwards context
+into `States.generateCampaign(...)` and `States.getPoles(...)`; the global
+factory now reads the module mount safely through `globalThis.States`, so
+non-browser runtime-context tests do not require a bare `States` global.
 `getEngineWorldDimensions(context)` now centralizes the compatibility fallback
 from runtime world settings to browser graph globals. Burgs, Cultures, and
 Rivers consume that helper instead of reading `globalThis.graphWidth` /

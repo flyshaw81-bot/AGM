@@ -97,7 +97,7 @@ import {
   type EngineSeedSessionModule as EngineSeedSessionService,
 } from "./engine-seed-session";
 import {
-  createGlobalStateService,
+  createRuntimeStateService,
   type EngineStateService,
 } from "./engine-state-service";
 import {
@@ -199,7 +199,7 @@ export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
     naming: createGlobalNamingService(),
     burgs: undefined as never,
     routes: undefined as never,
-    states: createGlobalStateService(),
+    states: undefined as never,
     units: createGlobalUnitSettings(),
     heraldry: createGlobalHeraldryService(),
     mapStore: undefined as never,
@@ -225,6 +225,7 @@ export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
   } as EngineRuntimeContext;
   context.burgs = createRuntimeBurgService(context);
   context.routes = createRuntimeRouteService(context);
+  context.states = createRuntimeStateService(context);
   context.mapStore = createRuntimeMapStore(context, () => context);
   context.mapGraphLifecycle = createGlobalMapGraphLifecycleService();
   context.mapPlacement = createGlobalMapPlacementService();

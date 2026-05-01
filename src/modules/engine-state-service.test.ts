@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { EngineRuntimeContext } from "./engine-runtime-context";
 import {
   createEngineStateService,
   createGlobalStateService,
+  createRuntimeStateService,
 } from "./engine-state-service";
 
 const originalStates = globalThis.States;
@@ -24,8 +26,8 @@ describe("createGlobalStateService", () => {
     expect(states.generateCampaign(state)).toBe(campaign);
     states.getPoles();
 
-    expect(States.generateCampaign).toHaveBeenCalledWith(state);
-    expect(States.getPoles).toHaveBeenCalledWith();
+    expect(States.generateCampaign).toHaveBeenCalledWith(state, undefined);
+    expect(States.getPoles).toHaveBeenCalledWith(undefined);
   });
 
   it("composes state service from injected runtime targets", () => {
@@ -41,7 +43,42 @@ describe("createGlobalStateService", () => {
     expect(states.generateCampaign({ i: 2 })).toBe(campaign);
     states.getPoles();
 
-    expect(statesModule.generateCampaign).toHaveBeenCalledWith({ i: 2 });
-    expect(statesModule.getPoles).toHaveBeenCalledWith();
+    expect(statesModule.generateCampaign).toHaveBeenCalledWith(
+      { i: 2 },
+      undefined,
+    );
+    expect(statesModule.getPoles).toHaveBeenCalledWith(undefined);
+  });
+
+  it("keeps state service safe when the state module is not mounted", () => {
+    globalThis.States = undefined as unknown as typeof States;
+
+    const states = createGlobalStateService();
+
+    expect(states.generateCampaign({ i: 9 })).toEqual([]);
+    expect(() => states.getPoles()).not.toThrow();
+  });
+
+  it("forwards runtime context into state module calls", () => {
+    const campaign = [{ name: "Runtime Campaign" }];
+    const statesModule = {
+      generateCampaign: vi.fn(() => campaign),
+      getPoles: vi.fn(),
+    };
+    const context = {
+      pack: {
+        states: [],
+      },
+    } as unknown as EngineRuntimeContext;
+    const states = createRuntimeStateService(context, statesModule);
+
+    expect(states.generateCampaign({ i: 4 })).toBe(campaign);
+    states.getPoles();
+
+    expect(statesModule.generateCampaign).toHaveBeenCalledWith(
+      { i: 4 },
+      context,
+    );
+    expect(statesModule.getPoles).toHaveBeenCalledWith(context);
   });
 });
