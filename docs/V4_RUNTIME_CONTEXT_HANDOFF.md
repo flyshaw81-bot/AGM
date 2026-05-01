@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 180 test files, 689 tests.
+- `npm.cmd run test -- --run` passed: 180 test files, 691 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2032,6 +2032,9 @@ non-browser runtime-context tests do not require a bare `States` global.
 `EngineNamingService` and `EngineHeraldryService` now read default module
 mounts through `globalThis.Names` / `globalThis.COA` and provide stable
 fallback values when those compatibility mounts are absent.
+Water feature and map graph lifecycle default targets now guard missing public
+helpers through `globalThis.*?.(...)`, keeping no-browser runtime tests from
+requiring those compatibility functions.
 `getEngineWorldDimensions(context)` now centralizes the compatibility fallback
 from runtime world settings to browser graph globals. Burgs, Cultures, and
 Rivers consume that helper instead of reading `globalThis.graphWidth` /

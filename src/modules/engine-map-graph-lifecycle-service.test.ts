@@ -40,6 +40,16 @@ describe("EngineMapGraphLifecycleService", () => {
     expect(globalThis.createDefaultRuler).toHaveBeenCalledWith();
   });
 
+  it("keeps global graph lifecycle targets safe when helpers are absent", () => {
+    globalThis.reGraph = undefined as unknown as typeof reGraph;
+    globalThis.createDefaultRuler =
+      undefined as unknown as typeof createDefaultRuler;
+    const targets = createGlobalMapGraphLifecycleTargets();
+
+    expect(() => targets.rebuildGraph()).not.toThrow();
+    expect(() => targets.createDefaultRuler()).not.toThrow();
+  });
+
   it("creates a global graph lifecycle service from explicit targets", () => {
     const targets = {
       rebuildGraph: vi.fn(),

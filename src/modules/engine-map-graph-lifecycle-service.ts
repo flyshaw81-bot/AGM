@@ -21,10 +21,10 @@ export function createMapGraphLifecycleService(
 export function createGlobalMapGraphLifecycleTargets(): EngineMapGraphLifecycleTargets {
   return {
     rebuildGraph: () => {
-      reGraph();
+      globalThis.reGraph?.();
     },
     createDefaultRuler: () => {
-      createDefaultRuler();
+      globalThis.createDefaultRuler?.();
     },
   };
 }

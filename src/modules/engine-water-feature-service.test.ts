@@ -51,6 +51,20 @@ describe("EngineWaterFeatureService", () => {
     expect(globalThis.OceanLayers).toHaveBeenCalledWith(context);
   });
 
+  it("keeps global water targets safe when public helpers are absent", () => {
+    const context = {} as EngineRuntimeContext;
+    globalThis.addLakesInDeepDepressions =
+      undefined as unknown as typeof addLakesInDeepDepressions;
+    globalThis.openNearSeaLakes =
+      undefined as unknown as typeof openNearSeaLakes;
+    globalThis.OceanLayers = undefined as unknown as typeof OceanLayers;
+    const targets = createGlobalWaterFeatureTargets();
+
+    expect(() => targets.addLakesInDeepDepressions(31)).not.toThrow();
+    expect(() => targets.openNearSeaLakes("archipelago")).not.toThrow();
+    expect(() => targets.drawOceanLayers(context)).not.toThrow();
+  });
+
   it("creates a global water feature service from explicit targets", () => {
     const targets = {
       addLakesInDeepDepressions: vi.fn(),

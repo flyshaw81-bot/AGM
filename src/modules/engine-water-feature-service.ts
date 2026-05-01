@@ -27,13 +27,13 @@ export function createWaterFeatureService(
 export function createGlobalWaterFeatureTargets(): EngineWaterFeatureTargets {
   return {
     addLakesInDeepDepressions: (lakeElevationLimit) => {
-      addLakesInDeepDepressions(lakeElevationLimit);
+      globalThis.addLakesInDeepDepressions?.(lakeElevationLimit);
     },
     openNearSeaLakes: (heightmapTemplateId) => {
-      openNearSeaLakes(heightmapTemplateId);
+      globalThis.openNearSeaLakes?.(heightmapTemplateId);
     },
     drawOceanLayers: (context) => {
-      OceanLayers(context);
+      globalThis.OceanLayers?.(context);
     },
   };
 }
