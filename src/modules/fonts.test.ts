@@ -11,6 +11,7 @@ const originalChangeFont = globalThis.changeFont;
 const originalTip = globalThis.tip;
 const originalProvs = globalThis.provs;
 const originalError = globalThis.ERROR;
+const originalFetch = globalThis.fetch;
 
 function installBrowserFontGlobals() {
   const select = {
@@ -53,6 +54,7 @@ describe("font resource compatibility facade", () => {
     globalThis.tip = originalTip;
     globalThis.provs = originalProvs;
     globalThis.ERROR = originalError;
+    globalThis.fetch = originalFetch;
     delete (globalThis as { AGMFontResources?: EngineFontResourceRuntime })
       .AGMFontResources;
     delete (globalThis as { fonts?: unknown }).fonts;
@@ -138,5 +140,38 @@ describe("font resource compatibility facade", () => {
     expect(target.AGMFontResources).toBe(runtime);
     expect(target.fonts).toEqual([{ family: "Runtime Font" }]);
     expect(target.declareFont).toBe(runtime.declareFont);
+  });
+
+  it("keeps the default browser font targets safe without browser globals", async () => {
+    globalThis.document = undefined as unknown as Document;
+    globalThis.FontFace = undefined as unknown as typeof FontFace;
+    globalThis.changeFont = undefined as unknown as typeof changeFont;
+    globalThis.tip = undefined as unknown as typeof tip;
+    globalThis.provs = undefined as unknown as typeof provs;
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      blob: vi.fn().mockResolvedValue(new Blob(["font"])),
+      text: vi.fn().mockResolvedValue("font css"),
+    }) as unknown as typeof fetch;
+
+    const { createBrowserFontResourceAdapter } = await import("./fonts");
+    const adapter = createBrowserFontResourceAdapter();
+
+    expect(() => adapter.addFontOption("Display Font")).not.toThrow();
+    expect(() =>
+      adapter.registerFontFace({
+        family: "Display Font",
+        src: "url(https://example.test/display.woff2)",
+      }),
+    ).not.toThrow();
+    await expect(
+      adapter.loadFontFace({
+        family: "Loaded Font",
+        src: "url(https://example.test/loaded.woff2)",
+      }),
+    ).resolves.toBeUndefined();
+    expect(() => adapter.setSelectedFont("Display Font")).not.toThrow();
+    expect(() => adapter.applySelectedFont()).not.toThrow();
+    expect(() => adapter.showToast("Loaded", "success")).not.toThrow();
+    expect(adapter.getProvinceFont()).toBeNull();
   });
 });

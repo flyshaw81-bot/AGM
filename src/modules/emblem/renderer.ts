@@ -28,18 +28,22 @@ export function createGlobalEmblemRendererTargets(): EmblemRendererTargets {
       throw new Error("Cannot fetch charge");
     },
     parseChargeGroup: (svgText, id) => {
-      const html = document.createElement("html");
+      if (!globalThis.document) return `<g id="${id}"></g>`;
+      const html = globalThis.document.createElement("html");
       html.innerHTML = svgText;
       const g = html.querySelector("g") as SVGAElement;
       g.setAttribute("id", id);
       return g.outerHTML;
     },
     insertCoaSvg: (svg) => {
-      document.getElementById("coas")!.insertAdjacentHTML("beforeend", svg);
+      globalThis.document
+        ?.getElementById("coas")
+        ?.insertAdjacentHTML("beforeend", svg);
     },
-    getElementById: (id) => document.getElementById(id),
-    hasRenderedUses: () => Boolean(emblems.selectAll("use").size()),
-    isLayerOn: (layer) => layerIsOn(layer),
+    getElementById: (id) => globalThis.document?.getElementById(id) ?? null,
+    hasRenderedUses: () =>
+      Boolean(globalThis.emblems?.selectAll?.("use")?.size?.()),
+    isLayerOn: (layer) => globalThis.layerIsOn?.(layer) ?? false,
   };
 }
 

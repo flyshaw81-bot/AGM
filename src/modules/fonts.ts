@@ -297,6 +297,10 @@ const fontDefinitions: FontDefinition[] = [
 
 function readBlobAsDataURL(blob: Blob) {
   return new Promise<string>((resolve, reject) => {
+    if (!globalThis.FileReader) {
+      reject(new Error("FileReader is not available"));
+      return;
+    }
     const reader = new FileReader();
     reader.onloadend = () => resolve(reader.result as string);
     reader.onerror = reject;
@@ -307,38 +311,46 @@ function readBlobAsDataURL(blob: Blob) {
 function createFontFace(font: FontDefinition) {
   const { family, src, ...rest } = font;
   if (!src) return null;
-  return new FontFace(family, src, { ...rest, display: "block" });
+  if (!globalThis.FontFace) return null;
+  return new globalThis.FontFace(family, src, { ...rest, display: "block" });
 }
 
 export function createGlobalBrowserFontResourceTargets(): EngineBrowserFontResourceTargets {
   return {
     getFontSelect: () =>
-      document.getElementById("styleSelectFont") as HTMLSelectElement | null,
-    createOption: () => document.createElement("option"),
+      globalThis.document?.getElementById(
+        "styleSelectFont",
+      ) as HTMLSelectElement | null,
+    createOption: () =>
+      (globalThis.document?.createElement("option") ?? {
+        innerText: "",
+        style: {},
+        value: "",
+      }) as HTMLOptionElement,
     createFontFace,
-    addFontFace: (fontFace) => document.fonts.add(fontFace),
+    addFontFace: (fontFace) => globalThis.document?.fonts?.add(fontFace),
     setSelectedFont: (family) => {
-      const select = document.getElementById(
+      const select = globalThis.document?.getElementById(
         "styleSelectFont",
       ) as HTMLSelectElement | null;
       if (select) select.value = family;
     },
-    applySelectedFont: () => changeFont(),
+    applySelectedFont: () => globalThis.changeFont?.(),
     showToast: (message, type, duration = 4000) =>
-      tip(message, true, type, duration),
+      globalThis.tip?.(message, true, type, duration),
     logError: (error) => {
       globalThis.ERROR && console.error(error);
     },
     fetchText: async (url) => {
-      const response = await fetch(url);
+      const response = await globalThis.fetch(url);
       return response.text();
     },
     fetchBlob: async (url) => {
-      const response = await fetch(url);
+      const response = await globalThis.fetch(url);
       return response.blob();
     },
     readBlobAsDataUrl: readBlobAsDataURL,
-    getProvinceFont: () => provs.attr("font-family") || null,
+    getProvinceFont: () => globalThis.provs?.attr("font-family") || null,
   };
 }
 

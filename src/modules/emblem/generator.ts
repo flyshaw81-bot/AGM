@@ -27,7 +27,7 @@ export type EmblemShapeTargets = {
 
 export function createGlobalEmblemShapeDomTargets(): EmblemShapeDomTargets {
   return {
-    getElementById: (id) => document.getElementById(id),
+    getElementById: (id) => globalThis.document?.getElementById(id) ?? null,
   };
 }
 

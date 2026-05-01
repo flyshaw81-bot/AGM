@@ -1,5 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
-import EmblemRenderModule, { type EmblemRendererTargets } from "./renderer";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import EmblemRenderModule, {
+  createGlobalEmblemRendererTargets,
+  type EmblemRendererTargets,
+} from "./renderer";
 
 function createTargets(
   overrides: Partial<EmblemRendererTargets> = {},
@@ -16,6 +19,16 @@ function createTargets(
 }
 
 describe("EmblemRenderModule", () => {
+  const originalDocument = globalThis.document;
+  const originalEmblems = globalThis.emblems;
+  const originalLayerIsOn = globalThis.layerIsOn;
+
+  afterEach(() => {
+    globalThis.document = originalDocument;
+    globalThis.emblems = originalEmblems;
+    globalThis.layerIsOn = originalLayerIsOn;
+  });
+
   it("adds rendered use nodes through injected renderer targets", async () => {
     const insertAdjacentHTML = vi.fn();
     const getAttribute = vi.fn(() => "40");
@@ -87,5 +100,20 @@ describe("EmblemRenderModule", () => {
     expect(targets.insertCoaSvg).toHaveBeenCalledWith(
       expect.stringContaining('id="burgCOA7"'),
     );
+  });
+
+  it("keeps global renderer targets safe when DOM and layer globals are absent", () => {
+    globalThis.document = undefined as unknown as Document;
+    globalThis.emblems = undefined as unknown as typeof emblems;
+    globalThis.layerIsOn = undefined as unknown as typeof layerIsOn;
+    const targets = createGlobalEmblemRendererTargets();
+
+    expect(targets.parseChargeGroup("<svg><g /></svg>", "lion")).toBe(
+      '<g id="lion"></g>',
+    );
+    expect(() => targets.insertCoaSvg("<svg />")).not.toThrow();
+    expect(targets.getElementById("coas")).toBeNull();
+    expect(targets.hasRenderedUses()).toBe(false);
+    expect(targets.isLayerOn("toggleEmblems")).toBe(false);
   });
 });

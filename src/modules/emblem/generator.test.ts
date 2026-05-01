@@ -1,9 +1,13 @@
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import type EmblemGeneratorModuleType from "./generator";
 import type { EmblemShapeDomTargets, EmblemShapeTargets } from "./generator";
-import { createEmblemShapeTargets } from "./generator";
+import {
+  createEmblemShapeTargets,
+  createGlobalEmblemShapeTargets,
+} from "./generator";
 
 const originalPack = globalThis.pack;
+const originalDocument = globalThis.document;
 let EmblemGeneratorModule: typeof EmblemGeneratorModuleType;
 
 function createEmblemGenerator(targets: EmblemShapeTargets) {
@@ -24,6 +28,7 @@ describe("EmblemGeneratorModule", () => {
 
   afterEach(() => {
     globalThis.pack = originalPack;
+    globalThis.document = originalDocument;
   });
 
   it("uses an injected fixed shield shape without reading document", () => {
@@ -53,6 +58,12 @@ describe("EmblemGeneratorModule", () => {
     );
 
     expect(generator.getShield(1, 1)).toBe("lozenge");
+  });
+
+  it("keeps global shape targets safe when document is absent", () => {
+    globalThis.document = undefined as unknown as Document;
+
+    expect(createGlobalEmblemShapeTargets().getSelectedShape()).toBeNull();
   });
 
   it("uses state shield fallback through injected shape selection", () => {
