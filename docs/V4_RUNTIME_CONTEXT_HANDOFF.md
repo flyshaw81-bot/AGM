@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 180 test files, 705 tests.
+- `npm.cmd run test -- --run` passed: 180 test files, 709 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2051,6 +2051,9 @@ and `layerIsOn` no longer have to exist for no-browser runtime imports/tests.
 Heightmap image targets and render cell lookup now also guard missing browser
 globals: absent `document`, `Image`, or `findCell` no longer makes their
 default target factories throw in no-browser runtime tests.
+Map host and editor bridge targets now cover missing browser globals in their
+default adapters: absent `Event`, `window.getComputedStyle`, `window`, or
+`document` no longer breaks no-browser bridge tests.
 `getEngineWorldDimensions(context)` now centralizes the compatibility fallback
 from runtime world settings to browser graph globals. Burgs, Cultures, and
 Rivers consume that helper instead of reading `globalThis.graphWidth` /

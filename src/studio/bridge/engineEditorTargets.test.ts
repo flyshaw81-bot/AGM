@@ -3,6 +3,7 @@ import {
   createCompositeEngineEditorDialogAdapter,
   createEngineEditorTargets,
   createGlobalEngineEditorDialogDomAdapter,
+  createGlobalEngineEditorHandlerRuntime,
   createGlobalEngineEditorTargets,
   createJQueryEngineEditorDialogAdapter,
   createStudioEngineEditorDialogAdapter,
@@ -80,6 +81,14 @@ describe("createEngineEditorTargets", () => {
 
     expect(editStates).toHaveBeenCalledTimes(1);
     expect(dialogAdapter.close).toHaveBeenCalledWith("statesEditor");
+  });
+
+  it("keeps global editor handlers safe when window is absent", () => {
+    globalThis.window = undefined as unknown as Window & typeof globalThis;
+
+    const runtime = createGlobalEngineEditorHandlerRuntime();
+
+    expect(runtime.getHandler("editStates")).toBeUndefined();
   });
 
   it("reads dialog visibility and closes via jQuery UI wrapper controls", () => {
@@ -201,5 +210,18 @@ describe("createEngineEditorTargets", () => {
       "statesEditor",
     );
     expect(globalThis.window.getComputedStyle).toHaveBeenCalledWith(dialog);
+  });
+
+  it("keeps the default dialog adapters safe when DOM globals are absent", () => {
+    globalThis.document = undefined as unknown as Document;
+    globalThis.window = undefined as unknown as Window & typeof globalThis;
+    const domAdapter = createGlobalEngineEditorDialogDomAdapter();
+    const studioAdapter = createStudioEngineEditorDialogAdapter(domAdapter);
+    const jqueryAdapter = createJQueryEngineEditorDialogAdapter(domAdapter);
+
+    expect(studioAdapter.isOpen("statesEditor")).toBe(false);
+    expect(jqueryAdapter.isOpen("statesEditor")).toBe(false);
+    expect(() => studioAdapter.close("statesEditor")).not.toThrow();
+    expect(() => jqueryAdapter.close("statesEditor")).not.toThrow();
   });
 });

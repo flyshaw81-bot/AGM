@@ -21,6 +21,7 @@ type TestMapHostGlobals = typeof globalThis & {
 const testGlobals = globalThis as TestMapHostGlobals;
 const testGlobalRecord = globalThis as Record<string, unknown>;
 const originalDocument = globalThis.document;
+const originalEvent = globalThis.Event;
 const originalLocalStorage = globalThis.localStorage;
 const originalWindow = globalThis.window;
 
@@ -42,6 +43,7 @@ function restoreRuntime() {
 describe("createGlobalEngineMapHostTargets", () => {
   afterEach(() => {
     globalThis.document = originalDocument;
+    globalThis.Event = originalEvent;
     globalThis.localStorage = originalLocalStorage;
     globalThis.window = originalWindow;
     restoreRuntime();
@@ -94,6 +96,33 @@ describe("createGlobalEngineMapHostTargets", () => {
 
     expect(input.value).toBe("New Atlas");
     expect(input.dispatchEvent).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps document name writes safe when Event is absent", () => {
+    const input = {
+      value: "",
+      dispatchEvent: vi.fn(),
+    };
+    testGlobals.mapName = input as unknown as HTMLInputElement;
+    globalThis.Event = undefined as unknown as typeof Event;
+
+    createGlobalEngineMapHostTargets().setDocumentName("New Atlas");
+
+    expect(input.value).toBe("New Atlas");
+    expect(input.dispatchEvent).not.toHaveBeenCalled();
+  });
+
+  it("keeps stage sizing safe when computed style is absent", () => {
+    const stage = {
+      getBoundingClientRect: vi.fn(() => ({ width: 1000, height: 800 })),
+    };
+    globalThis.window = {} as Window & typeof globalThis;
+
+    expect(
+      createGlobalEngineMapHostTargets().getStageInnerSize(
+        stage as unknown as HTMLElement,
+      ),
+    ).toEqual({ width: 1000, height: 800 });
   });
 
   it("reads viewport elements and applies viewport sizing through the active runtime", () => {

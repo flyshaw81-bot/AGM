@@ -180,8 +180,10 @@ export function createGlobalEngineMapHostDocumentAdapter(): EngineMapHostDocumen
       if (!mapName) return;
 
       mapName.value = name;
-      mapName.dispatchEvent(new Event("input", { bubbles: true }));
-      mapName.dispatchEvent(new Event("change", { bubbles: true }));
+      if (typeof globalThis.Event !== "function") return;
+
+      mapName.dispatchEvent(new globalThis.Event("input", { bubbles: true }));
+      mapName.dispatchEvent(new globalThis.Event("change", { bubbles: true }));
     },
   };
 }
@@ -198,13 +200,13 @@ export function createGlobalEngineMapHostViewportAdapter(): EngineMapHostViewpor
     },
     getStageInnerSize: (stage) => {
       const rect = stage.getBoundingClientRect();
-      const style = globalThis.window.getComputedStyle(stage);
+      const style = globalThis.window?.getComputedStyle?.(stage);
       const paddingX =
-        Number.parseFloat(style.paddingLeft || "0") +
-        Number.parseFloat(style.paddingRight || "0");
+        Number.parseFloat(style?.paddingLeft || "0") +
+        Number.parseFloat(style?.paddingRight || "0");
       const paddingY =
-        Number.parseFloat(style.paddingTop || "0") +
-        Number.parseFloat(style.paddingBottom || "0");
+        Number.parseFloat(style?.paddingTop || "0") +
+        Number.parseFloat(style?.paddingBottom || "0");
 
       return {
         width: Math.max(rect.width - paddingX, 1),
