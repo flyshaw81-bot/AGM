@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  createGlobalHeightmapImageTargets,
   type HeightmapImageTargets,
   HeightmapModule,
 } from "./heightmap-generator";
@@ -67,6 +68,26 @@ describe("HeightmapModule", () => {
     heightmap.setGraph(createGraph());
 
     expect(heightmap.getHeights()).toEqual(new Uint8Array([1, 2, 3, 4]));
+  });
+
+  it("keeps global image targets safe when document and Image are absent", () => {
+    const originalDocument = globalThis.document;
+    const originalImage = globalThis.Image;
+
+    try {
+      globalThis.document = undefined as unknown as Document;
+      globalThis.Image = undefined as unknown as typeof Image;
+      const targets = createGlobalHeightmapImageTargets();
+      const canvas = targets.createCanvas();
+      const image = targets.createImage();
+
+      expect(canvas.getContext("2d")).toBeNull();
+      expect(() => canvas.remove()).not.toThrow();
+      expect(() => image.remove()).not.toThrow();
+    } finally {
+      globalThis.document = originalDocument;
+      globalThis.Image = originalImage;
+    }
   });
 
   it("loads precreated heightmaps through injected image targets", async () => {

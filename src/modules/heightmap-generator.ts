@@ -33,8 +33,20 @@ export type HeightmapImageTargets = {
 
 export function createGlobalHeightmapImageTargets(): HeightmapImageTargets {
   return {
-    createCanvas: () => document.createElement("canvas"),
-    createImage: () => new Image(),
+    createCanvas: () =>
+      (globalThis.document?.createElement("canvas") ?? {
+        width: 0,
+        height: 0,
+        getContext: () => null,
+        remove: () => {},
+      }) as HTMLCanvasElement,
+    createImage: () =>
+      (globalThis.Image
+        ? new globalThis.Image()
+        : {
+            onload: null,
+            remove: () => {},
+          }) as HTMLImageElement,
   };
 }
 

@@ -111,8 +111,12 @@ export function createEngineRenderAdapter(
 }
 
 export function createGlobalRenderTargets(): EngineRenderTargets {
+  const runtime = globalThis as typeof globalThis & {
+    findCell?: EngineRenderTargets["findCell"];
+  };
+
   return {
-    findCell: (x, y, radius, graph) => window.findCell(x, y, radius, graph),
+    findCell: (x, y, radius, graph) => runtime.findCell?.(x, y, radius, graph),
     getPack: () => pack,
     addCoa: (type, id, coa, x, y) => {
       COArenderer.add(type, id, coa, x, y);

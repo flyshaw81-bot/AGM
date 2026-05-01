@@ -7,6 +7,7 @@ import {
 } from "./engine-render-adapter";
 
 const originalWindow = globalThis.window;
+const originalFindCell = (globalThis as { findCell?: unknown }).findCell;
 const originalPack = globalThis.pack;
 const originalCoaRenderer = globalThis.COArenderer;
 const originalDrawRoute = globalThis.drawRoute;
@@ -30,6 +31,7 @@ const originalInvokeActiveZooming = globalThis.invokeActiveZooming;
 describe("createGlobalRenderAdapter", () => {
   afterEach(() => {
     globalThis.window = originalWindow;
+    (globalThis as { findCell?: unknown }).findCell = originalFindCell;
     globalThis.pack = originalPack;
     globalThis.COArenderer = originalCoaRenderer;
     globalThis.drawRoute = originalDrawRoute;
@@ -57,6 +59,7 @@ describe("createGlobalRenderAdapter", () => {
     const route = { id: "route1" };
     const burg = { i: 7 };
     globalThis.window = { findCell } as unknown as Window & typeof globalThis;
+    (globalThis as { findCell?: unknown }).findCell = findCell;
     globalThis.pack = { cells: { i: [1] } } as typeof pack;
     globalThis.COArenderer = { add: addCoa } as unknown as typeof COArenderer;
     globalThis.drawRoute = vi.fn();
@@ -95,6 +98,7 @@ describe("createGlobalRenderAdapter", () => {
     const findCell = vi.fn(() => 8);
     const route = { id: "route-target" };
     globalThis.window = { findCell } as unknown as Window & typeof globalThis;
+    (globalThis as { findCell?: unknown }).findCell = findCell;
     globalThis.pack = { cells: { i: [1] } } as typeof pack;
     globalThis.drawRoute = vi.fn();
 
@@ -144,6 +148,13 @@ describe("createGlobalRenderAdapter", () => {
 
     expect(() => rendering.removeElementById("marker12")).not.toThrow();
     expect(rendering.getElementTotalLengthById?.("route3")).toBeUndefined();
+  });
+
+  it("keeps global cell lookup safe when findCell is absent", () => {
+    (globalThis as { findCell?: unknown }).findCell = undefined;
+    globalThis.pack = { cells: { i: [1] } } as typeof pack;
+
+    expect(createGlobalRenderAdapter().findCell(1, 2)).toBeUndefined();
   });
 
   it("forwards ice redraws and scale-bar drawing to current render helpers", () => {
