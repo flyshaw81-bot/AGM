@@ -36,7 +36,9 @@ export type EngineSeedDomTargets = {
 export function createGlobalSeedDomTargets(): EngineSeedDomTargets {
   return {
     getOptionsSeedInput: () =>
-      document.getElementById("optionsSeed") as HTMLInputElement | null,
+      globalThis.document?.getElementById(
+        "optionsSeed",
+      ) as HTMLInputElement | null,
   };
 }
 

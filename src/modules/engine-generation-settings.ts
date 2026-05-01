@@ -57,7 +57,7 @@ export type EngineGenerationSettingsStore = {
 
 export function createGlobalGenerationDomTargets(): EngineGenerationDomTargets {
   return {
-    getElementById: (id) => document.getElementById(id),
+    getElementById: (id) => globalThis.document?.getElementById(id) ?? null,
   };
 }
 

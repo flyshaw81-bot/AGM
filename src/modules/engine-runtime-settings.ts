@@ -118,7 +118,8 @@ export function createTimingSettings(
 
 export function createGlobalSettingsDomTargets(): EngineSettingsDomTargets {
   return {
-    getInput: (id) => document.getElementById(id) as HTMLInputElement | null,
+    getInput: (id) =>
+      globalThis.document?.getElementById(id) as HTMLInputElement | null,
   };
 }
 

@@ -133,7 +133,7 @@ export function createGlobalRenderTargets(): EngineRenderTargets {
     removeBurgLabel: (burgId) => {
       removeBurgLabel(burgId);
     },
-    getElementById: (id) => document.getElementById(id),
+    getElementById: (id) => globalThis.document?.getElementById(id) ?? null,
     removeBurgEmblemUse: (burgId) => {
       emblems.select(`#burgEmblems > use[data-i='${burgId}']`).remove();
     },

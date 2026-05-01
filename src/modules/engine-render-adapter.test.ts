@@ -137,6 +137,15 @@ describe("createGlobalRenderAdapter", () => {
     expect(getTotalLength).toHaveBeenCalledWith();
   });
 
+  it("keeps global render DOM lookup safe when document is absent", () => {
+    globalThis.document = undefined as unknown as Document;
+
+    const rendering = createGlobalRenderAdapter();
+
+    expect(() => rendering.removeElementById("marker12")).not.toThrow();
+    expect(rendering.getElementTotalLengthById?.("route3")).toBeUndefined();
+  });
+
   it("forwards ice redraws and scale-bar drawing to current render helpers", () => {
     const scaleBarSelection = { id: "scaleBar" };
     globalThis.redrawIceberg = vi.fn();

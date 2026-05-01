@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
 import {
   createGlobalSeedRuntimeTargets,
@@ -81,6 +81,12 @@ function createRuntimeContext(): EngineRuntimeContext {
 }
 
 describe("EngineSeedSessionModule", () => {
+  const originalDocument = globalThis.document;
+
+  afterEach(() => {
+    globalThis.document = originalDocument;
+  });
+
   it("resolves seeds through injected targets", () => {
     const targets = createTargets({
       getSearchParams: () => new URLSearchParams("seed=url-seed"),
@@ -110,6 +116,14 @@ describe("EngineSeedSessionModule", () => {
 
     expect(domTargets.getOptionsSeedInput).toHaveBeenCalled();
     expect(optionsSeed.value).toBe("dom-seed");
+  });
+
+  it("keeps global seed DOM targets safe when document is absent", () => {
+    globalThis.document = undefined as unknown as Document;
+
+    expect(() =>
+      createGlobalSeedSessionTargets().setOptionsSeed("dom-seed"),
+    ).not.toThrow();
   });
 
   it("composes seed session targets from explicit runtime and DOM targets", () => {

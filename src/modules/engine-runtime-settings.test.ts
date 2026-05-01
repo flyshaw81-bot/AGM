@@ -4,6 +4,7 @@ import {
   createGlobalPopulationRuntimeTargets,
   createGlobalPopulationSettings,
   createGlobalPopulationSettingsTargets,
+  createGlobalSettingsDomTargets,
   createGlobalTimingRuntimeTargets,
   createGlobalTimingSettings,
   createGlobalTimingSettingsTargets,
@@ -163,6 +164,17 @@ describe("runtime setting adapters", () => {
       latitudePercent: 42,
       longitudePercent: 0,
     });
+  });
+
+  it("keeps global settings DOM targets safe when document is absent", () => {
+    globalThis.document = undefined as unknown as Document;
+
+    expect(
+      createSettingsInputNumberReader(createGlobalSettingsDomTargets())(
+        "mapSizeOutput",
+        27,
+      ),
+    ).toBe(27);
   });
 
   it("composes world settings from separate DOM and runtime targets", () => {

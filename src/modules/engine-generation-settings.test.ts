@@ -68,6 +68,32 @@ describe("createGlobalGenerationSettings", () => {
     });
   });
 
+  it("keeps global generation DOM targets safe when document is absent", () => {
+    globalThis.document = undefined as unknown as Document;
+    globalThis.pointsInput = undefined as unknown as HTMLInputElement;
+    globalThis.heightExponentInput = undefined as unknown as HTMLInputElement;
+
+    expect(createGlobalGenerationSettings()).toEqual({
+      heightmapTemplateId: undefined,
+      pointsCount: 0,
+      heightExponent: 1,
+      lakeElevationLimit: 0,
+      resolveDepressionsSteps: 0,
+      statesCount: 0,
+      manorsCount: 1000,
+      religionsCount: 0,
+      provincesRatio: 100,
+      culturesCount: 0,
+      cultureSet: "random",
+      cultureSetMax: 0,
+      cultureEmblemShape: "",
+      cultureNeutralRate: 1,
+      stateSizeVariety: 1,
+      globalGrowthRate: 1,
+      statesGrowthRate: 1,
+    });
+  });
+
   it("reads generation settings from global controls and DOM controls", () => {
     installDocument({
       templateInput: { value: "continents" },
