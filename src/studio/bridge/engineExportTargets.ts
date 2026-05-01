@@ -55,6 +55,11 @@ function getExportSettingInput(setting: EngineExportSetting) {
   ) as HTMLInputElement | null;
 }
 
+function dispatchDomEvent(element: HTMLElement, type: string) {
+  if (typeof globalThis.Event !== "function") return;
+  element.dispatchEvent(new globalThis.Event(type, { bubbles: true }));
+}
+
 export function createGlobalEngineExportSettingsAdapter(): EngineExportSettingsAdapter {
   return {
     readSetting: (setting, fallback) => {
@@ -66,8 +71,8 @@ export function createGlobalEngineExportSettingsAdapter(): EngineExportSettingsA
       if (!input) return;
 
       input.value = String(value);
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-      input.dispatchEvent(new Event("change", { bubbles: true }));
+      dispatchDomEvent(input, "input");
+      dispatchDomEvent(input, "change");
     },
   };
 }

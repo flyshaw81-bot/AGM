@@ -11,12 +11,14 @@ type TestExportGlobals = typeof globalThis & {
 
 const testGlobals = globalThis as TestExportGlobals;
 const originalDocument = globalThis.document;
+const originalEvent = globalThis.Event;
 const originalExportToSvg = testGlobals.exportToSvg;
 const originalExportToPng = testGlobals.exportToPng;
 
 describe("createGlobalEngineExportTargets", () => {
   afterEach(() => {
     globalThis.document = originalDocument;
+    globalThis.Event = originalEvent;
     testGlobals.exportToSvg = originalExportToSvg;
     testGlobals.exportToPng = originalExportToPng;
   });
@@ -48,6 +50,22 @@ describe("createGlobalEngineExportTargets", () => {
 
     expect(inputs.tileColsOutput.value).toBe("12");
     expect(inputEvents).toEqual(["input", "change"]);
+  });
+
+  it("keeps export setting writes safe when Event is absent", () => {
+    const input = {
+      value: "6",
+      dispatchEvent: vi.fn(),
+    };
+    globalThis.Event = undefined as unknown as typeof Event;
+    globalThis.document = {
+      getElementById: vi.fn((id) => (id === "tileColsOutput" ? input : null)),
+    } as unknown as Document;
+
+    createGlobalEngineExportTargets().writeSetting("tile-cols", 12);
+
+    expect(input.value).toBe("12");
+    expect(input.dispatchEvent).not.toHaveBeenCalled();
   });
 
   it("forwards export format calls to the active runtime", () => {

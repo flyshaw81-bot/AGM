@@ -70,6 +70,11 @@ function getDocument(): Document | undefined {
   return globalThis.document;
 }
 
+function dispatchDomEvent(element: HTMLElement, type: string) {
+  if (typeof globalThis.Event !== "function") return;
+  element.dispatchEvent(new globalThis.Event(type, { bubbles: true }));
+}
+
 export function createGlobalProjectActionTargets(): EngineProjectActionTargets {
   return createProjectActionTargets(
     createGlobalProjectActionDomAdapter(),
@@ -97,11 +102,11 @@ export function createGlobalProjectActionDomAdapter(): EngineProjectActionDomAda
         | undefined) ?? null,
     clickElement: (id) => getDocument()?.getElementById(id)?.click(),
     dispatchInputAndChange: (element) => {
-      element.dispatchEvent(new Event("input", { bubbles: true }));
-      element.dispatchEvent(new Event("change", { bubbles: true }));
+      dispatchDomEvent(element, "input");
+      dispatchDomEvent(element, "change");
     },
     dispatchChange: (element) => {
-      element.dispatchEvent(new Event("change", { bubbles: true }));
+      dispatchDomEvent(element, "change");
     },
   };
 }
@@ -111,7 +116,8 @@ export function createGlobalProjectActionSelectAdapter(): EngineProjectActionSel
     findSelectOption: (select, value) =>
       Array.from(select.options).find((option) => option.value === value),
     addSelectOption: (select, label, value) => {
-      select.options.add(new Option(label, value));
+      if (typeof globalThis.Option !== "function") return;
+      select.options.add(new globalThis.Option(label, value));
     },
   };
 }

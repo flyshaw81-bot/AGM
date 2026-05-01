@@ -18,6 +18,7 @@ type TestStyleGlobals = typeof globalThis & {
 
 const testGlobals = globalThis as TestStyleGlobals;
 const originalDocument = globalThis.document;
+const originalEvent = globalThis.Event;
 const originalLocalStorage = globalThis.localStorage;
 const originalStylePreset = testGlobals.stylePreset;
 const originalRequestStylePresetChange = testGlobals.requestStylePresetChange;
@@ -27,6 +28,7 @@ const originalInvokeActiveZooming = testGlobals.invokeActiveZooming;
 describe("createGlobalStyleTargets", () => {
   afterEach(() => {
     globalThis.document = originalDocument;
+    globalThis.Event = originalEvent;
     Object.defineProperty(globalThis, "localStorage", {
       configurable: true,
       value: originalLocalStorage,
@@ -88,6 +90,25 @@ describe("createGlobalStyleTargets", () => {
     expect(targets.setToggleChecked("hideLabels", true)).toBe(true);
     expect(input.checked).toBe(true);
     expect(dispatchEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps toggle writes safe when Event is absent", () => {
+    const dispatchEvent = vi.fn();
+    const input = {
+      checked: false,
+      dispatchEvent,
+    };
+    globalThis.Event = undefined as unknown as typeof Event;
+    globalThis.document = {
+      getElementById: vi.fn((id) => (id === "hideLabels" ? input : null)),
+    } as unknown as Document;
+
+    expect(
+      createGlobalStyleTargets().setToggleChecked("hideLabels", true),
+    ).toBe(true);
+
+    expect(input.checked).toBe(true);
+    expect(dispatchEvent).not.toHaveBeenCalled();
   });
 
   it("forwards active zoom refresh when available", () => {

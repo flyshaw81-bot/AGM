@@ -57,7 +57,10 @@ function getInput(id: string) {
 }
 
 function dispatchChange(element: HTMLElement) {
-  element.dispatchEvent(new Event("change", { bubbles: true }));
+  if (typeof globalThis.Event !== "function") {
+    return;
+  }
+  element.dispatchEvent(new globalThis.Event("change", { bubbles: true }));
 }
 
 export function createGlobalStyleRuntimeAdapter(): EngineStyleRuntimeAdapter {

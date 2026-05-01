@@ -16,6 +16,7 @@ type TestActionGlobals = typeof globalThis & {
 
 const testGlobals = globalThis as TestActionGlobals;
 const originalDocument = globalThis.document;
+const originalEvent = globalThis.Event;
 const originalApplyOption = testGlobals.applyOption;
 const originalHeightmapTemplates = testGlobals.heightmapTemplates;
 const originalPrecreatedHeightmaps = testGlobals.precreatedHeightmaps;
@@ -24,6 +25,7 @@ const originalOption = globalThis.Option;
 describe("createGlobalProjectActionTargets", () => {
   afterEach(() => {
     globalThis.document = originalDocument;
+    globalThis.Event = originalEvent;
     testGlobals.applyOption = originalApplyOption;
     testGlobals.heightmapTemplates = originalHeightmapTemplates;
     testGlobals.precreatedHeightmaps = originalPrecreatedHeightmaps;
@@ -53,6 +55,17 @@ describe("createGlobalProjectActionTargets", () => {
     createGlobalProjectActionTargets().dispatchInputAndChange(element);
 
     expect(dispatchEvent).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps form dispatch helpers safe when Event is absent", () => {
+    const dispatchEvent = vi.fn();
+    const element = { dispatchEvent } as unknown as HTMLElement;
+    globalThis.Event = undefined as unknown as typeof Event;
+    const targets = createGlobalProjectActionTargets();
+
+    expect(() => targets.dispatchInputAndChange(element)).not.toThrow();
+    expect(() => targets.dispatchChange(element)).not.toThrow();
+    expect(dispatchEvent).not.toHaveBeenCalled();
   });
 
   it("forwards applyOption and resolves template labels from current globals", () => {
@@ -89,6 +102,23 @@ describe("createGlobalProjectActionTargets", () => {
       textContent: "Custom",
       value: "custom",
     });
+  });
+
+  it("keeps select option writes safe when Option is absent", () => {
+    const add = vi.fn();
+    globalThis.Option = undefined as unknown as typeof Option;
+    const select = {
+      options: { add },
+    } as unknown as HTMLSelectElement;
+
+    expect(() =>
+      createGlobalProjectActionTargets().addSelectOption(
+        select,
+        "Custom",
+        "custom",
+      ),
+    ).not.toThrow();
+    expect(add).not.toHaveBeenCalled();
   });
 
   it("composes project action targets from injected adapters", () => {
