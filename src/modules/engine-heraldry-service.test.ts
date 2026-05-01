@@ -83,4 +83,14 @@ describe("createGlobalHeraldryService", () => {
     expect(pickWeighted).toHaveBeenCalledWith({ heater: 1 });
     expect(pickWeighted).toHaveBeenCalledWith({ pointed: 1 });
   });
+
+  it("uses stable fallbacks when the heraldry module is not mounted", () => {
+    globalThis.COA = undefined as unknown as typeof COA;
+
+    const heraldry = createGlobalHeraldryService();
+
+    expect(heraldry.generate("parent", null, "dominion")).toEqual({});
+    expect(heraldry.getShield(1, 2)).toBe("heater");
+    expect(heraldry.getRandomShield()).toBe("heater");
+  });
 });

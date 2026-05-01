@@ -31,7 +31,7 @@ type EngineNamesModule = {
 };
 
 export type EngineNamingServiceTargets = {
-  getNamesModule: () => EngineNamesModule;
+  getNamesModule: () => EngineNamesModule | undefined;
 };
 
 export function createEngineNamingService(
@@ -39,23 +39,26 @@ export function createEngineNamingService(
 ): EngineNamingService {
   return {
     getCulture: (culture, min, max, dupl) =>
-      targets.getNamesModule().getCulture(culture, min, max, dupl),
+      targets.getNamesModule()?.getCulture(culture, min, max, dupl) ??
+      `Culture ${culture}`,
     getCultureShort: (culture) =>
-      targets.getNamesModule().getCultureShort(culture),
+      targets.getNamesModule()?.getCultureShort(culture) ?? `C${culture}`,
     getState: (baseName, culture) =>
-      targets.getNamesModule().getState(baseName, culture),
+      targets.getNamesModule()?.getState(baseName, culture) ??
+      `${baseName} State`,
     getBase: (base, min, max, dupl) =>
-      targets.getNamesModule().getBase(base, min, max, dupl),
-    getBaseShort: (base) => targets.getNamesModule().getBaseShort(base),
-    getNameBases: () => targets.getNamesModule().getNameBases(),
+      targets.getNamesModule()?.getBase(base, min, max, dupl) ?? `Base ${base}`,
+    getBaseShort: (base) =>
+      targets.getNamesModule()?.getBaseShort(base) ?? `B${base}`,
+    getNameBases: () => targets.getNamesModule()?.getNameBases() ?? [],
     getMapName: () => {
-      targets.getNamesModule().getMapName(false);
+      targets.getNamesModule()?.getMapName(false);
     },
   };
 }
 
 export function createGlobalNamingService(): EngineNamingService {
   return createEngineNamingService({
-    getNamesModule: () => Names,
+    getNamesModule: () => globalThis.Names,
   });
 }

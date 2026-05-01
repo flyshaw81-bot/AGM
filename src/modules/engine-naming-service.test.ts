@@ -68,4 +68,18 @@ describe("createGlobalNamingService", () => {
 
     expect(namesModule.getMapName).toHaveBeenCalledWith(false);
   });
+
+  it("uses stable fallbacks when the names module is not mounted", () => {
+    globalThis.Names = undefined as unknown as typeof Names;
+
+    const naming = createGlobalNamingService();
+
+    expect(naming.getCulture(7)).toBe("Culture 7");
+    expect(naming.getCultureShort(7)).toBe("C7");
+    expect(naming.getState("North", 2)).toBe("North State");
+    expect(naming.getBase?.(3)).toBe("Base 3");
+    expect(naming.getBaseShort?.(3)).toBe("B3");
+    expect(naming.getNameBases?.()).toEqual([]);
+    expect(() => naming.getMapName?.()).not.toThrow();
+  });
 });

@@ -26,7 +26,7 @@ type EngineHeraldryModule = {
 };
 
 export type EngineHeraldryServiceTargets = {
-  getHeraldryModule: () => EngineHeraldryModule;
+  getHeraldryModule: () => EngineHeraldryModule | undefined;
   pickWeighted: typeof rw;
 };
 
@@ -37,11 +37,12 @@ export function createEngineHeraldryService(
     generate: (parent, kinship, dominion, type) =>
       targets
         .getHeraldryModule()
-        .generate(parent as any, kinship, dominion as any, type),
+        ?.generate(parent as any, kinship, dominion as any, type) ?? {},
     getShield: (culture, state) =>
-      targets.getHeraldryModule().getShield(culture, state),
+      targets.getHeraldryModule()?.getShield(culture, state) ?? "heater",
     getRandomShield: () => {
       const heraldry = targets.getHeraldryModule();
+      if (!heraldry) return "heater";
       const type = targets.pickWeighted(heraldry.shields.types);
       return targets.pickWeighted(heraldry.shields[type]);
     },
@@ -50,7 +51,7 @@ export function createEngineHeraldryService(
 
 export function createGlobalHeraldryService(): EngineHeraldryService {
   return createEngineHeraldryService({
-    getHeraldryModule: () => COA,
+    getHeraldryModule: () => globalThis.COA,
     pickWeighted: rw,
   });
 }
