@@ -81,4 +81,26 @@ describe("canvas overlay targets", () => {
       });
     }
   });
+
+  it("keeps default overlay DOM lookups safe when DOM queries throw", () => {
+    const originalDocument = globalThis.document;
+    globalThis.document = {
+      querySelector: () => {
+        throw new Error("overlay query blocked");
+      },
+      getElementById: () => {
+        throw new Error("frame lookup blocked");
+      },
+    } as unknown as Document;
+
+    try {
+      const targets = createGlobalCanvasOverlayDomTargets();
+
+      expect(targets.getPaintPreviewOverlay()).toBeNull();
+      expect(targets.getToolHud()).toBeNull();
+      expect(targets.getCanvasFrame()).toBeNull();
+    } finally {
+      globalThis.document = originalDocument;
+    }
+  });
 });

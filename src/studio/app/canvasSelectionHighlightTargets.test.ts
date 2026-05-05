@@ -100,6 +100,44 @@ describe("canvas selection highlight targets", () => {
     }
   });
 
+  it("keeps default selection highlight DOM lookups safe when DOM queries throw", () => {
+    const originalDocument = globalThis.document;
+    globalThis.document = {
+      querySelectorAll: () => {
+        throw new Error("selection query blocked");
+      },
+      getElementById: () => {
+        throw new Error("selection lookup blocked");
+      },
+    } as unknown as Document;
+
+    try {
+      const targets = createGlobalCanvasSelectionHighlightDomTargets();
+
+      expect(targets.getSelectedStateElements()).toEqual([]);
+      expect(targets.getSelectedStateBorderElements()).toEqual([]);
+      expect(targets.getCanvasFrame()).toBeNull();
+      expect(targets.getMapHost()).toBeNull();
+      expect(targets.getStatePath(7)).toBeNull();
+      expect(targets.getStateBorder(7)).toBeNull();
+    } finally {
+      globalThis.document = originalDocument;
+    }
+  });
+
+  it("keeps selection highlight reordering safe when parent append throws", () => {
+    const element = {
+      parentElement: {
+        appendChild: () => {
+          throw new Error("append blocked");
+        },
+      },
+    } as unknown as SVGElement;
+    const targets = createGlobalCanvasSelectionHighlightDomTargets();
+
+    expect(() => targets.appendToParent(element)).not.toThrow();
+  });
+
   it("keeps SVG lookups safe when SVGElement is absent", () => {
     const statePath = { id: "state7" };
     const originalDocument = globalThis.document;

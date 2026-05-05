@@ -20,16 +20,35 @@ function getDocument(): Document | undefined {
 
 export function createGlobalCanvasOverlayDomTargets(): CanvasOverlayTargets {
   return {
-    getPaintPreviewOverlay: () =>
-      getDocument()?.querySelector<HTMLElement>(
-        "[data-canvas-paint-preview='true']",
-      ) ?? null,
-    getToolHud: () =>
-      getDocument()?.querySelector<HTMLElement>(
-        "[data-canvas-tool-hud='true']",
-      ) ?? null,
-    getCanvasFrame: () =>
-      getDocument()?.getElementById("studioCanvasFrame") ?? null,
+    getPaintPreviewOverlay: () => {
+      try {
+        return (
+          getDocument()?.querySelector<HTMLElement>(
+            "[data-canvas-paint-preview='true']",
+          ) ?? null
+        );
+      } catch {
+        return null;
+      }
+    },
+    getToolHud: () => {
+      try {
+        return (
+          getDocument()?.querySelector<HTMLElement>(
+            "[data-canvas-tool-hud='true']",
+          ) ?? null
+        );
+      } catch {
+        return null;
+      }
+    },
+    getCanvasFrame: () => {
+      try {
+        return getDocument()?.getElementById("studioCanvasFrame") ?? null;
+      } catch {
+        return null;
+      }
+    },
   };
 }
 

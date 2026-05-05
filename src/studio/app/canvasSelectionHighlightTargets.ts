@@ -24,31 +24,64 @@ function getDocument(): Document | undefined {
 
 export function createGlobalCanvasSelectionHighlightDomTargets(): CanvasSelectionHighlightTargets {
   return {
-    getSelectedStateElements: () =>
-      Array.from(
-        getDocument()?.querySelectorAll<SVGElement>(
-          "[data-studio-selected-state='true']",
-        ) ?? [],
-      ),
-    getSelectedStateBorderElements: () =>
-      Array.from(
-        getDocument()?.querySelectorAll<SVGElement>(
-          "[data-studio-selected-state-border='true']",
-        ) ?? [],
-      ),
-    getCanvasFrame: () =>
-      getDocument()?.getElementById("studioCanvasFrame") ?? null,
-    getMapHost: () => getDocument()?.getElementById("studioMapHost") ?? null,
+    getSelectedStateElements: () => {
+      try {
+        return Array.from(
+          getDocument()?.querySelectorAll<SVGElement>(
+            "[data-studio-selected-state='true']",
+          ) ?? [],
+        );
+      } catch {
+        return [];
+      }
+    },
+    getSelectedStateBorderElements: () => {
+      try {
+        return Array.from(
+          getDocument()?.querySelectorAll<SVGElement>(
+            "[data-studio-selected-state-border='true']",
+          ) ?? [],
+        );
+      } catch {
+        return [];
+      }
+    },
+    getCanvasFrame: () => {
+      try {
+        return getDocument()?.getElementById("studioCanvasFrame") ?? null;
+      } catch {
+        return null;
+      }
+    },
+    getMapHost: () => {
+      try {
+        return getDocument()?.getElementById("studioMapHost") ?? null;
+      } catch {
+        return null;
+      }
+    },
     getStatePath: (stateId) => {
-      const element = getDocument()?.getElementById(`state${stateId}`);
-      return isSvgElement(element) ? element : null;
+      try {
+        const element = getDocument()?.getElementById(`state${stateId}`);
+        return isSvgElement(element) ? element : null;
+      } catch {
+        return null;
+      }
     },
     getStateBorder: (stateId) => {
-      const element = getDocument()?.getElementById(`state-border${stateId}`);
-      return isSvgElement(element) ? element : null;
+      try {
+        const element = getDocument()?.getElementById(`state-border${stateId}`);
+        return isSvgElement(element) ? element : null;
+      } catch {
+        return null;
+      }
     },
     appendToParent: (element) => {
-      element.parentElement?.appendChild(element);
+      try {
+        element.parentElement?.appendChild(element);
+      } catch {
+        // Selection highlight reordering can be skipped when SVG parents block writes.
+      }
     },
   };
 }
@@ -62,8 +95,12 @@ export function createGlobalCanvasSelectionHighlightTargets(): CanvasSelectionHi
 function isSvgElement(
   element: Element | null | undefined,
 ): element is SVGElement {
-  return (
-    typeof globalThis.SVGElement === "function" &&
-    element instanceof globalThis.SVGElement
-  );
+  try {
+    return (
+      typeof globalThis.SVGElement === "function" &&
+      element instanceof globalThis.SVGElement
+    );
+  } catch {
+    return false;
+  }
 }
