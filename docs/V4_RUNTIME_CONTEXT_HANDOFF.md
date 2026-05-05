@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 196 test files, 819 tests.
+- `npm.cmd run test -- --run` passed: 196 test files, 820 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2197,6 +2197,10 @@ reuse an injected DOM adapter while tests cover blocked `document` access.
 Canvas interaction geometry default DOM access now also has a separate
 `createGlobalCanvasInteractionGeometryDomTargets()` boundary for frame lookup,
 with runtime geometry targets accepting the injected DOM adapter.
+Heightmap image creation now has a separate
+`createGlobalHeightmapImageBrowserTargets()` boundary for browser canvas and
+image constructors. The public heightmap image target factory remains
+compatible while tests cover blocked `document` and `Image` access.
 
 `ocean-layers.ts` now routes outline-chain error reporting through
 `OceanLayerLogTargets`, keeping the default `globalThis.ERROR` compatibility

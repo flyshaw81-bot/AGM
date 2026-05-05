@@ -39,22 +39,53 @@ export type HeightmapImageTargets = {
   createImage: () => HTMLImageElement;
 };
 
-export function createGlobalHeightmapImageTargets(): HeightmapImageTargets {
+export type HeightmapImageBrowserTargets = {
+  createCanvasElement: () => HTMLCanvasElement | undefined;
+  createImageElement: () => HTMLImageElement | undefined;
+};
+
+function getDocument(): Document | undefined {
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
+}
+
+function getImageConstructor(): typeof Image | undefined {
+  try {
+    return globalThis.Image;
+  } catch {
+    return undefined;
+  }
+}
+
+export function createGlobalHeightmapImageBrowserTargets(): HeightmapImageBrowserTargets {
+  return {
+    createCanvasElement: () => getDocument()?.createElement("canvas"),
+    createImageElement: () => {
+      const ImageConstructor = getImageConstructor();
+      return ImageConstructor ? new ImageConstructor() : undefined;
+    },
+  };
+}
+
+export function createGlobalHeightmapImageTargets(
+  browserTargets: HeightmapImageBrowserTargets = createGlobalHeightmapImageBrowserTargets(),
+): HeightmapImageTargets {
   return {
     createCanvas: () =>
-      (globalThis.document?.createElement("canvas") ?? {
+      (browserTargets.createCanvasElement() ?? {
         width: 0,
         height: 0,
         getContext: () => null,
         remove: () => {},
       }) as HTMLCanvasElement,
     createImage: () =>
-      (globalThis.Image
-        ? new globalThis.Image()
-        : {
-            onload: null,
-            remove: () => {},
-          }) as HTMLImageElement,
+      (browserTargets.createImageElement() ?? {
+        onload: null,
+        remove: () => {},
+      }) as HTMLImageElement,
   };
 }
 

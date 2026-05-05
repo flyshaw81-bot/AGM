@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  createGlobalHeightmapImageBrowserTargets,
   createGlobalHeightmapImageTargets,
   type HeightmapImageTargets,
   HeightmapModule,
@@ -111,6 +112,50 @@ describe("HeightmapModule", () => {
     } finally {
       globalThis.document = originalDocument;
       globalThis.Image = originalImage;
+    }
+  });
+
+  it("keeps browser image targets safe when document and Image access throws", () => {
+    const originalDocumentDescriptor = Object.getOwnPropertyDescriptor(
+      globalThis,
+      "document",
+    );
+    const originalImageDescriptor = Object.getOwnPropertyDescriptor(
+      globalThis,
+      "Image",
+    );
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "Image", {
+      configurable: true,
+      get: () => {
+        throw new Error("image blocked");
+      },
+    });
+
+    try {
+      const browserTargets = createGlobalHeightmapImageBrowserTargets();
+      const targets = createGlobalHeightmapImageTargets(browserTargets);
+
+      expect(browserTargets.createCanvasElement()).toBeUndefined();
+      expect(browserTargets.createImageElement()).toBeUndefined();
+      expect(targets.createCanvas().getContext("2d")).toBeNull();
+      expect(() => targets.createImage().remove()).not.toThrow();
+    } finally {
+      if (originalDocumentDescriptor) {
+        Object.defineProperty(
+          globalThis,
+          "document",
+          originalDocumentDescriptor,
+        );
+      }
+      if (originalImageDescriptor) {
+        Object.defineProperty(globalThis, "Image", originalImageDescriptor);
+      }
     }
   });
 
