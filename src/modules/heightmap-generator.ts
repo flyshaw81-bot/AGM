@@ -14,6 +14,14 @@ declare global {
   var HeightmapGenerator: HeightmapModule;
 }
 
+function getWindow(): (Window & typeof globalThis) | undefined {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+}
+
 export type HeightmapLogTargets = {
   error: (message: string) => void;
 };
@@ -729,6 +737,5 @@ export class HeightmapModule {
   }
 }
 
-if (typeof window !== "undefined") {
-  window.HeightmapGenerator = new HeightmapModule();
-}
+const runtimeWindow = getWindow();
+if (runtimeWindow) runtimeWindow.HeightmapGenerator = new HeightmapModule();

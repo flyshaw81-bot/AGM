@@ -14,6 +14,14 @@ declare global {
   var Rivers: RiverModule;
 }
 
+function getWindow(): (Window & typeof globalThis) | undefined {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+}
+
 export interface River {
   i: number; // river id
   source: number; // source cell index
@@ -679,6 +687,5 @@ export class RiverModule {
   }
 }
 
-if (typeof window !== "undefined") {
-  window.Rivers = new RiverModule();
-}
+const runtimeWindow = getWindow();
+if (runtimeWindow) runtimeWindow.Rivers = new RiverModule();

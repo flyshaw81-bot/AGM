@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PackedGraph } from "../types/PackedGraph";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
 import { RiverModule } from "./river-generator";
@@ -6,6 +6,11 @@ import {
   createTestNoteService,
   createTestRuntimeAdapters,
 } from "./test-runtime-context";
+
+const originalWindowDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "window",
+);
 
 function createRiverContext(): EngineRuntimeContext {
   return {
@@ -74,6 +79,25 @@ function createRiverContext(): EngineRuntimeContext {
 }
 
 describe("RiverModule", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    if (originalWindowDescriptor) {
+      Object.defineProperty(globalThis, "window", originalWindowDescriptor);
+    }
+  });
+
+  it("can be imported when window access throws", async () => {
+    vi.resetModules();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+
+    await expect(import("./river-generator")).resolves.toBeDefined();
+  });
+
   it("gets border points from explicit map dimensions", () => {
     const rivers = new RiverModule();
 

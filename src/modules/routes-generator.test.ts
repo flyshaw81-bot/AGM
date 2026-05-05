@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PackedGraph } from "../types/PackedGraph";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
 import { RoutesModule } from "./routes-generator";
@@ -6,6 +6,11 @@ import {
   createTestNoteService,
   createTestRuntimeAdapters,
 } from "./test-runtime-context";
+
+const originalWindowDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "window",
+);
 
 function createRoutesContext(): EngineRuntimeContext {
   return {
@@ -62,6 +67,25 @@ function createRoutesContext(): EngineRuntimeContext {
 }
 
 describe("RoutesModule", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    if (originalWindowDescriptor) {
+      Object.defineProperty(globalThis, "window", originalWindowDescriptor);
+    }
+  });
+
+  it("can be imported when window access throws", async () => {
+    vi.resetModules();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+
+    await expect(import("./routes-generator")).resolves.toBeDefined();
+  });
+
   it("generates routes against an explicit runtime context", () => {
     const context = createRoutesContext();
 

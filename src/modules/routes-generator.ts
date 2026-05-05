@@ -14,6 +14,14 @@ import {
 } from "./engine-runtime-context";
 import type { Point } from "./voronoi";
 
+function getWindow(): (Window & typeof globalThis) | undefined {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+}
+
 const ROUTES_SHARP_ANGLE = 135;
 const ROUTES_VERY_SHARP_ANGLE = 115;
 
@@ -868,6 +876,5 @@ export class RoutesModule {
   }
 }
 
-if (typeof window !== "undefined") {
-  window.Routes = new RoutesModule();
-}
+const runtimeWindow = getWindow();
+if (runtimeWindow) runtimeWindow.Routes = new RoutesModule();

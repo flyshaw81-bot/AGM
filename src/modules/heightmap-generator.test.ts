@@ -1,9 +1,14 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createGlobalHeightmapImageTargets,
   type HeightmapImageTargets,
   HeightmapModule,
 } from "./heightmap-generator";
+
+const originalWindowDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "window",
+);
 
 function createGraph() {
   return {
@@ -62,6 +67,25 @@ function createImageTargets(data: Uint8ClampedArray): HeightmapImageTargets {
 }
 
 describe("HeightmapModule", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    if (originalWindowDescriptor) {
+      Object.defineProperty(globalThis, "window", originalWindowDescriptor);
+    }
+  });
+
+  it("can be imported when window access throws", async () => {
+    vi.resetModules();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+
+    await expect(import("./heightmap-generator")).resolves.toBeDefined();
+  });
+
   it("can initialize heights without browser globals", () => {
     const heightmap = new HeightmapModule();
 

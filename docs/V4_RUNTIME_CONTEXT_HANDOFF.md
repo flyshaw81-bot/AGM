@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 196 test files, 792 tests.
+- `npm.cmd run test -- --run` passed: 196 test files, 795 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2193,6 +2193,10 @@ so default grid session global access is isolated behind a typed adapter.
 guard blocked `window` access at import time. These mounts remain intentional
 AGM module compatibility exports for the current public orchestration path;
 they are not old-system algorithm dependencies.
+
+`HeightmapGenerator`, `Rivers`, and `Routes` compatibility mounts now also
+guard blocked `window` access at import time. Focused tests cover the restricted
+import path while preserving the existing public mount names.
 
 ## Next Recommended Slice
 
