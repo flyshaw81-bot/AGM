@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createGlobalGraphRuntimeTargets,
   createRuntimeGraphSession,
@@ -30,6 +30,17 @@ function createSelection(calls: Call[], selector: string) {
 }
 
 describe("EngineGraphSessionModule", () => {
+  const originalWindow = globalThis.window;
+
+  afterEach(() => {
+    vi.resetModules();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: originalWindow,
+      writable: true,
+    });
+  });
+
   it("applies graph dimensions to the runtime graph and canvas masks", () => {
     const calls: Call[] = [];
     const root = createSelection(calls, "root");
@@ -313,5 +324,16 @@ describe("EngineGraphSessionModule", () => {
       name: "height",
       value: 1100,
     });
+  });
+
+  it("can be imported when window access throws", async () => {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+
+    await expect(import("./engine-graph-session")).resolves.toBeDefined();
   });
 });

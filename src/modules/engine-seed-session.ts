@@ -41,6 +41,14 @@ function getDocument(): Document | undefined {
   }
 }
 
+function getWindow(): (Window & typeof globalThis) | undefined {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+}
+
 export function createGlobalSeedDomTargets(): EngineSeedDomTargets {
   return {
     getOptionsSeedInput: () =>
@@ -166,6 +174,6 @@ export function createRuntimeSeedSession(
   return new EngineSeedSessionModule(targets);
 }
 
-if (typeof window !== "undefined") {
-  window.EngineSeedSession = new EngineSeedSessionModule();
-}
+const runtimeWindow = getWindow();
+if (runtimeWindow)
+  runtimeWindow.EngineSeedSession = new EngineSeedSessionModule();

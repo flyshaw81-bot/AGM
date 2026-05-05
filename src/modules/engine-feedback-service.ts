@@ -16,10 +16,16 @@ export function createEngineFeedbackService(
   };
 }
 
-export function createGlobalFeedbackService(): EngineFeedbackService {
-  return createEngineFeedbackService({
+export function createGlobalFeedbackTargets(): EngineFeedbackServiceTargets {
+  return {
     showToast: (message, isSuccess, type) => {
       globalThis.tip?.(message, isSuccess, type as any);
     },
-  });
+  };
+}
+
+export function createGlobalFeedbackService(
+  targets: EngineFeedbackServiceTargets = createGlobalFeedbackTargets(),
+): EngineFeedbackService {
+  return createEngineFeedbackService(targets);
 }

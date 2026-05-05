@@ -23,11 +23,17 @@ export function createEngineLogService(
   };
 }
 
-export function createGlobalLogService(): EngineLogService {
-  return createEngineLogService({
+export function createGlobalLogTargets(): EngineLogServiceTargets {
+  return {
     shouldWarn: () => Boolean(globalThis.WARN),
     shouldError: () => Boolean(globalThis.ERROR),
     warn: (message) => console.warn(message),
     error: (message) => console.error(message),
-  });
+  };
+}
+
+export function createGlobalLogService(
+  targets: EngineLogServiceTargets = createGlobalLogTargets(),
+): EngineLogService {
+  return createEngineLogService(targets);
 }

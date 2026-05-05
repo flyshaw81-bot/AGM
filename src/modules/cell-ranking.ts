@@ -9,6 +9,14 @@ declare global {
   var CellRanking: CellRankingModule;
 }
 
+function getWindow(): (Window & typeof globalThis) | undefined {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+}
+
 type CellScoreMap = Record<string, number>;
 
 const scoreMap: CellScoreMap = {
@@ -72,6 +80,5 @@ export class CellRankingModule {
   }
 }
 
-if (typeof window !== "undefined") {
-  window.CellRanking = new CellRankingModule();
-}
+const runtimeWindow = getWindow();
+if (runtimeWindow) runtimeWindow.CellRanking = new CellRankingModule();

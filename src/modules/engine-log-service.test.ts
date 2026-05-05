@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createEngineLogService,
   createGlobalLogService,
+  createGlobalLogTargets,
 } from "./engine-log-service";
 
 const originalWarnFlag = globalThis.WARN;
@@ -23,7 +24,7 @@ describe("createGlobalLogService", () => {
     globalThis.WARN = true;
     globalThis.ERROR = true;
 
-    const logs = createGlobalLogService();
+    const logs = createGlobalLogTargets();
     logs.warn("Careful");
     logs.error("Broken");
 
@@ -60,5 +61,22 @@ describe("createGlobalLogService", () => {
 
     expect(warn).toHaveBeenCalledWith("Visible");
     expect(error).not.toHaveBeenCalled();
+  });
+
+  it("creates a global log service from explicit targets", () => {
+    const warn = vi.fn();
+    const error = vi.fn();
+    const logs = createGlobalLogService({
+      shouldWarn: () => true,
+      shouldError: () => true,
+      warn,
+      error,
+    });
+
+    logs.warn("Careful");
+    logs.error("Broken");
+
+    expect(warn).toHaveBeenCalledWith("Careful");
+    expect(error).toHaveBeenCalledWith("Broken");
   });
 });

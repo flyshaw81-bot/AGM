@@ -3,6 +3,14 @@ import { rn } from "../utils/numberUtils";
 import { gauss, P, rand, rw } from "../utils/probabilityUtils";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
 
+function getWindow(): (Window & typeof globalThis) | undefined {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+}
+
 export function shouldForceDefaultOptions(
   searchParams: URLSearchParams,
 ): boolean {
@@ -521,10 +529,12 @@ export function createRuntimeOptionsSession(
 
 export const EngineOptionsSession = new EngineOptionsSessionModule();
 
-if (typeof window !== "undefined") {
+const runtimeWindow = getWindow();
+if (runtimeWindow) {
   (
-    window as typeof window & {
-      EngineOptionsSession: EngineOptionsSessionModule;
-    }
+    runtimeWindow as Window &
+      typeof globalThis & {
+        EngineOptionsSession: EngineOptionsSessionModule;
+      }
   ).EngineOptionsSession = EngineOptionsSession;
 }

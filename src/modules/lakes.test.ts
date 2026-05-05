@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PackedGraph } from "../types/PackedGraph";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
 import type { PackedGraphFeature } from "./features";
@@ -60,6 +60,17 @@ function createLakeContext(): EngineRuntimeContext {
 }
 
 describe("LakesModule", () => {
+  const originalWindow = globalThis.window;
+
+  afterEach(() => {
+    vi.resetModules();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: originalWindow,
+      writable: true,
+    });
+  });
+
   it("gets lake height from an explicit engine runtime context", () => {
     const feature = {
       shoreline: [1, 2, 3],
@@ -78,5 +89,16 @@ describe("LakesModule", () => {
     context.pack.cells.culture = new Uint8Array([0, 7]);
 
     expect(new LakesModule().getName(feature, context)).toBe("Culture 7");
+  });
+
+  it("can be imported when window access throws", async () => {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+
+    await expect(import("./lakes")).resolves.toBeDefined();
   });
 });

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PackedGraph } from "../types/PackedGraph";
 import { CellRankingModule } from "./cell-ranking";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
@@ -70,6 +70,17 @@ function createRankingContext(): EngineRuntimeContext {
 }
 
 describe("CellRankingModule", () => {
+  const originalWindow = globalThis.window;
+
+  afterEach(() => {
+    vi.resetModules();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: originalWindow,
+      writable: true,
+    });
+  });
+
   it("ranks population suitability from an explicit runtime context", () => {
     const context = createRankingContext();
 
@@ -77,5 +88,16 @@ describe("CellRankingModule", () => {
 
     expect(Array.from(context.pack.cells.s)).toEqual([0, 10, 4]);
     expect(Array.from(context.pack.cells.pop)).toEqual([0, 10, 4]);
+  });
+
+  it("can be imported when window access throws", async () => {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+
+    await expect(import("./cell-ranking")).resolves.toBeDefined();
   });
 });

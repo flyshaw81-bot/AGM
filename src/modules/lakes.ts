@@ -10,6 +10,14 @@ declare global {
   var Lakes: LakesModule;
 }
 
+function getWindow(): (Window & typeof globalThis) | undefined {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+}
+
 export class LakesModule {
   private LAKE_ELEVATION_DELTA = 0.1;
 
@@ -163,6 +171,5 @@ export class LakesModule {
   }
 }
 
-if (typeof window !== "undefined") {
-  window.Lakes = new LakesModule();
-}
+const runtimeWindow = getWindow();
+if (runtimeWindow) runtimeWindow.Lakes = new LakesModule();

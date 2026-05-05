@@ -4,6 +4,14 @@ declare global {
   var EngineGraphSession: EngineGraphSessionModule;
 }
 
+function getWindow(): (Window & typeof globalThis) | undefined {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+}
+
 type AttributeTarget = {
   attr: (name: string, value: unknown) => AttributeTarget;
   select?: (selector: string) => AttributeTarget;
@@ -156,6 +164,6 @@ export function createRuntimeGraphSession(
   return new EngineGraphSessionModule(targets);
 }
 
-if (typeof window !== "undefined") {
-  window.EngineGraphSession = new EngineGraphSessionModule();
-}
+const runtimeWindow = getWindow();
+if (runtimeWindow)
+  runtimeWindow.EngineGraphSession = new EngineGraphSessionModule();

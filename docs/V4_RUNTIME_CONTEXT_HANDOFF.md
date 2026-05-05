@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 196 test files, 779 tests.
+- `npm.cmd run test -- --run` passed: 196 test files, 785 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2133,6 +2133,11 @@ reading the browser global document; the mounted `window.drawBurg*` compatibilit
 functions remain unchanged.
 `emblem/renderer.ts` now also uses a guarded `window.COArenderer` compatibility
 mount, so blocked `window` access no longer breaks no-browser imports.
+Feedback and log services now expose explicit global target factories, keeping
+service composition separate from browser/runtime globals. `CellRanking`,
+`Lakes`, `EngineOptionsSession`, `EngineGraphSession`, and `EngineSeedSession`
+compatibility mounts now also guard blocked `window` access; focused tests
+cover the import path that previously failed through the runtime-context chain.
 `getEngineWorldDimensions(context)` now centralizes the compatibility fallback
 from runtime world settings to browser graph globals. Burgs, Cultures, and
 Rivers consume that helper instead of reading `globalThis.graphWidth` /

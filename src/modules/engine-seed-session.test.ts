@@ -82,11 +82,18 @@ function createRuntimeContext(): EngineRuntimeContext {
 
 describe("EngineSeedSessionModule", () => {
   const originalDocument = globalThis.document;
+  const originalWindow = globalThis.window;
 
   afterEach(() => {
+    vi.resetModules();
     Object.defineProperty(globalThis, "document", {
       configurable: true,
       value: originalDocument,
+      writable: true,
+    });
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: originalWindow,
       writable: true,
     });
   });
@@ -215,5 +222,16 @@ describe("EngineSeedSessionModule", () => {
     expect(fallback.setSeed).toHaveBeenCalledWith("123456789");
     expect(fallback.setOptionsSeed).toHaveBeenCalledWith("123456789");
     expect(fallback.setRandomGenerator).toHaveBeenCalledWith("123456789");
+  });
+
+  it("can be imported when window access throws", async () => {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+
+    await expect(import("./engine-seed-session")).resolves.toBeDefined();
   });
 });
