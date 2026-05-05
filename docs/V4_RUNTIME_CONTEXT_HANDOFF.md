@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 196 test files, 806 tests.
+- `npm.cmd run test -- --run` passed: 196 test files, 808 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2212,6 +2212,11 @@ steps, river restoration helpers, province pole refresh, and marker pruning.
 The default target factory still delegates to the current AGM compatibility
 mounts, but `Resampler.process(...)` no longer owns direct calls to
 `EngineGenerationPipeline`, `Rivers`, `Provinces`, or `Markers`.
+
+`EngineMapStore` now splits its global compatibility boundary into
+`EngineMapStoreGlobalTargets`. The default map-store adapter is composed from
+those targets, so global `grid` / `pack` / `notes` reads and writes remain
+compatible but are no longer embedded directly in the adapter composition.
 
 ## Next Recommended Slice
 

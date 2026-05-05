@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { PackedGraph } from "../types/PackedGraph";
 import {
   createGlobalMapStore,
+  createGlobalMapStoreRuntimeAdapter,
+  createGlobalMapStoreTargets,
   createMapStore,
   createRuntimeMapStore,
   createRuntimeMapStoreRuntimeAdapter,
@@ -55,6 +58,87 @@ describe("createGlobalMapStore", () => {
       globalThis.pack,
       globalThis.notes,
     ]);
+  });
+
+  it("composes the global runtime adapter from explicit targets", () => {
+    const calls: string[] = [];
+    const localGrid = { cells: { i: [1] } } as typeof grid;
+    const localPack = { cells: { i: [2] } } as typeof pack;
+    const localNotes = [{ id: "n10", name: "Target", legend: "Note" }];
+    const nextGrid = { cells: { i: [3] } } as typeof grid;
+    const adapter = createGlobalMapStoreRuntimeAdapter({
+      clone: (value) => {
+        calls.push("clone");
+        return value;
+      },
+      createGrid: () => {
+        calls.push("createGrid");
+        return nextGrid;
+      },
+      getGrid: () => {
+        calls.push("getGrid");
+        return localGrid;
+      },
+      getNotes: () => {
+        calls.push("getNotes");
+        return localNotes;
+      },
+      getPack: () => {
+        calls.push("getPack");
+        return localPack;
+      },
+      setGrid: (value) => {
+        calls.push(`setGrid:${value === nextGrid}`);
+      },
+      setNotes: (value) => {
+        calls.push(`setNotes:${value === localNotes}`);
+      },
+      setPack: () => {
+        calls.push("setPack");
+      },
+    });
+
+    expect(adapter.getGrid()).toBe(localGrid);
+    expect(adapter.getPack()).toBe(localPack);
+    expect(adapter.getNotes()).toBe(localNotes);
+    expect(adapter.clone(localPack)).toBe(localPack);
+    expect(adapter.createGrid()).toBe(nextGrid);
+    adapter.setGrid(nextGrid);
+    adapter.setPack({} as PackedGraph);
+    adapter.setNotes(localNotes);
+
+    expect(calls).toEqual([
+      "getGrid",
+      "getPack",
+      "getNotes",
+      "clone",
+      "createGrid",
+      "setGrid:true",
+      "setPack",
+      "setNotes:true",
+    ]);
+  });
+
+  it("keeps the default global target factory as the compatibility boundary", () => {
+    globalThis.grid = { cells: { i: [11] } } as typeof grid;
+    globalThis.pack = { cells: { i: [12] } } as typeof pack;
+    globalThis.notes = [{ id: "n11", name: "Global", legend: "Note" }];
+    const targets = createGlobalMapStoreTargets();
+
+    expect(targets.getGrid()).toBe(globalThis.grid);
+    expect(targets.getPack()).toBe(globalThis.pack);
+    expect(targets.getNotes()).toBe(globalThis.notes);
+
+    const nextGrid = { cells: { i: [13] } } as typeof grid;
+    const nextPack = { cells: { i: [14] } } as typeof pack;
+    const nextNotes = [{ id: "n12", name: "Next", legend: "Note" }];
+    targets.setGrid(nextGrid);
+    targets.setPack(nextPack);
+    targets.setNotes(nextNotes);
+
+    expect(globalThis.grid).toBe(nextGrid);
+    expect(globalThis.pack).toBe(nextPack);
+    expect(globalThis.notes).toBe(nextNotes);
   });
 
   it("resets pack for generation behind the map-store boundary", () => {

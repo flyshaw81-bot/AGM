@@ -27,7 +27,18 @@ export type EngineMapStoreRuntimeAdapter = {
   createGrid: () => typeof grid;
 };
 
-export function createGlobalMapStoreRuntimeAdapter(): EngineMapStoreRuntimeAdapter {
+export type EngineMapStoreGlobalTargets = {
+  clone: <T>(value: T) => T;
+  createGrid: () => typeof grid;
+  getGrid: () => typeof grid;
+  getNotes: () => EngineNote[];
+  getPack: () => PackedGraph;
+  setGrid: (nextGrid: typeof grid) => void;
+  setNotes: (nextNotes: EngineNote[]) => void;
+  setPack: (nextPack: PackedGraph) => void;
+};
+
+export function createGlobalMapStoreTargets(): EngineMapStoreGlobalTargets {
   return {
     getGrid: () => grid,
     getPack: () => pack,
@@ -43,6 +54,21 @@ export function createGlobalMapStoreRuntimeAdapter(): EngineMapStoreRuntimeAdapt
       notes = nextNotes;
     },
     createGrid: () => generateGrid(seed, graphWidth, graphHeight),
+  };
+}
+
+export function createGlobalMapStoreRuntimeAdapter(
+  targets: EngineMapStoreGlobalTargets = createGlobalMapStoreTargets(),
+): EngineMapStoreRuntimeAdapter {
+  return {
+    getGrid: targets.getGrid,
+    getPack: targets.getPack,
+    getNotes: targets.getNotes,
+    clone: targets.clone,
+    setGrid: targets.setGrid,
+    setPack: targets.setPack,
+    setNotes: targets.setNotes,
+    createGrid: targets.createGrid,
   };
 }
 
