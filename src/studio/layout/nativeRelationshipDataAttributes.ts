@@ -6,7 +6,7 @@ import { escapeHtml } from "./shellShared";
 
 type DataAttributeValue = boolean | number | string | null | undefined;
 
-export function renderNativeRelationshipDataAttributes(
+export function renderDirectRelationshipDataAttributes(
   attributes: Record<string, DataAttributeValue>,
 ) {
   return Object.entries(attributes)
@@ -14,10 +14,10 @@ export function renderNativeRelationshipDataAttributes(
     .join(" ");
 }
 
-export function renderNativeRelationshipIssueFixAttributes(
+export function renderDirectRelationshipIssueFixAttributes(
   issue: RelationshipIssue,
 ) {
-  return renderNativeRelationshipDataAttributes({
+  return renderDirectRelationshipDataAttributes({
     "studio-action": "direct-relationship-fix",
     "fix-kind": issue.fixKind,
     "workbench-target": issue.target,
@@ -48,10 +48,10 @@ export function renderNativeRelationshipIssueFixAttributes(
   });
 }
 
-export function renderNativeRelationshipReplacementCandidateAttributes(
+export function renderDirectRelationshipReplacementCandidateAttributes(
   candidate: RelationshipReplacementCandidate,
 ) {
-  return renderNativeRelationshipDataAttributes({
+  return renderDirectRelationshipDataAttributes({
     "studio-action": "direct-relationship-replace-reference",
     "replace-entity": candidate.replaceEntity,
     "replace-field": candidate.replaceField,
@@ -83,3 +83,10 @@ export function renderNativeRelationshipReplacementCandidateAttributes(
     "province-color": candidate.provinceColor,
   });
 }
+
+export const renderNativeRelationshipDataAttributes =
+  renderDirectRelationshipDataAttributes;
+export const renderNativeRelationshipIssueFixAttributes =
+  renderDirectRelationshipIssueFixAttributes;
+export const renderNativeRelationshipReplacementCandidateAttributes =
+  renderDirectRelationshipReplacementCandidateAttributes;

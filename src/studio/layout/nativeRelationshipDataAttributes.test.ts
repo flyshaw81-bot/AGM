@@ -1,18 +1,19 @@
 import { describe, expect, it } from "vitest";
 import {
+  renderDirectRelationshipDataAttributes,
+  renderDirectRelationshipIssueFixAttributes,
+  renderDirectRelationshipReplacementCandidateAttributes,
   renderNativeRelationshipDataAttributes,
-  renderNativeRelationshipIssueFixAttributes,
-  renderNativeRelationshipReplacementCandidateAttributes,
 } from "./nativeRelationshipDataAttributes";
 import type {
   RelationshipIssue,
   RelationshipReplacementCandidate,
 } from "./nativeRelationshipIssueTypes";
 
-describe("nativeRelationshipDataAttributes", () => {
+describe("direct relationship data attributes", () => {
   it("renders escaped data attributes while preserving empty optional values", () => {
     expect(
-      renderNativeRelationshipDataAttributes({
+      renderDirectRelationshipDataAttributes({
         "state-id": 12,
         "state-name": 'North <Watch> "Prime"',
         "state-color": undefined,
@@ -32,13 +33,13 @@ describe("nativeRelationshipDataAttributes", () => {
       fixProvinceBurg: 42,
     } as RelationshipIssue;
 
-    expect(renderNativeRelationshipIssueFixAttributes(issue)).toContain(
+    expect(renderDirectRelationshipIssueFixAttributes(issue)).toContain(
       'data-studio-action="direct-relationship-fix"',
     );
-    expect(renderNativeRelationshipIssueFixAttributes(issue)).toContain(
+    expect(renderDirectRelationshipIssueFixAttributes(issue)).toContain(
       'data-province-state="3"',
     );
-    expect(renderNativeRelationshipIssueFixAttributes(issue)).toContain(
+    expect(renderDirectRelationshipIssueFixAttributes(issue)).toContain(
       'data-workbench-target="studioDirectProvincesWorkbench"',
     );
   });
@@ -57,13 +58,19 @@ describe("nativeRelationshipDataAttributes", () => {
     } as RelationshipReplacementCandidate;
 
     expect(
-      renderNativeRelationshipReplacementCandidateAttributes(candidate),
+      renderDirectRelationshipReplacementCandidateAttributes(candidate),
     ).toContain('data-replace-value="8"');
     expect(
-      renderNativeRelationshipReplacementCandidateAttributes(candidate),
+      renderDirectRelationshipReplacementCandidateAttributes(candidate),
     ).toContain('data-candidate-recommended="true"');
     expect(
-      renderNativeRelationshipReplacementCandidateAttributes(candidate),
+      renderDirectRelationshipReplacementCandidateAttributes(candidate),
     ).toContain('data-state-culture="8"');
+  });
+
+  it("keeps the previous data attribute helper as a compatibility alias", () => {
+    expect(renderNativeRelationshipDataAttributes({ "state-id": 7 })).toBe(
+      'data-state-id="7"',
+    );
   });
 });

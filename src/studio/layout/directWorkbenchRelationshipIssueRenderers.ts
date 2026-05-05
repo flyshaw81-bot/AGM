@@ -1,5 +1,5 @@
 import type { StudioLanguage } from "../types";
-import { renderNativeRelationshipIssueFixAttributes } from "./nativeRelationshipDataAttributes";
+import { renderDirectRelationshipIssueFixAttributes } from "./nativeRelationshipDataAttributes";
 import type { RelationshipIssue } from "./nativeRelationshipIssueTypes";
 import { renderNativeRelationshipReplacementCandidate } from "./nativeRelationshipReplacementCandidateView";
 import { escapeHtml, t } from "./shellShared";
@@ -73,7 +73,7 @@ export function renderRelationshipIssue(
       ${renderRelationshipIssueNavigation(issue, language)}
       <span class="studio-direct-workbench-directory__issue-actions">
         ${issue.editLabel && issue.editEntity && issue.editId && issue.editField ? `<button class="studio-ghost studio-direct-workbench-directory__issue-fix" data-studio-action="direct-relationship-edit-reference" data-edit-entity="${issue.editEntity}" data-edit-id="${issue.editId}" data-edit-field="${issue.editField}" data-workbench-target="${issue.target}">${escapeHtml(issue.editLabel)}</button>` : ""}
-        ${issue.fixLabel && issue.fixKind ? `<button class="studio-ghost studio-direct-workbench-directory__issue-fix" ${renderNativeRelationshipIssueFixAttributes(issue)}>${escapeHtml(issue.fixLabel)}</button>` : ""}
+        ${issue.fixLabel && issue.fixKind ? `<button class="studio-ghost studio-direct-workbench-directory__issue-fix" ${renderDirectRelationshipIssueFixAttributes(issue)}>${escapeHtml(issue.fixLabel)}</button>` : ""}
         ${issue.fixLabel && issue.fixKind ? `<button class="studio-ghost studio-direct-workbench-directory__issue-fix" data-studio-action="direct-relationship-queue-add">${t(language, "加入队列", "Add to queue")}</button>` : ""}
       </span>
       ${issue.replaceCandidates?.length ? `<div class="studio-direct-workbench-directory__issue-candidates"><span>${t(language, "候选替换", "Replacement candidates")}</span><small data-direct-relationship-suggestion-hint="true">${t(language, "优先替换为仍存在的有效实体；只有确实缺失时再清空为 #0。", "Prefer replacing with an existing valid entity; clear to #0 only when the reference should stay missing.")}</small>${issue.replaceCandidates.map((candidate) => renderNativeRelationshipReplacementCandidate(candidate, language)).join("")}${issue.editLabel && issue.editEntity && issue.editId && issue.editField ? `<button class="studio-ghost studio-direct-workbench-directory__issue-candidate" data-studio-action="direct-relationship-edit-reference" data-edit-entity="${issue.editEntity}" data-edit-id="${issue.editId}" data-edit-field="${issue.editField}" data-workbench-target="${issue.target}">${t(language, "打开完整选择器", "Open full picker")}</button>` : ""}</div>` : ""}
