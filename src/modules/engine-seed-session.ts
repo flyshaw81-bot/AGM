@@ -75,8 +75,15 @@ function getAleaPrng(): ((seed: string) => () => number) | undefined {
 
 export function createGlobalSeedDomTargets(): EngineSeedDomTargets {
   return {
-    getOptionsSeedInput: () =>
-      getDocument()?.getElementById("optionsSeed") as HTMLInputElement | null,
+    getOptionsSeedInput: () => {
+      try {
+        return getDocument()?.getElementById(
+          "optionsSeed",
+        ) as HTMLInputElement | null;
+      } catch {
+        return null;
+      }
+    },
   };
 }
 
@@ -86,7 +93,11 @@ export function createGlobalSeedRuntimeTargets(): EngineSeedRuntimeTargets {
     getSearchParams: () =>
       new URL(getLocationHref(), "https://agm.local").searchParams,
     setSeed: (nextSeed) => {
-      globalThis.seed = nextSeed;
+      try {
+        globalThis.seed = nextSeed;
+      } catch {
+        // Seed writes are best-effort for blocked compatibility globals.
+      }
     },
     setRandomGenerator: (nextSeed) => {
       const createRandom = getAleaPrng();

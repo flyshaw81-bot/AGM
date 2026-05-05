@@ -2395,6 +2395,10 @@ size, latitude, and longitude controls. Blocked browser control queries fall
 back to caller-provided numeric defaults while explicit runtime targets stay
 unchanged.
 
+Seed-session defaults now guard blocked `optionsSeed` element lookups and seed
+global writes. The compatibility path still mirrors seeds into browser globals
+when available, but blocked DOM/runtime globals now degrade to no-op behavior.
+
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`
 dimensions. `engine-generation-session-services.ts` now exposes

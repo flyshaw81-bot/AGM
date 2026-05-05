@@ -150,6 +150,22 @@ describe("EngineSeedSessionModule", () => {
     ).not.toThrow();
   });
 
+  it("keeps global seed DOM targets safe when element lookup throws", () => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: {
+        getElementById: () => {
+          throw new Error("element lookup blocked");
+        },
+      },
+      writable: true,
+    });
+
+    expect(() =>
+      createGlobalSeedSessionTargets().setOptionsSeed("dom-seed"),
+    ).not.toThrow();
+  });
+
   it("composes seed session targets from explicit runtime and DOM targets", () => {
     const optionsSeed = { value: "" } as HTMLInputElement;
     const runtimeTargets: EngineSeedRuntimeTargets = {
@@ -272,6 +288,31 @@ describe("EngineSeedSessionModule", () => {
         );
       }
       Math.random = originalRandom;
+    }
+  });
+
+  it("keeps global seed runtime targets safe when seed writes throw", () => {
+    const originalSeedDescriptor = Object.getOwnPropertyDescriptor(
+      globalThis,
+      "seed",
+    );
+    Object.defineProperty(globalThis, "seed", {
+      configurable: true,
+      set: () => {
+        throw new Error("seed blocked");
+      },
+    });
+
+    try {
+      expect(() =>
+        createGlobalSeedRuntimeTargets().setSeed("global-seed"),
+      ).not.toThrow();
+    } finally {
+      if (originalSeedDescriptor) {
+        Object.defineProperty(globalThis, "seed", originalSeedDescriptor);
+      } else {
+        Reflect.deleteProperty(globalThis, "seed");
+      }
     }
   });
 
