@@ -40,13 +40,56 @@ type ParentMapDefinition = {
   notes: any[];
 };
 
+export type ResamplerTargets = {
+  addRiverMeandering: (
+    cells: number[],
+    points: Point[] | undefined,
+    meandering: number,
+    context: EngineRuntimeContext,
+  ) => [number, number, number][];
+  calculateClimate: (context: EngineRuntimeContext) => void;
+  deleteMarker: (markerId: number, context: EngineRuntimeContext) => void;
+  generateIce: (context: EngineRuntimeContext) => void;
+  getProvincePoles: (context: EngineRuntimeContext) => void;
+  getRiverApproximateLength: (points: Point[] | undefined) => number;
+  getRiverBasin: (riverId: number, context: EngineRuntimeContext) => number;
+  markupGrid: (context: EngineRuntimeContext) => void;
+  markupPack: (context: EngineRuntimeContext) => void;
+};
+
+export function createGlobalResamplerTargets(): ResamplerTargets {
+  return {
+    addRiverMeandering: (cells, points, meandering, context) =>
+      globalThis.Rivers.addMeandering(cells, points, meandering, context),
+    calculateClimate: (context) =>
+      globalThis.EngineGenerationPipeline.calculateClimate(context),
+    deleteMarker: (markerId, context) =>
+      globalThis.Markers.deleteMarker(markerId, context),
+    generateIce: (context) =>
+      globalThis.EngineGenerationPipeline.generateIce(context),
+    getProvincePoles: (context) => globalThis.Provinces.getPoles(context),
+    getRiverApproximateLength: (points) =>
+      globalThis.Rivers.getApproximateLength(points),
+    getRiverBasin: (riverId, context) =>
+      globalThis.Rivers.getBasin(riverId, context),
+    markupGrid: (context) =>
+      globalThis.EngineGenerationPipeline.markupGrid(context),
+    markupPack: (context) =>
+      globalThis.EngineGenerationPipeline.markupPack(context),
+  };
+}
+
 export class Resampler {
+  constructor(
+    private readonly targets: ResamplerTargets = createGlobalResamplerTargets(),
+  ) {}
+
   private saveRiversData(
     parentRivers: PackedGraph["rivers"],
     context: EngineRuntimeContext,
   ) {
     return parentRivers.map((river) => {
-      const meanderedPoints = Rivers.addMeandering(
+      const meanderedPoints = this.targets.addRiverMeandering(
         river.cells,
         river.points,
         0.5,
@@ -215,8 +258,8 @@ export class Resampler {
       .filter((river) => river !== null);
 
     pack.rivers.forEach((river) => {
-      river.basin = Rivers.getBasin(river.i, context);
-      river.length = Rivers.getApproximateLength(river.points);
+      river.basin = this.targets.getRiverBasin(river.i, context);
+      river.length = this.targets.getRiverApproximateLength(river.points);
     });
   }
 
@@ -485,7 +528,7 @@ export class Resampler {
       return province;
     });
 
-    Provinces.getPoles(context);
+    this.targets.getProvincePoles(context);
 
     pack.provinces.forEach((province) => {
       if (!province.i || province.removed) return;
@@ -530,7 +573,9 @@ export class Resampler {
     pack.markers = parentMap.pack.markers;
     pack.markers.forEach((marker) => {
       const [x, y] = projection(marker.x, marker.y);
-      if (!this.isInMap(x, y, context)) Markers.deleteMarker(marker.i, context);
+      if (!this.isInMap(x, y, context)) {
+        this.targets.deleteMarker(marker.i, context);
+      }
 
       const cell = findClosestCell(x, y, Infinity, pack);
       marker.x = rn(x, 2);
@@ -573,17 +618,17 @@ export class Resampler {
 
     this.resamplePrimaryGridData(parentMap, inverse, scale, resampledContext);
 
-    EngineGenerationPipeline.markupGrid(resampledContext);
+    this.targets.markupGrid(resampledContext);
     resampledContext.lifecycle.addLakesInDeepDepressions(resampledContext);
     resampledContext.lifecycle.openNearSeaLakes(resampledContext);
 
     resampledContext.lifecycle.drawOceanLayers(resampledContext);
     resampledContext.lifecycle.calculateMapCoordinates(resampledContext);
-    EngineGenerationPipeline.calculateClimate(resampledContext);
+    this.targets.calculateClimate(resampledContext);
 
     resampledContext.lifecycle.rebuildGraph();
-    EngineGenerationPipeline.markupPack(resampledContext);
-    EngineGenerationPipeline.generateIce(resampledContext);
+    this.targets.markupPack(resampledContext);
+    this.targets.generateIce(resampledContext);
     resampledContext.lifecycle.createDefaultRuler();
 
     this.restoreCellData(parentMap, inverse, scale, resampledContext);

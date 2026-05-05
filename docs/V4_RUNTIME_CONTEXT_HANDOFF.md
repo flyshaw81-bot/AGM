@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 196 test files, 805 tests.
+- `npm.cmd run test -- --run` passed: 196 test files, 806 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2206,6 +2206,12 @@ module mounts for the public compatibility path.
 compatibility mounts now also guard blocked `window` access at import time.
 After this pass, the remaining `window.*` hits under `src/modules` are guarded
 AGM compatibility mounts rather than naked import-time browser reads.
+
+`Resampler` now accepts injectable `ResamplerTargets` for pipeline rebuild
+steps, river restoration helpers, province pole refresh, and marker pruning.
+The default target factory still delegates to the current AGM compatibility
+mounts, but `Resampler.process(...)` no longer owns direct calls to
+`EngineGenerationPipeline`, `Rivers`, `Provinces`, or `Markers`.
 
 ## Next Recommended Slice
 

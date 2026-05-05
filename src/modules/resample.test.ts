@@ -1,14 +1,16 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { EngineMapSnapshot } from "./engine-map-store";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
-import { Resampler } from "./resample";
+import { createGlobalResamplerTargets, Resampler } from "./resample";
 import {
   createTestNoteService,
   createTestRuntimeAdapters,
 } from "./test-runtime-context";
 
 const originalPipeline = globalThis.EngineGenerationPipeline;
+const originalMarkers = globalThis.Markers;
 const originalProvinces = globalThis.Provinces;
+const originalRivers = globalThis.Rivers;
 const originalWindowDescriptor = Object.getOwnPropertyDescriptor(
   globalThis,
   "window",
@@ -129,11 +131,27 @@ function createResampleContext() {
   return { context, resampledContext, snapshot };
 }
 
+function createResamplerTargets() {
+  return {
+    addRiverMeandering: vi.fn(() => []),
+    calculateClimate: vi.fn(),
+    deleteMarker: vi.fn(),
+    generateIce: vi.fn(),
+    getProvincePoles: vi.fn(),
+    getRiverApproximateLength: vi.fn(() => 0),
+    getRiverBasin: vi.fn(() => 0),
+    markupGrid: vi.fn(),
+    markupPack: vi.fn(),
+  };
+}
+
 describe("Resampler", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     globalThis.EngineGenerationPipeline = originalPipeline;
+    globalThis.Markers = originalMarkers;
     globalThis.Provinces = originalProvinces;
+    globalThis.Rivers = originalRivers;
     if (originalWindowDescriptor) {
       Object.defineProperty(globalThis, "window", originalWindowDescriptor);
     }
@@ -153,17 +171,9 @@ describe("Resampler", () => {
 
   it("runs the resample pipeline against an explicit runtime context", () => {
     const { context, resampledContext, snapshot } = createResampleContext();
-    globalThis.EngineGenerationPipeline = {
-      markupGrid: vi.fn(),
-      calculateClimate: vi.fn(),
-      markupPack: vi.fn(),
-      generateIce: vi.fn(),
-    } as unknown as typeof EngineGenerationPipeline;
-    globalThis.Provinces = {
-      getPoles: vi.fn(),
-    } as unknown as typeof Provinces;
+    const targets = createResamplerTargets();
 
-    new Resampler().process(
+    new Resampler(targets).process(
       {
         projection: (x, y) => [x, y],
         inverse: (x, y) => [x, y],
@@ -175,21 +185,63 @@ describe("Resampler", () => {
     expect(context.mapStore.createSnapshot).toHaveBeenCalledWith();
     expect(context.mapStore.resetForResample).toHaveBeenCalledWith(snapshot);
     expect(context.mapStore.getCurrentContext).toHaveBeenCalledWith();
-    expect(EngineGenerationPipeline.markupGrid).toHaveBeenCalledWith(
-      resampledContext,
-    );
-    expect(EngineGenerationPipeline.calculateClimate).toHaveBeenCalledWith(
-      resampledContext,
-    );
-    expect(EngineGenerationPipeline.markupPack).toHaveBeenCalledWith(
-      resampledContext,
-    );
-    expect(EngineGenerationPipeline.generateIce).toHaveBeenCalledWith(
-      resampledContext,
-    );
-    expect(Provinces.getPoles).toHaveBeenCalledWith(resampledContext);
+    expect(targets.markupGrid).toHaveBeenCalledWith(resampledContext);
+    expect(targets.calculateClimate).toHaveBeenCalledWith(resampledContext);
+    expect(targets.markupPack).toHaveBeenCalledWith(resampledContext);
+    expect(targets.generateIce).toHaveBeenCalledWith(resampledContext);
+    expect(targets.getProvincePoles).toHaveBeenCalledWith(resampledContext);
     expect(resampledContext.lifecycle.showStatistics).toHaveBeenCalledWith(
       resampledContext,
     );
+  });
+
+  it("keeps the global compatibility target wiring available", () => {
+    globalThis.EngineGenerationPipeline = {
+      markupGrid: vi.fn(),
+      calculateClimate: vi.fn(),
+      markupPack: vi.fn(),
+      generateIce: vi.fn(),
+    } as unknown as typeof EngineGenerationPipeline;
+    globalThis.Markers = {
+      deleteMarker: vi.fn(),
+    } as unknown as typeof Markers;
+    globalThis.Provinces = {
+      getPoles: vi.fn(),
+    } as unknown as typeof Provinces;
+    globalThis.Rivers = {
+      addMeandering: vi.fn(() => [[0, 0, 0]]),
+      getApproximateLength: vi.fn(() => 7),
+      getBasin: vi.fn(() => 3),
+    } as unknown as typeof Rivers;
+    const context = createResampleContext().context;
+
+    const targets = createGlobalResamplerTargets();
+
+    expect(targets.addRiverMeandering([1], [], 0.5, context)).toEqual([
+      [0, 0, 0],
+    ]);
+    expect(targets.getRiverApproximateLength([])).toBe(7);
+    expect(targets.getRiverBasin(1, context)).toBe(3);
+    targets.markupGrid(context);
+    targets.calculateClimate(context);
+    targets.markupPack(context);
+    targets.generateIce(context);
+    targets.getProvincePoles(context);
+    targets.deleteMarker(4, context);
+
+    expect(globalThis.EngineGenerationPipeline.markupGrid).toHaveBeenCalledWith(
+      context,
+    );
+    expect(
+      globalThis.EngineGenerationPipeline.calculateClimate,
+    ).toHaveBeenCalledWith(context);
+    expect(globalThis.EngineGenerationPipeline.markupPack).toHaveBeenCalledWith(
+      context,
+    );
+    expect(
+      globalThis.EngineGenerationPipeline.generateIce,
+    ).toHaveBeenCalledWith(context);
+    expect(globalThis.Provinces.getPoles).toHaveBeenCalledWith(context);
+    expect(globalThis.Markers.deleteMarker).toHaveBeenCalledWith(4, context);
   });
 });
