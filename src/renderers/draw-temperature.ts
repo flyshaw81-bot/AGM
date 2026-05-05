@@ -15,6 +15,10 @@ declare global {
   var drawTemperature: () => void;
 }
 
+export interface TemperatureRendererTargets {
+  getTemperatureEquatorOutput: () => HTMLInputElement | undefined;
+}
+
 const getWindow = (): (Window & typeof globalThis) | undefined => {
   try {
     return globalThis.window;
@@ -23,15 +27,30 @@ const getWindow = (): (Window & typeof globalThis) | undefined => {
   }
 };
 
-const temperatureRenderer = (): void => {
+export function createGlobalTemperatureRendererTargets(): TemperatureRendererTargets {
+  return {
+    getTemperatureEquatorOutput: () =>
+      byId<HTMLInputElement>("temperatureEquatorOutput"),
+  };
+}
+
+const defaultTemperatureRendererTargets =
+  createGlobalTemperatureRendererTargets();
+
+export const temperatureRenderer = (
+  targets: TemperatureRendererTargets = defaultTemperatureRendererTargets,
+): void => {
+  const temperatureEquatorOutput = targets.getTemperatureEquatorOutput();
+  if (!temperatureEquatorOutput) return;
+
   TIME && console.time("drawTemperature");
 
   temperature.selectAll("*").remove();
   const lineGen = line<[number, number]>().curve(curveBasisClosed);
   const scheme = scaleSequential(interpolateSpectral);
 
-  const tMax = +(byId("temperatureEquatorOutput") as HTMLInputElement).max;
-  const tMin = +(byId("temperatureEquatorOutput") as HTMLInputElement).min;
+  const tMax = +temperatureEquatorOutput.max;
+  const tMin = +temperatureEquatorOutput.min;
   const delta = tMax - tMin;
 
   const { cells, vertices } = grid;

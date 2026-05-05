@@ -2246,6 +2246,9 @@ directly after acquiring the global document.
 `draw-burg-labels.ts` now follows the same target split for label DOM reads,
 using `BurgLabelRendererTargets.getElementById` and `querySelectorAll` while
 keeping the default global document adapter as the compatibility path.
+`draw-temperature.ts` now routes the `temperatureEquatorOutput` DOM lookup
+through `TemperatureRendererTargets`, leaving `byId` only in the default
+compatibility adapter and making missing controls a no-op.
 
 `ocean-layers.ts` now routes outline-chain error reporting through
 `OceanLayerLogTargets`, keeping the default `globalThis.ERROR` compatibility

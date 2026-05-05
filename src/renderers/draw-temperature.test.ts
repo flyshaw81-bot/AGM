@@ -31,4 +31,21 @@ describe("temperature renderer compatibility mount", () => {
 
     await expect(import("./draw-temperature")).resolves.toBeTruthy();
   });
+
+  it("keeps temperature control lookup safe when document access throws", async () => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
+
+    const { createGlobalTemperatureRendererTargets } = await import(
+      "./draw-temperature"
+    );
+
+    expect(
+      createGlobalTemperatureRendererTargets().getTemperatureEquatorOutput(),
+    ).toBeUndefined();
+  });
 });
