@@ -1,6 +1,14 @@
 import { last } from "./arrayUtils";
 import { P } from "./probabilityUtils";
 
+function getDocument(): Document | undefined {
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * Check if character is a vowel
  * @param c - The character to check.
@@ -204,10 +212,11 @@ export const abbreviate = (name: string, restricted: string[] = []) => {
  */
 export const list = (array: string[]) => {
   if (!Intl.ListFormat) return array.join(", ");
-  const conjunction = new Intl.ListFormat(
-    document.documentElement.lang || "en",
-    { style: "long", type: "conjunction" },
-  );
+  const language = getDocument()?.documentElement?.lang || "en";
+  const conjunction = new Intl.ListFormat(language, {
+    style: "long",
+    type: "conjunction",
+  });
   return conjunction.format(array);
 };
 

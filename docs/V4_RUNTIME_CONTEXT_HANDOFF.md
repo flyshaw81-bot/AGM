@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 196 test files, 830 tests.
+- `npm.cmd run test -- --run` passed: 197 test files, 832 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2230,6 +2230,8 @@ the heater shield without throwing.
 injectable `PathLogTargets`. The default target keeps current `window.ERROR`
 compatibility, but blocked window access no longer throws from the core path
 utility.
+`languageUtils.list(...)` now guards `document.documentElement.lang` access and
+falls back to English when browser document globals are absent or blocked.
 
 `ocean-layers.ts` now routes outline-chain error reporting through
 `OceanLayerLogTargets`, keeping the default `globalThis.ERROR` compatibility
