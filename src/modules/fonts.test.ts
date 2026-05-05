@@ -203,6 +203,34 @@ describe("font resource compatibility facade", () => {
     expect(() => adapter.setSelectedFont("Display Font")).not.toThrow();
   });
 
+  it("keeps the default browser font targets safe when DOM font operations throw", async () => {
+    globalThis.document = {
+      getElementById: () => {
+        throw new Error("font select blocked");
+      },
+      createElement: () => {
+        throw new Error("font option blocked");
+      },
+      fonts: {
+        add: () => {
+          throw new Error("font registry blocked");
+        },
+      },
+    } as unknown as Document;
+
+    const { createBrowserFontResourceAdapter } = await import("./fonts");
+    const adapter = createBrowserFontResourceAdapter();
+
+    expect(() => adapter.addFontOption("Display Font")).not.toThrow();
+    expect(() =>
+      adapter.registerFontFace({
+        family: "Display Font",
+        src: "url(https://example.test/display.woff2)",
+      }),
+    ).not.toThrow();
+    expect(() => adapter.setSelectedFont("Display Font")).not.toThrow();
+  });
+
   it("keeps browser font targets safe when optional global access throws", async () => {
     const descriptors = new Map<string, PropertyDescriptor | undefined>(
       [

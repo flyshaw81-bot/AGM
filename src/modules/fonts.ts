@@ -383,23 +383,47 @@ function getProvinceLayer(): typeof provs | undefined {
 
 export function createGlobalBrowserFontResourceTargets(): EngineBrowserFontResourceTargets {
   return {
-    getFontSelect: () =>
-      getDocument()?.getElementById(
-        "styleSelectFont",
-      ) as HTMLSelectElement | null,
-    createOption: () =>
-      (getDocument()?.createElement("option") ?? {
-        innerText: "",
-        style: {},
-        value: "",
-      }) as HTMLOptionElement,
+    getFontSelect: () => {
+      try {
+        return getDocument()?.getElementById(
+          "styleSelectFont",
+        ) as HTMLSelectElement | null;
+      } catch {
+        return null;
+      }
+    },
+    createOption: () => {
+      try {
+        return (getDocument()?.createElement("option") ?? {
+          innerText: "",
+          style: {},
+          value: "",
+        }) as HTMLOptionElement;
+      } catch {
+        return {
+          innerText: "",
+          style: {},
+          value: "",
+        } as HTMLOptionElement;
+      }
+    },
     createFontFace,
-    addFontFace: (fontFace) => getDocument()?.fonts?.add(fontFace),
+    addFontFace: (fontFace) => {
+      try {
+        getDocument()?.fonts?.add(fontFace);
+      } catch {
+        // Font registration can be unavailable in restricted browser runtimes.
+      }
+    },
     setSelectedFont: (family) => {
-      const select = getDocument()?.getElementById(
-        "styleSelectFont",
-      ) as HTMLSelectElement | null;
-      if (select) select.value = family;
+      try {
+        const select = getDocument()?.getElementById(
+          "styleSelectFont",
+        ) as HTMLSelectElement | null;
+        if (select) select.value = family;
+      } catch {
+        // Font selection is best-effort behind the compatibility facade.
+      }
     },
     applySelectedFont: () => getChangeFont()?.(),
     showToast: (message, type, duration = 4000) =>
