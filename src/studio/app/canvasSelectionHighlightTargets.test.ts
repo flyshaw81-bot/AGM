@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   createCanvasSelectionHighlightTargets,
+  createGlobalCanvasSelectionHighlightDomTargets,
   createGlobalCanvasSelectionHighlightTargets,
 } from "./canvasSelectionHighlightTargets";
 
@@ -69,6 +70,33 @@ describe("canvas selection highlight targets", () => {
       expect(targets.getStateBorder(7)).toBeNull();
     } finally {
       globalThis.document = originalDocument;
+    }
+  });
+
+  it("keeps default selection highlight DOM lookups safe when document access throws", () => {
+    const originalDocument = globalThis.document;
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
+
+    try {
+      const targets = createGlobalCanvasSelectionHighlightDomTargets();
+
+      expect(targets.getSelectedStateElements()).toEqual([]);
+      expect(targets.getSelectedStateBorderElements()).toEqual([]);
+      expect(targets.getCanvasFrame()).toBeNull();
+      expect(targets.getMapHost()).toBeNull();
+      expect(targets.getStatePath(7)).toBeNull();
+      expect(targets.getStateBorder(7)).toBeNull();
+    } finally {
+      Object.defineProperty(globalThis, "document", {
+        configurable: true,
+        value: originalDocument,
+        writable: true,
+      });
     }
   });
 

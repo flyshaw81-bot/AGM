@@ -14,38 +14,49 @@ export function createCanvasSelectionHighlightTargets(
   return targets;
 }
 
-export function createGlobalCanvasSelectionHighlightTargets(): CanvasSelectionHighlightTargets {
-  return createCanvasSelectionHighlightTargets({
+function getDocument(): Document | undefined {
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
+}
+
+export function createGlobalCanvasSelectionHighlightDomTargets(): CanvasSelectionHighlightTargets {
+  return {
     getSelectedStateElements: () =>
       Array.from(
-        globalThis.document?.querySelectorAll<SVGElement>(
+        getDocument()?.querySelectorAll<SVGElement>(
           "[data-studio-selected-state='true']",
         ) ?? [],
       ),
     getSelectedStateBorderElements: () =>
       Array.from(
-        globalThis.document?.querySelectorAll<SVGElement>(
+        getDocument()?.querySelectorAll<SVGElement>(
           "[data-studio-selected-state-border='true']",
         ) ?? [],
       ),
     getCanvasFrame: () =>
-      globalThis.document?.getElementById("studioCanvasFrame") ?? null,
-    getMapHost: () =>
-      globalThis.document?.getElementById("studioMapHost") ?? null,
+      getDocument()?.getElementById("studioCanvasFrame") ?? null,
+    getMapHost: () => getDocument()?.getElementById("studioMapHost") ?? null,
     getStatePath: (stateId) => {
-      const element = globalThis.document?.getElementById(`state${stateId}`);
+      const element = getDocument()?.getElementById(`state${stateId}`);
       return isSvgElement(element) ? element : null;
     },
     getStateBorder: (stateId) => {
-      const element = globalThis.document?.getElementById(
-        `state-border${stateId}`,
-      );
+      const element = getDocument()?.getElementById(`state-border${stateId}`);
       return isSvgElement(element) ? element : null;
     },
     appendToParent: (element) => {
       element.parentElement?.appendChild(element);
     },
-  });
+  };
+}
+
+export function createGlobalCanvasSelectionHighlightTargets(): CanvasSelectionHighlightTargets {
+  return createCanvasSelectionHighlightTargets(
+    createGlobalCanvasSelectionHighlightDomTargets(),
+  );
 }
 
 function isSvgElement(
