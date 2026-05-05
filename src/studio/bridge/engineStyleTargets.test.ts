@@ -24,19 +24,114 @@ const originalStylePreset = testGlobals.stylePreset;
 const originalRequestStylePresetChange = testGlobals.requestStylePresetChange;
 const originalChangeStyle = testGlobals.changeStyle;
 const originalInvokeActiveZooming = testGlobals.invokeActiveZooming;
+const originalDocumentDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "document",
+);
+const originalEventDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "Event",
+);
+const originalWindowDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "window",
+);
+const originalStylePresetDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "stylePreset",
+);
+const originalRequestStylePresetChangeDescriptor =
+  Object.getOwnPropertyDescriptor(globalThis, "requestStylePresetChange");
+const originalChangeStyleDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "changeStyle",
+);
+const originalInvokeActiveZoomingDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "invokeActiveZooming",
+);
 
 describe("createGlobalStyleTargets", () => {
   afterEach(() => {
-    globalThis.document = originalDocument;
-    globalThis.Event = originalEvent;
+    if (originalDocumentDescriptor) {
+      Object.defineProperty(globalThis, "document", originalDocumentDescriptor);
+    } else {
+      Object.defineProperty(globalThis, "document", {
+        configurable: true,
+        writable: true,
+        value: originalDocument,
+      });
+    }
+    if (originalEventDescriptor) {
+      Object.defineProperty(globalThis, "Event", originalEventDescriptor);
+    } else {
+      Object.defineProperty(globalThis, "Event", {
+        configurable: true,
+        writable: true,
+        value: originalEvent,
+      });
+    }
+    if (originalWindowDescriptor) {
+      Object.defineProperty(globalThis, "window", originalWindowDescriptor);
+    } else {
+      delete (globalThis as { window?: unknown }).window;
+    }
     Object.defineProperty(globalThis, "localStorage", {
       configurable: true,
       value: originalLocalStorage,
     });
-    testGlobals.stylePreset = originalStylePreset;
-    testGlobals.requestStylePresetChange = originalRequestStylePresetChange;
-    testGlobals.changeStyle = originalChangeStyle;
-    testGlobals.invokeActiveZooming = originalInvokeActiveZooming;
+    if (originalStylePresetDescriptor) {
+      Object.defineProperty(
+        globalThis,
+        "stylePreset",
+        originalStylePresetDescriptor,
+      );
+    } else {
+      Object.defineProperty(globalThis, "stylePreset", {
+        configurable: true,
+        writable: true,
+        value: originalStylePreset,
+      });
+    }
+    if (originalRequestStylePresetChangeDescriptor) {
+      Object.defineProperty(
+        globalThis,
+        "requestStylePresetChange",
+        originalRequestStylePresetChangeDescriptor,
+      );
+    } else {
+      Object.defineProperty(globalThis, "requestStylePresetChange", {
+        configurable: true,
+        writable: true,
+        value: originalRequestStylePresetChange,
+      });
+    }
+    if (originalChangeStyleDescriptor) {
+      Object.defineProperty(
+        globalThis,
+        "changeStyle",
+        originalChangeStyleDescriptor,
+      );
+    } else {
+      Object.defineProperty(globalThis, "changeStyle", {
+        configurable: true,
+        writable: true,
+        value: originalChangeStyle,
+      });
+    }
+    if (originalInvokeActiveZoomingDescriptor) {
+      Object.defineProperty(
+        globalThis,
+        "invokeActiveZooming",
+        originalInvokeActiveZoomingDescriptor,
+      );
+    } else {
+      Object.defineProperty(globalThis, "invokeActiveZooming", {
+        configurable: true,
+        writable: true,
+        value: originalInvokeActiveZooming,
+      });
+    }
   });
 
   it("reads current and stored preset values", () => {
@@ -132,6 +227,73 @@ describe("createGlobalStyleTargets", () => {
     createGlobalStyleTargets().invokeActiveZooming();
 
     expect(invokeActiveZooming).toHaveBeenCalledWith();
+  });
+
+  it("keeps default style targets safe when browser globals throw", () => {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "Event", {
+      configurable: true,
+      get: () => {
+        throw new Error("Event blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      value: {
+        getItem: () => {
+          throw new Error("storage read blocked");
+        },
+        setItem: () => {
+          throw new Error("storage write blocked");
+        },
+      },
+    });
+    Object.defineProperty(globalThis, "stylePreset", {
+      configurable: true,
+      get: () => {
+        throw new Error("style preset blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "requestStylePresetChange", {
+      configurable: true,
+      value: () => {
+        throw new Error("request style blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "changeStyle", {
+      configurable: true,
+      value: () => {
+        throw new Error("change style blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "invokeActiveZooming", {
+      configurable: true,
+      value: () => {
+        throw new Error("zoom blocked");
+      },
+    });
+
+    const targets = createGlobalStyleTargets();
+
+    expect(targets.getCurrentPresetValue()).toBe("");
+    expect(targets.getStoredPresetValue()).toBeNull();
+    expect(() => targets.storePresetValue("atlas")).not.toThrow();
+    expect(targets.isToggleChecked("hideLabels")).toBe(false);
+    expect(targets.setToggleChecked("hideLabels", true)).toBe(false);
+    expect(targets.requestStylePresetChange("atlas")).toBe(false);
+    expect(targets.changeStyle("night")).toBe(false);
+    expect(() => targets.invokeActiveZooming()).not.toThrow();
   });
 
   it("composes style targets from injected runtime, storage, and toggle adapters", () => {

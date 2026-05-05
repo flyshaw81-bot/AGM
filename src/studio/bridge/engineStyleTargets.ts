@@ -38,11 +38,19 @@ export type EngineStyleToggleAdapter = {
 };
 
 function getStyleWindow(): EngineStyleWindow {
-  return (globalThis.window ?? globalThis) as EngineStyleWindow;
+  try {
+    return (globalThis.window ?? globalThis) as EngineStyleWindow;
+  } catch {
+    return globalThis as EngineStyleWindow;
+  }
 }
 
 function getDocument(): Document | undefined {
-  return globalThis.document;
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
 }
 
 function getLocalStorage(): Storage | undefined {
@@ -54,44 +62,81 @@ function getLocalStorage(): Storage | undefined {
 }
 
 function getInput(id: string) {
-  return getDocument()?.getElementById(id) as
-    | HTMLInputElement
-    | null
-    | undefined;
+  try {
+    return getDocument()?.getElementById(id) as
+      | HTMLInputElement
+      | null
+      | undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function dispatchChange(element: HTMLElement) {
-  if (typeof globalThis.Event !== "function") {
-    return;
+  try {
+    if (typeof globalThis.Event !== "function") {
+      return;
+    }
+    element.dispatchEvent(new globalThis.Event("change", { bubbles: true }));
+  } catch {
+    // Compatibility DOM events are best-effort.
   }
-  element.dispatchEvent(new globalThis.Event("change", { bubbles: true }));
 }
 
 export function createGlobalStyleRuntimeAdapter(): EngineStyleRuntimeAdapter {
   return {
-    getCurrentPresetValue: () => getStyleWindow().stylePreset?.value || "",
+    getCurrentPresetValue: () => {
+      try {
+        return getStyleWindow().stylePreset?.value || "";
+      } catch {
+        return "";
+      }
+    },
     requestStylePresetChange: (preset) => {
-      const requestChange = getStyleWindow().requestStylePresetChange;
-      if (typeof requestChange !== "function") return false;
-      requestChange(preset);
-      return true;
+      try {
+        const requestChange = getStyleWindow().requestStylePresetChange;
+        if (typeof requestChange !== "function") return false;
+        requestChange(preset);
+        return true;
+      } catch {
+        return false;
+      }
     },
     changeStyle: (preset) => {
-      const changeStyle = getStyleWindow().changeStyle;
-      if (typeof changeStyle !== "function") return false;
-      changeStyle(preset);
-      return true;
+      try {
+        const changeStyle = getStyleWindow().changeStyle;
+        if (typeof changeStyle !== "function") return false;
+        changeStyle(preset);
+        return true;
+      } catch {
+        return false;
+      }
     },
-    invokeActiveZooming: () => getStyleWindow().invokeActiveZooming?.(),
+    invokeActiveZooming: () => {
+      try {
+        getStyleWindow().invokeActiveZooming?.();
+      } catch {
+        // Compatibility zoom refresh is best-effort.
+      }
+    },
   };
 }
 
 export function createGlobalStyleStorageAdapter(): EngineStyleStorageAdapter {
   return {
-    getStoredPresetValue: () =>
-      getLocalStorage()?.getItem("presetStyle") ?? null,
+    getStoredPresetValue: () => {
+      try {
+        return getLocalStorage()?.getItem("presetStyle") ?? null;
+      } catch {
+        return null;
+      }
+    },
     storePresetValue: (preset) => {
-      getLocalStorage()?.setItem("presetStyle", preset);
+      try {
+        getLocalStorage()?.setItem("presetStyle", preset);
+      } catch {
+        // Preset storage is optional in compatibility mode.
+      }
     },
   };
 }
@@ -100,11 +145,15 @@ export function createGlobalStyleToggleAdapter(): EngineStyleToggleAdapter {
   return {
     isToggleChecked: (id) => Boolean(getInput(id)?.checked),
     setToggleChecked: (id, enabled) => {
-      const input = getInput(id);
-      if (!input) return false;
-      input.checked = enabled;
-      dispatchChange(input);
-      return true;
+      try {
+        const input = getInput(id);
+        if (!input) return false;
+        input.checked = enabled;
+        dispatchChange(input);
+        return true;
+      } catch {
+        return false;
+      }
     },
     dispatchChange,
   };
