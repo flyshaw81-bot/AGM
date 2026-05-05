@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createEngineRouteService,
   createGlobalRouteService,
+  createGlobalRouteServiceTargets,
   createRuntimeRouteService,
 } from "./engine-route-service";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
@@ -58,6 +59,21 @@ describe("createGlobalRouteService", () => {
     expect(Routes.connect).toHaveBeenCalledWith(14, undefined);
     expect(Routes.remove).toHaveBeenCalledWith(routeToRemove, undefined);
     expect(Routes.getLength).toHaveBeenCalledWith(8, undefined);
+  });
+
+  it("keeps the default route targets as the compatibility boundary", () => {
+    const packedRoute = { i: 8, group: "roads" };
+    globalThis.Routes = {
+      hasRoad: vi.fn(() => true),
+    };
+    globalThis.pack = {
+      routes: [packedRoute],
+    } as typeof pack;
+
+    const targets = createGlobalRouteServiceTargets();
+
+    expect(targets.getRoutesModule()).toBe(globalThis.Routes);
+    expect(targets.getPackedRoutes()).toEqual([packedRoute]);
   });
 
   it("composes route service from injected runtime targets", () => {

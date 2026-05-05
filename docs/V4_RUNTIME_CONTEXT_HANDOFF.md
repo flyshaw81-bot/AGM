@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 196 test files, 810 tests.
+- `npm.cmd run test -- --run` passed: 196 test files, 811 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2173,6 +2173,9 @@ of hanging or silently degrading during export.
 Runtime direct-editor action targets can now inject the document-sync adapter
 instead of always binding the global document-state sync path, keeping focus and
 mutation runtime injection aligned with document synchronization.
+`EngineRouteService` now exposes `createGlobalRouteServiceTargets()`, so the
+remaining default `Routes` / `pack.routes` global reads are isolated in a typed
+target factory instead of being embedded directly in service construction.
 
 `ocean-layers.ts` now routes outline-chain error reporting through
 `OceanLayerLogTargets`, keeping the default `globalThis.ERROR` compatibility

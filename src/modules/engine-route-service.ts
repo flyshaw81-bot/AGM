@@ -82,11 +82,15 @@ export function createEngineRouteService(
   };
 }
 
-export function createGlobalRouteService(): EngineRouteService {
-  return createEngineRouteService({
+export function createGlobalRouteServiceTargets(): EngineRouteServiceTargets {
+  return {
     getRoutesModule: () => globalThis.Routes,
     getPackedRoutes: () => globalThis.pack?.routes,
-  });
+  };
+}
+
+export function createGlobalRouteService(): EngineRouteService {
+  return createEngineRouteService(createGlobalRouteServiceTargets());
 }
 
 export function createRuntimeRouteService(
