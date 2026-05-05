@@ -18,11 +18,19 @@ export type ProjectCenterTargets = ProjectCenterStorageAdapter &
   ProjectCenterSummaryAdapter &
   ProjectCenterClockAdapter;
 
+function getLocalStorage(): Storage | undefined {
+  try {
+    return globalThis.localStorage;
+  } catch {
+    return undefined;
+  }
+}
+
 export function createGlobalProjectCenterStorageAdapter(): ProjectCenterStorageAdapter {
   return {
-    getStorageItem: (key) => globalThis.localStorage?.getItem(key) ?? null,
+    getStorageItem: (key) => getLocalStorage()?.getItem(key) ?? null,
     setStorageItem: (key, value) => {
-      globalThis.localStorage?.setItem(key, value);
+      getLocalStorage()?.setItem(key, value);
     },
   };
 }

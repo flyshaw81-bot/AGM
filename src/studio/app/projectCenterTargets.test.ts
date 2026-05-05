@@ -85,4 +85,26 @@ describe("createGlobalProjectCenterTargets", () => {
       });
     }
   });
+
+  it("keeps global project center storage safe when browser storage access throws", () => {
+    const originalLocalStorage = globalThis.localStorage;
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      get: () => {
+        throw new Error("localStorage blocked");
+      },
+    });
+
+    try {
+      const targets = createGlobalProjectCenterTargets();
+
+      expect(targets.getStorageItem("recent")).toBeNull();
+      expect(() => targets.setStorageItem("recent", "[]")).not.toThrow();
+    } finally {
+      Object.defineProperty(globalThis, "localStorage", {
+        configurable: true,
+        value: originalLocalStorage,
+      });
+    }
+  });
 });

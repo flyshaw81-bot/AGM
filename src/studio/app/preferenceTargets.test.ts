@@ -91,4 +91,26 @@ describe("createGlobalStudioPreferenceTargets", () => {
       globalThis.document = originalDocument;
     }
   });
+
+  it("keeps global preference storage safe when browser storage access throws", () => {
+    const originalLocalStorage = globalThis.localStorage;
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      get: () => {
+        throw new Error("localStorage blocked");
+      },
+    });
+
+    try {
+      const targets = createGlobalStudioPreferenceTargets();
+
+      expect(targets.getStorageItem("language")).toBeNull();
+      expect(() => targets.setStorageItem("theme", "night")).not.toThrow();
+    } finally {
+      Object.defineProperty(globalThis, "localStorage", {
+        configurable: true,
+        value: originalLocalStorage,
+      });
+    }
+  });
 });
