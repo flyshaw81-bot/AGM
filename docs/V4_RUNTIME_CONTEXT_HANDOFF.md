@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 196 test files, 811 tests.
+- `npm.cmd run test -- --run` passed: 196 test files, 813 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2176,6 +2176,10 @@ mutation runtime injection aligned with document synchronization.
 `EngineRouteService` now exposes `createGlobalRouteServiceTargets()`, so the
 remaining default `Routes` / `pack.routes` global reads are isolated in a typed
 target factory instead of being embedded directly in service construction.
+`EngineStateService` and `EngineBurgService` now expose
+`createGlobalStateServiceTargets()` and `createGlobalBurgServiceTargets()`.
+Their default `States`, `Burgs`, and `pack.burgs` compatibility reads are now
+isolated in typed target factories as well.
 
 `ocean-layers.ts` now routes outline-chain error reporting through
 `OceanLayerLogTargets`, keeping the default `globalThis.ERROR` compatibility

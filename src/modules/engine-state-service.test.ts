@@ -3,6 +3,7 @@ import type { EngineRuntimeContext } from "./engine-runtime-context";
 import {
   createEngineStateService,
   createGlobalStateService,
+  createGlobalStateServiceTargets,
   createRuntimeStateService,
 } from "./engine-state-service";
 
@@ -28,6 +29,17 @@ describe("createGlobalStateService", () => {
 
     expect(States.generateCampaign).toHaveBeenCalledWith(state, undefined);
     expect(States.getPoles).toHaveBeenCalledWith(undefined);
+  });
+
+  it("keeps the default state targets as the compatibility boundary", () => {
+    globalThis.States = {
+      generateCampaign: vi.fn(() => []),
+      getPoles: vi.fn(),
+    } as unknown as typeof States;
+
+    const targets = createGlobalStateServiceTargets();
+
+    expect(targets.getStatesModule()).toBe(globalThis.States);
   });
 
   it("composes state service from injected runtime targets", () => {

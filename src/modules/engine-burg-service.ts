@@ -44,11 +44,15 @@ export function createEngineBurgService(
   };
 }
 
-export function createGlobalBurgService(): EngineBurgService {
-  return createEngineBurgService({
+export function createGlobalBurgServiceTargets(): EngineBurgServiceTargets {
+  return {
     getBurgModule: () => globalThis.Burgs,
     getBurgs: () => globalThis.pack?.burgs as (Burg | undefined)[] | undefined,
-  });
+  };
+}
+
+export function createGlobalBurgService(): EngineBurgService {
+  return createEngineBurgService(createGlobalBurgServiceTargets());
 }
 
 export function createRuntimeBurgService(

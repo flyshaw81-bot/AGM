@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createEngineBurgService,
   createGlobalBurgService,
+  createGlobalBurgServiceTargets,
   createRuntimeBurgService,
 } from "./engine-burg-service";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
@@ -37,6 +38,21 @@ describe("createGlobalBurgService", () => {
     expect(Burgs.add).toHaveBeenCalledWith([10, 20], undefined);
     expect(Burgs.remove).toHaveBeenCalledWith(3, undefined);
     expect(Burgs.getType).toHaveBeenCalledWith(12, 0, undefined);
+  });
+
+  it("keeps the default burg targets as the compatibility boundary", () => {
+    const burg = { i: 3, name: "Northford" };
+    globalThis.Burgs = {
+      add: vi.fn(() => 3),
+    } as unknown as typeof Burgs;
+    globalThis.pack = {
+      burgs: [undefined, undefined, undefined, burg],
+    } as unknown as typeof pack;
+
+    const targets = createGlobalBurgServiceTargets();
+
+    expect(targets.getBurgModule()).toBe(globalThis.Burgs);
+    expect(targets.getBurgs()).toEqual([undefined, undefined, undefined, burg]);
   });
 
   it("composes burg service from injected runtime targets", () => {

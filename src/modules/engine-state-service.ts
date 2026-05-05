@@ -29,10 +29,14 @@ export function createEngineStateService(
   };
 }
 
-export function createGlobalStateService(): EngineStateService {
-  return createEngineStateService({
+export function createGlobalStateServiceTargets(): EngineStateServiceTargets {
+  return {
     getStatesModule: () => globalThis.States,
-  });
+  };
+}
+
+export function createGlobalStateService(): EngineStateService {
+  return createEngineStateService(createGlobalStateServiceTargets());
 }
 
 export function createRuntimeStateService(
