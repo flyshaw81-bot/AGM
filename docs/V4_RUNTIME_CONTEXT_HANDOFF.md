@@ -2318,6 +2318,12 @@ compatibility access for `grid`, `seed`, graph dimensions, and
 `invokeActiveZooming`. Runtime services still prefer explicit context services,
 while the browser fallback no longer throws when these compatibility globals
 are missing or blocked.
+`engine-map-placement-service.ts`, `engine-water-feature-service.ts`, and
+`engine-generation-statistics-service.ts` now guard their default lifecycle
+helper lookups. Missing or blocked `defineMapSize`, `calculateMapCoordinates`,
+`addLakesInDeepDepressions`, `openNearSeaLakes`, `OceanLayers`, and
+`showStatistics` compatibility helpers degrade to no-op calls while injected
+service targets remain explicit.
 
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`

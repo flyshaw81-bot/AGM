@@ -9,12 +9,42 @@ import {
 const originalAddLakesInDeepDepressions = globalThis.addLakesInDeepDepressions;
 const originalOpenNearSeaLakes = globalThis.openNearSeaLakes;
 const originalOceanLayers = globalThis.OceanLayers;
+const originalAddLakesInDeepDepressionsDescriptor =
+  Object.getOwnPropertyDescriptor(globalThis, "addLakesInDeepDepressions");
+const originalOpenNearSeaLakesDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "openNearSeaLakes",
+);
+const originalOceanLayersDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "OceanLayers",
+);
 
 describe("EngineWaterFeatureService", () => {
   afterEach(() => {
-    globalThis.addLakesInDeepDepressions = originalAddLakesInDeepDepressions;
-    globalThis.openNearSeaLakes = originalOpenNearSeaLakes;
-    globalThis.OceanLayers = originalOceanLayers;
+    for (const [name, descriptor, value] of [
+      [
+        "addLakesInDeepDepressions",
+        originalAddLakesInDeepDepressionsDescriptor,
+        originalAddLakesInDeepDepressions,
+      ],
+      [
+        "openNearSeaLakes",
+        originalOpenNearSeaLakesDescriptor,
+        originalOpenNearSeaLakes,
+      ],
+      ["OceanLayers", originalOceanLayersDescriptor, originalOceanLayers],
+    ] as const) {
+      if (descriptor) {
+        Object.defineProperty(globalThis, name, descriptor);
+      } else {
+        Object.defineProperty(globalThis, name, {
+          configurable: true,
+          value,
+          writable: true,
+        });
+      }
+    }
   });
 
   it("routes water feature operations through injected targets", () => {
@@ -58,6 +88,27 @@ describe("EngineWaterFeatureService", () => {
     globalThis.openNearSeaLakes =
       undefined as unknown as typeof openNearSeaLakes;
     globalThis.OceanLayers = undefined as unknown as typeof OceanLayers;
+    const targets = createGlobalWaterFeatureTargets();
+
+    expect(() => targets.addLakesInDeepDepressions(31)).not.toThrow();
+    expect(() => targets.openNearSeaLakes("archipelago")).not.toThrow();
+    expect(() => targets.drawOceanLayers(context)).not.toThrow();
+  });
+
+  it("keeps global water targets safe when helper access throws", () => {
+    const context = {} as EngineRuntimeContext;
+    for (const name of [
+      "addLakesInDeepDepressions",
+      "openNearSeaLakes",
+      "OceanLayers",
+    ]) {
+      Object.defineProperty(globalThis, name, {
+        configurable: true,
+        get: () => {
+          throw new Error(`${name} blocked`);
+        },
+      });
+    }
     const targets = createGlobalWaterFeatureTargets();
 
     expect(() => targets.addLakesInDeepDepressions(31)).not.toThrow();

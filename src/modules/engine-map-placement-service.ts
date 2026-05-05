@@ -23,13 +23,28 @@ export function createMapPlacementService(
   };
 }
 
+function getGlobalFunction<T extends (...args: never[]) => unknown>(
+  name: string,
+): T | undefined {
+  try {
+    const value = (globalThis as Record<string, unknown>)[name];
+    return typeof value === "function" ? (value as T) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function createGlobalMapPlacementTargets(): EngineMapPlacementTargets {
   return {
     defineMapSize: (heightmapTemplateId) => {
-      globalThis.defineMapSize?.(heightmapTemplateId);
+      getGlobalFunction<(heightmapTemplateId?: string) => void>(
+        "defineMapSize",
+      )?.(heightmapTemplateId);
     },
     calculateMapCoordinates: (settings) => {
-      globalThis.calculateMapCoordinates?.(settings);
+      getGlobalFunction<(settings: EngineMapCoordinateSettings) => void>(
+        "calculateMapCoordinates",
+      )?.(settings);
     },
   };
 }

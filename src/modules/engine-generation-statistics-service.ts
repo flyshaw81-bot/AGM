@@ -15,10 +15,23 @@ export function createGenerationStatisticsService(
   };
 }
 
+function getGlobalFunction<T extends (...args: never[]) => unknown>(
+  name: string,
+): T | undefined {
+  try {
+    const value = (globalThis as Record<string, unknown>)[name];
+    return typeof value === "function" ? (value as T) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function createGlobalGenerationStatisticsTargets(): EngineGenerationStatisticsTargets {
   return {
     showStatistics: (heightmapTemplateId) => {
-      globalThis.showStatistics?.(heightmapTemplateId);
+      getGlobalFunction<(heightmapTemplateId: string | undefined) => void>(
+        "showStatistics",
+      )?.(heightmapTemplateId);
     },
   };
 }

@@ -24,16 +24,33 @@ export function createWaterFeatureService(
   };
 }
 
+function getGlobalFunction<T extends (...args: never[]) => unknown>(
+  name: string,
+): T | undefined {
+  try {
+    const value = (globalThis as Record<string, unknown>)[name];
+    return typeof value === "function" ? (value as T) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function createGlobalWaterFeatureTargets(): EngineWaterFeatureTargets {
   return {
     addLakesInDeepDepressions: (lakeElevationLimit) => {
-      globalThis.addLakesInDeepDepressions?.(lakeElevationLimit);
+      getGlobalFunction<(lakeElevationLimit: number) => void>(
+        "addLakesInDeepDepressions",
+      )?.(lakeElevationLimit);
     },
     openNearSeaLakes: (heightmapTemplateId) => {
-      globalThis.openNearSeaLakes?.(heightmapTemplateId);
+      getGlobalFunction<(heightmapTemplateId: string | undefined) => void>(
+        "openNearSeaLakes",
+      )?.(heightmapTemplateId);
     },
     drawOceanLayers: (context) => {
-      globalThis.OceanLayers?.(context);
+      getGlobalFunction<(context: EngineRuntimeContext) => void>(
+        "OceanLayers",
+      )?.(context);
     },
   };
 }

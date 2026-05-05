@@ -7,11 +7,41 @@ import {
 
 const originalDefineMapSize = globalThis.defineMapSize;
 const originalCalculateMapCoordinates = globalThis.calculateMapCoordinates;
+const originalDefineMapSizeDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "defineMapSize",
+);
+const originalCalculateMapCoordinatesDescriptor =
+  Object.getOwnPropertyDescriptor(globalThis, "calculateMapCoordinates");
 
 describe("EngineMapPlacementService", () => {
   afterEach(() => {
-    globalThis.defineMapSize = originalDefineMapSize;
-    globalThis.calculateMapCoordinates = originalCalculateMapCoordinates;
+    if (originalDefineMapSizeDescriptor) {
+      Object.defineProperty(
+        globalThis,
+        "defineMapSize",
+        originalDefineMapSizeDescriptor,
+      );
+    } else {
+      Object.defineProperty(globalThis, "defineMapSize", {
+        configurable: true,
+        value: originalDefineMapSize,
+        writable: true,
+      });
+    }
+    if (originalCalculateMapCoordinatesDescriptor) {
+      Object.defineProperty(
+        globalThis,
+        "calculateMapCoordinates",
+        originalCalculateMapCoordinatesDescriptor,
+      );
+    } else {
+      Object.defineProperty(globalThis, "calculateMapCoordinates", {
+        configurable: true,
+        value: originalCalculateMapCoordinates,
+        writable: true,
+      });
+    }
   });
 
   it("routes map placement through injected targets", () => {
@@ -61,6 +91,31 @@ describe("EngineMapPlacementService", () => {
       undefined as unknown as typeof globalThis.defineMapSize;
     globalThis.calculateMapCoordinates =
       undefined as unknown as typeof globalThis.calculateMapCoordinates;
+    const targets = createGlobalMapPlacementTargets();
+
+    expect(() => targets.defineMapSize("volcano")).not.toThrow();
+    expect(() =>
+      targets.calculateMapCoordinates({
+        mapSizePercent: 60,
+        latitudePercent: 20,
+        longitudePercent: 70,
+      }),
+    ).not.toThrow();
+  });
+
+  it("keeps global placement targets safe when helper access throws", () => {
+    Object.defineProperty(globalThis, "defineMapSize", {
+      configurable: true,
+      get: () => {
+        throw new Error("defineMapSize blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "calculateMapCoordinates", {
+      configurable: true,
+      get: () => {
+        throw new Error("calculateMapCoordinates blocked");
+      },
+    });
     const targets = createGlobalMapPlacementTargets();
 
     expect(() => targets.defineMapSize("volcano")).not.toThrow();
