@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 196 test files, 808 tests.
+- `npm.cmd run test -- --run` passed: 196 test files, 809 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2167,6 +2167,9 @@ with injected DOM shape targets.
 network, and province-font effects are concentrated in the default browser
 targets, while focused tests cover injected adapter composition and the global
 font runtime compatibility facade.
+Font resource tests also cover the default data-URI reader failure path when
+`FileReader` is unavailable, so browser capability gaps fail explicitly instead
+of hanging or silently degrading during export.
 
 `ocean-layers.ts` now routes outline-chain error reporting through
 `OceanLayerLogTargets`, keeping the default `globalThis.ERROR` compatibility

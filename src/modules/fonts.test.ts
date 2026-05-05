@@ -12,6 +12,7 @@ const originalTip = globalThis.tip;
 const originalProvs = globalThis.provs;
 const originalError = globalThis.ERROR;
 const originalFetch = globalThis.fetch;
+const originalFileReader = globalThis.FileReader;
 
 function installBrowserFontGlobals() {
   const select = {
@@ -59,6 +60,7 @@ describe("font resource compatibility facade", () => {
     globalThis.provs = originalProvs;
     globalThis.ERROR = originalError;
     globalThis.fetch = originalFetch;
+    globalThis.FileReader = originalFileReader;
     delete (globalThis as { AGMFontResources?: EngineFontResourceRuntime })
       .AGMFontResources;
     delete (globalThis as { fonts?: unknown }).fonts;
@@ -199,5 +201,16 @@ describe("font resource compatibility facade", () => {
       }),
     ).not.toThrow();
     expect(() => adapter.setSelectedFont("Display Font")).not.toThrow();
+  });
+
+  it("reports an explicit failure when the browser cannot read font blobs", async () => {
+    globalThis.FileReader = undefined as unknown as typeof FileReader;
+
+    const { createBrowserFontResourceAdapter } = await import("./fonts");
+    const adapter = createBrowserFontResourceAdapter();
+
+    await expect(adapter.readBlobAsDataUrl(new Blob(["font"]))).rejects.toThrow(
+      "FileReader is not available",
+    );
   });
 });
