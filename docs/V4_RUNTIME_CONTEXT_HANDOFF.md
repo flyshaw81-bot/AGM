@@ -2306,6 +2306,10 @@ runtime logging service boundary.
 dimension writes, and SVG selection lookups. Missing or blocked compatibility
 globals fall back to zero dimensions and inert SVG targets instead of throwing,
 while explicit/runtime targets remain unchanged.
+`engine-render-adapter.ts` now guards default render helper lookups for
+cell search, COA drawing, routes, layers, burg icons/labels, emblems, ice,
+scale-bar, canvas redraw, and zoom helpers. Missing compatibility helpers now
+degrade to no-op behavior while injected render targets keep the explicit path.
 
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`

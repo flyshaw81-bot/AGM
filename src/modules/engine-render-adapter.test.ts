@@ -194,6 +194,47 @@ describe("createGlobalRenderAdapter", () => {
     expect(createGlobalRenderAdapter().findCell(1, 2)).toBeUndefined();
   });
 
+  it("keeps global render targets safe when compatibility helpers are absent", () => {
+    (globalThis as { findCell?: unknown }).findCell = undefined;
+    globalThis.pack = undefined as unknown as typeof pack;
+    globalThis.COArenderer = undefined as unknown as typeof COArenderer;
+    globalThis.drawRoute = undefined as unknown as typeof drawRoute;
+    globalThis.layerIsOn = undefined as unknown as typeof layerIsOn;
+    globalThis.drawBurgIcon = undefined as unknown as typeof drawBurgIcon;
+    globalThis.drawBurgLabel = undefined as unknown as typeof drawBurgLabel;
+    globalThis.removeBurgIcon = undefined as unknown as typeof removeBurgIcon;
+    globalThis.removeBurgLabel = undefined as unknown as typeof removeBurgLabel;
+    globalThis.emblems = undefined as unknown as typeof emblems;
+    globalThis.redrawIceberg = undefined as unknown as typeof redrawIceberg;
+    globalThis.redrawGlacier = undefined as unknown as typeof redrawGlacier;
+    globalThis.svg = undefined as unknown as typeof svg;
+    globalThis.scale = undefined as unknown as typeof scale;
+    globalThis.drawScaleBar = undefined as unknown as typeof drawScaleBar;
+    globalThis.drawHeightmap = undefined as unknown as typeof drawHeightmap;
+    (globalThis as any).drawBiomes = undefined;
+    (globalThis as any).drawCells = undefined;
+    globalThis.invokeActiveZooming =
+      undefined as unknown as typeof invokeActiveZooming;
+    const rendering = createGlobalRenderAdapter();
+
+    expect(rendering.findCell(1, 2)).toBeUndefined();
+    expect(rendering.isLayerOn("toggleRoutes")).toBe(false);
+    expect(() => {
+      rendering.addBurgCoa(5, { shield: "heater" }, 12, 14);
+      rendering.drawRoute({ id: "route1" });
+      rendering.drawBurg({ i: 7 });
+      rendering.removeBurg(7);
+      rendering.removeBurgCoa(9);
+      rendering.redrawIceberg(1);
+      rendering.redrawGlacier(2);
+      rendering.drawScaleBar();
+      rendering.drawHeightmap?.();
+      rendering.drawBiomes?.();
+      rendering.drawCells?.();
+      rendering.invokeActiveZooming?.();
+    }).not.toThrow();
+  });
+
   it("forwards ice redraws and scale-bar drawing to current render helpers", () => {
     const scaleBarSelection = { id: "scaleBar" };
     globalThis.redrawIceberg = vi.fn();

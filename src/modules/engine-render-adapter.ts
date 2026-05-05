@@ -123,6 +123,21 @@ function getDocument(): Document | undefined {
   }
 }
 
+function getGlobalValue<T = unknown>(name: string): T | undefined {
+  try {
+    return (globalThis as Record<string, unknown>)[name] as T | undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function callGlobal<T extends (...args: never[]) => unknown>(
+  name: string,
+  ...args: Parameters<T>
+) {
+  getGlobalValue<T>(name)?.(...args);
+}
+
 export function createGlobalRenderDomTargets(): EngineRenderDomTargets {
   return {
     getElementById: (id) => getDocument()?.getElementById(id) ?? null,
@@ -132,58 +147,72 @@ export function createGlobalRenderDomTargets(): EngineRenderDomTargets {
 export function createGlobalRenderTargets(
   domTargets: EngineRenderDomTargets = createGlobalRenderDomTargets(),
 ): EngineRenderTargets {
-  const runtime = globalThis as typeof globalThis & {
-    findCell?: EngineRenderTargets["findCell"];
-  };
-
   return {
-    findCell: (x, y, radius, graph) => runtime.findCell?.(x, y, radius, graph),
-    getPack: () => pack,
+    findCell: (x, y, radius, graph) =>
+      getGlobalValue<EngineRenderTargets["findCell"]>("findCell")?.(
+        x,
+        y,
+        radius,
+        graph,
+      ),
+    getPack: () => getGlobalValue<PackedGraph>("pack") ?? ({} as PackedGraph),
     addCoa: (type, id, coa, x, y) => {
-      COArenderer.add(type, id, coa, x, y);
+      getGlobalValue<{ add?: EngineRenderTargets["addCoa"] }>(
+        "COArenderer",
+      )?.add?.(type, id, coa, x, y);
     },
     drawRoute: (route) => {
-      drawRoute(route);
+      callGlobal<(route: unknown) => void>("drawRoute", route);
     },
-    isLayerOn: (layer) => layerIsOn(layer),
+    isLayerOn: (layer) =>
+      getGlobalValue<(layer: string) => boolean>("layerIsOn")?.(layer) ?? false,
     drawBurgIcon: (burg) => {
-      drawBurgIcon(burg);
+      callGlobal<(burg: unknown) => void>("drawBurgIcon", burg);
     },
     drawBurgLabel: (burg) => {
-      drawBurgLabel(burg);
+      callGlobal<(burg: unknown) => void>("drawBurgLabel", burg);
     },
     removeBurgIcon: (burgId) => {
-      removeBurgIcon(burgId);
+      callGlobal<(burgId: number) => void>("removeBurgIcon", burgId);
     },
     removeBurgLabel: (burgId) => {
-      removeBurgLabel(burgId);
+      callGlobal<(burgId: number) => void>("removeBurgLabel", burgId);
     },
     getElementById: domTargets.getElementById,
     removeBurgEmblemUse: (burgId) => {
-      emblems.select(`#burgEmblems > use[data-i='${burgId}']`).remove();
+      getGlobalValue<{
+        select?: (selector: string) => { remove?: () => void };
+      }>("emblems")
+        ?.select?.(`#burgEmblems > use[data-i='${burgId}']`)
+        ?.remove?.();
     },
     redrawIceberg: (iceId) => {
-      redrawIceberg(iceId);
+      callGlobal<(iceId: number) => void>("redrawIceberg", iceId);
     },
     redrawGlacier: (iceId) => {
-      redrawGlacier(iceId);
+      callGlobal<(iceId: number) => void>("redrawGlacier", iceId);
     },
-    selectScaleBar: () => svg.select("#scaleBar"),
-    getScale: () => scale,
+    selectScaleBar: () =>
+      getGlobalValue<{ select?: (selector: string) => unknown }>(
+        "svg",
+      )?.select?.("#scaleBar"),
+    getScale: () => getGlobalValue<number>("scale") ?? 0,
     drawScaleBar: (scaleBar, scale) => {
-      drawScaleBar(scaleBar as any, scale);
+      getGlobalValue<(scaleBar: unknown, scale: number) => void>(
+        "drawScaleBar",
+      )?.(scaleBar, scale);
     },
     drawHeightmap: () => {
-      drawHeightmap();
+      callGlobal<() => void>("drawHeightmap");
     },
     drawBiomes: () => {
-      (globalThis as any).drawBiomes?.();
+      callGlobal<() => void>("drawBiomes");
     },
     drawCells: () => {
-      (globalThis as any).drawCells?.();
+      callGlobal<() => void>("drawCells");
     },
     invokeActiveZooming: () => {
-      invokeActiveZooming();
+      callGlobal<() => void>("invokeActiveZooming");
     },
   };
 }
