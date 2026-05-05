@@ -192,8 +192,10 @@ export function createGlobalProjectClimateRendererAdapter(): EngineProjectClimat
 
 export function createGlobalProjectClimateSchedulerAdapter(): EngineProjectClimateSchedulerAdapter {
   return {
-    schedule: (callback, delay) =>
-      getClimateWindow().setTimeout(callback, delay),
+    schedule: (callback, delay) => {
+      const scheduler = getClimateWindow().setTimeout;
+      if (typeof scheduler === "function") scheduler(callback, delay);
+    },
   };
 }
 

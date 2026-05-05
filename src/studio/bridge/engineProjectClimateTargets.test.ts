@@ -25,6 +25,7 @@ const originalLakes = globalThis.Lakes;
 const originalLayerIsOn = globalThis.layerIsOn;
 const originalDrawBiomes = testGlobals.drawBiomes;
 const originalThreeD = testGlobals.ThreeD;
+const originalWindow = globalThis.window;
 
 describe("createGlobalProjectClimateTargets", () => {
   afterEach(() => {
@@ -40,6 +41,7 @@ describe("createGlobalProjectClimateTargets", () => {
     globalThis.layerIsOn = originalLayerIsOn;
     testGlobals.drawBiomes = originalDrawBiomes;
     testGlobals.ThreeD = originalThreeD;
+    globalThis.window = originalWindow;
   });
 
   it("reads the auto-apply checkbox when present", () => {
@@ -114,6 +116,20 @@ describe("createGlobalProjectClimateTargets", () => {
 
     expect(drawBiomes).toHaveBeenCalledWith();
     expect(updateThreeD).toHaveBeenCalledWith();
+  });
+
+  it("keeps climate targets safe when browser DOM and scheduler are absent", () => {
+    globalThis.document = undefined as unknown as Document;
+    globalThis.window = {} as Window & typeof globalThis;
+
+    const targets = createGlobalProjectClimateTargets();
+
+    expect(targets.shouldAutoApplyClimate()).toBe(true);
+    expect(targets.hasCanvas3d()).toBe(false);
+    expect(targets.canUpdateGlobePosition()).toBe(false);
+    expect(targets.canApplyClimatePipeline()).toBe(false);
+    expect(targets.cloneHeights()).toBeUndefined();
+    expect(() => targets.schedule(vi.fn(), 10)).not.toThrow();
   });
 
   it("composes climate targets from injected DOM, pipeline, renderer, and scheduler adapters", () => {
