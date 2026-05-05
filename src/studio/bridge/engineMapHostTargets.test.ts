@@ -44,7 +44,10 @@ describe("createGlobalEngineMapHostTargets", () => {
   afterEach(() => {
     globalThis.document = originalDocument;
     globalThis.Event = originalEvent;
-    globalThis.localStorage = originalLocalStorage;
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      value: originalLocalStorage,
+    });
     globalThis.window = originalWindow;
     restoreRuntime();
   });
@@ -82,6 +85,26 @@ describe("createGlobalEngineMapHostTargets", () => {
       documentHeight: 700,
       seed: "seed-from-options",
       stylePreset: "pencil",
+    });
+  });
+
+  it("keeps document baseline fallback safe when storage access throws", () => {
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      get: () => {
+        throw new Error("localStorage blocked");
+      },
+    });
+    globalThis.document = {
+      getElementById: vi.fn(() => null),
+    } as unknown as Document;
+
+    const targets = createGlobalEngineMapHostTargets();
+
+    expect(targets.getDocumentBaselineCandidate()).toMatchObject({
+      name: "Untitled map",
+      seed: "",
+      stylePreset: "default",
     });
   });
 

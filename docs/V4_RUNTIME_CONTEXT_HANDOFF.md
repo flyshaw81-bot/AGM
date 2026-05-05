@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 181 test files, 739 tests.
+- `npm.cmd run test -- --run` passed: 181 test files, 740 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2085,6 +2085,8 @@ when public runtime helpers are not mounted.
 Studio preference and project-center app targets now also guard blocked
 `localStorage` access. Reads return null and writes become safe no-ops when the
 browser storage getter throws.
+Map host document-baseline fallback also guards blocked `localStorage` access
+before reading the stored style preset.
 `getEngineWorldDimensions(context)` now centralizes the compatibility fallback
 from runtime world settings to browser graph globals. Burgs, Cultures, and
 Rivers consume that helper instead of reading `globalThis.graphWidth` /

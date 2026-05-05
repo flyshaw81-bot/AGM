@@ -129,6 +129,14 @@ function getElement(id: string) {
   return globalThis.document?.getElementById(id) ?? null;
 }
 
+function getLocalStorage(): Storage | undefined {
+  try {
+    return globalThis.localStorage;
+  } catch {
+    return undefined;
+  }
+}
+
 function getMapDimensionAttribute(
   map: Element | null,
   attribute: "width" | "height",
@@ -143,7 +151,7 @@ export function createGlobalEngineMapHostDocumentAdapter(): EngineMapHostDocumen
       const runtime = getGlobalMapHostRuntime();
       const stylePreset =
         runtime.stylePreset?.value ||
-        globalThis.localStorage?.getItem("presetStyle") ||
+        getLocalStorage()?.getItem("presetStyle") ||
         "default";
       const seed = runtime.seed || runtime.optionsSeed?.value || "";
       const name = runtime.mapName?.value || "Untitled map";
