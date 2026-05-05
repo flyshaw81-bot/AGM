@@ -1,7 +1,7 @@
 import { getDirectRelationshipSourceWorkbenchTarget } from "./directWorkbenchTargets";
 import {
-  focusNativeRelationshipField,
-  getNativeRelationshipFieldInputId,
+  focusDirectRelationshipField,
+  getDirectRelationshipFieldInputId,
 } from "./nativeRelationshipFocus";
 import { createNativeRelationshipButtonPayload } from "./nativeRelationshipPayloads";
 import { getNativeRelationshipFixTarget } from "./nativeRelationshipQueue";
@@ -99,8 +99,8 @@ export function bindNativeRelationshipReferenceEvents({
     const id = Number(button.dataset.editId);
     const field = button.dataset.editField || "";
     selectNativeRelationshipSource(entity, id);
-    const fieldId = getNativeRelationshipFieldInputId(entity, field);
-    if (fieldId) focusNativeRelationshipField(fieldId);
+    const fieldId = getDirectRelationshipFieldInputId(entity, field);
+    if (fieldId) focusDirectRelationshipField(fieldId);
   };
 
   bindClickSelector(

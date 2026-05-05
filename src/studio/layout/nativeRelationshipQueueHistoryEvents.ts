@@ -1,7 +1,7 @@
 import type { StudioState } from "../types";
 import {
-  focusNativeRelationshipField,
-  getNativeRelationshipFieldInputId,
+  focusDirectRelationshipField,
+  getDirectRelationshipFieldInputId,
 } from "./nativeRelationshipFocus";
 import { applyNativeRelationshipHistoryFilter } from "./nativeRelationshipHistoryFilter";
 import type { NativeRelationshipQueueUndoChange } from "./nativeRelationshipQueue";
@@ -58,11 +58,11 @@ export function bindNativeRelationshipQueueHistoryEvents({
     change: NativeRelationshipQueueUndoChange,
   ) => {
     selectNativeRelationshipSource(change.entity, change.id);
-    const fieldId = getNativeRelationshipFieldInputId(
+    const fieldId = getDirectRelationshipFieldInputId(
       change.entity,
       change.field,
     );
-    if (fieldId) focusNativeRelationshipField(fieldId);
+    if (fieldId) focusDirectRelationshipField(fieldId);
   };
 
   const renderNativeRelationshipHistory = () =>
