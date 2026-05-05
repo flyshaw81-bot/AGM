@@ -269,4 +269,45 @@ describe("engine host", () => {
       });
     }
   });
+
+  it("keeps global host adapters safe when DOM operations throw", () => {
+    const originalDocument = globalThis.document;
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: {
+        getElementById: () => {
+          throw new Error("lookup blocked");
+        },
+        createElement: () => {
+          throw new Error("creation blocked");
+        },
+        body: {
+          appendChild: () => {
+            throw new Error("append blocked");
+          },
+        },
+        querySelectorAll: () => {
+          throw new Error("query blocked");
+        },
+      },
+    });
+
+    try {
+      const domAdapter = createGlobalEngineHostDomAdapter();
+      const dialogDomAdapter = createGlobalEngineHostDialogDomAdapter();
+      const element = domAdapter.createElement("div");
+
+      expect(domAdapter.getElementById("studioRoot")).toBeNull();
+      expect(element.id).toBe("");
+      expect(() => domAdapter.appendToBody(element)).not.toThrow();
+      expect(
+        dialogDomAdapter.querySelectorAll("#dialogs > .ui-dialog"),
+      ).toEqual([]);
+    } finally {
+      Object.defineProperty(globalThis, "document", {
+        configurable: true,
+        value: originalDocument,
+      });
+    }
+  });
 });

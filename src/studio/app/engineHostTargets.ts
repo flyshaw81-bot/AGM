@@ -24,20 +24,44 @@ function getDocument(): Document | undefined {
 
 export function createGlobalEngineHostDomAdapter(): EngineHostDomAdapter {
   return {
-    getElementById: (id) => getDocument()?.getElementById(id) ?? null,
-    createElement: (tagName) =>
-      getDocument()?.createElement(tagName) ??
-      ({ id: "", dataset: {}, style: {} } as HTMLElement),
+    getElementById: (id) => {
+      try {
+        return getDocument()?.getElementById(id) ?? null;
+      } catch {
+        return null;
+      }
+    },
+    createElement: (tagName) => {
+      try {
+        return (
+          getDocument()?.createElement(tagName) ??
+          ({ id: "", dataset: {}, style: {} } as HTMLElement)
+        );
+      } catch {
+        return { id: "", dataset: {}, style: {} } as HTMLElement;
+      }
+    },
     appendToBody: (element) => {
-      getDocument()?.body?.appendChild(element);
+      try {
+        getDocument()?.body?.appendChild(element);
+      } catch {
+        // Host elements can remain detached in restricted runtimes.
+      }
     },
   };
 }
 
 export function createGlobalEngineHostDialogDomAdapter(): EngineHostDialogDomAdapter {
   return {
-    querySelectorAll: (selector) =>
-      Array.from(getDocument()?.querySelectorAll<HTMLElement>(selector) ?? []),
+    querySelectorAll: (selector) => {
+      try {
+        return Array.from(
+          getDocument()?.querySelectorAll<HTMLElement>(selector) ?? [],
+        );
+      } catch {
+        return [];
+      }
+    },
   };
 }
 

@@ -2415,6 +2415,8 @@ Heightmap PNG export targets now also guard blocked canvas creation and fall
 back to an unavailable canvas instead of leaking DOM failures.
 Draft file IO targets now guard blocked link creation/body append/script lookup
 and report JSZip script-load failures through the existing export error path.
+Engine host DOM/dialog adapters now guard blocked element lookup, host element
+creation, body append, and dialog selector queries.
 
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`
