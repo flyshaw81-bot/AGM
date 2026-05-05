@@ -24,7 +24,11 @@ describe("EmblemRenderModule", () => {
   const originalLayerIsOn = globalThis.layerIsOn;
 
   afterEach(() => {
-    globalThis.document = originalDocument;
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: originalDocument,
+      writable: true,
+    });
     globalThis.emblems = originalEmblems;
     globalThis.layerIsOn = originalLayerIsOn;
   });
@@ -115,5 +119,21 @@ describe("EmblemRenderModule", () => {
     expect(targets.getElementById("coas")).toBeNull();
     expect(targets.hasRenderedUses()).toBe(false);
     expect(targets.isLayerOn("toggleEmblems")).toBe(false);
+  });
+
+  it("keeps global renderer targets safe when document access throws", () => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
+    const targets = createGlobalEmblemRendererTargets();
+
+    expect(targets.parseChargeGroup("<svg><g /></svg>", "lion")).toBe(
+      '<g id="lion"></g>',
+    );
+    expect(() => targets.insertCoaSvg("<svg />")).not.toThrow();
+    expect(targets.getElementById("coas")).toBeNull();
   });
 });

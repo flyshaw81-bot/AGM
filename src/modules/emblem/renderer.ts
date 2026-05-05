@@ -20,6 +20,14 @@ export type EmblemRendererTargets = {
   isLayerOn: (layer: string) => boolean;
 };
 
+function getDocument(): Document | undefined {
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
+}
+
 export function createGlobalEmblemRendererTargets(): EmblemRendererTargets {
   return {
     fetchText: async (url) => {
@@ -28,19 +36,20 @@ export function createGlobalEmblemRendererTargets(): EmblemRendererTargets {
       throw new Error("Cannot fetch charge");
     },
     parseChargeGroup: (svgText, id) => {
-      if (!globalThis.document) return `<g id="${id}"></g>`;
-      const html = globalThis.document.createElement("html");
+      const document = getDocument();
+      if (!document) return `<g id="${id}"></g>`;
+      const html = document.createElement("html");
       html.innerHTML = svgText;
       const g = html.querySelector("g") as SVGAElement;
       g.setAttribute("id", id);
       return g.outerHTML;
     },
     insertCoaSvg: (svg) => {
-      globalThis.document
+      getDocument()
         ?.getElementById("coas")
         ?.insertAdjacentHTML("beforeend", svg);
     },
-    getElementById: (id) => globalThis.document?.getElementById(id) ?? null,
+    getElementById: (id) => getDocument()?.getElementById(id) ?? null,
     hasRenderedUses: () =>
       Boolean(globalThis.emblems?.selectAll?.("use")?.size?.()),
     isLayerOn: (layer) => globalThis.layerIsOn?.(layer) ?? false,

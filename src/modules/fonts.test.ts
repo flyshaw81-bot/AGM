@@ -48,7 +48,11 @@ describe("font resource compatibility facade", () => {
   });
 
   afterEach(() => {
-    globalThis.document = originalDocument;
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: originalDocument,
+      writable: true,
+    });
     globalThis.FontFace = originalFontFace;
     globalThis.changeFont = originalChangeFont;
     globalThis.tip = originalTip;
@@ -173,5 +177,27 @@ describe("font resource compatibility facade", () => {
     expect(() => adapter.applySelectedFont()).not.toThrow();
     expect(() => adapter.showToast("Loaded", "success")).not.toThrow();
     expect(adapter.getProvinceFont()).toBeNull();
+  });
+
+  it("keeps the default browser font targets safe when document access throws", async () => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
+    globalThis.FontFace = undefined as unknown as typeof FontFace;
+
+    const { createBrowserFontResourceAdapter } = await import("./fonts");
+    const adapter = createBrowserFontResourceAdapter();
+
+    expect(() => adapter.addFontOption("Display Font")).not.toThrow();
+    expect(() =>
+      adapter.registerFontFace({
+        family: "Display Font",
+        src: "url(https://example.test/display.woff2)",
+      }),
+    ).not.toThrow();
+    expect(() => adapter.setSelectedFont("Display Font")).not.toThrow();
   });
 });

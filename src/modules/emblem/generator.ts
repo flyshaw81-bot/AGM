@@ -25,9 +25,17 @@ export type EmblemShapeTargets = {
   getSelectedShape: () => EmblemShapeSelection | null;
 };
 
+function getDocument(): Document | undefined {
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
+}
+
 export function createGlobalEmblemShapeDomTargets(): EmblemShapeDomTargets {
   return {
-    getElementById: (id) => globalThis.document?.getElementById(id) ?? null,
+    getElementById: (id) => getDocument()?.getElementById(id) ?? null,
   };
 }
 

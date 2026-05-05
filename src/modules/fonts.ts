@@ -315,22 +315,30 @@ function createFontFace(font: FontDefinition) {
   return new globalThis.FontFace(family, src, { ...rest, display: "block" });
 }
 
+function getDocument(): Document | undefined {
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
+}
+
 export function createGlobalBrowserFontResourceTargets(): EngineBrowserFontResourceTargets {
   return {
     getFontSelect: () =>
-      globalThis.document?.getElementById(
+      getDocument()?.getElementById(
         "styleSelectFont",
       ) as HTMLSelectElement | null,
     createOption: () =>
-      (globalThis.document?.createElement("option") ?? {
+      (getDocument()?.createElement("option") ?? {
         innerText: "",
         style: {},
         value: "",
       }) as HTMLOptionElement,
     createFontFace,
-    addFontFace: (fontFace) => globalThis.document?.fonts?.add(fontFace),
+    addFontFace: (fontFace) => getDocument()?.fonts?.add(fontFace),
     setSelectedFont: (family) => {
-      const select = globalThis.document?.getElementById(
+      const select = getDocument()?.getElementById(
         "styleSelectFont",
       ) as HTMLSelectElement | null;
       if (select) select.value = family;

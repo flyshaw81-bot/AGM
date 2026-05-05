@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 181 test files, 746 tests.
+- `npm.cmd run test -- --run` passed: 181 test files, 749 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2099,6 +2099,10 @@ element removal and SVG length probes degrade to no-op/undefined.
 Runtime settings and seed-session DOM targets now guard blocked `document`
 access; settings input reads keep caller fallbacks and options-seed writes
 become safe no-ops.
+Font resource and emblem generator/renderer browser targets now also guard
+blocked `document` access; font selection, font-face registration, emblem shape
+selection, and COA SVG insertion safely no-op or fall back when DOM access is
+unavailable.
 `getEngineWorldDimensions(context)` now centralizes the compatibility fallback
 from runtime world settings to browser graph globals. Burgs, Cultures, and
 Rivers consume that helper instead of reading `globalThis.graphWidth` /

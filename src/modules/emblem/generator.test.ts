@@ -28,7 +28,11 @@ describe("EmblemGeneratorModule", () => {
 
   afterEach(() => {
     globalThis.pack = originalPack;
-    globalThis.document = originalDocument;
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: originalDocument,
+      writable: true,
+    });
   });
 
   it("uses an injected fixed shield shape without reading document", () => {
@@ -62,6 +66,17 @@ describe("EmblemGeneratorModule", () => {
 
   it("keeps global shape targets safe when document is absent", () => {
     globalThis.document = undefined as unknown as Document;
+
+    expect(createGlobalEmblemShapeTargets().getSelectedShape()).toBeNull();
+  });
+
+  it("keeps global shape targets safe when document access throws", () => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
 
     expect(createGlobalEmblemShapeTargets().getSelectedShape()).toBeNull();
   });
