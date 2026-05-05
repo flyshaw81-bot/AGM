@@ -33,12 +33,18 @@ export type EngineSeedDomTargets = {
   getOptionsSeedInput: () => HTMLInputElement | null;
 };
 
+function getDocument(): Document | undefined {
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
+}
+
 export function createGlobalSeedDomTargets(): EngineSeedDomTargets {
   return {
     getOptionsSeedInput: () =>
-      globalThis.document?.getElementById(
-        "optionsSeed",
-      ) as HTMLInputElement | null,
+      getDocument()?.getElementById("optionsSeed") as HTMLInputElement | null,
   };
 }
 

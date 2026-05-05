@@ -116,10 +116,18 @@ export function createTimingSettings(
   };
 }
 
+function getDocument(): Document | undefined {
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
+}
+
 export function createGlobalSettingsDomTargets(): EngineSettingsDomTargets {
   return {
     getInput: (id) =>
-      globalThis.document?.getElementById(id) as HTMLInputElement | null,
+      getDocument()?.getElementById(id) as HTMLInputElement | null,
   };
 }
 

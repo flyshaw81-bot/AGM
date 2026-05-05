@@ -41,14 +41,22 @@ const originalTime = globalThis.TIME;
 function installDocument(
   controls: Record<string, Partial<HTMLInputElement>>,
 ): void {
-  globalThis.document = {
-    getElementById: (id: string) => controls[id] ?? null,
-  } as unknown as Document;
+  Object.defineProperty(globalThis, "document", {
+    configurable: true,
+    value: {
+      getElementById: (id: string) => controls[id] ?? null,
+    } as unknown as Document,
+    writable: true,
+  });
 }
 
 describe("runtime setting adapters", () => {
   afterEach(() => {
-    globalThis.document = originalDocument;
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: originalDocument,
+      writable: true,
+    });
     globalThis.mapCoordinates = originalMapCoordinates;
     globalThis.graphWidth = originalGraphWidth;
     globalThis.graphHeight = originalGraphHeight;
@@ -175,6 +183,22 @@ describe("runtime setting adapters", () => {
         27,
       ),
     ).toBe(27);
+  });
+
+  it("keeps global settings DOM targets safe when document access throws", () => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
+
+    expect(
+      createSettingsInputNumberReader(createGlobalSettingsDomTargets())(
+        "mapSizeOutput",
+        31,
+      ),
+    ).toBe(31);
   });
 
   it("composes world settings from separate DOM and runtime targets", () => {

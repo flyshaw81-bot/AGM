@@ -84,7 +84,11 @@ describe("EngineSeedSessionModule", () => {
   const originalDocument = globalThis.document;
 
   afterEach(() => {
-    globalThis.document = originalDocument;
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: originalDocument,
+      writable: true,
+    });
   });
 
   it("resolves seeds through injected targets", () => {
@@ -120,6 +124,19 @@ describe("EngineSeedSessionModule", () => {
 
   it("keeps global seed DOM targets safe when document is absent", () => {
     globalThis.document = undefined as unknown as Document;
+
+    expect(() =>
+      createGlobalSeedSessionTargets().setOptionsSeed("dom-seed"),
+    ).not.toThrow();
+  });
+
+  it("keeps global seed DOM targets safe when document access throws", () => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
 
     expect(() =>
       createGlobalSeedSessionTargets().setOptionsSeed("dom-seed"),
