@@ -2266,6 +2266,9 @@ or `window.getColorScheme` directly outside the default compatibility adapter.
 `heightmap-generator.ts` now routes heightmap template lookup through
 `HeightmapTemplateTargets`, so template-backed generation can run against an
 injected template source instead of reading `heightmapTemplates` directly.
+The same module now routes template tool world dimensions through
+`HeightmapWorldTargets`, removing direct `graphWidth` / `graphHeight` reads
+from the template generation path outside the default compatibility adapter.
 
 `ocean-layers.ts` now routes outline-chain error reporting through
 `OceanLayerLogTargets`, keeping the default `globalThis.ERROR` compatibility

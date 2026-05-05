@@ -3,6 +3,7 @@ import {
   createGlobalHeightmapImageBrowserTargets,
   createGlobalHeightmapImageTargets,
   createGlobalHeightmapTemplateTargets,
+  createGlobalHeightmapWorldTargets,
   type HeightmapImageTargets,
   HeightmapModule,
 } from "./heightmap-generator";
@@ -177,9 +178,24 @@ describe("HeightmapModule", () => {
     }
   });
 
-  it("generates template heightmaps through injected template targets", async () => {
+  it("keeps global world targets behind the compatibility adapter", () => {
     const originalGraphWidth = globalThis.graphWidth;
     const originalGraphHeight = globalThis.graphHeight;
+
+    try {
+      globalThis.graphWidth = 120;
+      globalThis.graphHeight = 80;
+      const targets = createGlobalHeightmapWorldTargets();
+
+      expect(targets.getGraphWidth()).toBe(120);
+      expect(targets.getGraphHeight()).toBe(80);
+    } finally {
+      globalThis.graphWidth = originalGraphWidth;
+      globalThis.graphHeight = originalGraphHeight;
+    }
+  });
+
+  it("generates template heightmaps through injected template targets", async () => {
     const heightmap = new HeightmapModule(
       createImageTargets(new Uint8ClampedArray()),
       { error: vi.fn() },
@@ -187,25 +203,21 @@ describe("HeightmapModule", () => {
         hasTemplate: (id) => id === "flat",
         getTemplate: () => "Hill 0-100 0-100 20",
       },
+      {
+        getGraphWidth: () => 2,
+        getGraphHeight: () => 2,
+      },
     );
 
-    try {
-      globalThis.graphWidth = 2;
-      globalThis.graphHeight = 2;
+    const heights = await heightmap.generate(createGraph(), {
+      generationSettings: { heightmapTemplateId: "flat" },
+      random: { next: () => 0.5 },
+      seed: "heightmap-seed",
+      timing: { shouldTime: false },
+    } as never);
 
-      const heights = await heightmap.generate(createGraph(), {
-        generationSettings: { heightmapTemplateId: "flat" },
-        random: { next: () => 0.5 },
-        seed: "heightmap-seed",
-        timing: { shouldTime: false },
-      } as never);
-
-      expect(heights.length).toBe(4);
-      expect(Math.max(...heights)).toBeGreaterThan(0);
-    } finally {
-      globalThis.graphWidth = originalGraphWidth;
-      globalThis.graphHeight = originalGraphHeight;
-    }
+    expect(heights.length).toBe(4);
+    expect(Math.max(...heights)).toBeGreaterThan(0);
   });
 
   it("loads precreated heightmaps through injected image targets", async () => {
