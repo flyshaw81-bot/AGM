@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createEngineRenderAdapter,
   createGlobalRenderAdapter,
+  createGlobalRenderDomTargets,
   createGlobalRenderTargets,
   type EngineRenderTargets,
 } from "./engine-render-adapter";
@@ -166,6 +167,24 @@ describe("createGlobalRenderAdapter", () => {
 
     expect(() => rendering.removeElementById("marker12")).not.toThrow();
     expect(rendering.getElementTotalLengthById?.("route3")).toBeUndefined();
+  });
+
+  it("exposes global render DOM targets for explicit composition", () => {
+    const getElementById = vi.fn(() => ({ id: "marker12" }));
+    globalThis.document = {
+      getElementById,
+    } as unknown as Document;
+
+    const domTargets = createGlobalRenderDomTargets();
+    const targets = createGlobalRenderTargets(domTargets);
+
+    expect(domTargets.getElementById("marker12")).toMatchObject({
+      id: "marker12",
+    });
+    expect(targets.getElementById("marker12")).toMatchObject({
+      id: "marker12",
+    });
+    expect(getElementById).toHaveBeenCalledWith("marker12");
   });
 
   it("keeps global cell lookup safe when findCell is absent", () => {

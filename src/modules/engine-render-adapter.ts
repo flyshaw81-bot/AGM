@@ -52,6 +52,11 @@ export type EngineRenderTargets = {
   invokeActiveZooming?: () => void;
 };
 
+export type EngineRenderDomTargets = Pick<
+  EngineRenderTargets,
+  "getElementById"
+>;
+
 export function createEngineRenderAdapter(
   targets: EngineRenderTargets,
 ): EngineRenderAdapter {
@@ -118,7 +123,15 @@ function getDocument(): Document | undefined {
   }
 }
 
-export function createGlobalRenderTargets(): EngineRenderTargets {
+export function createGlobalRenderDomTargets(): EngineRenderDomTargets {
+  return {
+    getElementById: (id) => getDocument()?.getElementById(id) ?? null,
+  };
+}
+
+export function createGlobalRenderTargets(
+  domTargets: EngineRenderDomTargets = createGlobalRenderDomTargets(),
+): EngineRenderTargets {
   const runtime = globalThis as typeof globalThis & {
     findCell?: EngineRenderTargets["findCell"];
   };
@@ -145,7 +158,7 @@ export function createGlobalRenderTargets(): EngineRenderTargets {
     removeBurgLabel: (burgId) => {
       removeBurgLabel(burgId);
     },
-    getElementById: (id) => getDocument()?.getElementById(id) ?? null,
+    getElementById: domTargets.getElementById,
     removeBurgEmblemUse: (burgId) => {
       emblems.select(`#burgEmblems > use[data-i='${burgId}']`).remove();
     },
