@@ -8,6 +8,14 @@ declare global {
   var Names: NamesGenerator;
 }
 
+function getWindow(): (Window & typeof globalThis) | undefined {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+}
+
 export interface NameBase {
   name: string; // name of the base
   i: number; // index of the base
@@ -768,6 +776,5 @@ export class NamesGenerator {
   }
 }
 
-if (typeof window !== "undefined") {
-  window.Names = new NamesGenerator();
-}
+const runtimeWindow = getWindow();
+if (runtimeWindow) runtimeWindow.Names = new NamesGenerator();

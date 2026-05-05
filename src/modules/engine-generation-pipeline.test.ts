@@ -1,6 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { EngineGenerationPipelineModule } from "./engine-generation-pipeline";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
+
+const originalWindowDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "window",
+);
 
 function createPipelineContext(id: string): EngineRuntimeContext {
   return {
@@ -122,6 +127,25 @@ function createPipelineContext(id: string): EngineRuntimeContext {
 }
 
 describe("EngineGenerationPipelineModule", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    if (originalWindowDescriptor) {
+      Object.defineProperty(globalThis, "window", originalWindowDescriptor);
+    }
+  });
+
+  it("can be imported when window access throws", async () => {
+    vi.resetModules();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+
+    await expect(import("./engine-generation-pipeline")).resolves.toBeDefined();
+  });
+
   it("prepares the compatibility generation session before world generation", () => {
     const calls: string[] = [];
     const sessionContext = createPipelineContext("session");

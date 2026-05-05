@@ -1,5 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { ClimateModule, type ClimateRuntimeContext } from "./climate";
+
+const originalWindowDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "window",
+);
 
 function createPrecipitationLayer() {
   const events: string[] = [];
@@ -70,6 +75,25 @@ function createClimateContext(): ClimateRuntimeContext {
 }
 
 describe("ClimateModule", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    if (originalWindowDescriptor) {
+      Object.defineProperty(globalThis, "window", originalWindowDescriptor);
+    }
+  });
+
+  it("can be imported when window access throws", async () => {
+    vi.resetModules();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+
+    await expect(import("./climate")).resolves.toBeDefined();
+  });
+
   it("calculates temperatures from an explicit runtime context", () => {
     const context = createClimateContext();
 

@@ -9,6 +9,14 @@ declare global {
   var EngineGenerationPipeline: EngineGenerationPipelineModule;
 }
 
+function getWindow(): (Window & typeof globalThis) | undefined {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+}
+
 export type EngineGenerationRequest = EngineGenerationSessionRequest;
 
 export class EngineGenerationPipelineModule {
@@ -274,6 +282,7 @@ export class EngineGenerationPipelineModule {
   }
 }
 
-if (typeof window !== "undefined") {
-  window.EngineGenerationPipeline = new EngineGenerationPipelineModule();
+const runtimeWindow = getWindow();
+if (runtimeWindow) {
+  runtimeWindow.EngineGenerationPipeline = new EngineGenerationPipelineModule();
 }

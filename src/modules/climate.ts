@@ -7,6 +7,14 @@ declare global {
   var Climate: ClimateModule;
 }
 
+function getWindow(): (Window & typeof globalThis) | undefined {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+}
+
 type WindSource = number | [number, number, number];
 export type ClimateMapCoordinates = {
   latT: number;
@@ -327,8 +335,11 @@ export class ClimateModule {
   }
 }
 
-if (typeof window !== "undefined") {
-  window.Climate = new ClimateModule();
-  window.calculateTemperatures = () => window.Climate.calculateTemperatures();
-  window.generatePrecipitation = () => window.Climate.generatePrecipitation();
+const runtimeWindow = getWindow();
+if (runtimeWindow) {
+  runtimeWindow.Climate = new ClimateModule();
+  runtimeWindow.calculateTemperatures = () =>
+    runtimeWindow.Climate.calculateTemperatures();
+  runtimeWindow.generatePrecipitation = () =>
+    runtimeWindow.Climate.generatePrecipitation();
 }

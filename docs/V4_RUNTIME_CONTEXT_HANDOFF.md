@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 196 test files, 789 tests.
+- `npm.cmd run test -- --run` passed: 196 test files, 792 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2188,6 +2188,11 @@ setting graph rectangle bounds instead of re-reading stale `globalThis`
 dimensions. `engine-generation-session-services.ts` now exposes
 `createBrowserGlobalGridSessionTargets()` and `createGlobalGridSessionTargets()`
 so default grid session global access is isolated behind a typed adapter.
+
+`Climate`, `EngineGenerationPipeline`, and `Names` compatibility mounts now
+guard blocked `window` access at import time. These mounts remain intentional
+AGM module compatibility exports for the current public orchestration path;
+they are not old-system algorithm dependencies.
 
 ## Next Recommended Slice
 

@@ -5,6 +5,11 @@ import {
   type NamesRuntimeAdapters,
 } from "./names-generator";
 
+const originalWindowDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "window",
+);
+
 function createAdapters(
   overrides: Partial<NamesRuntimeAdapters> = {},
 ): NamesRuntimeAdapters {
@@ -21,6 +26,21 @@ function createAdapters(
 describe("NamesGenerator", () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    if (originalWindowDescriptor) {
+      Object.defineProperty(globalThis, "window", originalWindowDescriptor);
+    }
+  });
+
+  it("can be imported when window access throws", async () => {
+    vi.resetModules();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+
+    await expect(import("./names-generator")).resolves.toBeDefined();
   });
 
   it("can calculate Markov chains without browser globals", () => {
