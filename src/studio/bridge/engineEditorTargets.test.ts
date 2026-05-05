@@ -13,11 +13,35 @@ import {
 
 const originalDocument = globalThis.document;
 const originalWindow = globalThis.window;
+const originalDocumentDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "document",
+);
+const originalWindowDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "window",
+);
 
 describe("createEngineEditorTargets", () => {
   afterEach(() => {
-    globalThis.document = originalDocument;
-    globalThis.window = originalWindow;
+    if (originalDocumentDescriptor) {
+      Object.defineProperty(globalThis, "document", originalDocumentDescriptor);
+    } else {
+      Object.defineProperty(globalThis, "document", {
+        configurable: true,
+        value: originalDocument,
+        writable: true,
+      });
+    }
+    if (originalWindowDescriptor) {
+      Object.defineProperty(globalThis, "window", originalWindowDescriptor);
+    } else {
+      Object.defineProperty(globalThis, "window", {
+        configurable: true,
+        value: originalWindow,
+        writable: true,
+      });
+    }
   });
 
   it("detects and runs editor handlers from the active runtime", async () => {
@@ -85,6 +109,19 @@ describe("createEngineEditorTargets", () => {
 
   it("keeps global editor handlers safe when window is absent", () => {
     globalThis.window = undefined as unknown as Window & typeof globalThis;
+
+    const runtime = createGlobalEngineEditorHandlerRuntime();
+
+    expect(runtime.getHandler("editStates")).toBeUndefined();
+  });
+
+  it("keeps global editor handlers safe when window access throws", () => {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
 
     const runtime = createGlobalEngineEditorHandlerRuntime();
 
@@ -189,15 +226,25 @@ describe("createEngineEditorTargets", () => {
 
   it("keeps document and computed-style reads inside the default DOM adapter", () => {
     const dialog = { id: "statesEditor" };
-    globalThis.document = {
-      getElementById: vi.fn(() => dialog),
-    } as unknown as Document;
-    globalThis.window = {
-      getComputedStyle: vi.fn(() => ({
-        display: "block",
-        visibility: "visible",
-      })),
-    } as unknown as Window & typeof globalThis;
+    const getElementById = vi.fn(() => dialog);
+    const getComputedStyle = vi.fn(() => ({
+      display: "block",
+      visibility: "visible",
+    }));
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: {
+        getElementById,
+      } as unknown as Document,
+      writable: true,
+    });
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        getComputedStyle,
+      } as unknown as Window & typeof globalThis,
+      writable: true,
+    });
 
     const adapter = createGlobalEngineEditorDialogDomAdapter();
 
@@ -206,15 +253,21 @@ describe("createEngineEditorTargets", () => {
       display: "block",
       visibility: "visible",
     });
-    expect(globalThis.document.getElementById).toHaveBeenCalledWith(
-      "statesEditor",
-    );
-    expect(globalThis.window.getComputedStyle).toHaveBeenCalledWith(dialog);
+    expect(getElementById).toHaveBeenCalledWith("statesEditor");
+    expect(getComputedStyle).toHaveBeenCalledWith(dialog);
   });
 
   it("keeps the default dialog adapters safe when DOM globals are absent", () => {
-    globalThis.document = undefined as unknown as Document;
-    globalThis.window = undefined as unknown as Window & typeof globalThis;
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: undefined,
+      writable: true,
+    });
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: undefined,
+      writable: true,
+    });
     const domAdapter = createGlobalEngineEditorDialogDomAdapter();
     const studioAdapter = createStudioEngineEditorDialogAdapter(domAdapter);
     const jqueryAdapter = createJQueryEngineEditorDialogAdapter(domAdapter);
@@ -223,5 +276,74 @@ describe("createEngineEditorTargets", () => {
     expect(jqueryAdapter.isOpen("statesEditor")).toBe(false);
     expect(() => studioAdapter.close("statesEditor")).not.toThrow();
     expect(() => jqueryAdapter.close("statesEditor")).not.toThrow();
+  });
+
+  it("keeps the default dialog DOM adapter safe when DOM reads throw", () => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+    const domAdapter = createGlobalEngineEditorDialogDomAdapter();
+
+    expect(domAdapter.getElementById("statesEditor")).toBeNull();
+    expect(domAdapter.getComputedStyle({} as HTMLElement)).toBeNull();
+  });
+
+  it("keeps dialog adapters safe when visibility and close DOM operations throw", () => {
+    const dialog = {
+      get hidden() {
+        throw new Error("hidden blocked");
+      },
+      closest: () => {
+        throw new Error("closest blocked");
+      },
+      querySelector: () => {
+        throw new Error("query blocked");
+      },
+      setAttribute: () => {
+        throw new Error("attribute blocked");
+      },
+    } as unknown as HTMLElement;
+    const domAdapter: EngineEditorDialogDomAdapter = {
+      getElementById: vi.fn(() => dialog),
+      getComputedStyle: vi.fn(() => {
+        throw new Error("style blocked");
+      }),
+    };
+    const studioAdapter = createStudioEngineEditorDialogAdapter(domAdapter);
+    const jqueryAdapter = createJQueryEngineEditorDialogAdapter(domAdapter);
+
+    expect(studioAdapter.isOpen("statesEditor")).toBe(false);
+    expect(jqueryAdapter.isOpen("statesEditor")).toBe(false);
+    expect(() => studioAdapter.close("statesEditor")).not.toThrow();
+    expect(() => jqueryAdapter.close("statesEditor")).not.toThrow();
+  });
+
+  it("keeps composite dialog close safe when one adapter throws", () => {
+    const workingAdapter: EngineEditorDialogAdapter = {
+      isOpen: vi.fn(() => true),
+      close: vi.fn(),
+    };
+    const throwingAdapter: EngineEditorDialogAdapter = {
+      isOpen: () => {
+        throw new Error("adapter blocked");
+      },
+      close: vi.fn(),
+    };
+    const adapter = createCompositeEngineEditorDialogAdapter([
+      throwingAdapter,
+      workingAdapter,
+    ]);
+
+    expect(() => adapter.close("statesEditor")).not.toThrow();
+    expect(workingAdapter.close).toHaveBeenCalledWith("statesEditor");
   });
 });

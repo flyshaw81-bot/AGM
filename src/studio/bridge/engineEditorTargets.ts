@@ -26,8 +26,12 @@ export type EngineEditorTargets = {
 };
 
 function getGlobalEditorRuntime(): EngineEditorRuntime {
-  return ((globalThis as typeof globalThis & { window?: EngineEditorRuntime })
-    .window ?? globalThis) as EngineEditorRuntime;
+  try {
+    return ((globalThis as typeof globalThis & { window?: EngineEditorRuntime })
+      .window ?? globalThis) as EngineEditorRuntime;
+  } catch {
+    return globalThis as EngineEditorRuntime;
+  }
 }
 
 export function createGlobalEngineEditorHandlerRuntime(): EngineEditorHandlerRuntime {
@@ -43,18 +47,32 @@ function isElementVisible(
   element: HTMLElement,
   domAdapter: EngineEditorDialogDomAdapter,
 ) {
-  if (element.hidden) return false;
-  if (element.offsetParent === null) return false;
-  const style = domAdapter.getComputedStyle(element);
-  return style?.display !== "none" && style?.visibility !== "hidden";
+  try {
+    if (element.hidden) return false;
+    if (element.offsetParent === null) return false;
+    const style = domAdapter.getComputedStyle(element);
+    return style?.display !== "none" && style?.visibility !== "hidden";
+  } catch {
+    return false;
+  }
 }
 
 export function createGlobalEngineEditorDialogDomAdapter(): EngineEditorDialogDomAdapter {
   return {
-    getElementById: (dialogId) =>
-      globalThis.document?.getElementById(dialogId) ?? null,
-    getComputedStyle: (element) =>
-      globalThis.window?.getComputedStyle(element) ?? null,
+    getElementById: (dialogId) => {
+      try {
+        return globalThis.document?.getElementById(dialogId) ?? null;
+      } catch {
+        return null;
+      }
+    },
+    getComputedStyle: (element) => {
+      try {
+        return globalThis.window?.getComputedStyle(element) ?? null;
+      } catch {
+        return null;
+      }
+    },
   };
 }
 
@@ -68,22 +86,26 @@ export function createJQueryEngineEditorDialogAdapter(
       return isElementVisible(dialog, domAdapter);
     },
     close: (dialogId) => {
-      const dialog = domAdapter.getElementById(dialogId);
-      if (!dialog) return;
+      try {
+        const dialog = domAdapter.getElementById(dialogId);
+        if (!dialog) return;
 
-      const wrapper = dialog.closest(".ui-dialog");
-      if (!wrapper) return;
+        const wrapper = dialog.closest(".ui-dialog");
+        if (!wrapper) return;
 
-      const closeButton = wrapper.querySelector<HTMLButtonElement>(
-        ".ui-dialog-titlebar-close",
-      );
-      if (closeButton) {
-        closeButton.click();
-        return;
+        const closeButton = wrapper.querySelector<HTMLButtonElement>(
+          ".ui-dialog-titlebar-close",
+        );
+        if (closeButton) {
+          closeButton.click();
+          return;
+        }
+
+        wrapper.setAttribute("aria-hidden", "true");
+        (wrapper as HTMLElement).style.display = "none";
+      } catch {
+        // Dialog fallback closing is best-effort for compatibility wrappers.
       }
-
-      wrapper.setAttribute("aria-hidden", "true");
-      (wrapper as HTMLElement).style.display = "none";
     },
   };
 }
@@ -98,24 +120,28 @@ export function createStudioEngineEditorDialogAdapter(
       return isElementVisible(dialog, domAdapter);
     },
     close: (dialogId) => {
-      const dialog = domAdapter.getElementById(dialogId);
-      if (!dialog) return;
+      try {
+        const dialog = domAdapter.getElementById(dialogId);
+        if (!dialog) return;
 
-      if ("close" in dialog && typeof dialog.close === "function") {
-        dialog.close();
-        return;
+        if ("close" in dialog && typeof dialog.close === "function") {
+          dialog.close();
+          return;
+        }
+
+        const closeButton = dialog.querySelector<HTMLButtonElement>(
+          "[data-agm-dialog-close], [data-studio-dialog-close], [data-dialog-close]",
+        );
+        if (closeButton) {
+          closeButton.click();
+          return;
+        }
+
+        dialog.setAttribute("aria-hidden", "true");
+        dialog.hidden = true;
+      } catch {
+        // Studio-owned dialogs can remain open if the host blocks DOM writes.
       }
-
-      const closeButton = dialog.querySelector<HTMLButtonElement>(
-        "[data-agm-dialog-close], [data-studio-dialog-close], [data-dialog-close]",
-      );
-      if (closeButton) {
-        closeButton.click();
-        return;
-      }
-
-      dialog.setAttribute("aria-hidden", "true");
-      dialog.hidden = true;
     },
   };
 }
@@ -127,7 +153,11 @@ export function createCompositeEngineEditorDialogAdapter(
     isOpen: (dialogId) => adapters.some((adapter) => adapter.isOpen(dialogId)),
     close: (dialogId) => {
       for (const adapter of adapters) {
-        if (adapter.isOpen(dialogId)) adapter.close(dialogId);
+        try {
+          if (adapter.isOpen(dialogId)) adapter.close(dialogId);
+        } catch {
+          // Keep one failing compatibility adapter from blocking the rest.
+        }
       }
     },
   };
