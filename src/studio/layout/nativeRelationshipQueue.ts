@@ -42,6 +42,30 @@ export function getNativeRelationshipFixTarget(button: HTMLElement) {
   return { fixKind, entity, id };
 }
 
+export type DirectRelationshipEntity = NativeRelationshipEntity;
+export type DirectRelationshipQueueHistory = NativeRelationshipQueueHistory;
+export type DirectRelationshipQueueUndoChange =
+  NativeRelationshipQueueUndoChange;
+export type DirectRelationshipQueueItem = NativeRelationshipQueueItem;
+export type DirectRelationshipQueueApplyResult =
+  NativeRelationshipQueueApplyResult;
+
+export const getDirectRelationshipFixTarget = getNativeRelationshipFixTarget;
+export const getDirectRelationshipFixField = getNativeRelationshipFixField;
+export const getDirectRelationshipButtonFieldValue =
+  getNativeRelationshipButtonFieldValue;
+export const getDirectRelationshipCurrentFieldValue =
+  getNativeRelationshipCurrentFieldValue;
+export const createDirectRelationshipDatasetPayload =
+  createNativeRelationshipDatasetPayload;
+export const applyDirectRelationshipQueuedItems =
+  applyNativeRelationshipQueuedItems;
+export const createDirectRelationshipUndoButton =
+  createNativeRelationshipUndoButton;
+export const reviewDirectRelationshipQueue = reviewNativeRelationshipQueue;
+export const getDirectRelationshipQueueImpactSummary =
+  getNativeRelationshipQueueImpactSummary;
+
 export function normalizeRelationshipQueueValue(value: string) {
   return value.trim().replace(/^#/, "");
 }
