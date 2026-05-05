@@ -11,6 +11,14 @@ interface BurgGroup {
   order: number;
 }
 
+const getDocument = (): Document | undefined => {
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
+};
+
 const burgLabelsRenderer = (): void => {
   TIME && console.time("drawBurgLabels");
   createLabelGroups();
@@ -69,11 +77,17 @@ const drawBurgLabelRenderer = (burg: Burg): void => {
 };
 
 const removeBurgLabelRenderer = (burgId: number): void => {
+  const document = getDocument();
+  if (!document) return;
+
   const existingLabel = document.getElementById(`burgLabel${burgId}`);
   if (existingLabel) existingLabel.remove();
 };
 
 function createLabelGroups(): void {
+  const document = getDocument();
+  if (!document) return;
+
   // save existing styles and remove all groups
   document.querySelectorAll("g#burgLabels > g").forEach((group) => {
     style.burgLabels[group.id] = Array.from(group.attributes).reduce(

@@ -11,9 +11,19 @@ interface BurgGroup {
   order: number;
 }
 
+const getDocument = (): Document | undefined => {
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
+};
+
 const burgIconsRenderer = (): void => {
   TIME && console.time("drawBurgIcons");
   createIconGroups();
+  const document = getDocument();
+  if (!document) return;
 
   for (const { name } of options.burgs.groups as BurgGroup[]) {
     const burgsInGroup = pack.burgs.filter(
@@ -84,6 +94,9 @@ const drawBurgIconRenderer = (burg: Burg): void => {
 };
 
 const removeBurgIconRenderer = (burgId: number): void => {
+  const document = getDocument();
+  if (!document) return;
+
   const existingIcon = document.getElementById(`burg${burgId}`);
   if (existingIcon) existingIcon.remove();
 
@@ -92,6 +105,9 @@ const removeBurgIconRenderer = (burgId: number): void => {
 };
 
 function createIconGroups(): void {
+  const document = getDocument();
+  if (!document) return;
+
   // save existing styles and remove all groups
   document.querySelectorAll("g#burgIcons > g").forEach((group) => {
     style.burgIcons[group.id] = Array.from(group.attributes).reduce(
