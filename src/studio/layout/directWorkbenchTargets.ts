@@ -13,10 +13,10 @@ export const DIRECT_WORKBENCH_TARGETS = {
 export type DirectWorkbenchTargetId =
   (typeof DIRECT_WORKBENCH_TARGETS)[keyof typeof DIRECT_WORKBENCH_TARGETS];
 
-export type NativeRelationshipSourceEntity = "state" | "burg" | "province";
+export type DirectRelationshipSourceEntity = "state" | "burg" | "province";
 
-export const NATIVE_RELATIONSHIP_SOURCE_WORKBENCH_TARGETS: Record<
-  NativeRelationshipSourceEntity,
+export const DIRECT_RELATIONSHIP_SOURCE_WORKBENCH_TARGETS: Record<
+  DirectRelationshipSourceEntity,
   DirectWorkbenchTargetId
 > = {
   state: DIRECT_WORKBENCH_TARGETS.states,
@@ -24,12 +24,18 @@ export const NATIVE_RELATIONSHIP_SOURCE_WORKBENCH_TARGETS: Record<
   province: DIRECT_WORKBENCH_TARGETS.provinces,
 };
 
-export function getNativeRelationshipSourceWorkbenchTarget(
+export function getDirectRelationshipSourceWorkbenchTarget(
   entity: string,
 ): DirectWorkbenchTargetId | null {
   if (entity === "state" || entity === "burg" || entity === "province") {
-    return NATIVE_RELATIONSHIP_SOURCE_WORKBENCH_TARGETS[entity];
+    return DIRECT_RELATIONSHIP_SOURCE_WORKBENCH_TARGETS[entity];
   }
 
   return null;
 }
+
+export type NativeRelationshipSourceEntity = DirectRelationshipSourceEntity;
+export const NATIVE_RELATIONSHIP_SOURCE_WORKBENCH_TARGETS =
+  DIRECT_RELATIONSHIP_SOURCE_WORKBENCH_TARGETS;
+export const getNativeRelationshipSourceWorkbenchTarget =
+  getDirectRelationshipSourceWorkbenchTarget;

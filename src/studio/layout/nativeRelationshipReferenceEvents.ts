@@ -1,4 +1,4 @@
-import { getNativeRelationshipSourceWorkbenchTarget } from "./directWorkbenchTargets";
+import { getDirectRelationshipSourceWorkbenchTarget } from "./directWorkbenchTargets";
 import {
   focusNativeRelationshipField,
   getNativeRelationshipFieldInputId,
@@ -63,7 +63,7 @@ export function bindNativeRelationshipReferenceEvents({
 }: BindNativeRelationshipReferenceEventsOptions) {
   const selectNativeRelationshipSource = (entity: string, id: number) => {
     if (!id) return;
-    const target = getNativeRelationshipSourceWorkbenchTarget(entity);
+    const target = getDirectRelationshipSourceWorkbenchTarget(entity);
     if (!target) return;
 
     if (entity === "state") onDirectStateSelect(id);
