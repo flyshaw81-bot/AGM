@@ -2,6 +2,26 @@ import polylabel from "polylabel";
 import { rn } from "./numberUtils";
 import { PriorityQueue } from "./priorityQueue";
 
+export type PathLogTargets = {
+  error: (...args: unknown[]) => void;
+};
+
+function getWindow(): (Window & typeof globalThis) | undefined {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+}
+
+export function createGlobalPathLogTargets(): PathLogTargets {
+  return {
+    error: (...args) => {
+      if (getWindow()?.ERROR) console.error(...args);
+    },
+  };
+}
+
 /**
  * Generates SVG path data for filling a shape defined by a chain of vertices.
  * @param {object} vertices - The vertices object containing positions.
@@ -274,12 +294,14 @@ export const connectVertices = ({
   ofSameType,
   addToChecked,
   closeRing,
+  logTargets = createGlobalPathLogTargets(),
 }: {
   vertices: any;
   startingVertex: number;
   ofSameType: (cellId: number) => boolean;
   addToChecked?: (cellId: number) => void;
   closeRing?: boolean;
+  logTargets?: PathLogTargets;
 }) => {
   const MAX_ITERATIONS = vertices.c.length;
   const chain = []; // vertices chain to form a path
@@ -301,23 +323,20 @@ export const connectVertices = ({
     else if (v3 !== previous && c1 !== c3) next = v3;
 
     if (next >= vertices.c.length) {
-      window.ERROR &&
-        console.error("ConnectVertices: next vertex is out of bounds");
+      logTargets.error("ConnectVertices: next vertex is out of bounds");
       break;
     }
 
     if (next === current) {
-      window.ERROR &&
-        console.error("ConnectVertices: next vertex is not found");
+      logTargets.error("ConnectVertices: next vertex is not found");
       break;
     }
 
     if (i === MAX_ITERATIONS) {
-      window.ERROR &&
-        console.error(
-          "ConnectVertices: max iterations reached",
-          MAX_ITERATIONS,
-        );
+      logTargets.error(
+        "ConnectVertices: max iterations reached",
+        MAX_ITERATIONS,
+      );
       break;
     }
   }

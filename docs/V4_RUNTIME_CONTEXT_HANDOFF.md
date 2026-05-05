@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 196 test files, 828 tests.
+- `npm.cmd run test -- --run` passed: 196 test files, 830 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2226,6 +2226,10 @@ Emblem generator shield selection now uses injectable `EmblemRuntimeTargets` for
 state/culture shield lookup and missing-shield diagnostics. The default target
 keeps current `pack` / `ERROR` compatibility while blocked globals fall back to
 the heater shield without throwing.
+`pathUtils.connectVertices(...)` now reports invalid vertex chains through
+injectable `PathLogTargets`. The default target keeps current `window.ERROR`
+compatibility, but blocked window access no longer throws from the core path
+utility.
 
 `ocean-layers.ts` now routes outline-chain error reporting through
 `OceanLayerLogTargets`, keeping the default `globalThis.ERROR` compatibility
