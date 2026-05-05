@@ -20,6 +20,10 @@ interface FeaturesHtml {
   lakes: { [key: string]: string[] };
 }
 
+export type FeatureRendererLogTargets = {
+  error: (...args: unknown[]) => void;
+};
+
 const getWindow = (): (Window & typeof globalThis) | undefined => {
   try {
     return globalThis.window;
@@ -27,6 +31,22 @@ const getWindow = (): (Window & typeof globalThis) | undefined => {
     return undefined;
   }
 };
+
+const getErrorFlag = (): boolean => {
+  try {
+    return Boolean(globalThis.ERROR);
+  } catch {
+    return false;
+  }
+};
+
+export function createGlobalFeatureRendererLogTargets(): FeatureRendererLogTargets {
+  return {
+    error: (...args) => {
+      if (getErrorFlag()) console.error(...args);
+    },
+  };
+}
 
 const featuresRenderer = (): void => {
   TIME && console.time("drawFeatures");
@@ -43,7 +63,7 @@ const featuresRenderer = (): void => {
     if (!feature || feature.type === "ocean") continue;
 
     html.paths.push(
-      `<path d="${featurePathRenderer(feature)}" id="feature_${feature.i}" data-f="${feature.i}"></path>`,
+      `<path d="${renderFeaturePath(feature)}" id="feature_${feature.i}" data-f="${feature.i}"></path>`,
     );
 
     if (feature.type === "lake") {
@@ -90,12 +110,15 @@ const featuresRenderer = (): void => {
   TIME && console.timeEnd("drawFeatures");
 };
 
-function featurePathRenderer(feature: PackedGraphFeature): string {
+export function renderFeaturePath(
+  feature: PackedGraphFeature,
+  logTargets: FeatureRendererLogTargets = createGlobalFeatureRendererLogTargets(),
+): string {
   const points: [number, number][] = feature.vertices.map(
     (vertex: number) => pack.vertices.p[vertex],
   );
   if (points.some((point) => point === undefined)) {
-    ERROR && console.error("Undefined point in getFeaturePath");
+    logTargets.error("Undefined point in getFeaturePath");
     return "";
   }
 
@@ -111,5 +134,5 @@ function featurePathRenderer(feature: PackedGraphFeature): string {
 const runtimeWindow = getWindow();
 if (runtimeWindow) {
   runtimeWindow.drawFeatures = featuresRenderer;
-  runtimeWindow.getFeaturePath = featurePathRenderer;
+  runtimeWindow.getFeaturePath = renderFeaturePath;
 }
