@@ -11,14 +11,33 @@ const originalDrawStates = (globalThis as any).drawStates;
 const originalDrawStateLabels = (globalThis as any).drawStateLabels;
 const originalDrawRoutes = (globalThis as any).drawRoutes;
 const originalDrawRoute = (globalThis as any).drawRoute;
+const originalDescriptors = new Map(
+  ["pack", "drawStates", "drawStateLabels", "drawRoutes", "drawRoute"].map(
+    (name) =>
+      [name, Object.getOwnPropertyDescriptor(globalThis, name)] as const,
+  ),
+);
 
 describe("createGlobalEntityMutationTargets", () => {
   afterEach(() => {
-    globalThis.pack = originalPack;
-    (globalThis as any).drawStates = originalDrawStates;
-    (globalThis as any).drawStateLabels = originalDrawStateLabels;
-    (globalThis as any).drawRoutes = originalDrawRoutes;
-    (globalThis as any).drawRoute = originalDrawRoute;
+    for (const [name, value] of [
+      ["pack", originalPack],
+      ["drawStates", originalDrawStates],
+      ["drawStateLabels", originalDrawStateLabels],
+      ["drawRoutes", originalDrawRoutes],
+      ["drawRoute", originalDrawRoute],
+    ] as const) {
+      const descriptor = originalDescriptors.get(name);
+      if (descriptor) {
+        Object.defineProperty(globalThis, name, descriptor);
+      } else {
+        Object.defineProperty(globalThis, name, {
+          configurable: true,
+          value,
+          writable: true,
+        });
+      }
+    }
   });
 
   it("resolves entities from the current engine pack", () => {
@@ -54,6 +73,35 @@ describe("createGlobalEntityMutationTargets", () => {
     expect(drawStates).toHaveBeenCalledWith();
     expect(drawStateLabels).toHaveBeenCalledWith([1]);
     expect(drawRoute).toHaveBeenCalledWith(route);
+  });
+
+  it("keeps global entity targets safe when pack or redraw access throws", () => {
+    for (const name of [
+      "pack",
+      "drawStates",
+      "drawStateLabels",
+      "drawRoutes",
+      "drawRoute",
+    ]) {
+      Object.defineProperty(globalThis, name, {
+        configurable: true,
+        get: () => {
+          throw new Error(`${name} blocked`);
+        },
+      });
+    }
+    const targets = createGlobalEntityMutationTargets();
+
+    expect(targets.getState(1)).toBeUndefined();
+    expect(targets.getCulture(1)).toBeUndefined();
+    expect(targets.getReligion(1)).toBeUndefined();
+    expect(targets.getBurg(1)).toBeUndefined();
+    expect(targets.getProvince(1)).toBeUndefined();
+    expect(targets.getRoute(1)).toBeUndefined();
+    expect(targets.getZone(1)).toBeUndefined();
+    expect(() => targets.redrawStates()).not.toThrow();
+    expect(() => targets.redrawStateLabels([1])).not.toThrow();
+    expect(() => targets.redrawRoute({ i: 4 })).not.toThrow();
   });
 
   it("composes entity mutation targets from injected lookup and redraw adapters", () => {

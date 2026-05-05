@@ -44,45 +44,57 @@ export type EngineEntityRedrawAdapter = {
 };
 
 function callGlobalDraw(name: string, ...args: unknown[]) {
-  const fn = (globalThis as Record<string, unknown>)[name];
+  const fn = getGlobalValue<(...args: unknown[]) => void>(name);
   if (typeof fn === "function") fn(...args);
+}
+
+function getGlobalValue<T>(name: string): T | undefined {
+  try {
+    return (globalThis as Record<string, unknown>)[name] as T | undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function getGlobalPack(): typeof pack | undefined {
+  return getGlobalValue<typeof pack>("pack");
 }
 
 export function createGlobalEntityLookupAdapter(): EngineEntityLookupAdapter {
   return {
     getState: (stateId) =>
       (
-        globalThis.pack?.states as unknown as EngineMutableEntity[] | undefined
+        getGlobalPack()?.states as unknown as EngineMutableEntity[] | undefined
       )?.[stateId],
     getCulture: (cultureId) =>
       (
-        globalThis.pack?.cultures as unknown as
+        getGlobalPack()?.cultures as unknown as
           | EngineMutableEntity[]
           | undefined
       )?.[cultureId],
     getReligion: (religionId) =>
       (
-        globalThis.pack?.religions as unknown as
+        getGlobalPack()?.religions as unknown as
           | EngineMutableEntity[]
           | undefined
       )?.[religionId],
     getBurg: (burgId) =>
       (
-        globalThis.pack?.burgs as unknown as EngineMutableEntity[] | undefined
+        getGlobalPack()?.burgs as unknown as EngineMutableEntity[] | undefined
       )?.[burgId],
     getProvince: (provinceId) =>
       (
-        globalThis.pack?.provinces as unknown as
+        getGlobalPack()?.provinces as unknown as
           | EngineMutableEntity[]
           | undefined
       )?.[provinceId],
     getRoute: (routeId) =>
       (
-        globalThis.pack?.routes as unknown as EngineMutableEntity[] | undefined
+        getGlobalPack()?.routes as unknown as EngineMutableEntity[] | undefined
       )?.[routeId],
     getZone: (zoneId) =>
       (
-        globalThis.pack?.zones as unknown as EngineMutableEntity[] | undefined
+        getGlobalPack()?.zones as unknown as EngineMutableEntity[] | undefined
       )?.find((zone) => zone?.i === zoneId),
   };
 }
@@ -133,7 +145,7 @@ export function createGlobalEntityRedrawAdapter(): EngineEntityRedrawAdapter {
     redrawLabels: () => callGlobalDraw("drawLabels"),
     redrawProvinces: () => callGlobalDraw("drawProvinces"),
     redrawRoute: (route) => {
-      const drawRoutes = (globalThis as any).drawRoutes;
+      const drawRoutes = getGlobalValue<() => void>("drawRoutes");
       if (typeof drawRoutes === "function") drawRoutes();
       else callGlobalDraw("drawRoute", route);
     },

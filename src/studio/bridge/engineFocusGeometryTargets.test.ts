@@ -11,14 +11,33 @@ const originalGraphWidth = globalThis.graphWidth;
 const originalGraphHeight = globalThis.graphHeight;
 const originalSvgWidth = globalThis.svgWidth;
 const originalSvgHeight = globalThis.svgHeight;
+const originalDescriptors = new Map(
+  ["pack", "graphWidth", "graphHeight", "svgWidth", "svgHeight"].map(
+    (name) =>
+      [name, Object.getOwnPropertyDescriptor(globalThis, name)] as const,
+  ),
+);
 
 describe("createGlobalFocusGeometryTargets", () => {
   afterEach(() => {
-    globalThis.pack = originalPack;
-    globalThis.graphWidth = originalGraphWidth;
-    globalThis.graphHeight = originalGraphHeight;
-    globalThis.svgWidth = originalSvgWidth;
-    globalThis.svgHeight = originalSvgHeight;
+    for (const [name, value] of [
+      ["pack", originalPack],
+      ["graphWidth", originalGraphWidth],
+      ["graphHeight", originalGraphHeight],
+      ["svgWidth", originalSvgWidth],
+      ["svgHeight", originalSvgHeight],
+    ] as const) {
+      const descriptor = originalDescriptors.get(name);
+      if (descriptor) {
+        Object.defineProperty(globalThis, name, descriptor);
+      } else {
+        Object.defineProperty(globalThis, name, {
+          configurable: true,
+          value,
+          writable: true,
+        });
+      }
+    }
   });
 
   it("reads dimensions and cell data from the current engine runtime", () => {
@@ -54,6 +73,35 @@ describe("createGlobalFocusGeometryTargets", () => {
     expect(targets.getState(2)).toBe(state);
     expect(targets.getZone(9)).toBe(zone);
     expect(targets.getZone(99)).toBeUndefined();
+  });
+
+  it("keeps global focus geometry safe when globals are blocked", () => {
+    for (const name of [
+      "pack",
+      "graphWidth",
+      "graphHeight",
+      "svgWidth",
+      "svgHeight",
+    ]) {
+      Object.defineProperty(globalThis, name, {
+        configurable: true,
+        get: () => {
+          throw new Error(`${name} blocked`);
+        },
+      });
+    }
+    const targets = createGlobalFocusGeometryTargets();
+
+    expect(targets.getWidth()).toBeUndefined();
+    expect(targets.getHeight()).toBeUndefined();
+    expect(targets.getCellIds()).toEqual([]);
+    expect(targets.getCellPoint(1)).toBeUndefined();
+    expect(targets.getCellFieldValue("state", 1)).toBeUndefined();
+    expect(targets.getState(1)).toBeUndefined();
+    expect(targets.getProvince(1)).toBeUndefined();
+    expect(targets.getBurg(1)).toBeUndefined();
+    expect(targets.getRoute(1)).toBeUndefined();
+    expect(targets.getZone(1)).toBeUndefined();
   });
 
   it("composes focus geometry targets from injected dimension, cell, and entity adapters", () => {

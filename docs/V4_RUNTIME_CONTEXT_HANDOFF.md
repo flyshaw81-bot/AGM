@@ -2340,6 +2340,10 @@ Auto-fix route, settlement, state, and undo writeback targets now guard their
 default `pack` compatibility reads. Blocked pack access no longer throws during
 preview/writeback target resolution; global adapters fall back to undefined/null
 results while injected runtime context adapters remain unchanged.
+Entity mutation and focus-geometry default targets now guard `pack`, graph/svg
+dimensions, and redraw helper lookups. Blocked global entity data or renderer
+helper access falls back to undefined/no-op behavior while runtime/injected
+lookup and redraw adapters remain explicit.
 
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`

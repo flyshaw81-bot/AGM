@@ -40,14 +40,26 @@ function finiteNumberOrUndefined(value: unknown) {
     : undefined;
 }
 
+function getGlobalValue<T>(name: string): T | undefined {
+  try {
+    return (globalThis as Record<string, unknown>)[name] as T | undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function getGlobalPack(): typeof pack | undefined {
+  return getGlobalValue<typeof pack>("pack");
+}
+
 export function createGlobalFocusDimensionAdapter(): EngineFocusDimensionAdapter {
   return {
     getWidth: () =>
-      finiteNumberOrUndefined(globalThis.graphWidth) ||
-      finiteNumberOrUndefined(globalThis.svgWidth),
+      finiteNumberOrUndefined(getGlobalValue("graphWidth")) ||
+      finiteNumberOrUndefined(getGlobalValue("svgWidth")),
     getHeight: () =>
-      finiteNumberOrUndefined(globalThis.graphHeight) ||
-      finiteNumberOrUndefined(globalThis.svgHeight),
+      finiteNumberOrUndefined(getGlobalValue("graphHeight")) ||
+      finiteNumberOrUndefined(getGlobalValue("svgHeight")),
   };
 }
 
@@ -62,13 +74,13 @@ export function createRuntimeFocusDimensionAdapter(
 
 export function createGlobalFocusCellAdapter(): EngineFocusCellAdapter {
   return {
-    getCellIds: () => Array.from(globalThis.pack?.cells?.i || []),
+    getCellIds: () => Array.from(getGlobalPack()?.cells?.i || []),
     getCellPoint: (cellId) => {
-      const point = globalThis.pack?.cells?.p?.[cellId];
+      const point = getGlobalPack()?.cells?.p?.[cellId];
       return Array.isArray(point) ? point : undefined;
     },
     getCellFieldValue: (field, cellId) =>
-      (globalThis.pack?.cells as Record<string, any> | undefined)?.[field]?.[
+      (getGlobalPack()?.cells as Record<string, any> | undefined)?.[field]?.[
         cellId
       ],
   };
@@ -93,23 +105,23 @@ export function createRuntimeFocusCellAdapter(
 export function createGlobalFocusEntityAdapter(): EngineFocusEntityAdapter {
   return {
     getState: (stateId) =>
-      globalThis.pack?.states?.[stateId] as unknown as
+      getGlobalPack()?.states?.[stateId] as unknown as
         | Record<string, unknown>
         | undefined,
     getProvince: (provinceId) =>
-      globalThis.pack?.provinces?.[provinceId] as unknown as
+      getGlobalPack()?.provinces?.[provinceId] as unknown as
         | Record<string, unknown>
         | undefined,
     getBurg: (burgId) =>
-      globalThis.pack?.burgs?.[burgId] as unknown as
+      getGlobalPack()?.burgs?.[burgId] as unknown as
         | Record<string, unknown>
         | undefined,
     getRoute: (routeId) =>
-      (globalThis.pack?.routes as unknown[] | undefined)?.[routeId] as
+      (getGlobalPack()?.routes as unknown[] | undefined)?.[routeId] as
         | Record<string, unknown>
         | undefined,
     getZone: (zoneId) =>
-      (globalThis.pack?.zones as unknown[] | undefined)?.find(
+      (getGlobalPack()?.zones as unknown[] | undefined)?.find(
         (item) => (item as Record<string, unknown> | undefined)?.i === zoneId,
       ) as Record<string, unknown> | undefined,
   };
