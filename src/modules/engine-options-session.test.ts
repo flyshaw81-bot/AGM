@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createGlobalOptionsBrowserControlTargets,
   createGlobalOptionsControlAdapter,
+  createGlobalOptionsHeightmapTemplateTargets,
+  createGlobalOptionsReaderAdapter,
   createGlobalOptionsWriterAdapter,
   createRuntimeOptionsNamingAdapter,
   createRuntimeOptionsRandomAdapter,
@@ -393,6 +395,40 @@ describe("EngineOptionsSessionModule", () => {
 
     expect(random.random()).toBe(0.25);
     expect(random.rand(1, 3)).toBe(3);
+  });
+
+  it("keeps heightmap template globals behind options template targets", () => {
+    const originalTemplates = globalThis.heightmapTemplates;
+
+    try {
+      globalThis.heightmapTemplates = {
+        islands: { name: "Islands", probability: 3 },
+      };
+      const targets = createGlobalOptionsHeightmapTemplateTargets();
+
+      expect(targets.getTemplates().islands).toEqual({
+        name: "Islands",
+        probability: 3,
+      });
+    } finally {
+      globalThis.heightmapTemplates = originalTemplates;
+    }
+  });
+
+  it("reads option template weights from injected template targets", () => {
+    const reader = createGlobalOptionsReaderAdapter({
+      getTemplates: () => ({
+        islands: { name: "Islands", probability: 3 },
+        plains: { name: "Plains" },
+      }),
+    });
+
+    expect(reader.getHeightmapTemplateWeights()).toEqual({
+      islands: 3,
+      plains: 0,
+    });
+    expect(reader.getHeightmapTemplateName("islands")).toBe("Islands");
+    expect(reader.getHeightmapTemplateName("missing")).toBe("missing");
   });
 
   it("creates runtime era names from the engine naming context", () => {

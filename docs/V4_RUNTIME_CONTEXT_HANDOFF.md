@@ -2269,6 +2269,10 @@ injected template source instead of reading `heightmapTemplates` directly.
 The same module now routes template tool world dimensions through
 `HeightmapWorldTargets`, removing direct `graphWidth` / `graphHeight` reads
 from the template generation path outside the default compatibility adapter.
+`engine-options-session.ts` now routes heightmap template weight/name lookup
+through `EngineOptionsHeightmapTemplateTargets`, so option randomization can
+read from an injected template catalog instead of scanning `heightmapTemplates`
+directly.
 
 `ocean-layers.ts` now routes outline-chain error reporting through
 `OceanLayerLogTargets`, keeping the default `globalThis.ERROR` compatibility

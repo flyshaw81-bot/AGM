@@ -181,6 +181,21 @@ export type EngineOptionsReaderAdapter = {
   getCultureSetWeights: () => Record<string, number>;
 };
 
+type EngineOptionsHeightmapTemplate = {
+  name?: string;
+  probability?: number;
+};
+
+export type EngineOptionsHeightmapTemplateTargets = {
+  getTemplates: () => Record<string, EngineOptionsHeightmapTemplate>;
+};
+
+export function createGlobalOptionsHeightmapTemplateTargets(): EngineOptionsHeightmapTemplateTargets {
+  return {
+    getTemplates: () => heightmapTemplates,
+  };
+}
+
 export type EngineOptionsNamingAdapter = {
   generateEraName: () => string;
 };
@@ -203,9 +218,12 @@ export function createGlobalOptionsControlAdapter(
   };
 }
 
-export function createGlobalOptionsReaderAdapter(): EngineOptionsReaderAdapter {
+export function createGlobalOptionsReaderAdapter(
+  templateTargets: EngineOptionsHeightmapTemplateTargets = createGlobalOptionsHeightmapTemplateTargets(),
+): EngineOptionsReaderAdapter {
   return {
     getHeightmapTemplateWeights: () => {
+      const heightmapTemplates = templateTargets.getTemplates();
       const templates: Record<string, number> = {};
       for (const key in heightmapTemplates) {
         templates[key] = heightmapTemplates[key].probability || 0;
@@ -213,7 +231,8 @@ export function createGlobalOptionsReaderAdapter(): EngineOptionsReaderAdapter {
 
       return templates;
     },
-    getHeightmapTemplateName: (template) => heightmapTemplates[template].name,
+    getHeightmapTemplateName: (template) =>
+      templateTargets.getTemplates()[template]?.name ?? template,
     getCultureSetWeights: () => ({
       world: 10,
       european: 10,
