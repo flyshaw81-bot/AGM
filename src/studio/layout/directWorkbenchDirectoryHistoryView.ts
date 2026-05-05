@@ -2,8 +2,8 @@ import type { StudioLanguage, StudioState } from "../types";
 import { renderDirectWorkbenchQueueHistoryRows } from "./directWorkbenchDirectoryHistoryRowsView";
 import { createNativeRelationshipHistoryPresenter } from "./nativeRelationshipHistoryPresenter";
 import {
-  countNativeRelationshipHistoryRowStatuses,
-  getNativeRelationshipHistoryStatusSuffix,
+  countDirectRelationshipHistoryRowStatuses,
+  getDirectRelationshipHistoryStatusSuffix,
 } from "./nativeRelationshipHistoryStatus";
 import { t } from "./shellShared";
 
@@ -14,7 +14,7 @@ export function createDirectWorkbenchQueueHistoryView(
   const queueHistory = directEditor.relationshipQueueHistory;
   const queueHistoryLog = directEditor.relationshipQueueHistoryLog;
   const queueHistoryStatus =
-    getNativeRelationshipHistoryStatusSuffix(queueHistory);
+    getDirectRelationshipHistoryStatusSuffix(queueHistory);
   const queueHistoryText = queueHistory
     ? `Last queue: ${queueHistory.count} repairs · ${queueHistory.summary}${queueHistoryStatus}`
     : "";
@@ -31,7 +31,7 @@ export function createDirectWorkbenchQueueHistoryView(
       ? queueHistory?.resultText || queueActionScopeDefault
       : queueActionScopeDefault;
   const queueHistoryFilterCounts =
-    countNativeRelationshipHistoryRowStatuses(queueHistoryLog);
+    countDirectRelationshipHistoryRowStatuses(queueHistoryLog);
   const queueHistoryFilterSummary = `${t(language, "当前筛选", "Current filter")}: ${t(language, "全部", "All")} · ${t(language, "可见", "Visible")}: ${queueHistoryLog.length} / ${queueHistoryLog.length}`;
   const queueHistoryLogRows = renderDirectWorkbenchQueueHistoryRows({
     language,

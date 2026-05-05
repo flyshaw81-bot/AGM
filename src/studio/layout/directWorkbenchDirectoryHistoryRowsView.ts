@@ -1,9 +1,9 @@
 import type { StudioLanguage, StudioState } from "../types";
 import type { createNativeRelationshipHistoryPresenter } from "./nativeRelationshipHistoryPresenter";
 import {
-  getNativeRelationshipHistoryRecoveryState,
-  getNativeRelationshipHistoryRowStatus,
-  getNativeRelationshipHistoryStatusSuffix,
+  getDirectRelationshipHistoryRecoveryState,
+  getDirectRelationshipHistoryRowStatus,
+  getDirectRelationshipHistoryStatusSuffix,
 } from "./nativeRelationshipHistoryStatus";
 import { escapeHtml, t } from "./shellShared";
 
@@ -85,7 +85,7 @@ function renderQueueHistoryRecoveryPath(
   language: StudioLanguage,
   presenter: NativeRelationshipHistoryPresenter,
 ) {
-  const recoveryState = getNativeRelationshipHistoryRecoveryState(item, index);
+  const recoveryState = getDirectRelationshipHistoryRecoveryState(item, index);
   if (recoveryState === "hidden") return "";
 
   const recoveryText =
@@ -103,8 +103,8 @@ export function renderDirectWorkbenchQueueHistoryRows({
 }: RenderDirectWorkbenchQueueHistoryRowsOptions) {
   return queueHistoryLog
     .map((item, index) => {
-      const status = getNativeRelationshipHistoryStatusSuffix(item);
-      const historyStatus = getNativeRelationshipHistoryRowStatus(item, index);
+      const status = getDirectRelationshipHistoryStatusSuffix(item);
+      const historyStatus = getDirectRelationshipHistoryRowStatus(item, index);
       const firstChange = item.undoChanges[0];
       const firstTarget = firstChange
         ? presenter.getNativeRelationshipHistoryReviewTarget(firstChange)

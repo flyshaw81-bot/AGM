@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
-  countNativeRelationshipHistoryRowStatuses,
-  getNativeRelationshipHistoryRecoveryState,
+  countDirectRelationshipHistoryRowStatuses,
+  getDirectRelationshipHistoryRecoveryState,
+  getDirectRelationshipHistoryRowStatus,
+  getDirectRelationshipHistoryStatusSuffix,
   getNativeRelationshipHistoryRowStatus,
-  getNativeRelationshipHistoryStatusSuffix,
 } from "./nativeRelationshipHistoryStatus";
 import type { NativeRelationshipQueueHistory } from "./nativeRelationshipQueue";
 
@@ -23,55 +24,61 @@ const createHistory = (
 
 describe("nativeRelationshipHistoryStatus", () => {
   it("classifies history rows by latest, stale, and undone state", () => {
-    expect(getNativeRelationshipHistoryRowStatus(createHistory(), 0)).toBe(
+    expect(getDirectRelationshipHistoryRowStatus(createHistory(), 0)).toBe(
       "undoable",
     );
-    expect(getNativeRelationshipHistoryRowStatus(createHistory(), 2)).toBe(
+    expect(getDirectRelationshipHistoryRowStatus(createHistory(), 2)).toBe(
       "readonly",
     );
     expect(
-      getNativeRelationshipHistoryRowStatus(
+      getDirectRelationshipHistoryRowStatus(
         createHistory({ undoBlockedReason: "Conflict" }),
         0,
       ),
     ).toBe("blocked");
     expect(
-      getNativeRelationshipHistoryRowStatus(createHistory({ undone: true }), 0),
+      getDirectRelationshipHistoryRowStatus(createHistory({ undone: true }), 0),
     ).toBe("undone");
   });
 
   it("returns shared status suffixes and recovery states", () => {
-    expect(getNativeRelationshipHistoryStatusSuffix(createHistory())).toBe("");
+    expect(getDirectRelationshipHistoryStatusSuffix(createHistory())).toBe("");
     expect(
-      getNativeRelationshipHistoryStatusSuffix(
+      getDirectRelationshipHistoryStatusSuffix(
         createHistory({ undoBlockedReason: "Conflict" }),
       ),
     ).toBe(" · undo blocked");
     expect(
-      getNativeRelationshipHistoryStatusSuffix(createHistory({ undone: true })),
+      getDirectRelationshipHistoryStatusSuffix(createHistory({ undone: true })),
     ).toBe(" · undone");
-    expect(getNativeRelationshipHistoryRecoveryState(createHistory(), 0)).toBe(
+    expect(getDirectRelationshipHistoryRecoveryState(createHistory(), 0)).toBe(
       "ready",
     );
     expect(
-      getNativeRelationshipHistoryRecoveryState(
+      getDirectRelationshipHistoryRecoveryState(
         createHistory({ undoBlockedReason: "Conflict" }),
         0,
       ),
     ).toBe("blocked");
-    expect(getNativeRelationshipHistoryRecoveryState(createHistory(), 1)).toBe(
+    expect(getDirectRelationshipHistoryRecoveryState(createHistory(), 1)).toBe(
       "hidden",
     );
   });
 
   it("counts filter badges from row status classifications", () => {
     expect(
-      countNativeRelationshipHistoryRowStatuses([
+      countDirectRelationshipHistoryRowStatuses([
         createHistory(),
         createHistory({ undone: true }),
         createHistory({ undoBlockedReason: "Conflict" }),
         createHistory(),
       ]),
     ).toEqual({ blocked: 1, undoable: 1, undone: 1, readonly: 1 });
+  });
+
+  it("keeps native history aliases for compatibility callers", () => {
+    expect(getNativeRelationshipHistoryRowStatus(createHistory(), 0)).toBe(
+      "undoable",
+    );
   });
 });
