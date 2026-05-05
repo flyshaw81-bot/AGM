@@ -83,7 +83,13 @@ function getGlobalHeightExponentInput():
 
 export function createGlobalGenerationDomTargets(): EngineGenerationDomTargets {
   return {
-    getElementById: (id) => getDocument()?.getElementById(id) ?? null,
+    getElementById: (id) => {
+      try {
+        return getDocument()?.getElementById(id) ?? null;
+      } catch {
+        return null;
+      }
+    },
   };
 }
 

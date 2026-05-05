@@ -166,6 +166,40 @@ describe("createGlobalGenerationSettings", () => {
     });
   });
 
+  it("keeps global generation DOM targets safe when element lookup throws", () => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: {
+        getElementById: () => {
+          throw new Error("element lookup blocked");
+        },
+      },
+      writable: true,
+    });
+    globalThis.pointsInput = undefined as unknown as HTMLInputElement;
+    globalThis.heightExponentInput = undefined as unknown as HTMLInputElement;
+
+    expect(createGlobalGenerationSettings()).toEqual({
+      heightmapTemplateId: undefined,
+      pointsCount: 0,
+      heightExponent: 1,
+      lakeElevationLimit: 0,
+      resolveDepressionsSteps: 0,
+      statesCount: 0,
+      manorsCount: 1000,
+      religionsCount: 0,
+      provincesRatio: 100,
+      culturesCount: 0,
+      cultureSet: "random",
+      cultureSetMax: 0,
+      cultureEmblemShape: "",
+      cultureNeutralRate: 1,
+      stateSizeVariety: 1,
+      globalGrowthRate: 1,
+      statesGrowthRate: 1,
+    });
+  });
+
   it("keeps global generation control targets safe when control access throws", () => {
     Object.defineProperty(globalThis, "pointsInput", {
       configurable: true,

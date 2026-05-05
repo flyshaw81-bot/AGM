@@ -2386,6 +2386,10 @@ Blocked `window` or `document` compatibility access falls back to current-map /
 selected-file defaults or no-op tracking while injected document-source targets
 keep owning the explicit path.
 
+Generation-settings DOM defaults now also guard blocked element lookups, so a
+throwing `document.getElementById(...)` falls back to stable generation defaults
+instead of escaping the global compatibility adapter.
+
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`
 dimensions. `engine-generation-session-services.ts` now exposes
