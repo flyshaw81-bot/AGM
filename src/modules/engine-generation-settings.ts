@@ -63,6 +63,24 @@ function getDocument(): Document | undefined {
   }
 }
 
+function getGlobalPointsInput(): EngineGenerationControlInput | undefined {
+  try {
+    return globalThis.pointsInput;
+  } catch {
+    return undefined;
+  }
+}
+
+function getGlobalHeightExponentInput():
+  | EngineGenerationControlInput
+  | undefined {
+  try {
+    return globalThis.heightExponentInput;
+  } catch {
+    return undefined;
+  }
+}
+
 export function createGlobalGenerationDomTargets(): EngineGenerationDomTargets {
   return {
     getElementById: (id) => getDocument()?.getElementById(id) ?? null,
@@ -71,8 +89,8 @@ export function createGlobalGenerationDomTargets(): EngineGenerationDomTargets {
 
 export function createGlobalGenerationControlTargets(): EngineGenerationGlobalControlTargets {
   return {
-    getPointsInput: () => globalThis.pointsInput,
-    getHeightExponentInput: () => globalThis.heightExponentInput,
+    getPointsInput: getGlobalPointsInput,
+    getHeightExponentInput: getGlobalHeightExponentInput,
   };
 }
 

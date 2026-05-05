@@ -3,6 +3,7 @@ import {
   createGenerationSettings,
   createGenerationSettingsStore,
   createGenerationSettingsTargets,
+  createGlobalGenerationControlTargets,
   createGlobalGenerationSettings,
   createRuntimeGenerationSettingsStore,
   type EngineGenerationDomTargets,
@@ -14,6 +15,14 @@ import type { EngineRuntimeContext } from "./engine-runtime-context";
 const originalDocument = globalThis.document;
 const originalPointsInput = globalThis.pointsInput;
 const originalHeightExponentInput = globalThis.heightExponentInput;
+const originalPointsInputDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "pointsInput",
+);
+const originalHeightExponentInputDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "heightExponentInput",
+);
 
 function installDocument(
   controls: Record<string, Partial<HTMLInputElement | HTMLSelectElement>>,
@@ -46,8 +55,32 @@ describe("createGlobalGenerationSettings", () => {
       value: originalDocument,
       writable: true,
     });
-    globalThis.pointsInput = originalPointsInput;
-    globalThis.heightExponentInput = originalHeightExponentInput;
+    if (originalPointsInputDescriptor) {
+      Object.defineProperty(
+        globalThis,
+        "pointsInput",
+        originalPointsInputDescriptor,
+      );
+    } else {
+      Object.defineProperty(globalThis, "pointsInput", {
+        configurable: true,
+        value: originalPointsInput,
+        writable: true,
+      });
+    }
+    if (originalHeightExponentInputDescriptor) {
+      Object.defineProperty(
+        globalThis,
+        "heightExponentInput",
+        originalHeightExponentInputDescriptor,
+      );
+    } else {
+      Object.defineProperty(globalThis, "heightExponentInput", {
+        configurable: true,
+        value: originalHeightExponentInput,
+        writable: true,
+      });
+    }
   });
 
   it("uses stable defaults when optional generation controls are absent", () => {
@@ -131,6 +164,26 @@ describe("createGlobalGenerationSettings", () => {
       globalGrowthRate: 1,
       statesGrowthRate: 1,
     });
+  });
+
+  it("keeps global generation control targets safe when control access throws", () => {
+    Object.defineProperty(globalThis, "pointsInput", {
+      configurable: true,
+      get: () => {
+        throw new Error("points blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "heightExponentInput", {
+      configurable: true,
+      get: () => {
+        throw new Error("height exponent blocked");
+      },
+    });
+
+    const targets = createGlobalGenerationControlTargets();
+
+    expect(targets.getPointsInput()).toBeUndefined();
+    expect(targets.getHeightExponentInput()).toBeUndefined();
   });
 
   it("reads generation settings from global controls and DOM controls", () => {

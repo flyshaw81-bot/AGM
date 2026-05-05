@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 196 test files, 821 tests.
+- `npm.cmd run test -- --run` passed: 196 test files, 822 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2204,6 +2204,9 @@ compatible while tests cover blocked `document` and `Image` access.
 Engine render DOM lookup now has a separate `createGlobalRenderDomTargets()`
 boundary. The default render target factory composes that DOM adapter while
 keeping existing global render helper delegation unchanged.
+Generation settings global control access now guards `pointsInput` and
+`heightExponentInput` through `createGlobalGenerationControlTargets()`, so
+restricted global getters fall back to defaults instead of throwing.
 
 `ocean-layers.ts` now routes outline-chain error reporting through
 `OceanLayerLogTargets`, keeping the default `globalThis.ERROR` compatibility
