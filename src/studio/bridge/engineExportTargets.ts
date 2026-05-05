@@ -45,47 +45,78 @@ const EXPORT_RUNTIME_KEYS: Record<
 };
 
 function getGlobalExportRuntime(): EngineExportRuntime {
-  return ((globalThis as typeof globalThis & { window?: EngineExportRuntime })
-    .window ?? globalThis) as EngineExportRuntime;
+  try {
+    return ((globalThis as typeof globalThis & { window?: EngineExportRuntime })
+      .window ?? globalThis) as EngineExportRuntime;
+  } catch {
+    return globalThis as EngineExportRuntime;
+  }
 }
 
 function getExportSettingInput(setting: EngineExportSetting) {
-  return globalThis.document?.getElementById(
-    EXPORT_SETTING_INPUT_IDS[setting],
-  ) as HTMLInputElement | null;
+  try {
+    return globalThis.document?.getElementById(
+      EXPORT_SETTING_INPUT_IDS[setting],
+    ) as HTMLInputElement | null;
+  } catch {
+    return null;
+  }
 }
 
 function dispatchDomEvent(element: HTMLElement, type: string) {
-  if (typeof globalThis.Event !== "function") return;
-  element.dispatchEvent(new globalThis.Event(type, { bubbles: true }));
+  try {
+    if (typeof globalThis.Event !== "function") return;
+    element.dispatchEvent(new globalThis.Event(type, { bubbles: true }));
+  } catch {
+    // Export setting DOM events are best-effort in compatibility mode.
+  }
 }
 
 export function createGlobalEngineExportSettingsAdapter(): EngineExportSettingsAdapter {
   return {
     readSetting: (setting, fallback) => {
-      const value = Number(getExportSettingInput(setting)?.value || fallback);
-      return Number.isFinite(value) ? value : fallback;
+      try {
+        const value = Number(getExportSettingInput(setting)?.value || fallback);
+        return Number.isFinite(value) ? value : fallback;
+      } catch {
+        return fallback;
+      }
     },
     writeSetting: (setting, value) => {
-      const input = getExportSettingInput(setting);
-      if (!input) return;
+      try {
+        const input = getExportSettingInput(setting);
+        if (!input) return;
 
-      input.value = String(value);
-      dispatchDomEvent(input, "input");
-      dispatchDomEvent(input, "change");
+        input.value = String(value);
+        dispatchDomEvent(input, "input");
+        dispatchDomEvent(input, "change");
+      } catch {
+        // Export setting writes are best-effort for browser compatibility.
+      }
     },
   };
 }
 
 export function createGlobalEngineExportRuntimeAdapter(): EngineExportRuntimeAdapter {
   return {
-    canExport: (format) =>
-      typeof getGlobalExportRuntime()[EXPORT_RUNTIME_KEYS[format]] ===
-      "function",
+    canExport: (format) => {
+      try {
+        return (
+          typeof getGlobalExportRuntime()[EXPORT_RUNTIME_KEYS[format]] ===
+          "function"
+        );
+      } catch {
+        return false;
+      }
+    },
     runExport: (format) => {
-      const exportAction =
-        getGlobalExportRuntime()[EXPORT_RUNTIME_KEYS[format]];
-      if (typeof exportAction === "function") exportAction();
+      try {
+        const exportAction =
+          getGlobalExportRuntime()[EXPORT_RUNTIME_KEYS[format]];
+        if (typeof exportAction === "function") exportAction();
+      } catch {
+        // Export runtime calls are best-effort for compatibility helpers.
+      }
     },
   };
 }

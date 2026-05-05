@@ -2371,6 +2371,10 @@ Style defaults now guard window, document, Event, localStorage, style preset,
 style-change hooks, active zoom refresh, and toggle DOM access. Blocked style
 compatibility helpers fall back to empty/null/false/no-op behavior while
 injected runtime, storage, and toggle adapters remain explicit.
+Export defaults now guard window, document, Event, export setting DOM reads and
+writes, and export runtime helper lookups/calls. Blocked export compatibility
+helpers fall back to fallback values, unavailable capability flags, or no-op
+behavior while injected settings and runtime adapters remain explicit.
 
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`

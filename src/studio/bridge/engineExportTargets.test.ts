@@ -14,13 +14,78 @@ const originalDocument = globalThis.document;
 const originalEvent = globalThis.Event;
 const originalExportToSvg = testGlobals.exportToSvg;
 const originalExportToPng = testGlobals.exportToPng;
+const originalDocumentDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "document",
+);
+const originalEventDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "Event",
+);
+const originalWindowDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "window",
+);
+const originalExportToSvgDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "exportToSvg",
+);
+const originalExportToPngDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "exportToPng",
+);
 
 describe("createGlobalEngineExportTargets", () => {
   afterEach(() => {
-    globalThis.document = originalDocument;
-    globalThis.Event = originalEvent;
-    testGlobals.exportToSvg = originalExportToSvg;
-    testGlobals.exportToPng = originalExportToPng;
+    if (originalDocumentDescriptor) {
+      Object.defineProperty(globalThis, "document", originalDocumentDescriptor);
+    } else {
+      Object.defineProperty(globalThis, "document", {
+        configurable: true,
+        writable: true,
+        value: originalDocument,
+      });
+    }
+    if (originalEventDescriptor) {
+      Object.defineProperty(globalThis, "Event", originalEventDescriptor);
+    } else {
+      Object.defineProperty(globalThis, "Event", {
+        configurable: true,
+        writable: true,
+        value: originalEvent,
+      });
+    }
+    if (originalWindowDescriptor) {
+      Object.defineProperty(globalThis, "window", originalWindowDescriptor);
+    } else {
+      delete (globalThis as { window?: unknown }).window;
+    }
+    if (originalExportToSvgDescriptor) {
+      Object.defineProperty(
+        globalThis,
+        "exportToSvg",
+        originalExportToSvgDescriptor,
+      );
+    } else {
+      Object.defineProperty(globalThis, "exportToSvg", {
+        configurable: true,
+        writable: true,
+        value: originalExportToSvg,
+      });
+    }
+    if (originalExportToPngDescriptor) {
+      Object.defineProperty(
+        globalThis,
+        "exportToPng",
+        originalExportToPngDescriptor,
+      );
+    } else {
+      Object.defineProperty(globalThis, "exportToPng", {
+        configurable: true,
+        writable: true,
+        value: originalExportToPng,
+      });
+    }
   });
 
   it("reads and writes export setting inputs from the active document", () => {
@@ -80,6 +145,48 @@ describe("createGlobalEngineExportTargets", () => {
     targets.runExport("svg");
 
     expect(exportToSvg).toHaveBeenCalledWith();
+  });
+
+  it("keeps export targets safe when browser globals throw", () => {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "Event", {
+      configurable: true,
+      get: () => {
+        throw new Error("Event blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "exportToSvg", {
+      configurable: true,
+      value: () => {
+        throw new Error("export blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "exportToPng", {
+      configurable: true,
+      get: () => {
+        throw new Error("export lookup blocked");
+      },
+    });
+
+    const targets = createGlobalEngineExportTargets();
+
+    expect(targets.readSetting("png-resolution", 1)).toBe(1);
+    expect(() => targets.writeSetting("tile-cols", 12)).not.toThrow();
+    expect(targets.canExport("svg")).toBe(true);
+    expect(targets.canExport("png")).toBe(false);
+    expect(() => targets.runExport("svg")).not.toThrow();
+    expect(() => targets.runExport("png")).not.toThrow();
   });
 
   it("composes export targets from injected settings and runtime adapters", () => {
