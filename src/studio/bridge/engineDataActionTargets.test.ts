@@ -19,6 +19,7 @@ const originalDocument = globalThis.document;
 const originalQuickLoad = testGlobals.quickLoad;
 const originalSaveMap = testGlobals.saveMap;
 const originalLoadUrl = testGlobals.loadURL;
+const originalWindow = globalThis.window;
 
 describe("createGlobalDataActionTargets", () => {
   afterEach(() => {
@@ -26,6 +27,7 @@ describe("createGlobalDataActionTargets", () => {
     testGlobals.quickLoad = originalQuickLoad;
     testGlobals.saveMap = originalSaveMap;
     testGlobals.loadURL = originalLoadUrl;
+    globalThis.window = originalWindow;
   });
 
   it("reads Dropbox state and file input availability from the active document", () => {
@@ -90,6 +92,39 @@ describe("createGlobalDataActionTargets", () => {
     expect(quickLoad).toHaveBeenCalledWith();
     expect(saveMap).toHaveBeenCalledWith("storage");
     expect(loadURL).toHaveBeenCalledWith();
+  });
+
+  it("keeps default DOM and runtime actions safe when browser helpers are absent", async () => {
+    globalThis.document = undefined as unknown as Document;
+    globalThis.window = {} as Window & typeof globalThis;
+
+    const targets = createGlobalDataActionTargets();
+
+    expect(targets.hasFileInput()).toBe(false);
+    expect(() => targets.clickFileInput()).not.toThrow();
+    expect(targets.getDropboxState()).toEqual({
+      connectButtonAvailable: false,
+      connected: false,
+      buttonsVisible: false,
+      selectedFile: "",
+      selectedLabel: "",
+      hasShareLink: false,
+      shareUrl: "",
+    });
+    expect(targets.canQuickLoad()).toBe(false);
+    expect(targets.canSaveMap()).toBe(false);
+    expect(targets.canConnectDropbox()).toBe(false);
+    expect(targets.canLoadFromDropbox()).toBe(false);
+    expect(targets.canShareDropbox()).toBe(false);
+    expect(targets.canGenerateMapOnLoad()).toBe(false);
+    expect(targets.canLoadUrl()).toBe(false);
+    await expect(targets.quickLoad()).resolves.toBeUndefined();
+    await expect(targets.saveMap("machine")).resolves.toBeUndefined();
+    await expect(targets.connectDropbox()).resolves.toBeUndefined();
+    await expect(targets.loadFromDropbox()).resolves.toBeUndefined();
+    await expect(targets.createSharableDropboxLink()).resolves.toBeUndefined();
+    await expect(targets.generateMapOnLoad()).resolves.toBeUndefined();
+    expect(() => targets.loadUrl()).not.toThrow();
   });
 
   it("composes data action targets from injected document, DOM, and runtime adapters", async () => {

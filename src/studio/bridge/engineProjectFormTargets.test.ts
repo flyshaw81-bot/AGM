@@ -84,6 +84,24 @@ describe("createGlobalProjectFormTargets", () => {
     expect(targets.getWindOption(1)).toBe("45");
   });
 
+  it("keeps default form targets safe when document and options are absent", () => {
+    globalThis.document = undefined as unknown as Document;
+    testGlobals.options = undefined;
+
+    const targets = createGlobalProjectFormTargets();
+
+    expect(targets.getInputValue("pointsInput", "10000")).toBe("10000");
+    expect(targets.getOutputValue("pointsOutputFormatted", "10k")).toBe("10k");
+    expect(targets.getTextValue("temperatureEquatorF", "82F")).toBe("82F");
+    expect(targets.getSelect("templateInput")).toBeNull();
+    expect(targets.hasVisibleInlineDisplay("savePresetButton")).toBe(false);
+    expect(targets.hasVisibleInlineDisplay("savePresetButton", true)).toBe(
+      true,
+    );
+    expect(targets.getWindOption(1)).toBe("");
+    expect(targets.getWindTierRotation(1)).toBe("");
+  });
+
   it("can read form values from injected DOM and runtime adapters", () => {
     const elements = new Map<string, HTMLElement>([
       ["pointsInput", { value: "20000" } as HTMLInputElement],

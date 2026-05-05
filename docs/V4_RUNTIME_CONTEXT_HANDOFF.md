@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 181 test files, 735 tests.
+- `npm.cmd run test -- --run` passed: 181 test files, 737 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2078,6 +2078,10 @@ Project climate targets now guard missing browser scheduler/DOM paths while
 preserving the AGM module mount compatibility calls for Rivers, Biomes,
 Features, Lakes, temperature, and precipitation. If no scheduler is available,
 climate redraw scheduling becomes a safe no-op instead of throwing.
+Project form and data action target coverage now includes no-browser fallback
+paths. Form reads return caller fallbacks when DOM/options are absent, and data
+actions report unavailable capabilities while async operations resolve safely
+when public runtime helpers are not mounted.
 `getEngineWorldDimensions(context)` now centralizes the compatibility fallback
 from runtime world settings to browser graph globals. Burgs, Cultures, and
 Rivers consume that helper instead of reading `globalThis.graphWidth` /
