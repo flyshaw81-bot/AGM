@@ -31,7 +31,7 @@ export function createEngineStateService(
 
 export function createGlobalStateServiceTargets(): EngineStateServiceTargets {
   return {
-    getStatesModule: () => globalThis.States,
+    getStatesModule: () => getGlobalValue<EngineStatesModule>("States"),
   };
 }
 
@@ -41,10 +41,20 @@ export function createGlobalStateService(): EngineStateService {
 
 export function createRuntimeStateService(
   context: EngineRuntimeContext,
-  statesModule: EngineStatesModule | undefined = globalThis.States,
+  statesModule:
+    | EngineStatesModule
+    | undefined = getGlobalValue<EngineStatesModule>("States"),
 ): EngineStateService {
   return createEngineStateService({
     getStatesModule: () => statesModule,
     getStateContext: () => context,
   });
+}
+
+function getGlobalValue<T>(name: string): T | undefined {
+  try {
+    return (globalThis as Record<string, unknown>)[name] as T | undefined;
+  } catch {
+    return undefined;
+  }
 }

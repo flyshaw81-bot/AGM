@@ -2333,6 +2333,9 @@ same guarded compatibility pattern. Blocked `notes`, `grid`, `pack`,
 `structuredClone`, seed/dimension globals, `biomesData`, and `Biomes` reads or
 writes degrade to no-op/default behavior while runtime/injected adapters remain
 the preferred path.
+State service defaults now guard the `States` compatibility mount as well, so
+blocked state-module access falls back to empty campaign/no-op pole behavior
+while explicit runtime state services keep receiving injected modules.
 
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`

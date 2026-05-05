@@ -8,10 +8,22 @@ import {
 } from "./engine-state-service";
 
 const originalStates = globalThis.States;
+const originalStatesDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "States",
+);
 
 describe("createGlobalStateService", () => {
   afterEach(() => {
-    globalThis.States = originalStates;
+    if (originalStatesDescriptor) {
+      Object.defineProperty(globalThis, "States", originalStatesDescriptor);
+    } else {
+      Object.defineProperty(globalThis, "States", {
+        configurable: true,
+        value: originalStates,
+        writable: true,
+      });
+    }
   });
 
   it("forwards state service calls to the current AGM States module mount", () => {
@@ -69,6 +81,25 @@ describe("createGlobalStateService", () => {
 
     expect(states.generateCampaign({ i: 9 })).toEqual([]);
     expect(() => states.getPoles()).not.toThrow();
+  });
+
+  it("keeps state service safe when the state module access throws", () => {
+    Object.defineProperty(globalThis, "States", {
+      configurable: true,
+      get: () => {
+        throw new Error("States blocked");
+      },
+    });
+
+    const states = createGlobalStateService();
+
+    expect(states.generateCampaign({ i: 9 })).toEqual([]);
+    expect(() => states.getPoles()).not.toThrow();
+    expect(() =>
+      createRuntimeStateService({
+        pack: { states: [] },
+      } as unknown as EngineRuntimeContext),
+    ).not.toThrow();
   });
 
   it("forwards runtime context into state module calls", () => {
