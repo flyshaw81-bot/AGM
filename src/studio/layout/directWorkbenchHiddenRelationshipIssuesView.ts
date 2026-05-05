@@ -1,8 +1,8 @@
 import type { StudioLanguage } from "../types";
 import {
   chunkRelationshipIssues,
+  DIRECT_RELATIONSHIP_HIDDEN_ISSUE_PAGE_SIZE,
   type DirectRelationshipVisibleIssueGroup,
-  NATIVE_RELATIONSHIP_HIDDEN_ISSUE_PAGE_SIZE,
 } from "./directWorkbenchDirectoryIssueModel";
 import {
   getRelationshipIssueFieldLabel,
@@ -18,7 +18,7 @@ export function renderHiddenRelationshipIssues(
   if (!group.hiddenIssues.length) return "";
 
   const hiddenRelationshipIssuePageSize =
-    NATIVE_RELATIONSHIP_HIDDEN_ISSUE_PAGE_SIZE;
+    DIRECT_RELATIONSHIP_HIDDEN_ISSUE_PAGE_SIZE;
   const pages = chunkRelationshipIssues(
     group.hiddenIssues,
     hiddenRelationshipIssuePageSize,

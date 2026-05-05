@@ -1,10 +1,10 @@
 import type { RelationshipIssue } from "./nativeRelationshipIssueTypes";
 
-export const NATIVE_RELATIONSHIP_ISSUE_GROUP_LIMIT = 4;
-export const NATIVE_RELATIONSHIP_VISIBLE_ISSUES_PER_GROUP = 3;
-export const NATIVE_RELATIONSHIP_HIDDEN_ISSUE_PAGE_SIZE = 2;
+export const DIRECT_RELATIONSHIP_ISSUE_GROUP_LIMIT = 4;
+export const DIRECT_RELATIONSHIP_VISIBLE_ISSUES_PER_GROUP = 3;
+export const DIRECT_RELATIONSHIP_HIDDEN_ISSUE_PAGE_SIZE = 2;
 
-export type NativeRelationshipIssueGroup = {
+export type DirectRelationshipIssueGroup = {
   key: string;
   label: string;
   target: string;
@@ -12,7 +12,7 @@ export type NativeRelationshipIssueGroup = {
 };
 
 export type DirectRelationshipVisibleIssueGroup =
-  NativeRelationshipIssueGroup & {
+  DirectRelationshipIssueGroup & {
     visibleIssues: RelationshipIssue[];
     hiddenIssues: RelationshipIssue[];
     hiddenCount: number;
@@ -28,7 +28,7 @@ export function chunkRelationshipIssues<T>(issues: T[], pageSize: number) {
 
 export function groupDirectRelationshipIssues(
   issues: RelationshipIssue[],
-): NativeRelationshipIssueGroup[] {
+): DirectRelationshipIssueGroup[] {
   return Array.from(
     issues
       .reduce((groups, issue) => {
@@ -41,15 +41,15 @@ export function groupDirectRelationshipIssues(
         group.issues.push(issue);
         groups.set(issue.groupKey, group);
         return groups;
-      }, new Map<string, NativeRelationshipIssueGroup>())
+      }, new Map<string, DirectRelationshipIssueGroup>())
       .values(),
   );
 }
 
 export function createVisibleDirectRelationshipIssueGroups(
   issues: RelationshipIssue[],
-  groupLimit = NATIVE_RELATIONSHIP_ISSUE_GROUP_LIMIT,
-  visibleIssueLimit = NATIVE_RELATIONSHIP_VISIBLE_ISSUES_PER_GROUP,
+  groupLimit = DIRECT_RELATIONSHIP_ISSUE_GROUP_LIMIT,
+  visibleIssueLimit = DIRECT_RELATIONSHIP_VISIBLE_ISSUES_PER_GROUP,
 ): DirectRelationshipVisibleIssueGroup[] {
   return groupDirectRelationshipIssues(issues)
     .slice(0, groupLimit)
@@ -80,3 +80,12 @@ export function countHiddenRelationshipIssues(
 ) {
   return Math.max(0, issues.length - countVisibleRelationshipIssues(groups));
 }
+
+export const NATIVE_RELATIONSHIP_ISSUE_GROUP_LIMIT =
+  DIRECT_RELATIONSHIP_ISSUE_GROUP_LIMIT;
+export const NATIVE_RELATIONSHIP_VISIBLE_ISSUES_PER_GROUP =
+  DIRECT_RELATIONSHIP_VISIBLE_ISSUES_PER_GROUP;
+export const NATIVE_RELATIONSHIP_HIDDEN_ISSUE_PAGE_SIZE =
+  DIRECT_RELATIONSHIP_HIDDEN_ISSUE_PAGE_SIZE;
+
+export type NativeRelationshipIssueGroup = DirectRelationshipIssueGroup;

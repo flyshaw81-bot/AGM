@@ -4,8 +4,9 @@ import {
   countHiddenRelationshipIssues,
   countVisibleRelationshipIssues,
   createVisibleDirectRelationshipIssueGroups,
+  DIRECT_RELATIONSHIP_HIDDEN_ISSUE_PAGE_SIZE,
   groupDirectRelationshipIssues,
-  NATIVE_RELATIONSHIP_HIDDEN_ISSUE_PAGE_SIZE,
+  NATIVE_RELATIONSHIP_ISSUE_GROUP_LIMIT,
 } from "./directWorkbenchDirectoryIssueModel";
 import type { RelationshipIssue } from "./nativeRelationshipIssueTypes";
 
@@ -72,8 +73,12 @@ describe("directWorkbenchDirectoryIssueModel", () => {
           createIssue("state-clear-culture", 2),
           createIssue("state-clear-culture", 3),
         ],
-        NATIVE_RELATIONSHIP_HIDDEN_ISSUE_PAGE_SIZE,
+        DIRECT_RELATIONSHIP_HIDDEN_ISSUE_PAGE_SIZE,
       ).map((page) => page.length),
     ).toEqual([2, 1]);
+  });
+
+  it("keeps native model constants as compatibility aliases", () => {
+    expect(NATIVE_RELATIONSHIP_ISSUE_GROUP_LIMIT).toBe(4);
   });
 });
