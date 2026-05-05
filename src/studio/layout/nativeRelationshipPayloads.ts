@@ -1,4 +1,4 @@
-type NativeRelationshipButtonDataset = Partial<
+type DirectRelationshipButtonDataset = Partial<
   Record<
     | "burgCulture"
     | "burgName"
@@ -25,7 +25,7 @@ type NativeRelationshipButtonDataset = Partial<
   >
 >;
 
-export type NativeRelationshipButtonPayload =
+export type DirectRelationshipButtonPayload =
   | {
       entity: "state";
       next: {
@@ -71,10 +71,10 @@ function requiredDatasetNumber(value: string | undefined) {
   return Number(value || Number.NaN);
 }
 
-export function createNativeRelationshipButtonPayload(
-  dataset: NativeRelationshipButtonDataset,
+export function createDirectRelationshipButtonPayload(
+  dataset: DirectRelationshipButtonDataset,
   entity: string,
-): NativeRelationshipButtonPayload | null {
+): DirectRelationshipButtonPayload | null {
   if (entity === "state") {
     return {
       entity,
@@ -122,3 +122,8 @@ export function createNativeRelationshipButtonPayload(
 
   return null;
 }
+
+export type NativeRelationshipButtonDataset = DirectRelationshipButtonDataset;
+export type NativeRelationshipButtonPayload = DirectRelationshipButtonPayload;
+export const createNativeRelationshipButtonPayload =
+  createDirectRelationshipButtonPayload;

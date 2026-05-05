@@ -3,7 +3,7 @@ import {
   focusDirectRelationshipField,
   getDirectRelationshipFieldInputId,
 } from "./nativeRelationshipFocus";
-import { createNativeRelationshipButtonPayload } from "./nativeRelationshipPayloads";
+import { createDirectRelationshipButtonPayload } from "./nativeRelationshipPayloads";
 import { getNativeRelationshipFixTarget } from "./nativeRelationshipQueue";
 import { bindActionClick, bindClickSelector } from "./studioEventBinding";
 
@@ -77,7 +77,7 @@ export function bindNativeRelationshipReferenceEvents({
     entity: string,
     id: number,
   ) => {
-    const payload = createNativeRelationshipButtonPayload(
+    const payload = createDirectRelationshipButtonPayload(
       button.dataset,
       entity,
     );

@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { createNativeRelationshipButtonPayload } from "./nativeRelationshipPayloads";
+import {
+  createDirectRelationshipButtonPayload,
+  createNativeRelationshipButtonPayload,
+} from "./nativeRelationshipPayloads";
 
-describe("nativeRelationshipPayloads", () => {
+describe("direct relationship payloads", () => {
   it("creates state payloads from repair button datasets", () => {
     expect(
-      createNativeRelationshipButtonPayload(
+      createDirectRelationshipButtonPayload(
         {
           stateCapital: "12",
           stateColor: "#112233",
@@ -38,7 +41,7 @@ describe("nativeRelationshipPayloads", () => {
 
   it("creates burg and province payloads with optional numeric references", () => {
     expect(
-      createNativeRelationshipButtonPayload(
+      createDirectRelationshipButtonPayload(
         {
           burgCulture: "8",
           burgName: "Grey Mill",
@@ -53,7 +56,7 @@ describe("nativeRelationshipPayloads", () => {
       next: { culture: 8, name: "Grey Mill", population: 700, state: 2 },
     });
     expect(
-      createNativeRelationshipButtonPayload(
+      createDirectRelationshipButtonPayload(
         {
           provinceBurg: "",
           provinceColor: "#445566",
@@ -70,6 +73,18 @@ describe("nativeRelationshipPayloads", () => {
   });
 
   it("ignores unsupported entities", () => {
-    expect(createNativeRelationshipButtonPayload({}, "culture")).toBeNull();
+    expect(createDirectRelationshipButtonPayload({}, "culture")).toBeNull();
+  });
+
+  it("keeps the previous relationship payload helper as a compatibility alias", () => {
+    expect(
+      createNativeRelationshipButtonPayload(
+        { stateName: "Northwatch" },
+        "state",
+      ),
+    ).toMatchObject({
+      entity: "state",
+      next: { name: "Northwatch" },
+    });
   });
 });
