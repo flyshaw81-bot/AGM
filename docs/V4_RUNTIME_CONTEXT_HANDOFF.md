@@ -2355,6 +2355,10 @@ injected DOM, runtime, and storage adapters remain explicit.
 Project-form defaults now guard window, document, and options/wind reads.
 Blocked browser project-form globals fall back to existing form defaults while
 injected DOM and runtime adapters keep the Studio-owned path explicit.
+Data-action defaults now guard window, document, Dropbox DOM reads, file-input
+clicks, and runtime data helper lookups/calls. Blocked browser data helpers
+fall back to empty Dropbox state, unavailable capability flags, or resolved
+no-op calls while injected document, DOM, and runtime adapters stay explicit.
 
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`

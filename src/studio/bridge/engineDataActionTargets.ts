@@ -84,19 +84,52 @@ type EngineDataWindow = typeof globalThis & {
 };
 
 function getDataWindow(): EngineDataWindow {
-  return (globalThis.window ?? globalThis) as EngineDataWindow;
+  try {
+    return (globalThis.window ?? globalThis) as EngineDataWindow;
+  } catch {
+    return globalThis as EngineDataWindow;
+  }
 }
 
 function getDocument(): Document | undefined {
-  return globalThis.document;
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
 }
 
 function getElement<T extends HTMLElement>(id: string) {
-  return getDocument()?.getElementById(id) as T | null | undefined;
+  try {
+    return getDocument()?.getElementById(id) as T | null | undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function getSelectedDropboxLabel(select: HTMLSelectElement | null | undefined) {
   return select?.selectedOptions?.[0]?.textContent?.trim() || "";
+}
+
+function getRuntimeFunction<K extends keyof EngineDataWindow>(
+  key: K,
+): EngineDataWindow[K] | undefined {
+  try {
+    const value = getDataWindow()[key];
+    return typeof value === "function" ? value : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function callRuntimePromise(
+  action: (() => Promise<void>) | undefined,
+): Promise<void> {
+  try {
+    return action?.() ?? Promise.resolve();
+  } catch {
+    return Promise.resolve();
+  }
 }
 
 export function createGlobalDataDocumentSourceAdapter(): EngineDataDocumentSourceAdapter {
@@ -111,69 +144,115 @@ export function createGlobalDataDocumentSourceAdapter(): EngineDataDocumentSourc
 export function createGlobalDataDomAdapter(): EngineDataDomAdapter {
   return {
     getDropboxState: () => {
-      const dropboxConnectButton = getElement<HTMLButtonElement>(
-        "dropboxConnectButton",
-      );
-      const dropboxSelect = getElement<HTMLSelectElement>(
-        "loadFromDropboxSelect",
-      );
-      const dropboxButtons = getElement<HTMLDivElement>(
-        "loadFromDropboxButtons",
-      );
-      const sharableLinkContainer = getElement<HTMLDivElement>(
-        "sharableLinkContainer",
-      );
-      const sharableLink = getElement<HTMLAnchorElement>("sharableLink");
-      const selectedFile = dropboxSelect?.value || "";
-      const connected = Boolean(
-        dropboxSelect && dropboxSelect.style.display !== "none",
-      );
-      const buttonsVisible = Boolean(
-        dropboxButtons && dropboxButtons.style.display !== "none",
-      );
+      try {
+        const dropboxConnectButton = getElement<HTMLButtonElement>(
+          "dropboxConnectButton",
+        );
+        const dropboxSelect = getElement<HTMLSelectElement>(
+          "loadFromDropboxSelect",
+        );
+        const dropboxButtons = getElement<HTMLDivElement>(
+          "loadFromDropboxButtons",
+        );
+        const sharableLinkContainer = getElement<HTMLDivElement>(
+          "sharableLinkContainer",
+        );
+        const sharableLink = getElement<HTMLAnchorElement>("sharableLink");
+        const selectedFile = dropboxSelect?.value || "";
+        const connected = Boolean(
+          dropboxSelect && dropboxSelect.style.display !== "none",
+        );
+        const buttonsVisible = Boolean(
+          dropboxButtons && dropboxButtons.style.display !== "none",
+        );
 
-      return {
-        connectButtonAvailable: Boolean(dropboxConnectButton),
-        connected,
-        buttonsVisible,
-        selectedFile,
-        selectedLabel: getSelectedDropboxLabel(dropboxSelect),
-        hasShareLink: Boolean(
-          sharableLinkContainer &&
-            sharableLinkContainer.style.display !== "none",
-        ),
-        shareUrl: sharableLink?.href || "",
-      };
+        return {
+          connectButtonAvailable: Boolean(dropboxConnectButton),
+          connected,
+          buttonsVisible,
+          selectedFile,
+          selectedLabel: getSelectedDropboxLabel(dropboxSelect),
+          hasShareLink: Boolean(
+            sharableLinkContainer &&
+              sharableLinkContainer.style.display !== "none",
+          ),
+          shareUrl: sharableLink?.href || "",
+        };
+      } catch {
+        return {
+          connectButtonAvailable: false,
+          connected: false,
+          buttonsVisible: false,
+          selectedFile: "",
+          selectedLabel: "",
+          hasShareLink: false,
+          shareUrl: "",
+        };
+      }
     },
     hasFileInput: () => Boolean(getElement<HTMLInputElement>("mapToLoad")),
-    clickFileInput: () => getElement<HTMLInputElement>("mapToLoad")?.click(),
+    clickFileInput: () => {
+      try {
+        getElement<HTMLInputElement>("mapToLoad")?.click();
+      } catch {
+        // Compatibility DOM click is best-effort.
+      }
+    },
   };
 }
 
 export function createGlobalDataRuntimeAdapter(): EngineDataRuntimeAdapter {
   return {
-    canQuickLoad: () => typeof getDataWindow().quickLoad === "function",
-    quickLoad: () => getDataWindow().quickLoad?.() ?? Promise.resolve(),
-    canSaveMap: () => typeof getDataWindow().saveMap === "function",
-    saveMap: (method) => getDataWindow().saveMap?.(method) ?? Promise.resolve(),
-    canConnectDropbox: () =>
-      typeof getDataWindow().connectToDropbox === "function",
+    canQuickLoad: () => Boolean(getRuntimeFunction("quickLoad")),
+    quickLoad: () =>
+      callRuntimePromise(
+        getRuntimeFunction("quickLoad") as (() => Promise<void>) | undefined,
+      ),
+    canSaveMap: () => Boolean(getRuntimeFunction("saveMap")),
+    saveMap: (method) =>
+      callRuntimePromise(
+        getRuntimeFunction("saveMap")?.bind(undefined, method) as
+          | (() => Promise<void>)
+          | undefined,
+      ),
+    canConnectDropbox: () => Boolean(getRuntimeFunction("connectToDropbox")),
     connectDropbox: () =>
-      getDataWindow().connectToDropbox?.() ?? Promise.resolve(),
-    canLoadFromDropbox: () =>
-      typeof getDataWindow().loadFromDropbox === "function",
+      callRuntimePromise(
+        getRuntimeFunction("connectToDropbox") as
+          | (() => Promise<void>)
+          | undefined,
+      ),
+    canLoadFromDropbox: () => Boolean(getRuntimeFunction("loadFromDropbox")),
     loadFromDropbox: () =>
-      getDataWindow().loadFromDropbox?.() ?? Promise.resolve(),
+      callRuntimePromise(
+        getRuntimeFunction("loadFromDropbox") as
+          | (() => Promise<void>)
+          | undefined,
+      ),
     canShareDropbox: () =>
-      typeof getDataWindow().createSharableDropboxLink === "function",
+      Boolean(getRuntimeFunction("createSharableDropboxLink")),
     createSharableDropboxLink: () =>
-      getDataWindow().createSharableDropboxLink?.() ?? Promise.resolve(),
+      callRuntimePromise(
+        getRuntimeFunction("createSharableDropboxLink") as
+          | (() => Promise<void>)
+          | undefined,
+      ),
     canGenerateMapOnLoad: () =>
-      typeof getDataWindow().generateMapOnLoad === "function",
+      Boolean(getRuntimeFunction("generateMapOnLoad")),
     generateMapOnLoad: () =>
-      getDataWindow().generateMapOnLoad?.() ?? Promise.resolve(),
-    canLoadUrl: () => typeof getDataWindow().loadURL === "function",
-    loadUrl: () => getDataWindow().loadURL?.(),
+      callRuntimePromise(
+        getRuntimeFunction("generateMapOnLoad") as
+          | (() => Promise<void>)
+          | undefined,
+      ),
+    canLoadUrl: () => Boolean(getRuntimeFunction("loadURL")),
+    loadUrl: () => {
+      try {
+        (getRuntimeFunction("loadURL") as (() => void) | undefined)?.();
+      } catch {
+        // Compatibility URL loading is best-effort.
+      }
+    },
   };
 }
 

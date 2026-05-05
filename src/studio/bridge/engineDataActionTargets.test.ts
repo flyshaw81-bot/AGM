@@ -20,14 +20,78 @@ const originalQuickLoad = testGlobals.quickLoad;
 const originalSaveMap = testGlobals.saveMap;
 const originalLoadUrl = testGlobals.loadURL;
 const originalWindow = globalThis.window;
+const originalDocumentDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "document",
+);
+const originalWindowDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "window",
+);
+const originalQuickLoadDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "quickLoad",
+);
+const originalSaveMapDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "saveMap",
+);
+const originalLoadUrlDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "loadURL",
+);
 
 describe("createGlobalDataActionTargets", () => {
   afterEach(() => {
-    globalThis.document = originalDocument;
-    testGlobals.quickLoad = originalQuickLoad;
-    testGlobals.saveMap = originalSaveMap;
-    testGlobals.loadURL = originalLoadUrl;
-    globalThis.window = originalWindow;
+    if (originalDocumentDescriptor) {
+      Object.defineProperty(globalThis, "document", originalDocumentDescriptor);
+    } else {
+      Object.defineProperty(globalThis, "document", {
+        configurable: true,
+        writable: true,
+        value: originalDocument,
+      });
+    }
+    if (originalQuickLoadDescriptor) {
+      Object.defineProperty(
+        globalThis,
+        "quickLoad",
+        originalQuickLoadDescriptor,
+      );
+    } else {
+      Object.defineProperty(globalThis, "quickLoad", {
+        configurable: true,
+        writable: true,
+        value: originalQuickLoad,
+      });
+    }
+    if (originalSaveMapDescriptor) {
+      Object.defineProperty(globalThis, "saveMap", originalSaveMapDescriptor);
+    } else {
+      Object.defineProperty(globalThis, "saveMap", {
+        configurable: true,
+        writable: true,
+        value: originalSaveMap,
+      });
+    }
+    if (originalLoadUrlDescriptor) {
+      Object.defineProperty(globalThis, "loadURL", originalLoadUrlDescriptor);
+    } else {
+      Object.defineProperty(globalThis, "loadURL", {
+        configurable: true,
+        writable: true,
+        value: originalLoadUrl,
+      });
+    }
+    if (originalWindowDescriptor) {
+      Object.defineProperty(globalThis, "window", originalWindowDescriptor);
+    } else {
+      Object.defineProperty(globalThis, "window", {
+        configurable: true,
+        writable: true,
+        value: originalWindow,
+      });
+    }
   });
 
   it("reads Dropbox state and file input availability from the active document", () => {
@@ -124,6 +188,58 @@ describe("createGlobalDataActionTargets", () => {
     await expect(targets.loadFromDropbox()).resolves.toBeUndefined();
     await expect(targets.createSharableDropboxLink()).resolves.toBeUndefined();
     await expect(targets.generateMapOnLoad()).resolves.toBeUndefined();
+    expect(() => targets.loadUrl()).not.toThrow();
+  });
+
+  it("keeps default DOM and runtime actions safe when browser helpers throw", async () => {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "quickLoad", {
+      configurable: true,
+      get: () => {
+        throw new Error("quickLoad blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "saveMap", {
+      configurable: true,
+      value: () => {
+        throw new Error("saveMap blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "loadURL", {
+      configurable: true,
+      value: () => {
+        throw new Error("loadURL blocked");
+      },
+    });
+
+    const targets = createGlobalDataActionTargets();
+
+    expect(targets.hasFileInput()).toBe(false);
+    expect(() => targets.clickFileInput()).not.toThrow();
+    expect(targets.getDropboxState()).toEqual({
+      connectButtonAvailable: false,
+      connected: false,
+      buttonsVisible: false,
+      selectedFile: "",
+      selectedLabel: "",
+      hasShareLink: false,
+      shareUrl: "",
+    });
+    expect(targets.canQuickLoad()).toBe(false);
+    expect(targets.canSaveMap()).toBe(true);
+    await expect(targets.quickLoad()).resolves.toBeUndefined();
+    await expect(targets.saveMap("machine")).resolves.toBeUndefined();
     expect(() => targets.loadUrl()).not.toThrow();
   });
 
