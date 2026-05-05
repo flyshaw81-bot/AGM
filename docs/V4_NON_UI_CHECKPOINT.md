@@ -75,16 +75,10 @@ These are not considered blockers for this non-UI checkpoint:
   manual Burgs methods and route/editor helpers.
 - Replacing Studio-owned font-resource callers with injected font-resource
   commands where applicable.
-- Full Pencil-guided UI migration.
+- Full Studio UI migration.
 
-## UI Entry Requirement
+## UI Entry Note
 
-Before any UI implementation, the Pencil file must be read successfully:
-
-- `D:/SKILLS/UI/UI1/untitled.pen`
-- Required first reads: `get_editor_state({ include_schema: true })`,
-  `snapshot_layout`, and when needed `get_variables`.
-
-Current note: the latest attempt to connect to Pencil failed with
-`transport not connected to app: desktop`, so no UI code was changed in this
-checkpoint.
+This checkpoint is intentionally non-UI. No Studio UI implementation is included
+here. Future UI direction should be decided in the active product/design brief
+for that UI slice rather than inferred from this runtime checkpoint.

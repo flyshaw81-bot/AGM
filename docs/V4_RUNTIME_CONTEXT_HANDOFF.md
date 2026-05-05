@@ -2444,7 +2444,7 @@ adapter sweep:
 1. old public UI and jQuery dialog replacement,
 2. command-layer ownership for the remaining rendered editor operations,
 3. gradual replacement of default global target factories with real services,
-4. Pencil-guided Studio UI migration.
+4. Studio UI migration.
 
 Recommended V4 judgment for this checkpoint: verify the guarded boundaries,
 confirm the test/build gate below, and treat new low-level adapter hardening
@@ -2495,8 +2495,8 @@ Recommended order:
    import-time crashes, unguarded browser globals outside target factories,
    stale public UI dialog paths, and whether AGM module mounts are correctly
    classified as compatibility exports rather than old algorithms.
-2. Read the Pencil design file before any UI implementation and choose one
-   Studio-owned business surface for the first UI migration slice.
+2. Confirm the active product/design brief for the next UI implementation and
+   choose one Studio-owned business surface for the first UI migration slice.
 3. Move the remaining context type re-exports gradually to direct imports from
    their adapter modules in touched files, without doing a noisy repo-wide
    churn pass.
