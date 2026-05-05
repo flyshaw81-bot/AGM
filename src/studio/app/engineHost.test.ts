@@ -241,4 +241,32 @@ describe("engine host", () => {
       globalThis.document = originalDocument;
     }
   });
+
+  it("keeps global host DOM and dialog adapters safe when document access throws", () => {
+    const originalDocument = globalThis.document;
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
+
+    try {
+      const domAdapter = createGlobalEngineHostDomAdapter();
+      const dialogDomAdapter = createGlobalEngineHostDialogDomAdapter();
+      const element = domAdapter.createElement("div");
+
+      expect(domAdapter.getElementById("studioRoot")).toBeNull();
+      expect(element.id).toBe("");
+      expect(() => domAdapter.appendToBody(element)).not.toThrow();
+      expect(
+        dialogDomAdapter.querySelectorAll("#dialogs > .ui-dialog"),
+      ).toEqual([]);
+    } finally {
+      Object.defineProperty(globalThis, "document", {
+        configurable: true,
+        value: originalDocument,
+      });
+    }
+  });
 });

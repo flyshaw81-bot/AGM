@@ -14,14 +14,22 @@ export type EngineHostDialogDomAdapter = {
 
 export type EngineHostTargets = EngineHostDomAdapter & EngineHostDialogAdapter;
 
+function getDocument(): Document | undefined {
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
+}
+
 export function createGlobalEngineHostDomAdapter(): EngineHostDomAdapter {
   return {
-    getElementById: (id) => globalThis.document?.getElementById(id) ?? null,
+    getElementById: (id) => getDocument()?.getElementById(id) ?? null,
     createElement: (tagName) =>
-      globalThis.document?.createElement(tagName) ??
+      getDocument()?.createElement(tagName) ??
       ({ id: "", dataset: {}, style: {} } as HTMLElement),
     appendToBody: (element) => {
-      globalThis.document?.body?.appendChild(element);
+      getDocument()?.body?.appendChild(element);
     },
   };
 }
@@ -29,9 +37,7 @@ export function createGlobalEngineHostDomAdapter(): EngineHostDomAdapter {
 export function createGlobalEngineHostDialogDomAdapter(): EngineHostDialogDomAdapter {
   return {
     querySelectorAll: (selector) =>
-      Array.from(
-        globalThis.document?.querySelectorAll<HTMLElement>(selector) ?? [],
-      ),
+      Array.from(getDocument()?.querySelectorAll<HTMLElement>(selector) ?? []),
   };
 }
 
