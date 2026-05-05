@@ -2276,6 +2276,9 @@ directly.
 `engine-climate-context.ts` now routes height exponent, point count, and
 precipitation input lookups through `EngineClimateInputTargets`, so global
 input controls remain isolated in the default climate compatibility adapter.
+`engine-options-session.ts` now centralizes default browser control writes
+through safe global control helpers, reducing raw public-control writes and
+keeping missing compatibility globals from throwing during option writes.
 
 `ocean-layers.ts` now routes outline-chain error reporting through
 `OceanLayerLogTargets`, keeping the default `globalThis.ERROR` compatibility

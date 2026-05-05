@@ -23,6 +23,32 @@ function getElementById<T extends HTMLElement>(id: string): T | undefined {
   return (getDocument()?.getElementById(id) as T | null) ?? undefined;
 }
 
+function getGlobalValue<T = unknown>(name: string): T | undefined {
+  try {
+    return (globalThis as Record<string, unknown>)[name] as T | undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function setControlValue(name: string, value: string | number) {
+  const control = getGlobalValue<{ value: string | number }>(name);
+  if (control) control.value = value;
+}
+
+function setOptionsValue(name: keyof typeof options, value: string | number) {
+  const runtimeOptions = getGlobalValue<typeof options>("options");
+  if (runtimeOptions) runtimeOptions[name] = value as never;
+}
+
+function setGlobalValue(name: string, value: string | number) {
+  try {
+    (globalThis as Record<string, unknown>)[name] = value;
+  } catch {
+    // Ignore missing read-only compatibility globals.
+  }
+}
+
 export function shouldForceDefaultOptions(
   searchParams: URLSearchParams,
 ): boolean {
@@ -73,77 +99,91 @@ export function createGlobalOptionsLocaleTargets(): EngineOptionsLocaleTargets {
 export function createGlobalOptionsBrowserControlTargets(): EngineOptionsBrowserControlTargets {
   return {
     setCellsDensity: (density) => {
-      (globalThis as any).changeCellsDensity(density);
+      getGlobalValue<(density: number) => void>("changeCellsDensity")?.(
+        density,
+      );
     },
     applyHeightmapTemplate: (template, name) => {
-      (globalThis as any).applyOption(
+      getGlobalValue<
+        (
+          input: HTMLInputElement | undefined,
+          template: string,
+          name: string,
+        ) => void
+      >("applyOption")?.(
         getElementById<HTMLInputElement>("templateInput"),
         template,
         name,
       );
     },
     setStatesCount: (value) => {
-      (globalThis as any).statesNumber.value = value;
+      setControlValue("statesNumber", value);
     },
     setProvincesRatio: (value) => {
-      (globalThis as any).provincesRatio.value = value;
+      setControlValue("provincesRatio", value);
     },
     setManorsAuto: () => {
-      (globalThis as any).manorsInput.value = 1000;
-      (globalThis as any).manorsOutput.value = "auto";
+      setControlValue("manorsInput", 1000);
+      setControlValue("manorsOutput", "auto");
     },
     setReligionsCount: (value) => {
-      religionsNumber.value = String(value);
+      setControlValue("religionsNumber", String(value));
     },
     setSizeVariety: (value) => {
-      (globalThis as any).sizeVariety.value = value;
+      setControlValue("sizeVariety", value);
     },
     setGrowthRate: (value) => {
-      (globalThis as any).growthRate.value = value;
+      setControlValue("growthRate", value);
     },
     setCulturesCount: (value) => {
-      culturesInput.value = (globalThis as any).culturesOutput.value =
-        String(value);
+      setControlValue("culturesInput", String(value));
+      setControlValue("culturesOutput", String(value));
     },
     setCultureSet: (value) => {
-      culturesSet.value = value;
-      (globalThis as any).changeCultureSet();
+      setControlValue("culturesSet", value);
+      getGlobalValue<() => void>("changeCultureSet")?.();
     },
     setTemperatureEquator: (value) => {
-      options.temperatureEquator = value;
+      setOptionsValue("temperatureEquator", value);
     },
     setTemperatureNorthPole: (value) => {
-      options.temperatureNorthPole = value;
+      setOptionsValue("temperatureNorthPole", value);
     },
     setTemperatureSouthPole: (value) => {
-      options.temperatureSouthPole = value;
+      setOptionsValue("temperatureSouthPole", value);
     },
     setPrecipitation: (value) => {
-      precInput.value = (globalThis as any).precOutput.value = String(value);
+      setControlValue("precInput", String(value));
+      setControlValue("precOutput", String(value));
     },
     setDistanceScale: (value) => {
-      globalThis.distanceScale = value;
-      (globalThis as any).distanceScaleInput.value = value;
+      setGlobalValue("distanceScale", value);
+      setControlValue("distanceScaleInput", value);
     },
     setDistanceUnit: (value) => {
-      distanceUnitInput.value = value;
+      setControlValue("distanceUnitInput", value);
     },
     setHeightUnit: (value) => {
-      heightUnit.value = value;
+      setControlValue("heightUnit", value);
     },
     setTemperatureScale: (value) => {
-      (globalThis as any).temperatureScale.value = value;
+      setControlValue("temperatureScale", value);
     },
     setYear: (value) => {
-      (globalThis as any).yearInput.value = value;
+      setControlValue("yearInput", value);
     },
     setEra: (value) => {
-      (globalThis as any).eraInput.value = value;
+      setControlValue("eraInput", value);
     },
     syncEraOptions: () => {
-      options.year = +(globalThis as any).yearInput.value;
-      options.era = (globalThis as any).eraInput.value;
-      options.eraShort = options.era
+      const yearInput = getGlobalValue<{ value: string | number }>("yearInput");
+      const eraInput = getGlobalValue<{ value: string }>("eraInput");
+      const runtimeOptions = getGlobalValue<typeof options>("options");
+      if (!runtimeOptions || !yearInput || !eraInput) return;
+
+      runtimeOptions.year = +yearInput.value;
+      runtimeOptions.era = eraInput.value;
+      runtimeOptions.eraShort = runtimeOptions.era
         .split(" ")
         .map((word: string) => word[0].toUpperCase())
         .join("");

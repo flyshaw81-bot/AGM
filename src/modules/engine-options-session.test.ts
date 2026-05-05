@@ -327,6 +327,33 @@ describe("EngineOptionsSessionModule", () => {
     );
   });
 
+  it("keeps global browser control writes safe when compatibility globals are absent", () => {
+    const targets = createGlobalOptionsBrowserControlTargets();
+
+    expect(() => {
+      targets.setCellsDensity(4);
+      targets.setStatesCount(24);
+      targets.setProvincesRatio(60);
+      targets.setManorsAuto();
+      targets.setReligionsCount(8);
+      targets.setSizeVariety(4.5);
+      targets.setGrowthRate(1.2);
+      targets.setCulturesCount(14);
+      targets.setCultureSet("highFantasy");
+      targets.setTemperatureEquator(31);
+      targets.setTemperatureNorthPole(-20);
+      targets.setTemperatureSouthPole(-10);
+      targets.setPrecipitation(120);
+      targets.setDistanceScale(2.5);
+      targets.setDistanceUnit("mi");
+      targets.setHeightUnit("ft");
+      targets.setTemperatureScale("\u00b0F");
+      targets.setYear(1492);
+      targets.setEra("Copper Moon");
+      targets.syncEraOptions();
+    }).not.toThrow();
+  });
+
   it("routes era generation through the naming adapter", () => {
     const writer = createWriter();
 
