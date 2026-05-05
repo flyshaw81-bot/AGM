@@ -51,32 +51,54 @@ export type EngineDocumentSourceTargets = {
 };
 
 function getGlobalEngineRuntime(): EngineDocumentSourceRuntime {
-  return ((
-    globalThis as typeof globalThis & { window?: EngineDocumentSourceRuntime }
-  ).window ?? globalThis) as EngineDocumentSourceRuntime;
+  try {
+    return ((
+      globalThis as typeof globalThis & { window?: EngineDocumentSourceRuntime }
+    ).window ?? globalThis) as EngineDocumentSourceRuntime;
+  } catch {
+    return globalThis as EngineDocumentSourceRuntime;
+  }
 }
 
 export function createGlobalEngineDocumentSourceTargets(): EngineDocumentSourceTargets {
   return {
     getStore: () => globalThis as EngineDocumentSourceStore,
     getMapFileName: () => {
-      const mapName = getGlobalEngineRuntime().mapName?.value?.trim();
-      return mapName ? `${mapName}.map` : "Current map";
+      try {
+        const mapName = getGlobalEngineRuntime().mapName?.value?.trim();
+        return mapName ? `${mapName}.map` : "Current map";
+      } catch {
+        return "Current map";
+      }
     },
     getDropboxSourceDetail: () => {
-      const dropboxSelect = globalThis.document?.getElementById(
-        "loadFromDropboxSelect",
-      ) as HTMLSelectElement | null;
-      const selectedOption = dropboxSelect?.selectedOptions?.[0] ?? null;
-      return (
-        selectedOption?.textContent?.trim() ||
-        dropboxSelect?.value ||
-        "Selected file"
-      );
+      try {
+        const dropboxSelect = globalThis.document?.getElementById(
+          "loadFromDropboxSelect",
+        ) as HTMLSelectElement | null;
+        const selectedOption = dropboxSelect?.selectedOptions?.[0] ?? null;
+        return (
+          selectedOption?.textContent?.trim() ||
+          dropboxSelect?.value ||
+          "Selected file"
+        );
+      } catch {
+        return "Selected file";
+      }
     },
-    getRuntimeFunction: (key) => getGlobalEngineRuntime()[key],
+    getRuntimeFunction: (key) => {
+      try {
+        return getGlobalEngineRuntime()[key];
+      } catch {
+        return undefined;
+      }
+    },
     setRuntimeFunction: (key, value) => {
-      getGlobalEngineRuntime()[key] = value;
+      try {
+        getGlobalEngineRuntime()[key] = value;
+      } catch {
+        // Document-source tracking is optional for blocked compatibility runtimes.
+      }
     },
   };
 }

@@ -2381,6 +2381,11 @@ renderer, and scheduler compatibility reads/calls. Blocked climate pipeline or
 redraw globals now fall back to false/undefined/no-op behavior while injected
 DOM, pipeline, renderer, and scheduler adapters remain the explicit path.
 
+Document-source defaults now guard browser runtime and Dropbox selector reads.
+Blocked `window` or `document` compatibility access falls back to current-map /
+selected-file defaults or no-op tracking while injected document-source targets
+keep owning the explicit path.
+
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`
 dimensions. `engine-generation-session-services.ts` now exposes

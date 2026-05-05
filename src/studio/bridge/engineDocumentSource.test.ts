@@ -1,6 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { EngineDocumentSourceTargets } from "./engineDocumentSource";
 import {
+  createGlobalEngineDocumentSourceTargets,
   ensureEngineDocumentSourceTracking,
   getEngineDocumentSourceSummary,
   getEngineSaveTargetSummary,
@@ -36,6 +37,28 @@ function createTargets(overrides: {
 }
 
 describe("engine document source tracking", () => {
+  const originalWindowDescriptor = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "window",
+  );
+  const originalDocumentDescriptor = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "document",
+  );
+
+  afterEach(() => {
+    if (originalWindowDescriptor) {
+      Object.defineProperty(globalThis, "window", originalWindowDescriptor);
+    } else {
+      Reflect.deleteProperty(globalThis, "window");
+    }
+    if (originalDocumentDescriptor) {
+      Object.defineProperty(globalThis, "document", originalDocumentDescriptor);
+    } else {
+      Reflect.deleteProperty(globalThis, "document");
+    }
+  });
+
   it("tracks quick load through injected targets without browser globals", async () => {
     const quickLoad = vi.fn(async () => undefined);
     const targets = createTargets({ runtime: { quickLoad } });
@@ -109,5 +132,29 @@ describe("engine document source tracking", () => {
       saveLabel: "Downloads",
       saveDetail: "Atlas.map",
     });
+  });
+
+  it("keeps global document-source targets safe when browser globals throw", () => {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
+    const targets = createGlobalEngineDocumentSourceTargets();
+
+    expect(targets.getMapFileName()).toBe("Current map");
+    expect(targets.getDropboxSourceDetail()).toBe("Selected file");
+    expect(targets.getRuntimeFunction("quickLoad")).toBeUndefined();
+    expect(() =>
+      targets.setRuntimeFunction("quickLoad", async () => undefined),
+    ).not.toThrow();
+    expect(() => ensureEngineDocumentSourceTracking(targets)).not.toThrow();
   });
 });
