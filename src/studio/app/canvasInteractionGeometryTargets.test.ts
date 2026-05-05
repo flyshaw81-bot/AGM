@@ -76,6 +76,23 @@ describe("canvas interaction geometry targets", () => {
     }
   });
 
+  it("keeps geometry DOM adapter safe when frame lookup throws", () => {
+    const originalDocument = globalThis.document;
+    globalThis.document = {
+      getElementById: () => {
+        throw new Error("frame lookup blocked");
+      },
+    } as unknown as Document;
+
+    try {
+      const targets = createGlobalCanvasInteractionGeometryDomTargets();
+
+      expect(targets.getCanvasFrame()).toBeNull();
+    } finally {
+      globalThis.document = originalDocument;
+    }
+  });
+
   it("composes runtime graph, pack, and paint preview adapters", () => {
     const frame = { id: "studioCanvasFrame" };
     const originalDocument = globalThis.document;

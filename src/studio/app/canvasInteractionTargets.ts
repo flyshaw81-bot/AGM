@@ -41,15 +41,19 @@ function getDocument(): Document | undefined {
 }
 
 function isCanvasControlEvent(event: Event) {
-  if (typeof globalThis.Element !== "function") return false;
-  return (
-    event.target instanceof Element &&
-    Boolean(
-      event.target.closest(
-        "[data-canvas-tool-hud='true'], [data-canvas-selection-card='true'], [data-studio-map-tools='true']",
-      ),
-    )
-  );
+  try {
+    if (typeof globalThis.Element !== "function") return false;
+    return (
+      event.target instanceof Element &&
+      Boolean(
+        event.target.closest(
+          "[data-canvas-tool-hud='true'], [data-canvas-selection-card='true'], [data-studio-map-tools='true']",
+        ),
+      )
+    );
+  } catch {
+    return false;
+  }
 }
 
 export function createGlobalCanvasInteractionDomTargets(): CanvasInteractionDomTargets {
@@ -92,9 +96,17 @@ export function createRuntimeCanvasInteractionTargets(
 }
 
 function getCanvasFrameElement(): HTMLElement | null {
-  return getDocument()?.getElementById("studioCanvasFrame") ?? null;
+  try {
+    return getDocument()?.getElementById("studioCanvasFrame") ?? null;
+  } catch {
+    return null;
+  }
 }
 
 function getMapHostElement(): HTMLElement | null {
-  return getDocument()?.getElementById("studioMapHost") ?? null;
+  try {
+    return getDocument()?.getElementById("studioMapHost") ?? null;
+  } catch {
+    return null;
+  }
 }

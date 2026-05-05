@@ -84,5 +84,9 @@ export function createRuntimeCanvasInteractionGeometryTargets(
 }
 
 function getCanvasFrameElement(): HTMLElement | null {
-  return getDocument()?.getElementById("studioCanvasFrame") ?? null;
+  try {
+    return getDocument()?.getElementById("studioCanvasFrame") ?? null;
+  } catch {
+    return null;
+  }
 }

@@ -89,6 +89,24 @@ describe("canvas interaction targets", () => {
     }
   });
 
+  it("keeps default canvas DOM adapter safe when element lookup throws", () => {
+    const originalDocument = globalThis.document;
+    globalThis.document = {
+      getElementById: () => {
+        throw new Error("canvas lookup blocked");
+      },
+    } as unknown as Document;
+
+    try {
+      const targets = createGlobalCanvasInteractionDomTargets();
+
+      expect(targets.getCanvasFrame()).toBeNull();
+      expect(targets.getMapHost()).toBeNull();
+    } finally {
+      globalThis.document = originalDocument;
+    }
+  });
+
   it("treats control events as non-control when Element is absent", () => {
     const originalElement = globalThis.Element;
     globalThis.Element = undefined as unknown as typeof Element;
@@ -99,6 +117,28 @@ describe("canvas interaction targets", () => {
       expect(targets.isControlEvent({ target: {} } as unknown as Event)).toBe(
         false,
       );
+    } finally {
+      globalThis.Element = originalElement;
+    }
+  });
+
+  it("treats control events as non-control when closest lookup throws", () => {
+    const originalElement = globalThis.Element;
+    class FakeElement {
+      closest() {
+        throw new Error("closest blocked");
+      }
+    }
+    globalThis.Element = FakeElement as unknown as typeof Element;
+
+    try {
+      const targets = createGlobalCanvasInteractionTargets();
+
+      expect(
+        targets.isControlEvent({
+          target: new FakeElement(),
+        } as unknown as Event),
+      ).toBe(false);
     } finally {
       globalThis.Element = originalElement;
     }
