@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 195 test files, 776 tests.
+- `npm.cmd run test -- --run` passed: 195 test files, 778 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2127,6 +2127,10 @@ Remaining renderer compatibility mounts now use absent-window-safe installers
 for borders, emblems, features, heightmap, markers, scale bar, state labels,
 temperature, and burg icon/label exports. Marker rendering now uses the local
 pin helper instead of reading `getPin` from the browser mount.
+Burg icon and label removal renderers now expose injectable document targets,
+so command/render adapter tests can exercise single-item removal without
+reading the browser global document; the mounted `window.drawBurg*` compatibility
+functions remain unchanged.
 `getEngineWorldDimensions(context)` now centralizes the compatibility fallback
 from runtime world settings to browser graph globals. Burgs, Cultures, and
 Rivers consume that helper instead of reading `globalThis.graphWidth` /

@@ -36,4 +36,34 @@ describe("draw burg label renderer globals", () => {
 
     expect(() => windowTarget.removeBurgLabel(7)).not.toThrow();
   });
+
+  it("removes labels through injected renderer targets", async () => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {},
+      writable: true,
+    });
+
+    const { removeBurgLabelRenderer } = await import("./draw-burg-labels");
+    const label = { remove: vi.fn() };
+    const getElementById = vi.fn((id: string) =>
+      id === "burgLabel7" ? label : null,
+    );
+
+    removeBurgLabelRenderer(7, {
+      getDocument: () =>
+        ({
+          getElementById,
+        }) as unknown as Document,
+    });
+
+    expect(getElementById).toHaveBeenCalledWith("burgLabel7");
+    expect(label.remove).toHaveBeenCalledTimes(1);
+  });
 });

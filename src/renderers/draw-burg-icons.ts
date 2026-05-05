@@ -11,6 +11,10 @@ interface BurgGroup {
   order: number;
 }
 
+export interface BurgIconRendererTargets {
+  getDocument: () => Document | undefined;
+}
+
 const getDocument = (): Document | undefined => {
   try {
     return globalThis.document;
@@ -18,6 +22,14 @@ const getDocument = (): Document | undefined => {
     return undefined;
   }
 };
+
+export function createGlobalBurgIconRendererTargets(): BurgIconRendererTargets {
+  return {
+    getDocument,
+  };
+}
+
+const defaultBurgIconRendererTargets = createGlobalBurgIconRendererTargets();
 
 const getWindow = (): (Window & typeof globalThis) | undefined => {
   try {
@@ -27,10 +39,12 @@ const getWindow = (): (Window & typeof globalThis) | undefined => {
   }
 };
 
-const burgIconsRenderer = (): void => {
+export const burgIconsRenderer = (
+  targets: BurgIconRendererTargets = defaultBurgIconRendererTargets,
+): void => {
   TIME && console.time("drawBurgIcons");
-  createIconGroups();
-  const document = getDocument();
+  createIconGroups(targets);
+  const document = targets.getDocument();
   if (!document) return;
 
   for (const { name } of options.burgs.groups as BurgGroup[]) {
@@ -71,14 +85,17 @@ const burgIconsRenderer = (): void => {
   TIME && console.timeEnd("drawBurgIcons");
 };
 
-const drawBurgIconRenderer = (burg: Burg): void => {
+export const drawBurgIconRenderer = (
+  burg: Burg,
+  targets: BurgIconRendererTargets = defaultBurgIconRendererTargets,
+): void => {
   const iconGroup = burgIcons.select<SVGGElement>(`#${burg.group}`);
   if (iconGroup.empty()) {
-    drawBurgIcons();
+    burgIconsRenderer(targets);
     return; // redraw all icons if group is missing
   }
 
-  removeBurgIconRenderer(burg.i!);
+  removeBurgIconRenderer(burg.i!, targets);
   const icon = iconGroup.attr("data-icon") || "#icon-circle";
   burgIcons
     .select(`#${burg.group}`)
@@ -101,8 +118,11 @@ const drawBurgIconRenderer = (burg: Burg): void => {
   }
 };
 
-const removeBurgIconRenderer = (burgId: number): void => {
-  const document = getDocument();
+export const removeBurgIconRenderer = (
+  burgId: number,
+  targets: BurgIconRendererTargets = defaultBurgIconRendererTargets,
+): void => {
+  const document = targets.getDocument();
   if (!document) return;
 
   const existingIcon = document.getElementById(`burg${burgId}`);
@@ -112,8 +132,8 @@ const removeBurgIconRenderer = (burgId: number): void => {
   if (existingAnchor) existingAnchor.remove();
 };
 
-function createIconGroups(): void {
-  const document = getDocument();
+function createIconGroups(targets: BurgIconRendererTargets): void {
+  const document = targets.getDocument();
   if (!document) return;
 
   // save existing styles and remove all groups

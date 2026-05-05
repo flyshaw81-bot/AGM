@@ -11,6 +11,10 @@ interface BurgGroup {
   order: number;
 }
 
+export interface BurgLabelRendererTargets {
+  getDocument: () => Document | undefined;
+}
+
 const getDocument = (): Document | undefined => {
   try {
     return globalThis.document;
@@ -18,6 +22,14 @@ const getDocument = (): Document | undefined => {
     return undefined;
   }
 };
+
+export function createGlobalBurgLabelRendererTargets(): BurgLabelRendererTargets {
+  return {
+    getDocument,
+  };
+}
+
+const defaultBurgLabelRendererTargets = createGlobalBurgLabelRendererTargets();
 
 const getWindow = (): (Window & typeof globalThis) | undefined => {
   try {
@@ -27,9 +39,11 @@ const getWindow = (): (Window & typeof globalThis) | undefined => {
   }
 };
 
-const burgLabelsRenderer = (): void => {
+export const burgLabelsRenderer = (
+  targets: BurgLabelRendererTargets = defaultBurgLabelRendererTargets,
+): void => {
   TIME && console.time("drawBurgLabels");
-  createLabelGroups();
+  createLabelGroups(targets);
 
   for (const { name } of options.burgs.groups as BurgGroup[]) {
     const burgsInGroup = pack.burgs.filter(
@@ -61,17 +75,20 @@ const burgLabelsRenderer = (): void => {
   TIME && console.timeEnd("drawBurgLabels");
 };
 
-const drawBurgLabelRenderer = (burg: Burg): void => {
+export const drawBurgLabelRenderer = (
+  burg: Burg,
+  targets: BurgLabelRendererTargets = defaultBurgLabelRendererTargets,
+): void => {
   const labelGroup = burgLabels.select<SVGGElement>(`#${burg.group}`);
   if (labelGroup.empty()) {
-    drawBurgLabels();
+    burgLabelsRenderer(targets);
     return; // redraw all labels if group is missing
   }
 
   const dx = labelGroup.attr("data-dx") || 0;
   const dy = labelGroup.attr("data-dy") || 0;
 
-  removeBurgLabelRenderer(burg.i!);
+  removeBurgLabelRenderer(burg.i!, targets);
   labelGroup
     .append("text")
     .attr("text-rendering", "optimizeSpeed")
@@ -84,16 +101,19 @@ const drawBurgLabelRenderer = (burg: Burg): void => {
     .text(burg.name!);
 };
 
-const removeBurgLabelRenderer = (burgId: number): void => {
-  const document = getDocument();
+export const removeBurgLabelRenderer = (
+  burgId: number,
+  targets: BurgLabelRendererTargets = defaultBurgLabelRendererTargets,
+): void => {
+  const document = targets.getDocument();
   if (!document) return;
 
   const existingLabel = document.getElementById(`burgLabel${burgId}`);
   if (existingLabel) existingLabel.remove();
 };
 
-function createLabelGroups(): void {
-  const document = getDocument();
+function createLabelGroups(targets: BurgLabelRendererTargets): void {
+  const document = targets.getDocument();
   if (!document) return;
 
   // save existing styles and remove all groups
