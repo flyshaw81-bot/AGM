@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 196 test files, 813 tests.
+- `npm.cmd run test -- --run` passed: 196 test files, 815 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2180,6 +2180,10 @@ target factory instead of being embedded directly in service construction.
 `createGlobalStateServiceTargets()` and `createGlobalBurgServiceTargets()`.
 Their default `States`, `Burgs`, and `pack.burgs` compatibility reads are now
 isolated in typed target factories as well.
+`EngineNamingService` and `EngineHeraldryService` now expose
+`createGlobalNamingServiceTargets()` and `createGlobalHeraldryServiceTargets()`,
+isolating the remaining default `Names`, `COA`, and shield-weight picking
+compatibility reads behind typed service targets.
 
 `ocean-layers.ts` now routes outline-chain error reporting through
 `OceanLayerLogTargets`, keeping the default `globalThis.ERROR` compatibility

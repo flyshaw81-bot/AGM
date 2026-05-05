@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createEngineHeraldryService,
   createGlobalHeraldryService,
+  createGlobalHeraldryServiceTargets,
 } from "./engine-heraldry-service";
 
 const originalCoa = globalThis.COA;
@@ -34,6 +35,19 @@ describe("createGlobalHeraldryService", () => {
       "Naval",
     );
     expect(COA.getShield).toHaveBeenCalledWith(3, 4);
+  });
+
+  it("keeps the default heraldry targets as the compatibility boundary", () => {
+    globalThis.COA = {
+      generate: vi.fn(),
+      getShield: vi.fn(),
+      shields: { types: { heater: 1 }, heater: { heater: 1 } },
+    } as unknown as typeof COA;
+
+    const targets = createGlobalHeraldryServiceTargets();
+
+    expect(targets.getHeraldryModule()).toBe(globalThis.COA);
+    expect(targets.pickWeighted({ heater: 1 })).toBe("heater");
   });
 
   it("selects a random shield through current COA shield weights", () => {

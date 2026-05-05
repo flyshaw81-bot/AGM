@@ -49,9 +49,13 @@ export function createEngineHeraldryService(
   };
 }
 
-export function createGlobalHeraldryService(): EngineHeraldryService {
-  return createEngineHeraldryService({
+export function createGlobalHeraldryServiceTargets(): EngineHeraldryServiceTargets {
+  return {
     getHeraldryModule: () => globalThis.COA,
     pickWeighted: rw,
-  });
+  };
+}
+
+export function createGlobalHeraldryService(): EngineHeraldryService {
+  return createEngineHeraldryService(createGlobalHeraldryServiceTargets());
 }

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createEngineNamingService,
   createGlobalNamingService,
+  createGlobalNamingServiceTargets,
 } from "./engine-naming-service";
 
 const originalNames = globalThis.Names;
@@ -40,6 +41,22 @@ describe("createGlobalNamingService", () => {
     expect(Names.getBaseShort).toHaveBeenCalledWith(1);
     expect(Names.getNameBases).toHaveBeenCalledWith();
     expect(Names.getMapName).toHaveBeenCalledWith(false);
+  });
+
+  it("keeps the default naming targets as the compatibility boundary", () => {
+    globalThis.Names = {
+      getCulture: vi.fn(() => "Culture"),
+      getCultureShort: vi.fn(() => "Cult"),
+      getState: vi.fn(() => "State"),
+      getBase: vi.fn(() => "Base Name"),
+      getBaseShort: vi.fn(() => "Base"),
+      getNameBases: vi.fn(() => []),
+      getMapName: vi.fn(),
+    } as unknown as typeof Names;
+
+    const targets = createGlobalNamingServiceTargets();
+
+    expect(targets.getNamesModule()).toBe(globalThis.Names);
   });
 
   it("composes naming service from injected runtime targets", () => {

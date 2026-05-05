@@ -57,8 +57,12 @@ export function createEngineNamingService(
   };
 }
 
-export function createGlobalNamingService(): EngineNamingService {
-  return createEngineNamingService({
+export function createGlobalNamingServiceTargets(): EngineNamingServiceTargets {
+  return {
     getNamesModule: () => globalThis.Names,
-  });
+  };
+}
+
+export function createGlobalNamingService(): EngineNamingService {
+  return createEngineNamingService(createGlobalNamingServiceTargets());
 }
