@@ -89,6 +89,18 @@ export function createGlobalHeightmapImageTargets(
   };
 }
 
+export type HeightmapTemplateTargets = {
+  hasTemplate: (id: string) => boolean;
+  getTemplate: (id: string) => string | undefined;
+};
+
+export function createGlobalHeightmapTemplateTargets(): HeightmapTemplateTargets {
+  return {
+    hasTemplate: (id) => id in heightmapTemplates,
+    getTemplate: (id) => heightmapTemplates[id]?.template,
+  };
+}
+
 type Tool =
   | "Hill"
   | "Pit"
@@ -111,6 +123,7 @@ export class HeightmapModule {
   constructor(
     private readonly imageTargets: HeightmapImageTargets = createGlobalHeightmapImageTargets(),
     private readonly logTargets: HeightmapLogTargets = createGlobalHeightmapLogTargets(),
+    private readonly templateTargets: HeightmapTemplateTargets = createGlobalHeightmapTemplateTargets(),
   ) {}
 
   private clearData() {
@@ -689,7 +702,7 @@ export class HeightmapModule {
     try {
       this.randomSource = context.random;
       Math.random = Alea(context.seed);
-      const isTemplate = id in heightmapTemplates;
+      const isTemplate = this.templateTargets.hasTemplate(id);
       const heights = isTemplate
         ? this.fromTemplate(graph, id)
         : await this.fromPrecreated(graph, id);
@@ -704,7 +717,7 @@ export class HeightmapModule {
   }
 
   fromTemplate(graph: any, id: string): Uint8Array | null {
-    const templateString = heightmapTemplates[id]?.template || "";
+    const templateString = this.templateTargets.getTemplate(id) || "";
     const steps = templateString.split("\n");
 
     if (!steps.length)

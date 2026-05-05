@@ -2263,6 +2263,9 @@ without browser globals.
 `debugUtils.ts` now routes debug-layer and color-scheme access through
 `DebugDrawingTargets`, so debug drawing helpers no longer read `window.debug`
 or `window.getColorScheme` directly outside the default compatibility adapter.
+`heightmap-generator.ts` now routes heightmap template lookup through
+`HeightmapTemplateTargets`, so template-backed generation can run against an
+injected template source instead of reading `heightmapTemplates` directly.
 
 `ocean-layers.ts` now routes outline-chain error reporting through
 `OceanLayerLogTargets`, keeping the default `globalThis.ERROR` compatibility

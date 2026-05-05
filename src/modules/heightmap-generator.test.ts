@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createGlobalHeightmapImageBrowserTargets,
   createGlobalHeightmapImageTargets,
+  createGlobalHeightmapTemplateTargets,
   type HeightmapImageTargets,
   HeightmapModule,
 } from "./heightmap-generator";
@@ -156,6 +157,54 @@ describe("HeightmapModule", () => {
       if (originalImageDescriptor) {
         Object.defineProperty(globalThis, "Image", originalImageDescriptor);
       }
+    }
+  });
+
+  it("keeps global template targets behind the compatibility adapter", () => {
+    const originalTemplates = globalThis.heightmapTemplates;
+
+    try {
+      globalThis.heightmapTemplates = {
+        volcano: { template: "Hill 1-10 20-30 40" },
+      };
+
+      const targets = createGlobalHeightmapTemplateTargets();
+
+      expect(targets.hasTemplate("volcano")).toBe(true);
+      expect(targets.getTemplate("volcano")).toBe("Hill 1-10 20-30 40");
+    } finally {
+      globalThis.heightmapTemplates = originalTemplates;
+    }
+  });
+
+  it("generates template heightmaps through injected template targets", async () => {
+    const originalGraphWidth = globalThis.graphWidth;
+    const originalGraphHeight = globalThis.graphHeight;
+    const heightmap = new HeightmapModule(
+      createImageTargets(new Uint8ClampedArray()),
+      { error: vi.fn() },
+      {
+        hasTemplate: (id) => id === "flat",
+        getTemplate: () => "Hill 0-100 0-100 20",
+      },
+    );
+
+    try {
+      globalThis.graphWidth = 2;
+      globalThis.graphHeight = 2;
+
+      const heights = await heightmap.generate(createGraph(), {
+        generationSettings: { heightmapTemplateId: "flat" },
+        random: { next: () => 0.5 },
+        seed: "heightmap-seed",
+        timing: { shouldTime: false },
+      } as never);
+
+      expect(heights.length).toBe(4);
+      expect(Math.max(...heights)).toBeGreaterThan(0);
+    } finally {
+      globalThis.graphWidth = originalGraphWidth;
+      globalThis.graphHeight = originalGraphHeight;
     }
   });
 
