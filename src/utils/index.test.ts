@@ -6,9 +6,21 @@ const originalNode = globalThis.Node;
 
 afterEach(() => {
   vi.resetModules();
-  globalThis.window = originalWindow;
-  globalThis.document = originalDocument;
-  globalThis.Node = originalNode;
+  Object.defineProperty(globalThis, "window", {
+    configurable: true,
+    value: originalWindow,
+    writable: true,
+  });
+  Object.defineProperty(globalThis, "document", {
+    configurable: true,
+    value: originalDocument,
+    writable: true,
+  });
+  Object.defineProperty(globalThis, "Node", {
+    configurable: true,
+    value: originalNode,
+    writable: true,
+  });
 });
 
 describe("utils barrel", () => {
@@ -21,5 +33,31 @@ describe("utils barrel", () => {
 
     expect(utils.rn(1.234, 1)).toBe(1.2);
     expect(utils.P(1)).toBe(true);
+  });
+
+  it("can be imported when browser global access throws", async () => {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "Node", {
+      configurable: true,
+      get: () => {
+        throw new Error("Node blocked");
+      },
+    });
+
+    const utils = await import("./index");
+
+    expect(utils.normalize(5, 0, 10)).toBe(0.5);
+    expect(utils.generateSeed()).toMatch(/^\d+$/);
   });
 });

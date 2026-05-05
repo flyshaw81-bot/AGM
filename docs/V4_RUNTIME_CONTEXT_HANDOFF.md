@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 183 test files, 753 tests.
+- `npm.cmd run test -- --run` passed: 183 test files, 754 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2110,6 +2110,9 @@ Draft file IO and heightmap PNG export default targets now guard blocked
 `document`/`window` access; downloads degrade to inert links, JSZip loading
 keeps the existing unavailable-service error path, and PNG export reports the
 canvas-context error instead of crashing on global access.
+The public utils compatibility barrel now guards blocked `window`, `document`,
+and `Node` access during import, so browser utility mounts degrade to an inert
+mount object in restricted runtime harnesses instead of failing module load.
 `getEngineWorldDimensions(context)` now centralizes the compatibility fallback
 from runtime world settings to browser graph globals. Burgs, Cultures, and
 Rivers consume that helper instead of reading `globalThis.graphWidth` /

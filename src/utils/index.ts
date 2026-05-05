@@ -1,10 +1,33 @@
 import { lerp, lim, minmax, normalize, rn } from "./numberUtils";
 import "./polyfills";
 
-const window =
-  typeof globalThis.window === "undefined"
-    ? ({} as Window & typeof globalThis)
-    : globalThis.window;
+const getWindow = (): Window & typeof globalThis => {
+  try {
+    return typeof globalThis.window === "undefined"
+      ? ({} as Window & typeof globalThis)
+      : globalThis.window;
+  } catch {
+    return {} as Window & typeof globalThis;
+  }
+};
+
+const getDocument = (): Document | undefined => {
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
+};
+
+const getNodeConstructor = (): typeof Node | undefined => {
+  try {
+    return globalThis.Node;
+  } catch {
+    return undefined;
+  }
+};
+
+const window = getWindow();
 
 window.rn = rn;
 window.lim = lim;
@@ -140,12 +163,13 @@ JSON.safeParse = safeParseJSON;
 import { byId } from "./shorthands";
 
 window.byId = byId;
-if (typeof Node !== "undefined") {
-  Node.prototype.on = function (name, fn, options) {
+const NodeConstructor = getNodeConstructor();
+if (NodeConstructor) {
+  NodeConstructor.prototype.on = function (name, fn, options) {
     this.addEventListener(name, fn, options);
     return this;
   };
-  Node.prototype.off = function (name, fn) {
+  NodeConstructor.prototype.off = function (name, fn) {
     this.removeEventListener(name, fn);
     return this;
   };
@@ -254,7 +278,8 @@ window.getCoordinates = (x: number, y: number, decimals?: number) =>
   getCoordinates(x, y, mapCoordinates, graphWidth, graphHeight, decimals);
 
 // Initialize prompt when DOM is ready
-if (typeof document !== "undefined") {
+const document = getDocument();
+if (document) {
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => initializePrompt());
   } else {
