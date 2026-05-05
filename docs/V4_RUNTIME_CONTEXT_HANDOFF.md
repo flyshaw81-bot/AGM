@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 197 test files, 834 tests.
+- `npm.cmd run test -- --run` passed: 197 test files, 836 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2235,6 +2235,10 @@ falls back to English when browser document globals are absent or blocked.
 `draw-features.ts` now reports undefined feature-path vertices through
 injectable `FeatureRendererLogTargets`. The default target keeps current
 `ERROR` compatibility while blocked `ERROR` access falls back without throwing.
+`draw-heightmap.ts` now exposes `connectHeightmapVertices(...)` and reports
+stalled heightmap vertex chains through injectable `HeightmapRendererLogTargets`.
+The default target keeps current `ERROR` compatibility while blocked `ERROR`
+access falls back without throwing.
 
 `ocean-layers.ts` now routes outline-chain error reporting through
 `OceanLayerLogTargets`, keeping the default `globalThis.ERROR` compatibility

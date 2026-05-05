@@ -21,6 +21,26 @@ const getWindow = (): (Window & typeof globalThis) | undefined => {
   }
 };
 
+export type HeightmapRendererLogTargets = {
+  error: (...args: unknown[]) => void;
+};
+
+const getErrorFlag = (): boolean => {
+  try {
+    return Boolean(globalThis.ERROR);
+  } catch {
+    return false;
+  }
+};
+
+export function createGlobalHeightmapRendererLogTargets(): HeightmapRendererLogTargets {
+  return {
+    error: (...args) => {
+      if (getErrorFlag()) console.error(...args);
+    },
+  };
+}
+
 const HEIGHTMAP_CURVES = {
   curveBasisClosed,
   curveLinear,
@@ -32,6 +52,53 @@ function getHeightmapCurve(curveName: string | null): CurveFactory {
     HEIGHTMAP_CURVES[curveName as keyof typeof HEIGHTMAP_CURVES] ||
     curveBasisClosed
   );
+}
+
+export function connectHeightmapVertices({
+  cells,
+  vertices,
+  start,
+  height,
+  used,
+  logTargets = createGlobalHeightmapRendererLogTargets(),
+}: {
+  cells: any;
+  vertices: any;
+  start: number;
+  height: number;
+  used: Uint8Array;
+  logTargets?: HeightmapRendererLogTargets;
+}): number[] {
+  const MAX_ITERATIONS = vertices.c.length;
+
+  const n = cells.i.length;
+  const chain: number[] = []; // vertices chain to form a path
+  for (
+    let i = 0, current = start;
+    i === 0 || (current !== start && i < MAX_ITERATIONS);
+    i++
+  ) {
+    const prev = chain[chain.length - 1]; // previous vertex in chain
+    chain.push(current); // add current vertex to sequence
+    const c = vertices.c[current]; // cells adjacent to vertex
+    c.filter((cell: number) => cells.h[cell] === height).forEach(
+      (cell: number) => {
+        used[cell] = 1;
+      },
+    );
+    const c0 = c[0] >= n || cells.h[c[0]] < height;
+    const c1 = c[1] >= n || cells.h[c[1]] < height;
+    const c2 = c[2] >= n || cells.h[c[2]] < height;
+    const v = vertices.v[current]; // neighboring vertices
+    if (v[0] !== prev && c0 !== c1) current = v[0];
+    else if (v[1] !== prev && c1 !== c2) current = v[1];
+    else if (v[2] !== prev && c0 !== c2) current = v[2];
+    if (current === chain[chain.length - 1]) {
+      logTargets.error("Next vertex is not found");
+      break;
+    }
+  }
+  return chain;
 }
 
 const heightmapRenderer = (): void => {
@@ -69,7 +136,13 @@ const heightmapRenderer = (): void => {
       const vertex = cells.v[i].find((v: number) =>
         vertices.c[v].some((i: number) => cells.h[i] < h),
       );
-      const chain = connectVertices(cells, vertices, vertex, h, used);
+      const chain = connectHeightmapVertices({
+        cells,
+        vertices,
+        start: vertex,
+        height: h,
+        used,
+      });
       if (chain.length < 3) continue;
       const points = simplifyLine(chain, relax).map(
         (v: number) => vertices.p[v],
@@ -98,7 +171,13 @@ const heightmapRenderer = (): void => {
       const startVertex = cells.v[i].find((v: number) =>
         vertices.c[v].some((i: number) => cells.h[i] < h),
       );
-      const chain = connectVertices(cells, vertices, startVertex, h, used);
+      const chain = connectHeightmapVertices({
+        cells,
+        vertices,
+        start: startVertex,
+        height: h,
+        used,
+      });
       if (chain.length < 3) continue;
 
       const points = simplifyLine(chain, relax).map(
@@ -154,44 +233,6 @@ const heightmapRenderer = (): void => {
         .attr("fill", fillColor)
         .attr("data-height", height);
     }
-  }
-
-  // connect vertices to chain: specific case for heightmap
-  function connectVertices(
-    cells: any,
-    vertices: any,
-    start: number,
-    h: number,
-    used: Uint8Array,
-  ): number[] {
-    const MAX_ITERATIONS = vertices.c.length;
-
-    const n = cells.i.length;
-    const chain: number[] = []; // vertices chain to form a path
-    for (
-      let i = 0, current = start;
-      i === 0 || (current !== start && i < MAX_ITERATIONS);
-      i++
-    ) {
-      const prev = chain[chain.length - 1]; // previous vertex in chain
-      chain.push(current); // add current vertex to sequence
-      const c = vertices.c[current]; // cells adjacent to vertex
-      c.filter((c: number) => cells.h[c] === h).forEach((c: number) => {
-        used[c] = 1;
-      });
-      const c0 = c[0] >= n || cells.h[c[0]] < h;
-      const c1 = c[1] >= n || cells.h[c[1]] < h;
-      const c2 = c[2] >= n || cells.h[c[2]] < h;
-      const v = vertices.v[current]; // neighboring vertices
-      if (v[0] !== prev && c0 !== c1) current = v[0];
-      else if (v[1] !== prev && c1 !== c2) current = v[1];
-      else if (v[2] !== prev && c0 !== c2) current = v[2];
-      if (current === chain[chain.length - 1]) {
-        ERROR && console.error("Next vertex is not found");
-        break;
-      }
-    }
-    return chain;
   }
 
   function simplifyLine(chain: number[], simplification: number): number[] {
