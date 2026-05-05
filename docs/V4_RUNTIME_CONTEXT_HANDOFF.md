@@ -2417,6 +2417,8 @@ Draft file IO targets now guard blocked link creation/body append/script lookup
 and report JSZip script-load failures through the existing export error path.
 Engine host DOM/dialog adapters now guard blocked element lookup, host element
 creation, body append, and dialog selector queries.
+Studio style injection targets now guard blocked document/style/head access and
+fall back to a detached empty style element in restricted runtimes.
 
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`

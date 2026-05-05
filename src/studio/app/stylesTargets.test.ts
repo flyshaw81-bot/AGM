@@ -60,4 +60,63 @@ describe("stylesTargets", () => {
       globalThis.document = originalDocument;
     }
   });
+
+  it("keeps default style document adapters safe when DOM operations throw", () => {
+    const originalDocument = globalThis.document;
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: {
+        getElementById: () => {
+          throw new Error("style lookup blocked");
+        },
+        createElement: () => {
+          throw new Error("style creation blocked");
+        },
+        head: {
+          appendChild: () => {
+            throw new Error("style append blocked");
+          },
+        },
+      },
+    });
+
+    try {
+      const targets = createGlobalStudioStyleTargets();
+      const style = targets.createStyleElement();
+
+      expect(targets.getStyleElement("studioShellStyles")).toBeNull();
+      expect(style.id).toBe("");
+      expect(style.textContent).toBe("");
+      expect(() => targets.appendToHead(style)).not.toThrow();
+    } finally {
+      Object.defineProperty(globalThis, "document", {
+        configurable: true,
+        value: originalDocument,
+      });
+    }
+  });
+
+  it("keeps default style document adapters safe when document access throws", () => {
+    const originalDocument = globalThis.document;
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
+
+    try {
+      const targets = createGlobalStudioStyleTargets();
+      const style = targets.createStyleElement();
+
+      expect(targets.getStyleElement("studioShellStyles")).toBeNull();
+      expect(style.id).toBe("");
+      expect(() => targets.appendToHead(style)).not.toThrow();
+    } finally {
+      Object.defineProperty(globalThis, "document", {
+        configurable: true,
+        value: originalDocument,
+      });
+    }
+  });
 });

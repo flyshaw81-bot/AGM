@@ -10,14 +10,42 @@ export function createStudioStyleTargets(
   return targets;
 }
 
+const createUnavailableStyleElement = (): HTMLStyleElement =>
+  ({ id: "", textContent: "" }) as HTMLStyleElement;
+
+function getDocument(): Document | undefined {
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
+}
+
 export function createGlobalStudioStyleTargets(): StudioStyleTargets {
   return createStudioStyleTargets({
-    getStyleElement: (id) => globalThis.document?.getElementById(id) ?? null,
-    createStyleElement: () =>
-      globalThis.document?.createElement("style") ??
-      ({ id: "", textContent: "" } as HTMLStyleElement),
+    getStyleElement: (id) => {
+      try {
+        return getDocument()?.getElementById(id) ?? null;
+      } catch {
+        return null;
+      }
+    },
+    createStyleElement: () => {
+      try {
+        return (
+          getDocument()?.createElement("style") ??
+          createUnavailableStyleElement()
+        );
+      } catch {
+        return createUnavailableStyleElement();
+      }
+    },
     appendToHead: (element) => {
-      globalThis.document?.head?.appendChild(element);
+      try {
+        getDocument()?.head?.appendChild(element);
+      } catch {
+        // Style injection can be skipped in restricted runtime shells.
+      }
     },
   });
 }
