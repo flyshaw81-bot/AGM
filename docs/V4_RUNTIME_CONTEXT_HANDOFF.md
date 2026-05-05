@@ -2297,6 +2297,9 @@ browser globals.
 `createGlobalNamesRuntimeAdapters()`. `NamesGenerator` itself uses injected
 runtime adapters for diagnostics, tips, and randomness instead of scattering
 global fallbacks across methods.
+Default log adapters in `names-generator.ts`, `heightmap-generator.ts`, and
+`ocean-layers.ts` now guard `WARN` / `ERROR` flag reads, so blocked
+compatibility globals no longer throw while diagnostics remain injectable.
 
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`

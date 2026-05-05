@@ -26,10 +26,18 @@ export type HeightmapLogTargets = {
   error: (message: string) => void;
 };
 
+function getErrorFlag(): boolean {
+  try {
+    return Boolean(globalThis.ERROR);
+  } catch {
+    return false;
+  }
+}
+
 export function createGlobalHeightmapLogTargets(): HeightmapLogTargets {
   return {
     error: (message) => {
-      globalThis.ERROR && console.error(message);
+      if (getErrorFlag()) console.error(message);
     },
   };
 }

@@ -16,6 +16,22 @@ function getWindow(): (Window & typeof globalThis) | undefined {
   }
 }
 
+function getWarnFlag(): boolean {
+  try {
+    return Boolean(globalThis.WARN);
+  } catch {
+    return false;
+  }
+}
+
+function getErrorFlag(): boolean {
+  try {
+    return Boolean(globalThis.ERROR);
+  } catch {
+    return false;
+  }
+}
+
 export interface NameBase {
   name: string; // name of the base
   i: number; // index of the base
@@ -43,10 +59,10 @@ export function createGlobalNamesRuntimeAdapters(): NamesRuntimeAdapters {
   return {
     logs: {
       warn: (message) => {
-        globalThis.WARN && console.warn(message);
+        if (getWarnFlag()) console.warn(message);
       },
       error: (message) => {
-        globalThis.ERROR && console.error(message);
+        if (getErrorFlag()) console.error(message);
       },
     },
     showTip: (message, isSuccess, type) => {

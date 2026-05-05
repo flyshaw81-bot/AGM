@@ -1,8 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { OceanModule } from "./ocean-layers";
+import { createGlobalOceanLayerLogTargets, OceanModule } from "./ocean-layers";
 
 describe("OceanModule", () => {
   const originalWindow = globalThis.window;
+  const originalErrorDescriptor = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "ERROR",
+  );
 
   afterEach(() => {
     vi.resetModules();
@@ -11,6 +15,9 @@ describe("OceanModule", () => {
       value: originalWindow,
       writable: true,
     });
+    if (originalErrorDescriptor) {
+      Object.defineProperty(globalThis, "ERROR", originalErrorDescriptor);
+    }
   });
 
   it("can be imported without browser globals", () => {
@@ -47,5 +54,17 @@ describe("OceanModule", () => {
 
     expect(module.connectVertices(0, 1)).toEqual([0, 0]);
     expect(error).toHaveBeenCalledWith("Next vertex is not found");
+  });
+
+  it("keeps global log targets safe when error flag access throws", () => {
+    Object.defineProperty(globalThis, "ERROR", {
+      configurable: true,
+      get: () => {
+        throw new Error("ERROR blocked");
+      },
+    });
+    const targets = createGlobalOceanLayerLogTargets();
+
+    expect(() => targets.error("Next vertex is not found")).not.toThrow();
   });
 });

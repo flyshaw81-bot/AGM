@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createGlobalHeightmapImageBrowserTargets,
   createGlobalHeightmapImageTargets,
+  createGlobalHeightmapLogTargets,
   createGlobalHeightmapTemplateTargets,
   createGlobalHeightmapWorldTargets,
   type HeightmapImageTargets,
@@ -11,6 +12,10 @@ import {
 const originalWindowDescriptor = Object.getOwnPropertyDescriptor(
   globalThis,
   "window",
+);
+const originalErrorDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "ERROR",
 );
 
 function createGraph() {
@@ -74,6 +79,9 @@ describe("HeightmapModule", () => {
     vi.restoreAllMocks();
     if (originalWindowDescriptor) {
       Object.defineProperty(globalThis, "window", originalWindowDescriptor);
+    }
+    if (originalErrorDescriptor) {
+      Object.defineProperty(globalThis, "ERROR", originalErrorDescriptor);
     }
   });
 
@@ -278,5 +286,17 @@ describe("HeightmapModule", () => {
 
     expect(heightmap.getPointInRange(42, 10)).toBeUndefined();
     expect(error).toHaveBeenCalledWith("Range should be a string");
+  });
+
+  it("keeps global log targets safe when error flag access throws", () => {
+    Object.defineProperty(globalThis, "ERROR", {
+      configurable: true,
+      get: () => {
+        throw new Error("ERROR blocked");
+      },
+    });
+    const targets = createGlobalHeightmapLogTargets();
+
+    expect(() => targets.error("Range should be a string")).not.toThrow();
   });
 });

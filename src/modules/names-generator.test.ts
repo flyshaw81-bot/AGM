@@ -9,6 +9,14 @@ const originalWindowDescriptor = Object.getOwnPropertyDescriptor(
   globalThis,
   "window",
 );
+const originalWarnDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "WARN",
+);
+const originalErrorDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "ERROR",
+);
 
 function createAdapters(
   overrides: Partial<NamesRuntimeAdapters> = {},
@@ -28,6 +36,12 @@ describe("NamesGenerator", () => {
     vi.restoreAllMocks();
     if (originalWindowDescriptor) {
       Object.defineProperty(globalThis, "window", originalWindowDescriptor);
+    }
+    if (originalWarnDescriptor) {
+      Object.defineProperty(globalThis, "WARN", originalWarnDescriptor);
+    }
+    if (originalErrorDescriptor) {
+      Object.defineProperty(globalThis, "ERROR", originalErrorDescriptor);
     }
   });
 
@@ -93,5 +107,26 @@ describe("NamesGenerator", () => {
     expect(adapters.logs.warn).toBeTypeOf("function");
     expect(adapters.logs.error).toBeTypeOf("function");
     expect(adapters.showTip).toBeTypeOf("function");
+  });
+
+  it("keeps global log adapters safe when warning flags throw", () => {
+    Object.defineProperty(globalThis, "WARN", {
+      configurable: true,
+      get: () => {
+        throw new Error("WARN blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "ERROR", {
+      configurable: true,
+      get: () => {
+        throw new Error("ERROR blocked");
+      },
+    });
+    const adapters = createGlobalNamesRuntimeAdapters();
+
+    expect(() => {
+      adapters.logs.warn("careful");
+      adapters.logs.error("failed");
+    }).not.toThrow();
   });
 });
