@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 195 test files, 778 tests.
+- `npm.cmd run test -- --run` passed: 196 test files, 779 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2131,6 +2131,8 @@ Burg icon and label removal renderers now expose injectable document targets,
 so command/render adapter tests can exercise single-item removal without
 reading the browser global document; the mounted `window.drawBurg*` compatibility
 functions remain unchanged.
+`emblem/renderer.ts` now also uses a guarded `window.COArenderer` compatibility
+mount, so blocked `window` access no longer breaks no-browser imports.
 `getEngineWorldDimensions(context)` now centralizes the compatibility fallback
 from runtime world settings to browser graph globals. Burgs, Cultures, and
 Rivers consume that helper instead of reading `globalThis.graphWidth` /

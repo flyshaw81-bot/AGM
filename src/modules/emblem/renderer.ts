@@ -28,6 +28,14 @@ function getDocument(): Document | undefined {
   }
 }
 
+function getWindow(): (Window & typeof globalThis) | undefined {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+}
+
 export function createGlobalEmblemRendererTargets(): EmblemRendererTargets {
   return {
     fetchText: async (url) => {
@@ -36,9 +44,9 @@ export function createGlobalEmblemRendererTargets(): EmblemRendererTargets {
       throw new Error("Cannot fetch charge");
     },
     parseChargeGroup: (svgText, id) => {
-      const document = getDocument();
-      if (!document) return `<g id="${id}"></g>`;
-      const html = document.createElement("html");
+      const domDocument = getDocument();
+      if (!domDocument) return `<g id="${id}"></g>`;
+      const html = domDocument.createElement("html");
       html.innerHTML = svgText;
       const g = html.querySelector("g") as SVGAElement;
       g.setAttribute("id", id);
@@ -400,6 +408,6 @@ export default class EmblemRenderModule {
     if (this.targets.isLayerOn("toggleEmblems")) this.trigger(id, coa);
   }
 }
-if (typeof window !== "undefined") {
-  window.COArenderer = new EmblemRenderModule();
-}
+
+const runtimeWindow = getWindow();
+if (runtimeWindow) runtimeWindow.COArenderer = new EmblemRenderModule();
