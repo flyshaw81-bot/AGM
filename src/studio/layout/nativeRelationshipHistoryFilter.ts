@@ -1,8 +1,8 @@
 import type { StudioLanguage } from "../types";
-import { queryNativeRelationshipQueueHistoryRows } from "./nativeRelationshipQueueDom";
+import { queryDirectRelationshipQueueHistoryRows } from "./nativeRelationshipQueueDom";
 import { t } from "./shellShared";
 
-type ApplyNativeRelationshipHistoryFilterOptions = {
+export type ApplyDirectRelationshipHistoryFilterOptions = {
   filter: string;
   language: StudioLanguage;
   filters: HTMLElement | null;
@@ -10,13 +10,13 @@ type ApplyNativeRelationshipHistoryFilterOptions = {
   emptyState: HTMLElement | null;
 };
 
-export function applyNativeRelationshipHistoryFilter({
+export function applyDirectRelationshipHistoryFilter({
   filter,
   language,
   filters,
   summary,
   emptyState,
-}: ApplyNativeRelationshipHistoryFilterOptions) {
+}: ApplyDirectRelationshipHistoryFilterOptions) {
   if (!filters) return;
   filters.dataset.historyFilter = filter;
   filters
@@ -30,7 +30,7 @@ export function applyNativeRelationshipHistoryFilter({
       );
     });
   let visibleCount = 0;
-  const rows = queryNativeRelationshipQueueHistoryRows();
+  const rows = queryDirectRelationshipQueueHistoryRows();
   rows.forEach((row) => {
     const visible = filter === "all" || row.dataset.historyRowStatus === filter;
     row.hidden = !visible;
@@ -74,3 +74,9 @@ export function applyNativeRelationshipHistoryFilter({
   }
   if (emptyState) emptyState.hidden = visibleCount > 0;
 }
+
+export type ApplyNativeRelationshipHistoryFilterOptions =
+  ApplyDirectRelationshipHistoryFilterOptions;
+
+export const applyNativeRelationshipHistoryFilter =
+  applyDirectRelationshipHistoryFilter;

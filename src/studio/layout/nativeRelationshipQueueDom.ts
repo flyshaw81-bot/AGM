@@ -1,4 +1,4 @@
-export function queryNativeRelationshipQueueDom() {
+export function queryDirectRelationshipQueueDom() {
   const nativeRelationshipQueueRoot = document.querySelector<HTMLElement>(
     "[data-direct-relationship-queue='true']",
   );
@@ -82,7 +82,7 @@ export function queryNativeRelationshipQueueDom() {
   };
 }
 
-export function queryNativeRelationshipQueueHistoryDetails() {
+export function queryDirectRelationshipQueueHistoryDetails() {
   return Array.from(
     document.querySelectorAll<HTMLElement>(
       "[data-direct-relationship-history-detail='true']",
@@ -90,10 +90,16 @@ export function queryNativeRelationshipQueueHistoryDetails() {
   );
 }
 
-export function queryNativeRelationshipQueueHistoryRows() {
+export function queryDirectRelationshipQueueHistoryRows() {
   return Array.from(
     document.querySelectorAll<HTMLElement>(
       "[data-direct-relationship-history-row='true']",
     ),
   );
 }
+
+export const queryNativeRelationshipQueueDom = queryDirectRelationshipQueueDom;
+export const queryNativeRelationshipQueueHistoryDetails =
+  queryDirectRelationshipQueueHistoryDetails;
+export const queryNativeRelationshipQueueHistoryRows =
+  queryDirectRelationshipQueueHistoryRows;

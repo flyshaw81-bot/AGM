@@ -3,7 +3,7 @@ import {
   focusDirectRelationshipField,
   getDirectRelationshipFieldInputId,
 } from "./nativeRelationshipFocus";
-import { applyNativeRelationshipHistoryFilter } from "./nativeRelationshipHistoryFilter";
+import { applyDirectRelationshipHistoryFilter } from "./nativeRelationshipHistoryFilter";
 import type { NativeRelationshipQueueUndoChange } from "./nativeRelationshipQueue";
 import type { queryNativeRelationshipQueueDom } from "./nativeRelationshipQueueDom";
 import { queryNativeRelationshipQueueHistoryDetails } from "./nativeRelationshipQueueDom";
@@ -46,7 +46,7 @@ export function bindNativeRelationshipQueueHistoryEvents({
   renderNativeRelationshipQueue,
 }: BindNativeRelationshipQueueHistoryEventsOptions) {
   const applyCurrentNativeRelationshipHistoryFilter = (filter: string) =>
-    applyNativeRelationshipHistoryFilter({
+    applyDirectRelationshipHistoryFilter({
       filter,
       language: state.language,
       filters: queueDom.nativeRelationshipQueueHistoryFilters,
