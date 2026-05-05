@@ -40,29 +40,34 @@ function finiteNumberOrUndefined(value: unknown) {
 export function createGlobalResourceBiomeAdapter(): EngineResourceBiomeAdapter {
   return {
     getBiomeData: () => {
-      const data = globalThis.biomesData || globalThis.Biomes?.getDefault?.();
-      if (data && !globalThis.biomesData) globalThis.biomesData = data;
+      const currentData = getGlobalValue<unknown>("biomesData");
+      const data =
+        currentData ||
+        getGlobalValue<{ getDefault?: () => unknown }>(
+          "Biomes",
+        )?.getDefault?.();
+      if (data && !currentData) setGlobalValue("biomesData", data);
       return data;
     },
     setBiomeData: (data) => {
-      if (data) globalThis.biomesData = data as typeof biomesData;
+      if (data) setGlobalValue("biomesData", data);
     },
   };
 }
 
 export function createGlobalResourcePackAdapter(): EngineResourcePackAdapter {
   return {
-    getStates: () => globalThis.pack?.states,
-    getBurgs: () => globalThis.pack?.burgs,
-    getCultures: () => globalThis.pack?.cultures,
-    getReligions: () => globalThis.pack?.religions,
-    getProvinces: () => globalThis.pack?.provinces,
-    getRoutes: () => globalThis.pack?.routes,
-    getZones: () => globalThis.pack?.zones,
+    getStates: () => getGlobalPack()?.states,
+    getBurgs: () => getGlobalPack()?.burgs,
+    getCultures: () => getGlobalPack()?.cultures,
+    getReligions: () => getGlobalPack()?.religions,
+    getProvinces: () => getGlobalPack()?.provinces,
+    getRoutes: () => getGlobalPack()?.routes,
+    getZones: () => getGlobalPack()?.zones,
     getCellArea: (cellId) =>
-      finiteNumberOrUndefined(globalThis.pack?.cells?.area?.[cellId]),
+      finiteNumberOrUndefined(getGlobalPack()?.cells?.area?.[cellId]),
     getCellPopulation: (cellId) =>
-      finiteNumberOrUndefined(globalThis.pack?.cells?.pop?.[cellId]),
+      finiteNumberOrUndefined(getGlobalPack()?.cells?.pop?.[cellId]),
   };
 }
 
@@ -128,4 +133,24 @@ export function createGlobalResourceSummaryTargets(): EngineResourceSummaryTarge
     createGlobalResourceBiomeAdapter(),
     createGlobalResourcePackAdapter(),
   );
+}
+
+function getGlobalPack() {
+  return getGlobalValue<typeof pack>("pack");
+}
+
+function getGlobalValue<T>(name: string): T | undefined {
+  try {
+    return (globalThis as Record<string, unknown>)[name] as T | undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function setGlobalValue(name: string, value: unknown): void {
+  try {
+    (globalThis as Record<string, unknown>)[name] = value;
+  } catch {
+    // Blocked compatibility globals degrade to no-op writes.
+  }
 }

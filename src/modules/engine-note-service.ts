@@ -20,9 +20,9 @@ export type EngineNoteStorageAdapter = {
 
 export function createGlobalNoteStorageAdapter(): EngineNoteStorageAdapter {
   return {
-    getNotes: () => notes,
+    getNotes: () => getGlobalNotes(),
     setNotes: (nextNotes) => {
-      notes = nextNotes;
+      setGlobalNotes(nextNotes);
     },
   };
 }
@@ -67,4 +67,20 @@ export function createRuntimeNoteService(
   initialNotes: EngineNote[] = [],
 ): EngineNoteService {
   return createNoteService(createMemoryNoteStorageAdapter(initialNotes));
+}
+
+function getGlobalNotes(): EngineNote[] {
+  try {
+    return Array.isArray(globalThis.notes) ? globalThis.notes : [];
+  } catch {
+    return [];
+  }
+}
+
+function setGlobalNotes(nextNotes: EngineNote[]): void {
+  try {
+    globalThis.notes = nextNotes;
+  } catch {
+    // Keep blocked compatibility globals as no-op storage.
+  }
 }

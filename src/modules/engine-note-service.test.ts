@@ -7,10 +7,22 @@ import {
 } from "./engine-note-service";
 
 const originalNotes = globalThis.notes;
+const originalNotesDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "notes",
+);
 
 describe("createGlobalNoteService", () => {
   afterEach(() => {
-    globalThis.notes = originalNotes;
+    if (originalNotesDescriptor) {
+      Object.defineProperty(globalThis, "notes", originalNotesDescriptor);
+    } else {
+      Object.defineProperty(globalThis, "notes", {
+        configurable: true,
+        value: originalNotes,
+        writable: true,
+      });
+    }
   });
 
   it("reads and mutates the current global notes collection behind the adapter", () => {
@@ -87,5 +99,29 @@ describe("createGlobalNoteService", () => {
 
     expect(noteService.all()).toEqual([{ id: "b", name: "B", legend: "Beta" }]);
     expect(globalThis.notes.map((note) => note.id)).toEqual(["global"]);
+  });
+
+  it("keeps global note storage safe when notes access throws", () => {
+    Object.defineProperty(globalThis, "notes", {
+      configurable: true,
+      get: () => {
+        throw new Error("notes blocked");
+      },
+      set: () => {
+        throw new Error("notes blocked");
+      },
+    });
+    const noteService = createGlobalNoteService();
+
+    expect(noteService.all()).toEqual([]);
+    expect(() =>
+      noteService.push({ id: "a", name: "A", legend: "Alpha" }),
+    ).not.toThrow();
+    expect(noteService.find((note) => note.id === "a")).toBeUndefined();
+    expect(noteService.findIndex((note) => note.id === "a")).toBe(-1);
+    expect(() =>
+      noteService.removeWhere((note) => note.id === "a"),
+    ).not.toThrow();
+    expect(() => noteService.splice(0, 1)).not.toThrow();
   });
 });

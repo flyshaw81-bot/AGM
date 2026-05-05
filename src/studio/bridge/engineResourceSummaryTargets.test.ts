@@ -9,12 +9,36 @@ import {
 const originalPack = globalThis.pack;
 const originalBiomesData = globalThis.biomesData;
 const originalBiomes = globalThis.Biomes;
+const originalPackDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "pack",
+);
+const originalBiomesDataDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "biomesData",
+);
+const originalBiomesDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "Biomes",
+);
 
 describe("createGlobalResourceSummaryTargets", () => {
   afterEach(() => {
-    globalThis.pack = originalPack;
-    globalThis.biomesData = originalBiomesData;
-    globalThis.Biomes = originalBiomes;
+    for (const [name, descriptor, value] of [
+      ["pack", originalPackDescriptor, originalPack],
+      ["biomesData", originalBiomesDataDescriptor, originalBiomesData],
+      ["Biomes", originalBiomesDescriptor, originalBiomes],
+    ] as const) {
+      if (descriptor) {
+        Object.defineProperty(globalThis, name, descriptor);
+      } else {
+        Object.defineProperty(globalThis, name, {
+          configurable: true,
+          value,
+          writable: true,
+        });
+      }
+    }
   });
 
   it("reads resource collections and cell metrics from the active pack", () => {
@@ -48,6 +72,33 @@ describe("createGlobalResourceSummaryTargets", () => {
 
     expect(targets.getBiomeData()).toBe(biomeData);
     expect(globalThis.biomesData).toBe(biomeData);
+  });
+
+  it("keeps global resource targets safe when global access throws", () => {
+    for (const name of ["pack", "biomesData", "Biomes"]) {
+      Object.defineProperty(globalThis, name, {
+        configurable: true,
+        get: () => {
+          throw new Error(`${name} blocked`);
+        },
+        set: () => {
+          throw new Error(`${name} blocked`);
+        },
+      });
+    }
+    const targets = createGlobalResourceSummaryTargets();
+
+    expect(targets.getBiomeData()).toBeUndefined();
+    expect(() => targets.setBiomeData({ i: [1] })).not.toThrow();
+    expect(targets.getStates()).toBeUndefined();
+    expect(targets.getBurgs()).toBeUndefined();
+    expect(targets.getCultures()).toBeUndefined();
+    expect(targets.getReligions()).toBeUndefined();
+    expect(targets.getProvinces()).toBeUndefined();
+    expect(targets.getRoutes()).toBeUndefined();
+    expect(targets.getZones()).toBeUndefined();
+    expect(targets.getCellArea(7)).toBeUndefined();
+    expect(targets.getCellPopulation(7)).toBeUndefined();
   });
 
   it("composes resource summary targets from injected biome and pack adapters", () => {

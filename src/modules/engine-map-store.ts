@@ -40,20 +40,27 @@ export type EngineMapStoreGlobalTargets = {
 
 export function createGlobalMapStoreTargets(): EngineMapStoreGlobalTargets {
   return {
-    getGrid: () => grid,
-    getPack: () => pack,
-    getNotes: () => notes,
-    clone: (value) => structuredClone(value),
+    getGrid: () => getGlobalValue<typeof grid>("grid", {} as typeof grid),
+    getPack: () => getGlobalValue<PackedGraph>("pack", {} as PackedGraph),
+    getNotes: () => getGlobalValue<EngineNote[]>("notes", []),
+    clone: (value) =>
+      getGlobalFunction<typeof structuredClone>("structuredClone")?.(value) ??
+      cloneFallback(value),
     setGrid: (nextGrid) => {
-      grid = nextGrid;
+      setGlobalValue("grid", nextGrid);
     },
     setPack: (nextPack) => {
-      pack = nextPack;
+      setGlobalValue("pack", nextPack);
     },
     setNotes: (nextNotes) => {
-      notes = nextNotes;
+      setGlobalValue("notes", nextNotes);
     },
-    createGrid: () => generateGrid(seed, graphWidth, graphHeight),
+    createGrid: () =>
+      generateGrid(
+        getGlobalValue<string>("seed", ""),
+        getGlobalValue<number>("graphWidth", 0),
+        getGlobalValue<number>("graphHeight", 0),
+      ),
   };
 }
 
@@ -142,4 +149,40 @@ export function createRuntimeMapStore(
     createRuntimeMapStoreRuntimeAdapter(context, createGrid),
     getCurrentContext,
   );
+}
+
+function getGlobalValue<T>(name: string, fallback: T): T {
+  try {
+    return (
+      ((globalThis as Record<string, unknown>)[name] as T | undefined) ??
+      fallback
+    );
+  } catch {
+    return fallback;
+  }
+}
+
+function setGlobalValue(name: string, value: unknown): void {
+  try {
+    (globalThis as Record<string, unknown>)[name] = value;
+  } catch {
+    // Blocked compatibility globals degrade to no-op writes.
+  }
+}
+
+function getGlobalFunction<T extends (...args: never[]) => unknown>(
+  name: string,
+): T | undefined {
+  try {
+    const value = (globalThis as Record<string, unknown>)[name];
+    return typeof value === "function" ? (value as T) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function cloneFallback<T>(value: T): T {
+  if (Array.isArray(value)) return [...value] as T;
+  if (value && typeof value === "object") return { ...value };
+  return value;
 }

@@ -2328,6 +2328,11 @@ Feedback, burg, naming, and heraldry default service targets now guard their
 browser/global compatibility reads as well. Blocked `tip`, `Burgs`, `pack`,
 `Names`, or `COA` getters now fall back to existing no-op/default behavior
 without affecting injected service targets.
+Note storage, map-store globals, and resource-summary targets now apply the
+same guarded compatibility pattern. Blocked `notes`, `grid`, `pack`,
+`structuredClone`, seed/dimension globals, `biomesData`, and `Biomes` reads or
+writes degrade to no-op/default behavior while runtime/injected adapters remain
+the preferred path.
 
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`

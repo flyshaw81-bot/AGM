@@ -19,18 +19,47 @@ const originalGraphWidth = globalThis.graphWidth;
 const originalGraphHeight = globalThis.graphHeight;
 const originalDocument = globalThis.document;
 const originalTime = globalThis.TIME;
+const originalDescriptors = new Map(
+  [
+    "structuredClone",
+    "grid",
+    "pack",
+    "notes",
+    "seed",
+    "graphWidth",
+    "graphHeight",
+    "document",
+    "TIME",
+  ].map(
+    (name) =>
+      [name, Object.getOwnPropertyDescriptor(globalThis, name)] as const,
+  ),
+);
 
 describe("createGlobalMapStore", () => {
   afterEach(() => {
-    globalThis.structuredClone = originalStructuredClone;
-    globalThis.grid = originalGrid;
-    globalThis.pack = originalPack;
-    globalThis.notes = originalNotes;
-    globalThis.seed = originalSeed;
-    globalThis.graphWidth = originalGraphWidth;
-    globalThis.graphHeight = originalGraphHeight;
-    globalThis.document = originalDocument;
-    globalThis.TIME = originalTime;
+    for (const [name, value] of [
+      ["structuredClone", originalStructuredClone],
+      ["grid", originalGrid],
+      ["pack", originalPack],
+      ["notes", originalNotes],
+      ["seed", originalSeed],
+      ["graphWidth", originalGraphWidth],
+      ["graphHeight", originalGraphHeight],
+      ["document", originalDocument],
+      ["TIME", originalTime],
+    ] as const) {
+      const descriptor = originalDescriptors.get(name);
+      if (descriptor) {
+        Object.defineProperty(globalThis, name, descriptor);
+      } else {
+        Object.defineProperty(globalThis, name, {
+          configurable: true,
+          value,
+          writable: true,
+        });
+      }
+    }
     vi.restoreAllMocks();
   });
 
@@ -175,6 +204,37 @@ describe("createGlobalMapStore", () => {
     });
     expect(globalThis.pack).toEqual({});
     expect(globalThis.notes).toBe(snapshotNotes);
+  });
+
+  it("keeps global map-store targets safe when global access throws", () => {
+    for (const name of [
+      "structuredClone",
+      "grid",
+      "pack",
+      "notes",
+      "seed",
+      "graphWidth",
+      "graphHeight",
+    ]) {
+      Object.defineProperty(globalThis, name, {
+        configurable: true,
+        get: () => {
+          throw new Error(`${name} blocked`);
+        },
+        set: () => {
+          throw new Error(`${name} blocked`);
+        },
+      });
+    }
+    const targets = createGlobalMapStoreTargets();
+
+    expect(targets.getGrid()).toEqual({});
+    expect(targets.getPack()).toEqual({});
+    expect(targets.getNotes()).toEqual([]);
+    expect(targets.clone({ ok: true })).toEqual({ ok: true });
+    expect(() => targets.setGrid({} as typeof grid)).not.toThrow();
+    expect(() => targets.setPack({} as PackedGraph)).not.toThrow();
+    expect(() => targets.setNotes([])).not.toThrow();
   });
 
   it("returns the injected current context without reaching into globals", () => {
