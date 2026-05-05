@@ -28,19 +28,37 @@ export type EngineLayerTargets = {
 };
 
 function getLayerWindow(): EngineLayerWindow {
-  return (globalThis.window ?? globalThis) as EngineLayerWindow;
+  try {
+    return (globalThis.window ?? globalThis) as EngineLayerWindow;
+  } catch {
+    return globalThis as EngineLayerWindow;
+  }
 }
 
 function getDocument(): Document | undefined {
-  return globalThis.document;
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
 }
 
 export function createGlobalLayerRuntimeAdapter(): EngineLayerRuntimeAdapter {
   return {
-    isLayerOn: (action) => getLayerWindow().layerIsOn?.(action) === true,
+    isLayerOn: (action) => {
+      try {
+        return getLayerWindow().layerIsOn?.(action) === true;
+      } catch {
+        return false;
+      }
+    },
     getHandler: (action) => {
-      const handler = getLayerWindow()[action];
-      return typeof handler === "function" ? handler : undefined;
+      try {
+        const handler = getLayerWindow()[action];
+        return typeof handler === "function" ? handler : undefined;
+      } catch {
+        return undefined;
+      }
     },
   };
 }
@@ -48,12 +66,16 @@ export function createGlobalLayerRuntimeAdapter(): EngineLayerRuntimeAdapter {
 export function createGlobalLayerDomAdapter(): EngineLayerDomAdapter {
   return {
     getLayerItems: () => {
-      const list = getDocument()?.getElementById("mapLayers");
-      if (!list) return [];
+      try {
+        const list = getDocument()?.getElementById("mapLayers");
+        if (!list) return [];
 
-      return Array.from(
-        list.querySelectorAll<HTMLLIElement>("li[id^='toggle']"),
-      );
+        return Array.from(
+          list.querySelectorAll<HTMLLIElement>("li[id^='toggle']"),
+        );
+      } catch {
+        return [];
+      }
     },
   };
 }
@@ -65,7 +87,13 @@ export function createLayerTargets(
   return {
     hasLayerHandler: (action) => Boolean(runtimeAdapter.getHandler(action)),
     isLayerOn: (action) => runtimeAdapter.isLayerOn(action),
-    toggleLayer: (action) => runtimeAdapter.getHandler(action)?.(),
+    toggleLayer: (action) => {
+      try {
+        runtimeAdapter.getHandler(action)?.();
+      } catch {
+        // Compatibility layer handlers are best-effort.
+      }
+    },
     getLayerDetails: () =>
       domAdapter.getLayerItems().map((item) => ({
         id: item.id,

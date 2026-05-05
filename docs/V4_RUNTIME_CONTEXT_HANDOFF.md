@@ -2363,6 +2363,10 @@ Project-action defaults now guard window, document, Event, Option, template
 metadata, applyOption, DOM clicks/dispatches, and select option access. Blocked
 browser project-action helpers fall back to null/undefined/template/no-op
 behavior while injected DOM, select, and runtime adapters remain explicit.
+Layer defaults now guard window, document, layerIsOn, layer toggle handlers, and
+map-layer DOM list queries. Blocked layer compatibility globals fall back to
+false/undefined/empty/no-op behavior while injected runtime and DOM adapters
+remain explicit.
 
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`

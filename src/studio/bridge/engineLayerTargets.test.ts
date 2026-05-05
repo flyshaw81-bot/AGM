@@ -13,12 +13,65 @@ const testGlobals = globalThis as TestLayerGlobals;
 const originalDocument = globalThis.document;
 const originalToggleRivers = testGlobals.toggleRivers;
 const originalLayerIsOn = testGlobals.layerIsOn;
+const originalDocumentDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "document",
+);
+const originalWindowDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "window",
+);
+const originalToggleRiversDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "toggleRivers",
+);
+const originalLayerIsOnDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "layerIsOn",
+);
 
 describe("createGlobalLayerTargets", () => {
   afterEach(() => {
-    globalThis.document = originalDocument;
-    testGlobals.toggleRivers = originalToggleRivers;
-    testGlobals.layerIsOn = originalLayerIsOn;
+    if (originalDocumentDescriptor) {
+      Object.defineProperty(globalThis, "document", originalDocumentDescriptor);
+    } else {
+      Object.defineProperty(globalThis, "document", {
+        configurable: true,
+        writable: true,
+        value: originalDocument,
+      });
+    }
+    if (originalWindowDescriptor) {
+      Object.defineProperty(globalThis, "window", originalWindowDescriptor);
+    } else {
+      delete (globalThis as { window?: unknown }).window;
+    }
+    if (originalToggleRiversDescriptor) {
+      Object.defineProperty(
+        globalThis,
+        "toggleRivers",
+        originalToggleRiversDescriptor,
+      );
+    } else {
+      Object.defineProperty(globalThis, "toggleRivers", {
+        configurable: true,
+        writable: true,
+        value: originalToggleRivers,
+      });
+    }
+    if (originalLayerIsOnDescriptor) {
+      Object.defineProperty(
+        globalThis,
+        "layerIsOn",
+        originalLayerIsOnDescriptor,
+      );
+    } else {
+      Object.defineProperty(globalThis, "layerIsOn", {
+        configurable: true,
+        writable: true,
+        value: originalLayerIsOn,
+      });
+    }
   });
 
   it("forwards layer handler checks, active state, and toggles", () => {
@@ -110,5 +163,39 @@ describe("createGlobalLayerTargets", () => {
       },
     ]);
     expect(list.querySelectorAll).toHaveBeenCalledWith("li[id^='toggle']");
+  });
+
+  it("keeps default layer targets safe when browser globals throw", () => {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "toggleRivers", {
+      configurable: true,
+      value: () => {
+        throw new Error("handler blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "layerIsOn", {
+      configurable: true,
+      get: () => {
+        throw new Error("layer state blocked");
+      },
+    });
+
+    const targets = createGlobalLayerTargets();
+
+    expect(targets.hasLayerHandler("toggleRivers")).toBe(true);
+    expect(targets.isLayerOn("toggleRivers")).toBe(false);
+    expect(() => targets.toggleLayer("toggleRivers")).not.toThrow();
+    expect(targets.getLayerDetails()).toEqual([]);
   });
 });
