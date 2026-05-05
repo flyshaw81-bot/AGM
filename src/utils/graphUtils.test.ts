@@ -1,8 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createGlobalDrawHeightsTargets,
+  createGlobalGridPointSettingsTargets,
   type DrawHeightsTargets,
   drawHeights,
+  generateGrid,
+  shouldRegenerateGrid,
 } from "./graphUtils";
 
 describe("drawHeights", () => {
@@ -77,5 +80,68 @@ describe("drawHeights", () => {
         targets: createGlobalDrawHeightsTargets(),
       }),
     ).toThrow("Cannot draw heights without a 2D canvas context");
+  });
+});
+
+describe("grid point settings", () => {
+  const originalDocument = globalThis.document;
+  const originalTime = globalThis.TIME;
+
+  afterEach(() => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: originalDocument,
+      writable: true,
+    });
+    globalThis.TIME = originalTime;
+  });
+
+  it("reads desired cells through injected grid targets", () => {
+    globalThis.TIME = false;
+    const targets = {
+      getCellsDesired: vi.fn(() => 4),
+    };
+
+    const grid = generateGrid("agm-seed", 20, 20, targets);
+
+    expect(targets.getCellsDesired).toHaveBeenCalledTimes(1);
+    expect(grid.cellsDesired).toBe(4);
+    expect(grid.spacing).toBe(10);
+    expect(grid.cellsX).toBe(2);
+    expect(grid.cellsY).toBe(2);
+  });
+
+  it("checks regeneration through injected grid targets", () => {
+    const targets = {
+      getCellsDesired: vi.fn(() => 4),
+    };
+
+    expect(
+      shouldRegenerateGrid(
+        {
+          seed: "agm-seed",
+          cellsDesired: 4,
+          spacing: 10,
+          cellsX: 2,
+          cellsY: 2,
+        },
+        0,
+        20,
+        20,
+        targets,
+      ),
+    ).toBe(false);
+    expect(targets.getCellsDesired).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps global point settings safe when document access throws", () => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
+
+    expect(createGlobalGridPointSettingsTargets().getCellsDesired()).toBe(0);
   });
 });

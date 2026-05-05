@@ -12,6 +12,16 @@ import { createTypedArray } from "./arrayUtils";
 import { rn } from "./numberUtils";
 import { byId } from "./shorthands";
 
+export type GridPointSettingsTargets = {
+  getCellsDesired: () => number;
+};
+
+export function createGlobalGridPointSettingsTargets(): GridPointSettingsTargets {
+  return {
+    getCellsDesired: () => +(byId("pointsInput")?.dataset?.cells || 0),
+  };
+}
+
 /**
  * Get boundary points on a regular square grid
  * @param {number} width - The width of the area
@@ -82,6 +92,7 @@ const getJitteredGrid = (
 const placePoints = (
   graphWidth: number,
   graphHeight: number,
+  targets: GridPointSettingsTargets = createGlobalGridPointSettingsTargets(),
 ): {
   spacing: number;
   cellsDesired: number;
@@ -91,7 +102,7 @@ const placePoints = (
   cellsY: number;
 } => {
   TIME && console.time("placePoints");
-  const cellsDesired = +(byId("pointsInput")?.dataset.cells || 0);
+  const cellsDesired = targets.getCellsDesired();
   const spacing = rn(Math.sqrt((graphWidth * graphHeight) / cellsDesired), 2); // spacing between points before jittering
 
   const boundary = getBoundaryPoints(graphWidth, graphHeight, spacing);
@@ -125,10 +136,11 @@ export const shouldRegenerateGrid = (
   expectedSeed: number,
   graphWidth: number,
   graphHeight: number,
+  targets: GridPointSettingsTargets = createGlobalGridPointSettingsTargets(),
 ) => {
   if (expectedSeed && expectedSeed !== grid.seed) return true;
 
-  const cellsDesired = +(byId("pointsInput")?.dataset?.cells || 0);
+  const cellsDesired = targets.getCellsDesired();
   if (cellsDesired !== grid.cellsDesired) return true;
 
   const newSpacing = rn(
@@ -168,10 +180,11 @@ export const generateGrid = (
   seed: string,
   graphWidth: number,
   graphHeight: number,
+  targets: GridPointSettingsTargets = createGlobalGridPointSettingsTargets(),
 ): Grid => {
   Math.random = Alea(seed); // reset PRNG
   const { spacing, cellsDesired, boundary, points, cellsX, cellsY } =
-    placePoints(graphWidth, graphHeight);
+    placePoints(graphWidth, graphHeight, targets);
   const { cells, vertices } = calculateVoronoi(points, boundary);
   return {
     spacing,

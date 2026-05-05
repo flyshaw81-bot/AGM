@@ -2249,6 +2249,10 @@ keeping the default global document adapter as the compatibility path.
 `draw-temperature.ts` now routes the `temperatureEquatorOutput` DOM lookup
 through `TemperatureRendererTargets`, leaving `byId` only in the default
 compatibility adapter and making missing controls a no-op.
+`graphUtils.ts` now routes `pointsInput.dataset.cells` through
+`GridPointSettingsTargets`, so `generateGrid` and `shouldRegenerateGrid` can
+take injected point-count settings while the default compatibility adapter still
+reads the existing DOM control.
 
 `ocean-layers.ts` now routes outline-chain error reporting through
 `OceanLayerLogTargets`, keeping the default `globalThis.ERROR` compatibility
