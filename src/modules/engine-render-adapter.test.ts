@@ -40,7 +40,11 @@ describe("createGlobalRenderAdapter", () => {
     globalThis.drawBurgLabel = originalDrawBurgLabel;
     globalThis.removeBurgIcon = originalRemoveBurgIcon;
     globalThis.removeBurgLabel = originalRemoveBurgLabel;
-    globalThis.document = originalDocument;
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: originalDocument,
+      writable: true,
+    });
     globalThis.emblems = originalEmblems;
     globalThis.redrawIceberg = originalRedrawIceberg;
     globalThis.redrawGlacier = originalRedrawGlacier;
@@ -143,6 +147,20 @@ describe("createGlobalRenderAdapter", () => {
 
   it("keeps global render DOM lookup safe when document is absent", () => {
     globalThis.document = undefined as unknown as Document;
+
+    const rendering = createGlobalRenderAdapter();
+
+    expect(() => rendering.removeElementById("marker12")).not.toThrow();
+    expect(rendering.getElementTotalLengthById?.("route3")).toBeUndefined();
+  });
+
+  it("keeps global render DOM lookup safe when document access throws", () => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
 
     const rendering = createGlobalRenderAdapter();
 

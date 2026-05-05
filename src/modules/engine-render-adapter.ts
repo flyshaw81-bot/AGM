@@ -110,6 +110,14 @@ export function createEngineRenderAdapter(
   };
 }
 
+function getDocument(): Document | undefined {
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
+}
+
 export function createGlobalRenderTargets(): EngineRenderTargets {
   const runtime = globalThis as typeof globalThis & {
     findCell?: EngineRenderTargets["findCell"];
@@ -137,7 +145,7 @@ export function createGlobalRenderTargets(): EngineRenderTargets {
     removeBurgLabel: (burgId) => {
       removeBurgLabel(burgId);
     },
-    getElementById: (id) => globalThis.document?.getElementById(id) ?? null,
+    getElementById: (id) => getDocument()?.getElementById(id) ?? null,
     removeBurgEmblemUse: (burgId) => {
       emblems.select(`#burgEmblems > use[data-i='${burgId}']`).remove();
     },
