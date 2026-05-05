@@ -2260,6 +2260,9 @@ document lookup before delegating to `applyOption`.
 `MarkersBrowserTargets`, keeping the DOM lookup in the default compatibility
 adapter and allowing tests/runtime callers to choose fantasy marker config
 without browser globals.
+`debugUtils.ts` now routes debug-layer and color-scheme access through
+`DebugDrawingTargets`, so debug drawing helpers no longer read `window.debug`
+or `window.getColorScheme` directly outside the default compatibility adapter.
 
 `ocean-layers.ts` now routes outline-chain error reporting through
 `OceanLayerLogTargets`, keeping the default `globalThis.ERROR` compatibility

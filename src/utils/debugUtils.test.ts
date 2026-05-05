@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  createGlobalDebugDrawingTargets,
   drawCellsValue,
   drawPath,
   drawPoint,
@@ -69,5 +70,37 @@ describe("debug drawing helpers", () => {
     expect(attr).toHaveBeenCalledWith("cy", 8);
     expect(attr).toHaveBeenCalledWith("r", 2);
     expect(attr).toHaveBeenCalledWith("fill", "blue");
+  });
+
+  it("draws points through injected debug targets", () => {
+    const attr = vi.fn().mockReturnThis();
+    const append = vi.fn(() => ({ attr }));
+    const targets = {
+      getDebugLayer: vi.fn(() => ({ append })),
+      getColorScheme: vi.fn(),
+    };
+
+    drawPoint([4, 8], { color: "blue", radius: 2 }, targets);
+
+    expect(targets.getDebugLayer).toHaveBeenCalled();
+    expect(append).toHaveBeenCalledWith("circle");
+    expect(attr).toHaveBeenCalledWith("cx", 4);
+    expect(attr).toHaveBeenCalledWith("cy", 8);
+    expect(attr).toHaveBeenCalledWith("r", 2);
+    expect(attr).toHaveBeenCalledWith("fill", "blue");
+  });
+
+  it("keeps global debug targets safe when window access throws", () => {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+
+    const targets = createGlobalDebugDrawingTargets();
+
+    expect(targets.getDebugLayer()).toBeUndefined();
+    expect(targets.getColorScheme("heightmap")).toBeUndefined();
   });
 });
