@@ -21,15 +21,108 @@ const originalApplyOption = testGlobals.applyOption;
 const originalHeightmapTemplates = testGlobals.heightmapTemplates;
 const originalPrecreatedHeightmaps = testGlobals.precreatedHeightmaps;
 const originalOption = globalThis.Option;
+const originalDocumentDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "document",
+);
+const originalEventDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "Event",
+);
+const originalApplyOptionDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "applyOption",
+);
+const originalHeightmapTemplatesDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "heightmapTemplates",
+);
+const originalPrecreatedHeightmapsDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "precreatedHeightmaps",
+);
+const originalOptionDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "Option",
+);
+const originalWindowDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "window",
+);
 
 describe("createGlobalProjectActionTargets", () => {
   afterEach(() => {
-    globalThis.document = originalDocument;
-    globalThis.Event = originalEvent;
-    testGlobals.applyOption = originalApplyOption;
-    testGlobals.heightmapTemplates = originalHeightmapTemplates;
-    testGlobals.precreatedHeightmaps = originalPrecreatedHeightmaps;
-    globalThis.Option = originalOption;
+    if (originalDocumentDescriptor) {
+      Object.defineProperty(globalThis, "document", originalDocumentDescriptor);
+    } else {
+      Object.defineProperty(globalThis, "document", {
+        configurable: true,
+        writable: true,
+        value: originalDocument,
+      });
+    }
+    if (originalEventDescriptor) {
+      Object.defineProperty(globalThis, "Event", originalEventDescriptor);
+    } else {
+      Object.defineProperty(globalThis, "Event", {
+        configurable: true,
+        writable: true,
+        value: originalEvent,
+      });
+    }
+    if (originalApplyOptionDescriptor) {
+      Object.defineProperty(
+        globalThis,
+        "applyOption",
+        originalApplyOptionDescriptor,
+      );
+    } else {
+      Object.defineProperty(globalThis, "applyOption", {
+        configurable: true,
+        writable: true,
+        value: originalApplyOption,
+      });
+    }
+    if (originalHeightmapTemplatesDescriptor) {
+      Object.defineProperty(
+        globalThis,
+        "heightmapTemplates",
+        originalHeightmapTemplatesDescriptor,
+      );
+    } else {
+      Object.defineProperty(globalThis, "heightmapTemplates", {
+        configurable: true,
+        writable: true,
+        value: originalHeightmapTemplates,
+      });
+    }
+    if (originalPrecreatedHeightmapsDescriptor) {
+      Object.defineProperty(
+        globalThis,
+        "precreatedHeightmaps",
+        originalPrecreatedHeightmapsDescriptor,
+      );
+    } else {
+      Object.defineProperty(globalThis, "precreatedHeightmaps", {
+        configurable: true,
+        writable: true,
+        value: originalPrecreatedHeightmaps,
+      });
+    }
+    if (originalOptionDescriptor) {
+      Object.defineProperty(globalThis, "Option", originalOptionDescriptor);
+    } else {
+      Object.defineProperty(globalThis, "Option", {
+        configurable: true,
+        writable: true,
+        value: originalOption,
+      });
+    }
+    if (originalWindowDescriptor) {
+      Object.defineProperty(globalThis, "window", originalWindowDescriptor);
+    } else {
+      delete (globalThis as { window?: unknown }).window;
+    }
   });
 
   it("resolves form controls and clicks elements from the active document", () => {
@@ -119,6 +212,77 @@ describe("createGlobalProjectActionTargets", () => {
       ),
     ).not.toThrow();
     expect(add).not.toHaveBeenCalled();
+  });
+
+  it("keeps default project action targets safe when browser globals throw", () => {
+    const dispatchEvent = vi.fn(() => {
+      throw new Error("dispatch blocked");
+    });
+    const select = {
+      options: {
+        get length() {
+          throw new Error("options blocked");
+        },
+        add: () => {
+          throw new Error("select add blocked");
+        },
+      },
+    } as unknown as HTMLSelectElement;
+
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "Event", {
+      configurable: true,
+      value: function Event() {
+        return {} as Event;
+      },
+    });
+    Object.defineProperty(globalThis, "Option", {
+      configurable: true,
+      value: function Option(label: string, value: string) {
+        return { textContent: label, value } as HTMLOptionElement;
+      },
+    });
+    Object.defineProperty(globalThis, "applyOption", {
+      configurable: true,
+      get: () => {
+        throw new Error("applyOption blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "heightmapTemplates", {
+      configurable: true,
+      get: () => {
+        throw new Error("templates blocked");
+      },
+    });
+
+    const targets = createGlobalProjectActionTargets();
+
+    expect(targets.getInput("pointsInput")).toBeNull();
+    expect(targets.getOutput("pointsOutput")).toBeNull();
+    expect(targets.getSelect("templateInput")).toBeNull();
+    expect(() => targets.clickElement("optionsCopySeed")).not.toThrow();
+    expect(() =>
+      targets.dispatchInputAndChange({
+        dispatchEvent,
+      } as unknown as HTMLElement),
+    ).not.toThrow();
+    expect(targets.findSelectOption(select, "volcano")).toBeUndefined();
+    expect(() =>
+      targets.addSelectOption(select, "Custom", "custom"),
+    ).not.toThrow();
+    expect(targets.applyOption(select, "volcano", "Volcano")).toBe(false);
+    expect(targets.getTemplateLabel("volcano")).toBe("volcano");
   });
 
   it("composes project action targets from injected adapters", () => {

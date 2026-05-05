@@ -2359,6 +2359,10 @@ Data-action defaults now guard window, document, Dropbox DOM reads, file-input
 clicks, and runtime data helper lookups/calls. Blocked browser data helpers
 fall back to empty Dropbox state, unavailable capability flags, or resolved
 no-op calls while injected document, DOM, and runtime adapters stay explicit.
+Project-action defaults now guard window, document, Event, Option, template
+metadata, applyOption, DOM clicks/dispatches, and select option access. Blocked
+browser project-action helpers fall back to null/undefined/template/no-op
+behavior while injected DOM, select, and runtime adapters remain explicit.
 
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`

@@ -63,16 +63,28 @@ export type EngineProjectActionRuntimeAdapter = {
 };
 
 function getActionWindow(): EngineProjectActionWindow {
-  return (globalThis.window ?? globalThis) as EngineProjectActionWindow;
+  try {
+    return (globalThis.window ?? globalThis) as EngineProjectActionWindow;
+  } catch {
+    return globalThis as EngineProjectActionWindow;
+  }
 }
 
 function getDocument(): Document | undefined {
-  return globalThis.document;
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
 }
 
 function dispatchDomEvent(element: HTMLElement, type: string) {
-  if (typeof globalThis.Event !== "function") return;
-  element.dispatchEvent(new globalThis.Event(type, { bubbles: true }));
+  try {
+    if (typeof globalThis.Event !== "function") return;
+    element.dispatchEvent(new globalThis.Event(type, { bubbles: true }));
+  } catch {
+    // Compatibility DOM events are best-effort.
+  }
 }
 
 export function createGlobalProjectActionTargets(): EngineProjectActionTargets {
@@ -85,22 +97,49 @@ export function createGlobalProjectActionTargets(): EngineProjectActionTargets {
 
 export function createGlobalProjectActionDomAdapter(): EngineProjectActionDomAdapter {
   return {
-    getInput: (id) =>
-      (getDocument()?.getElementById(id) as
-        | HTMLInputElement
-        | null
-        | undefined) ?? null,
-    getOutput: (id) =>
-      (getDocument()?.getElementById(id) as
-        | HTMLOutputElement
-        | null
-        | undefined) ?? null,
-    getSelect: (id) =>
-      (getDocument()?.getElementById(id) as
-        | HTMLSelectElement
-        | null
-        | undefined) ?? null,
-    clickElement: (id) => getDocument()?.getElementById(id)?.click(),
+    getInput: (id) => {
+      try {
+        return (
+          (getDocument()?.getElementById(id) as
+            | HTMLInputElement
+            | null
+            | undefined) ?? null
+        );
+      } catch {
+        return null;
+      }
+    },
+    getOutput: (id) => {
+      try {
+        return (
+          (getDocument()?.getElementById(id) as
+            | HTMLOutputElement
+            | null
+            | undefined) ?? null
+        );
+      } catch {
+        return null;
+      }
+    },
+    getSelect: (id) => {
+      try {
+        return (
+          (getDocument()?.getElementById(id) as
+            | HTMLSelectElement
+            | null
+            | undefined) ?? null
+        );
+      } catch {
+        return null;
+      }
+    },
+    clickElement: (id) => {
+      try {
+        getDocument()?.getElementById(id)?.click();
+      } catch {
+        // Compatibility DOM clicks are best-effort.
+      }
+    },
     dispatchInputAndChange: (element) => {
       dispatchDomEvent(element, "input");
       dispatchDomEvent(element, "change");
@@ -113,11 +152,22 @@ export function createGlobalProjectActionDomAdapter(): EngineProjectActionDomAda
 
 export function createGlobalProjectActionSelectAdapter(): EngineProjectActionSelectAdapter {
   return {
-    findSelectOption: (select, value) =>
-      Array.from(select.options).find((option) => option.value === value),
+    findSelectOption: (select, value) => {
+      try {
+        return Array.from(select.options).find(
+          (option) => option.value === value,
+        );
+      } catch {
+        return undefined;
+      }
+    },
     addSelectOption: (select, label, value) => {
-      if (typeof globalThis.Option !== "function") return;
-      select.options.add(new globalThis.Option(label, value));
+      try {
+        if (typeof globalThis.Option !== "function") return;
+        select.options.add(new globalThis.Option(label, value));
+      } catch {
+        // Browser select option writes are best-effort in compatibility mode.
+      }
     },
   };
 }
@@ -125,15 +175,27 @@ export function createGlobalProjectActionSelectAdapter(): EngineProjectActionSel
 export function createGlobalProjectActionRuntimeAdapter(): EngineProjectActionRuntimeAdapter {
   return {
     applyOption: (select, value, label) => {
-      const applyOption = getActionWindow().applyOption;
-      if (typeof applyOption !== "function") return false;
-      applyOption(select, value, label);
-      return true;
+      try {
+        const applyOption = getActionWindow().applyOption;
+        if (typeof applyOption !== "function") return false;
+        applyOption(select, value, label);
+        return true;
+      } catch {
+        return false;
+      }
     },
-    getTemplateLabel: (template) =>
-      getActionWindow().heightmapTemplates?.[template]?.name ??
-      getActionWindow().precreatedHeightmaps?.[template]?.name ??
-      template,
+    getTemplateLabel: (template) => {
+      try {
+        const actionWindow = getActionWindow();
+        return (
+          actionWindow.heightmapTemplates?.[template]?.name ??
+          actionWindow.precreatedHeightmaps?.[template]?.name ??
+          template
+        );
+      } catch {
+        return template;
+      }
+    },
   };
 }
 
