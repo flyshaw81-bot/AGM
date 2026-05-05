@@ -2348,6 +2348,10 @@ Project-summary defaults now guard document, storage, cached-summary, and local
 database compatibility reads. Blocked browser project-summary globals fall back
 to false/null/undefined/no-op behavior while injected cache, storage, document,
 and database adapters keep strict ownership.
+Project-control defaults now guard window, document, options, temperature
+conversion, wind coordinate helpers, and wind storage writes. Blocked browser
+project-control globals fall back to null/undefined/false/no-op behavior while
+injected DOM, runtime, and storage adapters remain explicit.
 
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`

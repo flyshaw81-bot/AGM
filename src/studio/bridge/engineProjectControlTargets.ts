@@ -39,11 +39,19 @@ export type EngineProjectControlStorageAdapter = {
 };
 
 function getControlWindow(): EngineProjectControlWindow {
-  return (globalThis.window ?? globalThis) as EngineProjectControlWindow;
+  try {
+    return (globalThis.window ?? globalThis) as EngineProjectControlWindow;
+  } catch {
+    return globalThis as EngineProjectControlWindow;
+  }
 }
 
 function getDocument(): Document | undefined {
-  return globalThis.document;
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
 }
 
 function getLocalStorage(): Storage | undefined {
@@ -55,22 +63,43 @@ function getLocalStorage(): Storage | undefined {
 }
 
 function getWindPath(tier: number) {
-  return getDocument()?.querySelector(
-    `#globeWindArrows path[data-tier='${tier}']`,
-  ) as SVGPathElement | null | undefined;
+  try {
+    return getDocument()?.querySelector(
+      `#globeWindArrows path[data-tier='${tier}']`,
+    ) as SVGPathElement | null | undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export function createGlobalProjectControlDomAdapter(): EngineProjectControlDomAdapter {
   return {
-    getTemperatureLabel: (id) =>
-      (getDocument()?.getElementById(id) as HTMLElement | null | undefined) ??
-      null,
+    getTemperatureLabel: (id) => {
+      try {
+        return (
+          (getDocument()?.getElementById(id) as
+            | HTMLElement
+            | null
+            | undefined) ?? null
+        );
+      } catch {
+        return null;
+      }
+    },
     getWindTransform: (tier) => {
-      const windPath = getWindPath(tier);
-      return windPath ? (windPath.getAttribute("transform") ?? "") : null;
+      try {
+        const windPath = getWindPath(tier);
+        return windPath ? (windPath.getAttribute("transform") ?? "") : null;
+      } catch {
+        return null;
+      }
     },
     setWindTransform: (tier, transform) => {
-      getWindPath(tier)?.setAttribute("transform", transform);
+      try {
+        getWindPath(tier)?.setAttribute("transform", transform);
+      } catch {
+        // Compatibility DOM writes are best-effort; injected adapters own strict UI state.
+      }
     },
   };
 }
@@ -78,36 +107,53 @@ export function createGlobalProjectControlDomAdapter(): EngineProjectControlDomA
 export function createGlobalProjectControlRuntimeAdapter(): EngineProjectControlRuntimeAdapter {
   return {
     setOptionNumber: (key, value) => {
-      const optionsRef = getControlWindow().options;
-      if (optionsRef) optionsRef[key] = value;
+      try {
+        const optionsRef = getControlWindow().options;
+        if (optionsRef) optionsRef[key] = value;
+      } catch {
+        // Runtime compatibility options may be unavailable in isolated contexts.
+      }
     },
-    convertTemperature: (value, unit) =>
-      getControlWindow().convertTemperature?.(value, unit),
+    convertTemperature: (value, unit) => {
+      try {
+        return getControlWindow().convertTemperature?.(value, unit);
+      } catch {
+        return undefined;
+      }
+    },
     setWindTierValue: (tier, value) => {
-      const engineWindow = getControlWindow();
-      if (Array.isArray(engineWindow.options?.winds)) {
-        engineWindow.options.winds[tier] = value;
-        return engineWindow.options.winds;
+      try {
+        const engineWindow = getControlWindow();
+        if (Array.isArray(engineWindow.options?.winds)) {
+          engineWindow.options.winds[tier] = value;
+          return engineWindow.options.winds;
+        }
+      } catch {
+        return undefined;
       }
 
       return undefined;
     },
     isWindTierInCurrentMap: (tier) => {
-      const engineWindow = getControlWindow();
-      const latN = engineWindow.mapCoordinates?.latN;
-      const latS = engineWindow.mapCoordinates?.latS;
-      if (
-        !Number.isFinite(latN) ||
-        !Number.isFinite(latS) ||
-        typeof engineWindow.d3?.range !== "function"
-      ) {
+      try {
+        const engineWindow = getControlWindow();
+        const latN = engineWindow.mapCoordinates?.latN;
+        const latS = engineWindow.mapCoordinates?.latS;
+        if (
+          !Number.isFinite(latN) ||
+          !Number.isFinite(latS) ||
+          typeof engineWindow.d3?.range !== "function"
+        ) {
+          return false;
+        }
+
+        const mapTiers = engineWindow.d3
+          .range(latN!, latS!, -30)
+          .map((coordinate) => ((90 - coordinate) / 30) | 0);
+        return mapTiers.includes(tier);
+      } catch {
         return false;
       }
-
-      const mapTiers = engineWindow.d3
-        .range(latN!, latS!, -30)
-        .map((coordinate) => ((90 - coordinate) / 30) | 0);
-      return mapTiers.includes(tier);
     },
   };
 }
@@ -115,7 +161,11 @@ export function createGlobalProjectControlRuntimeAdapter(): EngineProjectControl
 export function createGlobalProjectControlStorageAdapter(): EngineProjectControlStorageAdapter {
   return {
     setWindOptions: (winds) => {
-      getLocalStorage()?.setItem("winds", String(winds));
+      try {
+        getLocalStorage()?.setItem("winds", String(winds));
+      } catch {
+        // Storage persistence is optional for compatibility targets.
+      }
     },
   };
 }

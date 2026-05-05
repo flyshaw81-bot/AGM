@@ -22,18 +22,92 @@ const originalLocalStorage = globalThis.localStorage;
 const originalConvertTemperature = testGlobals.convertTemperature;
 const originalMapCoordinates = testGlobals.mapCoordinates;
 const originalD3 = (globalThis as any).d3;
+const originalDocumentDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "document",
+);
+const originalOptionsDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "options",
+);
+const originalWindowDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "window",
+);
+const originalConvertTemperatureDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "convertTemperature",
+);
+const originalMapCoordinatesDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "mapCoordinates",
+);
+const originalD3Descriptor = Object.getOwnPropertyDescriptor(globalThis, "d3");
 
 describe("createGlobalProjectControlTargets", () => {
   afterEach(() => {
-    globalThis.document = originalDocument;
-    globalThis.options = originalOptions;
+    if (originalDocumentDescriptor) {
+      Object.defineProperty(globalThis, "document", originalDocumentDescriptor);
+    } else {
+      Object.defineProperty(globalThis, "document", {
+        configurable: true,
+        writable: true,
+        value: originalDocument,
+      });
+    }
+    if (originalOptionsDescriptor) {
+      Object.defineProperty(globalThis, "options", originalOptionsDescriptor);
+    } else {
+      Object.defineProperty(globalThis, "options", {
+        configurable: true,
+        writable: true,
+        value: originalOptions,
+      });
+    }
+    if (originalWindowDescriptor) {
+      Object.defineProperty(globalThis, "window", originalWindowDescriptor);
+    } else {
+      delete (globalThis as { window?: unknown }).window;
+    }
     Object.defineProperty(globalThis, "localStorage", {
       configurable: true,
       value: originalLocalStorage,
     });
-    testGlobals.convertTemperature = originalConvertTemperature;
-    testGlobals.mapCoordinates = originalMapCoordinates;
-    (globalThis as any).d3 = originalD3;
+    if (originalConvertTemperatureDescriptor) {
+      Object.defineProperty(
+        globalThis,
+        "convertTemperature",
+        originalConvertTemperatureDescriptor,
+      );
+    } else {
+      Object.defineProperty(globalThis, "convertTemperature", {
+        configurable: true,
+        writable: true,
+        value: originalConvertTemperature,
+      });
+    }
+    if (originalMapCoordinatesDescriptor) {
+      Object.defineProperty(
+        globalThis,
+        "mapCoordinates",
+        originalMapCoordinatesDescriptor,
+      );
+    } else {
+      Object.defineProperty(globalThis, "mapCoordinates", {
+        configurable: true,
+        writable: true,
+        value: originalMapCoordinates,
+      });
+    }
+    if (originalD3Descriptor) {
+      Object.defineProperty(globalThis, "d3", originalD3Descriptor);
+    } else {
+      Object.defineProperty(globalThis, "d3", {
+        configurable: true,
+        writable: true,
+        value: originalD3,
+      });
+    }
   });
 
   it("forwards temperature label, option writes, and temperature conversion", () => {
@@ -110,6 +184,66 @@ describe("createGlobalProjectControlTargets", () => {
 
     expect(targets.applyWindTierToRuntime(1, 90)).toBe(false);
     expect(globalThis.options.winds[1]).toBe(90);
+  });
+
+  it("keeps project control globals safe when browser/runtime access throws", () => {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "options", {
+      configurable: true,
+      get: () => {
+        throw new Error("options blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "convertTemperature", {
+      configurable: true,
+      get: () => {
+        throw new Error("convertTemperature blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "mapCoordinates", {
+      configurable: true,
+      get: () => {
+        throw new Error("map coordinates blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "d3", {
+      configurable: true,
+      get: () => {
+        throw new Error("d3 blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      value: {
+        setItem: () => {
+          throw new Error("storage write blocked");
+        },
+      },
+    });
+
+    const targets = createGlobalProjectControlTargets();
+
+    expect(targets.getTemperatureLabel("temperatureEquatorF")).toBeNull();
+    expect(targets.getWindTransform(1)).toBeNull();
+    expect(() =>
+      targets.setWindTransform(1, "rotate(90 210 30)"),
+    ).not.toThrow();
+    expect(() =>
+      targets.setOptionNumber("temperatureEquator", 10),
+    ).not.toThrow();
+    expect(targets.convertTemperature(10, "\u00b0F")).toBeUndefined();
+    expect(targets.applyWindTierToRuntime(1, 90)).toBe(false);
   });
 
   it("composes project control targets from injected DOM, runtime, and storage adapters", () => {
