@@ -7,13 +7,37 @@ import {
 
 const originalWarnFlag = globalThis.WARN;
 const originalErrorFlag = globalThis.ERROR;
+const originalWarnDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "WARN",
+);
+const originalErrorDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "ERROR",
+);
 const originalConsoleWarn = console.warn;
 const originalConsoleError = console.error;
 
 describe("createGlobalLogService", () => {
   afterEach(() => {
-    globalThis.WARN = originalWarnFlag;
-    globalThis.ERROR = originalErrorFlag;
+    if (originalWarnDescriptor) {
+      Object.defineProperty(globalThis, "WARN", originalWarnDescriptor);
+    } else {
+      Object.defineProperty(globalThis, "WARN", {
+        configurable: true,
+        value: originalWarnFlag,
+        writable: true,
+      });
+    }
+    if (originalErrorDescriptor) {
+      Object.defineProperty(globalThis, "ERROR", originalErrorDescriptor);
+    } else {
+      Object.defineProperty(globalThis, "ERROR", {
+        configurable: true,
+        value: originalErrorFlag,
+        writable: true,
+      });
+    }
     console.warn = originalConsoleWarn;
     console.error = originalConsoleError;
   });
@@ -78,5 +102,26 @@ describe("createGlobalLogService", () => {
 
     expect(warn).toHaveBeenCalledWith("Careful");
     expect(error).toHaveBeenCalledWith("Broken");
+  });
+
+  it("keeps global log targets safe when console gate access throws", () => {
+    Object.defineProperty(globalThis, "WARN", {
+      configurable: true,
+      get: () => {
+        throw new Error("WARN blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "ERROR", {
+      configurable: true,
+      get: () => {
+        throw new Error("ERROR blocked");
+      },
+    });
+    const logs = createGlobalLogService();
+
+    expect(() => {
+      logs.warn("Hidden warning");
+      logs.error("Hidden error");
+    }).not.toThrow();
   });
 });

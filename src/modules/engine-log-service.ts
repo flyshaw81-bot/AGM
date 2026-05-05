@@ -23,10 +23,26 @@ export function createEngineLogService(
   };
 }
 
+function getWarnFlag(): boolean {
+  try {
+    return Boolean(globalThis.WARN);
+  } catch {
+    return false;
+  }
+}
+
+function getErrorFlag(): boolean {
+  try {
+    return Boolean(globalThis.ERROR);
+  } catch {
+    return false;
+  }
+}
+
 export function createGlobalLogTargets(): EngineLogServiceTargets {
   return {
-    shouldWarn: () => Boolean(globalThis.WARN),
-    shouldError: () => Boolean(globalThis.ERROR),
+    shouldWarn: getWarnFlag,
+    shouldError: getErrorFlag,
     warn: (message) => console.warn(message),
     error: (message) => console.error(message),
   };

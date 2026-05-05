@@ -2300,6 +2300,8 @@ global fallbacks across methods.
 Default log adapters in `names-generator.ts`, `heightmap-generator.ts`, and
 `ocean-layers.ts` now guard `WARN` / `ERROR` flag reads, so blocked
 compatibility globals no longer throw while diagnostics remain injectable.
+`engine-log-service.ts` now applies the same guarded flag reads at the shared
+runtime logging service boundary.
 
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`
