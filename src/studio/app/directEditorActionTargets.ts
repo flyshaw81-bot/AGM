@@ -174,9 +174,10 @@ export function createGlobalDirectEditorActionTargets(): DirectEditorActionTarge
 
 export function createRuntimeDirectEditorActionTargets(
   context: EngineRuntimeContext,
+  documentAdapter: DirectEditorDocumentAdapter = createGlobalDirectEditorDocumentAdapter(),
 ): DirectEditorActionTargets {
   return createDirectEditorActionTargets(
-    createGlobalDirectEditorDocumentAdapter(),
+    documentAdapter,
     createRuntimeDirectEditorFocusAdapter(context),
     createRuntimeDirectEditorMutationAdapter(context),
   );

@@ -99,4 +99,32 @@ describe("createDirectEditorActionTargets", () => {
     expect(state.name).toBe("New");
     expect(context.biomesData.habitability[2]).toBe(30);
   });
+
+  it("allows runtime direct editor targets to inject document sync", () => {
+    const state = { document: {} } as StudioState;
+    const context = {
+      worldSettings: {
+        graphWidth: 1200,
+        graphHeight: 800,
+      },
+      pack: {
+        cells: {
+          i: [],
+          p: {},
+        },
+      },
+      biomesData: {
+        i: [],
+        habitability: {},
+      },
+    } as unknown as EngineRuntimeContext;
+    const syncDocument = vi.fn();
+    const targets = createRuntimeDirectEditorActionTargets(context, {
+      syncDocument,
+    });
+
+    targets.syncDocument(state);
+
+    expect(syncDocument).toHaveBeenCalledWith(state);
+  });
 });
