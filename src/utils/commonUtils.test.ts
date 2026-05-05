@@ -1,9 +1,14 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   type BrowserBlobReaderTargets,
   type BrowserEnvironmentTargets,
   type BrowserNavigationTargets,
   clipPoly,
+  createGlobalBrowserBlobReaderTargets,
+  createGlobalBrowserEnvironmentTargets,
+  createGlobalBrowserNavigationTargets,
+  createGlobalStudioInputPromptTargets,
+  createGlobalUtilityWarningTargets,
   getBase64,
   getCoordinates,
   getLatitude,
@@ -16,6 +21,40 @@ import {
   type UtilityWarningTargets,
   wiki,
 } from "./commonUtils";
+
+const originalDocument = globalThis.document;
+const originalWindow = globalThis.window;
+const originalNavigator = globalThis.navigator;
+const originalXMLHttpRequest = globalThis.XMLHttpRequest;
+const originalFileReader = globalThis.FileReader;
+
+afterEach(() => {
+  Object.defineProperty(globalThis, "document", {
+    configurable: true,
+    value: originalDocument,
+    writable: true,
+  });
+  Object.defineProperty(globalThis, "window", {
+    configurable: true,
+    value: originalWindow,
+    writable: true,
+  });
+  Object.defineProperty(globalThis, "navigator", {
+    configurable: true,
+    value: originalNavigator,
+    writable: true,
+  });
+  Object.defineProperty(globalThis, "XMLHttpRequest", {
+    configurable: true,
+    value: originalXMLHttpRequest,
+    writable: true,
+  });
+  Object.defineProperty(globalThis, "FileReader", {
+    configurable: true,
+    value: originalFileReader,
+    writable: true,
+  });
+});
 
 describe("getLongitude", () => {
   const mapCoordinates = { lonW: -10, lonT: 20 };
@@ -167,6 +206,21 @@ describe("parseError", () => {
     expect(parsed).toContain("Error: Broken map");
     expect(parsed).toContain("<i>map.ts</i>");
   });
+
+  it("keeps global browser environment targets safe when navigator access throws", () => {
+    Object.defineProperty(globalThis, "navigator", {
+      configurable: true,
+      get: () => {
+        throw new Error("navigator blocked");
+      },
+    });
+    const targets = createGlobalBrowserEnvironmentTargets();
+
+    expect(targets.getUserAgent()).toBe("");
+    expect(parseError(new Error("Broken map"), targets)).toContain(
+      "Error: Broken map",
+    );
+  });
 });
 
 describe("clipPoly", () => {
@@ -181,6 +235,17 @@ describe("clipPoly", () => {
 
     expect(result).toBe(points);
     expect(targets.warnUndefinedPoint).toHaveBeenCalledWith(points);
+  });
+
+  it("keeps global warning targets safe when window access throws", () => {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+
+    expect(createGlobalUtilityWarningTargets().isErrorEnabled()).toBe(false);
   });
 });
 
@@ -226,6 +291,38 @@ describe("browser compatibility helpers", () => {
       "docs/map-layers",
       "_blank",
     );
+  });
+
+  it("keeps global blob reader targets safe when browser constructors are absent", () => {
+    Object.defineProperty(globalThis, "XMLHttpRequest", {
+      configurable: true,
+      value: undefined,
+      writable: true,
+    });
+    Object.defineProperty(globalThis, "FileReader", {
+      configurable: true,
+      value: undefined,
+      writable: true,
+    });
+    const targets = createGlobalBrowserBlobReaderTargets();
+    const callback = vi.fn();
+
+    getBase64("map.svg", callback, targets);
+
+    expect(callback).toHaveBeenCalledWith(null);
+  });
+
+  it("keeps global navigation targets safe when window access throws", () => {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+    const targets = createGlobalBrowserNavigationTargets();
+
+    expect(() => openURL("https://example.test", targets)).not.toThrow();
+    expect(() => wiki("map-layers", targets)).not.toThrow();
   });
 });
 
@@ -302,5 +399,25 @@ describe("initializePrompt", () => {
     expect(input.focus).toHaveBeenCalled();
     expect(input.select).toHaveBeenCalled();
     expect(callback).toHaveBeenCalledWith(2);
+  });
+
+  it("keeps global Studio input targets safe when document and window access throw", () => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+    const targets = createGlobalStudioInputPromptTargets();
+
+    expect(() => initializePrompt(targets)).not.toThrow();
+    expect(targets.getElementById("studioInputDialog")).toBeNull();
+    expect(targets.isErrorEnabled()).toBe(false);
   });
 });

@@ -11,12 +11,52 @@ export type UtilityWarningTargets = {
 
 export function createGlobalUtilityWarningTargets(): UtilityWarningTargets {
   return {
-    isErrorEnabled: () => Boolean(window.ERROR),
+    isErrorEnabled: () => Boolean(getWindow()?.ERROR),
     warnUndefinedPoint: (points) => {
       console.error("Undefined point in clipPoly", points);
     },
   };
 }
+
+const getWindow = (): Window | undefined => {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+};
+
+const getDocument = (): Document | undefined => {
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
+};
+
+const getNavigator = (): Navigator | undefined => {
+  try {
+    return globalThis.navigator;
+  } catch {
+    return undefined;
+  }
+};
+
+const getXMLHttpRequestConstructor = (): typeof XMLHttpRequest | undefined => {
+  try {
+    return globalThis.XMLHttpRequest;
+  } catch {
+    return undefined;
+  }
+};
+
+const getFileReaderConstructor = (): typeof FileReader | undefined => {
+  try {
+    return globalThis.FileReader;
+  } catch {
+    return undefined;
+  }
+};
 
 /**
  * Clip polygon points to graph boundaries
@@ -149,7 +189,7 @@ export type BrowserEnvironmentTargets = {
 
 export function createGlobalBrowserEnvironmentTargets(): BrowserEnvironmentTargets {
   return {
-    getUserAgent: () => navigator.userAgent,
+    getUserAgent: () => getNavigator()?.userAgent ?? "",
   };
 }
 
@@ -182,14 +222,26 @@ export type BrowserBlobReaderTargets = {
 export function createGlobalBrowserBlobReaderTargets(): BrowserBlobReaderTargets {
   return {
     requestBlob: (url, callback) => {
-      const xhr = new XMLHttpRequest();
+      const XMLHttpRequestConstructor = getXMLHttpRequestConstructor();
+      if (!XMLHttpRequestConstructor) {
+        callback(new Blob());
+        return;
+      }
+
+      const xhr = new XMLHttpRequestConstructor();
       xhr.onload = () => callback(xhr.response);
       xhr.open("GET", url);
       xhr.responseType = "blob";
       xhr.send();
     },
     readAsDataURL: (blob, callback) => {
-      const reader = new FileReader();
+      const FileReaderConstructor = getFileReaderConstructor();
+      if (!FileReaderConstructor) {
+        callback(null);
+        return;
+      }
+
+      const reader = new FileReaderConstructor();
       reader.onloadend = () => callback(reader.result);
       reader.readAsDataURL(blob);
     },
@@ -218,7 +270,7 @@ export type BrowserNavigationTargets = {
 export function createGlobalBrowserNavigationTargets(): BrowserNavigationTargets {
   return {
     open: (url, target) => {
-      window.open(url, target);
+      getWindow()?.open(url, target);
     },
   };
 }
@@ -385,25 +437,37 @@ const studioInputDefaults: PromptOptions = {
 
 export function createGlobalStudioInputPromptTargets(): StudioInputPromptTargets {
   return {
-    getElementById: (id) => document.getElementById(id),
-    createElement: (tagName) => document.createElement(tagName),
+    getElementById: (id) => getDocument()?.getElementById(id) ?? null,
+    createElement: (tagName) =>
+      getDocument()?.createElement(tagName) ??
+      ({
+        id: "",
+        className: "",
+        style: { display: "" },
+        innerHTML: "",
+        setAttribute: () => undefined,
+        querySelector: () => null,
+        querySelectorAll: () => [],
+      } as unknown as HTMLElement),
     appendToBody: (element) => {
-      document.body.appendChild(element);
+      getDocument()?.body?.appendChild(element);
     },
     addKeydownListener: (listener) => {
-      document.addEventListener("keydown", listener);
+      getDocument()?.addEventListener("keydown", listener);
     },
     removeKeydownListener: (listener) => {
-      document.removeEventListener("keydown", listener);
+      getDocument()?.removeEventListener("keydown", listener);
     },
     removeElement: (id) => {
-      document.getElementById(id)?.remove();
+      getDocument()?.getElementById(id)?.remove();
     },
     installRequest: (request) => {
+      const window = getWindow();
+      if (!window) return;
       window.requestStudioInput = request;
       (window as any).prompt = request;
     },
-    isErrorEnabled: () => Boolean(window.ERROR),
+    isErrorEnabled: () => Boolean(getWindow()?.ERROR),
   };
 }
 

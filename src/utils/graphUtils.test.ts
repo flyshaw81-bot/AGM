@@ -1,7 +1,21 @@
-import { describe, expect, it, vi } from "vitest";
-import { type DrawHeightsTargets, drawHeights } from "./graphUtils";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  createGlobalDrawHeightsTargets,
+  type DrawHeightsTargets,
+  drawHeights,
+} from "./graphUtils";
 
 describe("drawHeights", () => {
+  const originalDocument = globalThis.document;
+
+  afterEach(() => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: originalDocument,
+      writable: true,
+    });
+  });
+
   it("renders height data through injected canvas targets", () => {
     const imageData = {
       data: new Uint8ClampedArray(8),
@@ -43,5 +57,25 @@ describe("drawHeights", () => {
       0, 0, 0, 255, 255, 255, 255, 255,
     ]);
     expect(result).toBe("data:image/png;base64,preview");
+  });
+
+  it("keeps global draw heights targets safe when document access throws", () => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
+
+    expect(() =>
+      drawHeights({
+        heights: [10],
+        width: 1,
+        height: 1,
+        scheme: () => "#000000",
+        renderOcean: false,
+        targets: createGlobalDrawHeightsTargets(),
+      }),
+    ).toThrow("Cannot draw heights without a 2D canvas context");
   });
 });
