@@ -8,6 +8,7 @@ import { isPaintCanvasTool } from "./canvasPaintEditing";
 export {
   type CanvasOverlayTargets,
   createCanvasOverlayTargets,
+  createGlobalCanvasOverlayDomTargets,
   createGlobalCanvasOverlayTargets,
 } from "./canvasOverlayTargets";
 

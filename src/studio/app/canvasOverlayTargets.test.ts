@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   createCanvasOverlayTargets,
+  createGlobalCanvasOverlayDomTargets,
   createGlobalCanvasOverlayTargets,
 } from "./canvasOverlayTargets";
 
@@ -54,6 +55,30 @@ describe("canvas overlay targets", () => {
       expect(targets.getCanvasFrame()).toBeNull();
     } finally {
       globalThis.document = originalDocument;
+    }
+  });
+
+  it("keeps default overlay DOM lookups safe when document access throws", () => {
+    const originalDocument = globalThis.document;
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
+
+    try {
+      const targets = createGlobalCanvasOverlayDomTargets();
+
+      expect(targets.getPaintPreviewOverlay()).toBeNull();
+      expect(targets.getToolHud()).toBeNull();
+      expect(targets.getCanvasFrame()).toBeNull();
+    } finally {
+      Object.defineProperty(globalThis, "document", {
+        configurable: true,
+        value: originalDocument,
+        writable: true,
+      });
     }
   });
 });

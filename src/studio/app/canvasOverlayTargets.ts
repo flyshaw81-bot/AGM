@@ -10,17 +10,29 @@ export function createCanvasOverlayTargets(
   return targets;
 }
 
-export function createGlobalCanvasOverlayTargets(): CanvasOverlayTargets {
-  return createCanvasOverlayTargets({
+function getDocument(): Document | undefined {
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
+}
+
+export function createGlobalCanvasOverlayDomTargets(): CanvasOverlayTargets {
+  return {
     getPaintPreviewOverlay: () =>
-      globalThis.document?.querySelector<HTMLElement>(
+      getDocument()?.querySelector<HTMLElement>(
         "[data-canvas-paint-preview='true']",
       ) ?? null,
     getToolHud: () =>
-      globalThis.document?.querySelector<HTMLElement>(
+      getDocument()?.querySelector<HTMLElement>(
         "[data-canvas-tool-hud='true']",
       ) ?? null,
     getCanvasFrame: () =>
-      globalThis.document?.getElementById("studioCanvasFrame") ?? null,
-  });
+      getDocument()?.getElementById("studioCanvasFrame") ?? null,
+  };
+}
+
+export function createGlobalCanvasOverlayTargets(): CanvasOverlayTargets {
+  return createCanvasOverlayTargets(createGlobalCanvasOverlayDomTargets());
 }
