@@ -21,10 +21,23 @@ export type CanvasInteractionTargets = {
   isPaintTool: typeof isPaintCanvasTool;
 };
 
+export type CanvasInteractionDomTargets = Pick<
+  CanvasInteractionTargets,
+  "getCanvasFrame" | "getMapHost" | "isControlEvent"
+>;
+
 export function createCanvasInteractionTargets(
   targets: CanvasInteractionTargets,
 ): CanvasInteractionTargets {
   return targets;
+}
+
+function getDocument(): Document | undefined {
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
 }
 
 function isCanvasControlEvent(event: Event) {
@@ -39,11 +52,17 @@ function isCanvasControlEvent(event: Event) {
   );
 }
 
-export function createGlobalCanvasInteractionTargets(): CanvasInteractionTargets {
-  return createCanvasInteractionTargets({
+export function createGlobalCanvasInteractionDomTargets(): CanvasInteractionDomTargets {
+  return {
     getCanvasFrame: () => getCanvasFrameElement(),
     getMapHost: () => getMapHostElement(),
     isControlEvent: isCanvasControlEvent,
+  };
+}
+
+export function createGlobalCanvasInteractionTargets(): CanvasInteractionTargets {
+  return createCanvasInteractionTargets({
+    ...createGlobalCanvasInteractionDomTargets(),
     getPaintPreviewAt: getCanvasPaintPreviewAt,
     getSelectionAt: getCanvasSelectionAt,
     syncPaintPreview: syncCanvasPaintPreview,
@@ -55,13 +74,12 @@ export function createGlobalCanvasInteractionTargets(): CanvasInteractionTargets
 
 export function createRuntimeCanvasInteractionTargets(
   context: EngineRuntimeContext,
+  domTargets: CanvasInteractionDomTargets = createGlobalCanvasInteractionDomTargets(),
 ): CanvasInteractionTargets {
   const geometryTargets =
     createRuntimeCanvasInteractionGeometryTargets(context);
   return createCanvasInteractionTargets({
-    getCanvasFrame: () => getCanvasFrameElement(),
-    getMapHost: () => getMapHostElement(),
-    isControlEvent: isCanvasControlEvent,
+    ...domTargets,
     getPaintPreviewAt: (event, state) =>
       getCanvasPaintPreviewAt(event, state, geometryTargets),
     getSelectionAt: (event, state) =>
@@ -74,9 +92,9 @@ export function createRuntimeCanvasInteractionTargets(
 }
 
 function getCanvasFrameElement(): HTMLElement | null {
-  return globalThis.document?.getElementById("studioCanvasFrame") ?? null;
+  return getDocument()?.getElementById("studioCanvasFrame") ?? null;
 }
 
 function getMapHostElement(): HTMLElement | null {
-  return globalThis.document?.getElementById("studioMapHost") ?? null;
+  return getDocument()?.getElementById("studioMapHost") ?? null;
 }

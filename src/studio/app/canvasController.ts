@@ -21,6 +21,7 @@ export { syncOverlays };
 export {
   type CanvasInteractionTargets,
   createCanvasInteractionTargets,
+  createGlobalCanvasInteractionDomTargets,
   createGlobalCanvasInteractionTargets,
   createRuntimeCanvasInteractionTargets,
 } from "./canvasInteractionTargets";

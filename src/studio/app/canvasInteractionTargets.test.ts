@@ -3,6 +3,7 @@ import type { EngineRuntimeContext } from "../../modules/engine-runtime-context"
 import type { CanvasToolMode } from "../types";
 import {
   createCanvasInteractionTargets,
+  createGlobalCanvasInteractionDomTargets,
   createGlobalCanvasInteractionTargets,
   createRuntimeCanvasInteractionTargets,
 } from "./canvasInteractionTargets";
@@ -61,6 +62,30 @@ describe("canvas interaction targets", () => {
       expect(targets.getMapHost()).toBeNull();
     } finally {
       globalThis.document = originalDocument;
+    }
+  });
+
+  it("keeps default canvas DOM adapter safe when document access throws", () => {
+    const originalDescriptor = Object.getOwnPropertyDescriptor(
+      globalThis,
+      "document",
+    );
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("blocked document");
+      },
+    });
+
+    try {
+      const targets = createGlobalCanvasInteractionDomTargets();
+
+      expect(targets.getCanvasFrame()).toBeNull();
+      expect(targets.getMapHost()).toBeNull();
+    } finally {
+      if (originalDescriptor) {
+        Object.defineProperty(globalThis, "document", originalDescriptor);
+      }
     }
   });
 

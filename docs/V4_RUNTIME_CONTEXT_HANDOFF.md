@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 196 test files, 817 tests.
+- `npm.cmd run test -- --run` passed: 196 test files, 818 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2190,6 +2190,10 @@ the same public target factory, while tests cover blocked `document` access.
 Canvas selection highlight default DOM access now has a separate
 `createGlobalCanvasSelectionHighlightDomTargets()` boundary as well, with
 blocked `document` coverage for selected state and state-border lookups.
+Canvas interaction default DOM access now has a separate
+`createGlobalCanvasInteractionDomTargets()` boundary for the canvas frame, map
+host, and control-event checks. Runtime canvas interaction targets can now
+reuse an injected DOM adapter while tests cover blocked `document` access.
 
 `ocean-layers.ts` now routes outline-chain error reporting through
 `OceanLayerLogTargets`, keeping the default `globalThis.ERROR` compatibility
