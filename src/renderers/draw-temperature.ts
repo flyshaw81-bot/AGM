@@ -15,6 +15,14 @@ declare global {
   var drawTemperature: () => void;
 }
 
+const getWindow = (): (Window & typeof globalThis) | undefined => {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+};
+
 const temperatureRenderer = (): void => {
   TIME && console.time("drawTemperature");
 
@@ -152,4 +160,5 @@ const temperatureRenderer = (): void => {
   TIME && console.timeEnd("drawTemperature");
 };
 
-window.drawTemperature = temperatureRenderer;
+const runtimeWindow = getWindow();
+if (runtimeWindow) runtimeWindow.drawTemperature = temperatureRenderer;

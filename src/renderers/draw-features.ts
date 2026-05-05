@@ -20,6 +20,14 @@ interface FeaturesHtml {
   lakes: { [key: string]: string[] };
 }
 
+const getWindow = (): (Window & typeof globalThis) | undefined => {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+};
+
 const featuresRenderer = (): void => {
   TIME && console.time("drawFeatures");
 
@@ -100,5 +108,8 @@ function featurePathRenderer(feature: PackedGraphFeature): string {
   return path;
 }
 
-window.drawFeatures = featuresRenderer;
-window.getFeaturePath = featurePathRenderer;
+const runtimeWindow = getWindow();
+if (runtimeWindow) {
+  runtimeWindow.drawFeatures = featuresRenderer;
+  runtimeWindow.getFeaturePath = featurePathRenderer;
+}

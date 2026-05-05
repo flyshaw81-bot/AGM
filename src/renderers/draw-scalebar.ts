@@ -14,6 +14,14 @@ declare global {
   ) => void;
 }
 
+const getWindow = (): (Window & typeof globalThis) | undefined => {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+};
+
 type ScaleBarSelection = d3.Selection<
   SVGGElement,
   unknown,
@@ -141,5 +149,8 @@ const scaleBarResize = (
   scaleBar.attr("transform", `translate(${x},${y})`);
 };
 
-window.drawScaleBar = scaleBarRenderer;
-window.fitScaleBar = scaleBarResize;
+const runtimeWindow = getWindow();
+if (runtimeWindow) {
+  runtimeWindow.drawScaleBar = scaleBarRenderer;
+  runtimeWindow.fitScaleBar = scaleBarResize;
+}

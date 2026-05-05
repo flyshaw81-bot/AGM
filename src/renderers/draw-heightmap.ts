@@ -13,6 +13,14 @@ declare global {
   var drawHeightmap: () => void;
 }
 
+const getWindow = (): (Window & typeof globalThis) | undefined => {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+};
+
 const HEIGHTMAP_CURVES = {
   curveBasisClosed,
   curveLinear,
@@ -195,4 +203,5 @@ const heightmapRenderer = (): void => {
   TIME && console.timeEnd("drawHeightmap");
 };
 
-window.drawHeightmap = heightmapRenderer;
+const runtimeWindow = getWindow();
+if (runtimeWindow) runtimeWindow.drawHeightmap = heightmapRenderer;

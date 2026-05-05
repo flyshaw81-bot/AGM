@@ -19,6 +19,14 @@ const getDocument = (): Document | undefined => {
   }
 };
 
+const getWindow = (): (Window & typeof globalThis) | undefined => {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+};
+
 const burgLabelsRenderer = (): void => {
   TIME && console.time("drawBurgLabels");
   createLabelGroups();
@@ -116,6 +124,9 @@ function createLabelGroups(): void {
   }
 }
 
-window.drawBurgLabels = burgLabelsRenderer;
-window.drawBurgLabel = drawBurgLabelRenderer;
-window.removeBurgLabel = removeBurgLabelRenderer;
+const runtimeWindow = getWindow();
+if (runtimeWindow) {
+  runtimeWindow.drawBurgLabels = burgLabelsRenderer;
+  runtimeWindow.drawBurgLabel = drawBurgLabelRenderer;
+  runtimeWindow.removeBurgLabel = removeBurgLabelRenderer;
+}

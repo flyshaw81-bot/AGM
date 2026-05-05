@@ -25,6 +25,14 @@ interface EmblemNode {
   shift: number;
 }
 
+const getWindow = (): (Window & typeof globalThis) | undefined => {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+};
+
 const emblemsRenderer = (): void => {
   TIME && console.time("drawEmblems");
   const { states, provinces, burgs } = pack;
@@ -196,5 +204,8 @@ const renderGroupCOAsRenderer = async (g: SVGGElement): Promise<void> => {
   }
 };
 
-window.drawEmblems = emblemsRenderer;
-window.renderGroupCOAs = renderGroupCOAsRenderer;
+const runtimeWindow = getWindow();
+if (runtimeWindow) {
+  runtimeWindow.drawEmblems = emblemsRenderer;
+  runtimeWindow.renderGroupCOAs = renderGroupCOAsRenderer;
+}

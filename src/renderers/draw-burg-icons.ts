@@ -19,6 +19,14 @@ const getDocument = (): Document | undefined => {
   }
 };
 
+const getWindow = (): (Window & typeof globalThis) | undefined => {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+};
+
 const burgIconsRenderer = (): void => {
   TIME && console.time("drawBurgIcons");
   createIconGroups();
@@ -156,6 +164,9 @@ function createIconGroups(): void {
   }
 }
 
-window.drawBurgIcons = burgIconsRenderer;
-window.drawBurgIcon = drawBurgIconRenderer;
-window.removeBurgIcon = removeBurgIconRenderer;
+const runtimeWindow = getWindow();
+if (runtimeWindow) {
+  runtimeWindow.drawBurgIcons = burgIconsRenderer;
+  runtimeWindow.drawBurgIcon = drawBurgIconRenderer;
+  runtimeWindow.removeBurgIcon = removeBurgIconRenderer;
+}

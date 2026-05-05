@@ -14,6 +14,14 @@ declare global {
   var drawStateLabels: (list?: number[]) => void;
 }
 
+const getWindow = (): (Window & typeof globalThis) | undefined => {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+};
+
 interface Ray {
   angle: number;
   length: number;
@@ -437,4 +445,5 @@ const stateLabelsRenderer = (list?: number[]): void => {
   TIME && console.timeEnd("drawStateLabels");
 };
 
-window.drawStateLabels = stateLabelsRenderer;
+const runtimeWindow = getWindow();
+if (runtimeWindow) runtimeWindow.drawStateLabels = stateLabelsRenderer;

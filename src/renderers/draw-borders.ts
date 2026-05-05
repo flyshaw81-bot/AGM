@@ -2,6 +2,14 @@ declare global {
   var drawBorders: () => void;
 }
 
+const getWindow = (): (Window & typeof globalThis) | undefined => {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+};
+
 const bordersRenderer = () => {
   TIME && console.time("drawBorders");
   const { cells, vertices } = pack;
@@ -178,4 +186,5 @@ const bordersRenderer = () => {
   TIME && console.timeEnd("drawBorders");
 };
 
-window.drawBorders = bordersRenderer;
+const runtimeWindow = getWindow();
+if (runtimeWindow) runtimeWindow.drawBorders = bordersRenderer;
