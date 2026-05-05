@@ -2413,6 +2413,8 @@ Global ID generation falls back to the requested base id, and list formatting
 falls back to English when browser language metadata is unavailable or blocked.
 Heightmap PNG export targets now also guard blocked canvas creation and fall
 back to an unavailable canvas instead of leaking DOM failures.
+Draft file IO targets now guard blocked link creation/body append/script lookup
+and report JSZip script-load failures through the existing export error path.
 
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`

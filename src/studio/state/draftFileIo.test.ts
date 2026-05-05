@@ -144,4 +144,43 @@ describe("draft file IO helpers", () => {
     expect(targets.getJsZip()).toBeUndefined();
     await expect(targets.loadJsZipScript()).resolves.toBeUndefined();
   });
+
+  it("keeps global download targets safe when element creation and append throw", () => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: {
+        createElement: () => {
+          throw new Error("element blocked");
+        },
+        body: {
+          appendChild: () => {
+            throw new Error("append blocked");
+          },
+        },
+      },
+      writable: true,
+    });
+    const targets = createGlobalDraftFileIoTargets();
+
+    const link = targets.createDownloadLink();
+    expect(link.href).toBe("");
+    expect(() => targets.appendToBody(link)).not.toThrow();
+  });
+
+  it("reports JSZip script load failure when script DOM access is blocked", async () => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: {
+        querySelector: () => {
+          throw new Error("query blocked");
+        },
+      },
+      writable: true,
+    });
+    const targets = createGlobalDraftFileIoTargets();
+
+    await expect(targets.loadJsZipScript()).rejects.toThrow(
+      "JSZip failed to load",
+    );
+  });
 });

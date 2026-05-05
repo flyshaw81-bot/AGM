@@ -27,6 +27,13 @@ export type DraftFileIoTargets = {
   loadJsZipScript: () => Promise<void>;
 };
 
+const createUnavailableDownloadLink = (): DraftDownloadLink => ({
+  href: "",
+  download: "",
+  click: () => undefined,
+  remove: () => undefined,
+});
+
 const getDocument = (): Document | undefined => {
   try {
     return globalThis.document;
@@ -47,15 +54,21 @@ export function createGlobalDraftFileIoTargets(): DraftFileIoTargets {
   return {
     createObjectUrl: (blob) => URL.createObjectURL(blob),
     revokeObjectUrl: (url) => URL.revokeObjectURL(url),
-    createDownloadLink: () =>
-      getDocument()?.createElement("a") ?? {
-        href: "",
-        download: "",
-        click: () => undefined,
-        remove: () => undefined,
-      },
+    createDownloadLink: () => {
+      try {
+        return (
+          getDocument()?.createElement("a") ?? createUnavailableDownloadLink()
+        );
+      } catch {
+        return createUnavailableDownloadLink();
+      }
+    },
     appendToBody: (element) => {
-      getDocument()?.body?.appendChild(element as HTMLAnchorElement);
+      try {
+        getDocument()?.body?.appendChild(element as HTMLAnchorElement);
+      } catch {
+        // Download fallback links may be detached in restricted runtimes.
+      }
     },
     getJsZip: () => getWindow()?.JSZip,
     loadJsZipScript: () =>
@@ -66,9 +79,15 @@ export function createGlobalDraftFileIoTargets(): DraftFileIoTargets {
           return;
         }
 
-        const existingScript = document.querySelector<HTMLScriptElement>(
-          "script[data-agm-jszip]",
-        );
+        let existingScript: HTMLScriptElement | null = null;
+        try {
+          existingScript = document.querySelector<HTMLScriptElement>(
+            "script[data-agm-jszip]",
+          );
+        } catch {
+          reject(new Error("JSZip failed to load"));
+          return;
+        }
         if (existingScript) {
           existingScript.addEventListener("load", () => resolve(), {
             once: true,
@@ -81,12 +100,22 @@ export function createGlobalDraftFileIoTargets(): DraftFileIoTargets {
           return;
         }
 
-        const script = document.createElement("script");
+        let script: HTMLScriptElement;
+        try {
+          script = document.createElement("script");
+        } catch {
+          reject(new Error("JSZip failed to load"));
+          return;
+        }
         script.dataset.agmJszip = "true";
         script.src = `${import.meta.env.BASE_URL}libs/jszip.min.js`;
         script.onload = () => resolve();
         script.onerror = () => reject(new Error("JSZip failed to load"));
-        document.head.appendChild(script);
+        try {
+          document.head.appendChild(script);
+        } catch {
+          reject(new Error("JSZip failed to load"));
+        }
       }),
   };
 }
