@@ -26,7 +26,13 @@ const getDocument = (): Document | undefined => {
 
 export function createGlobalNodeIdTargets(): NodeIdTargets {
   return {
-    getElementById: (id) => getDocument()?.getElementById(id) ?? null,
+    getElementById: (id) => {
+      try {
+        return getDocument()?.getElementById(id) ?? null;
+      } catch {
+        return null;
+      }
+    },
   };
 }
 

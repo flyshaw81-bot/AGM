@@ -212,12 +212,19 @@ export const abbreviate = (name: string, restricted: string[] = []) => {
  */
 export const list = (array: string[]) => {
   if (!Intl.ListFormat) return array.join(", ");
-  const language = getDocument()?.documentElement?.lang || "en";
-  const conjunction = new Intl.ListFormat(language, {
-    style: "long",
-    type: "conjunction",
-  });
-  return conjunction.format(array);
+  try {
+    const language = getDocument()?.documentElement?.lang || "en";
+    const conjunction = new Intl.ListFormat(language, {
+      style: "long",
+      type: "conjunction",
+    });
+    return conjunction.format(array);
+  } catch {
+    return new Intl.ListFormat("en", {
+      style: "long",
+      type: "conjunction",
+    }).format(array);
+  }
 };
 
 declare global {

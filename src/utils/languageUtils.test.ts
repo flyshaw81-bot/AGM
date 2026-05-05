@@ -28,4 +28,18 @@ describe("list", () => {
 
     expect(list(["alpha", "beta"])).toBe("alpha and beta");
   });
+
+  it("falls back to English when language lookup throws", () => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: {
+        get documentElement() {
+          throw new Error("language blocked");
+        },
+      },
+      writable: true,
+    });
+
+    expect(list(["alpha", "beta"])).toBe("alpha and beta");
+  });
 });

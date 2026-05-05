@@ -39,4 +39,18 @@ describe("getNextId", () => {
 
     expect(getNextId("route", 1, createGlobalNodeIdTargets())).toBe("route1");
   });
+
+  it("keeps global id lookup safe when element lookup throws", () => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: {
+        getElementById: () => {
+          throw new Error("element lookup blocked");
+        },
+      },
+      writable: true,
+    });
+
+    expect(getNextId("route", 1, createGlobalNodeIdTargets())).toBe("route1");
+  });
 });

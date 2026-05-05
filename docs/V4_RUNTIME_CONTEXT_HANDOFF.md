@@ -2408,6 +2408,10 @@ Shared DOM shorthand and graph height-preview defaults now guard blocked
 fall back to undefined/null-canvas behavior instead of leaking browser DOM
 failures into runtime helpers.
 
+Node-id and language-list utilities now guard blocked element/language lookups.
+Global ID generation falls back to the requested base id, and list formatting
+falls back to English when browser language metadata is unavailable or blocked.
+
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`
 dimensions. `engine-generation-session-services.ts` now exposes
