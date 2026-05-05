@@ -1,26 +1,26 @@
 import type { StudioLanguage } from "../types";
-import type { queryNativeRelationshipQueueDom } from "./nativeRelationshipQueueDom";
+import type { queryDirectRelationshipQueueDom } from "./nativeRelationshipQueueDom";
 import { t } from "./shellShared";
 
-type NativeRelationshipQueueDom = ReturnType<
-  typeof queryNativeRelationshipQueueDom
+type DirectRelationshipQueueDom = ReturnType<
+  typeof queryDirectRelationshipQueueDom
 >;
 
-type NativeRelationshipQueueUiDom = Pick<
-  NativeRelationshipQueueDom,
+type DirectRelationshipQueueUiDom = Pick<
+  DirectRelationshipQueueDom,
   | "nativeRelationshipQueueActionScope"
   | "nativeRelationshipQueueDetails"
   | "nativeRelationshipQueueToggle"
 >;
 
-export type NativeRelationshipQueueActionState =
+export type DirectRelationshipQueueActionState =
   | "idle"
   | "queued"
   | "conflict"
   | "applied";
 
-export function setNativeRelationshipQueueDetailsOpen(
-  dom: NativeRelationshipQueueUiDom,
+export function setDirectRelationshipQueueDetailsOpen(
+  dom: DirectRelationshipQueueUiDom,
   language: StudioLanguage,
   open: boolean,
 ) {
@@ -32,10 +32,10 @@ export function setNativeRelationshipQueueDetailsOpen(
     : t(language, "展开", "Details");
 }
 
-export function updateNativeRelationshipQueueActionScope(
-  dom: NativeRelationshipQueueUiDom,
+export function updateDirectRelationshipQueueActionScope(
+  dom: DirectRelationshipQueueUiDom,
   message?: string,
-  stateValue: NativeRelationshipQueueActionState = "idle",
+  stateValue: DirectRelationshipQueueActionState = "idle",
 ) {
   const { nativeRelationshipQueueActionScope } = dom;
   if (!nativeRelationshipQueueActionScope) return;
@@ -45,3 +45,13 @@ export function updateNativeRelationshipQueueActionScope(
     nativeRelationshipQueueActionScope.dataset.defaultLabel ||
     "Apply writes the whole queue; Review only navigates and does not edit.";
 }
+
+export type NativeRelationshipQueueActionState =
+  DirectRelationshipQueueActionState;
+export type NativeRelationshipQueueDom = DirectRelationshipQueueDom;
+export type NativeRelationshipQueueUiDom = DirectRelationshipQueueUiDom;
+
+export const setNativeRelationshipQueueDetailsOpen =
+  setDirectRelationshipQueueDetailsOpen;
+export const updateNativeRelationshipQueueActionScope =
+  updateDirectRelationshipQueueActionScope;

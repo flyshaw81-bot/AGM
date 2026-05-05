@@ -9,8 +9,8 @@ import { queryNativeRelationshipQueueDom } from "./nativeRelationshipQueueDom";
 import { bindNativeRelationshipQueueHistoryEvents } from "./nativeRelationshipQueueHistoryEvents";
 import { renderNativeRelationshipQueueList } from "./nativeRelationshipQueueRenderer";
 import {
-  setNativeRelationshipQueueDetailsOpen,
-  updateNativeRelationshipQueueActionScope,
+  setDirectRelationshipQueueDetailsOpen,
+  updateDirectRelationshipQueueActionScope,
 } from "./nativeRelationshipQueueUi";
 import { bindActionClick } from "./studioEventBinding";
 
@@ -45,11 +45,11 @@ export function bindNativeRelationshipQueueEvents({
   } = queueDom;
 
   const setQueueDetailsOpen = (open: boolean) =>
-    setNativeRelationshipQueueDetailsOpen(queueDom, state.language, open);
+    setDirectRelationshipQueueDetailsOpen(queueDom, state.language, open);
   const updateQueueActionScope = (
     message?: string,
-    stateValue?: Parameters<typeof updateNativeRelationshipQueueActionScope>[2],
-  ) => updateNativeRelationshipQueueActionScope(queueDom, message, stateValue);
+    stateValue?: Parameters<typeof updateDirectRelationshipQueueActionScope>[2],
+  ) => updateDirectRelationshipQueueActionScope(queueDom, message, stateValue);
 
   let renderNativeRelationshipHistory = () => {};
   const renderNativeRelationshipQueue = () =>
