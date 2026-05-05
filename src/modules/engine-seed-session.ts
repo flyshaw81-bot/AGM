@@ -49,6 +49,30 @@ function getWindow(): (Window & typeof globalThis) | undefined {
   }
 }
 
+function getMapHistory(): EngineSeedHistoryEntry[] | undefined {
+  try {
+    return globalThis.mapHistory;
+  } catch {
+    return undefined;
+  }
+}
+
+function getLocationHref(): string {
+  try {
+    return globalThis.location?.href ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function getAleaPrng(): ((seed: string) => () => number) | undefined {
+  try {
+    return globalThis.aleaPRNG;
+  } catch {
+    return undefined;
+  }
+}
+
 export function createGlobalSeedDomTargets(): EngineSeedDomTargets {
   return {
     getOptionsSeedInput: () =>
@@ -58,13 +82,15 @@ export function createGlobalSeedDomTargets(): EngineSeedDomTargets {
 
 export function createGlobalSeedRuntimeTargets(): EngineSeedRuntimeTargets {
   return {
-    hasHistory: () => Boolean(globalThis.mapHistory?.[0]),
-    getSearchParams: () => new URL(globalThis.location.href).searchParams,
+    hasHistory: () => Boolean(getMapHistory()?.[0]),
+    getSearchParams: () =>
+      new URL(getLocationHref(), "https://agm.local").searchParams,
     setSeed: (nextSeed) => {
       globalThis.seed = nextSeed;
     },
     setRandomGenerator: (nextSeed) => {
-      Math.random = aleaPRNG(nextSeed);
+      const createRandom = getAleaPrng();
+      if (createRandom) Math.random = createRandom(nextSeed);
     },
     createSeed: generateSeed,
   };

@@ -206,6 +206,75 @@ describe("EngineSeedSessionModule", () => {
     }
   });
 
+  it("keeps global seed runtime targets safe when global access throws", () => {
+    const originalMapHistoryDescriptor = Object.getOwnPropertyDescriptor(
+      globalThis,
+      "mapHistory",
+    );
+    const originalLocationDescriptor = Object.getOwnPropertyDescriptor(
+      globalThis,
+      "location",
+    );
+    const originalAleaPrngDescriptor = Object.getOwnPropertyDescriptor(
+      globalThis,
+      "aleaPRNG",
+    );
+    const originalRandom = Math.random;
+
+    Object.defineProperty(globalThis, "mapHistory", {
+      configurable: true,
+      get: () => {
+        throw new Error("history blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "location", {
+      configurable: true,
+      get: () => {
+        throw new Error("location blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "aleaPRNG", {
+      configurable: true,
+      get: () => {
+        throw new Error("alea blocked");
+      },
+    });
+
+    try {
+      const runtimeTargets = createGlobalSeedRuntimeTargets();
+
+      expect(runtimeTargets.hasHistory()).toBe(false);
+      expect(runtimeTargets.getSearchParams().toString()).toBe("");
+      expect(() =>
+        runtimeTargets.setRandomGenerator("global-seed"),
+      ).not.toThrow();
+      expect(Math.random).toBe(originalRandom);
+    } finally {
+      if (originalMapHistoryDescriptor) {
+        Object.defineProperty(
+          globalThis,
+          "mapHistory",
+          originalMapHistoryDescriptor,
+        );
+      }
+      if (originalLocationDescriptor) {
+        Object.defineProperty(
+          globalThis,
+          "location",
+          originalLocationDescriptor,
+        );
+      }
+      if (originalAleaPrngDescriptor) {
+        Object.defineProperty(
+          globalThis,
+          "aleaPRNG",
+          originalAleaPrngDescriptor,
+        );
+      }
+      Math.random = originalRandom;
+    }
+  });
+
   it("writes resolved seeds into the runtime context before delegating", () => {
     const context = createRuntimeContext();
     const fallback = createTargets();

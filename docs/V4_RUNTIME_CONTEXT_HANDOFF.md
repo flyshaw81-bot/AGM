@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 196 test files, 822 tests.
+- `npm.cmd run test -- --run` passed: 196 test files, 823 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2207,6 +2207,10 @@ keeping existing global render helper delegation unchanged.
 Generation settings global control access now guards `pointsInput` and
 `heightExponentInput` through `createGlobalGenerationControlTargets()`, so
 restricted global getters fall back to defaults instead of throwing.
+Seed session runtime global access now guards `mapHistory`, `location`, and
+`aleaPRNG` reads. The default seed runtime target preserves compatibility while
+blocked globals now fall back to no history, empty URL params, and no RNG
+replacement.
 
 `ocean-layers.ts` now routes outline-chain error reporting through
 `OceanLayerLogTargets`, keeping the default `globalThis.ERROR` compatibility
