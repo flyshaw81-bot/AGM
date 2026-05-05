@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PackedGraph } from "../types/PackedGraph";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
 import { ReligionsModule } from "./religions-generator";
@@ -6,6 +6,11 @@ import {
   createTestNoteService,
   createTestRuntimeAdapters,
 } from "./test-runtime-context";
+
+const originalWindowDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "window",
+);
 
 function createReligionsContext(): EngineRuntimeContext {
   return {
@@ -88,6 +93,25 @@ function createReligionsContext(): EngineRuntimeContext {
 }
 
 describe("ReligionsModule", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    if (originalWindowDescriptor) {
+      Object.defineProperty(globalThis, "window", originalWindowDescriptor);
+    }
+  });
+
+  it("can be imported when window access throws", async () => {
+    vi.resetModules();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+
+    await expect(import("./religions-generator")).resolves.toBeDefined();
+  });
+
   it("generates names for non-theistic forms without a deity", () => {
     const context = createReligionsContext();
     const religions = new ReligionsModule() as unknown as {

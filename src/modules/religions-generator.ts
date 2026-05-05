@@ -13,6 +13,14 @@ declare global {
   var Religions: ReligionsModule;
 }
 
+function getWindow(): (Window & typeof globalThis) | undefined {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+}
+
 interface ReligionBase {
   type: "Folk" | "Organized" | "Cult" | "Heresy";
   form: string;
@@ -1207,6 +1215,5 @@ export class ReligionsModule {
   }
 }
 
-if (typeof window !== "undefined") {
-  window.Religions = new ReligionsModule();
-}
+const runtimeWindow = getWindow();
+if (runtimeWindow) runtimeWindow.Religions = new ReligionsModule();

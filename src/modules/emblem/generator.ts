@@ -12,6 +12,14 @@ declare global {
   var COA: EmblemGeneratorModule;
 }
 
+function getWindow(): (Window & typeof globalThis) | undefined {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+}
+
 export type EmblemShapeSelection = {
   value: string;
   group: string;
@@ -642,6 +650,5 @@ class EmblemGeneratorModule {
 
 export default EmblemGeneratorModule;
 
-if (typeof window !== "undefined") {
-  window.COA = new EmblemGeneratorModule();
-}
+const runtimeWindow = getWindow();
+if (runtimeWindow) runtimeWindow.COA = new EmblemGeneratorModule();

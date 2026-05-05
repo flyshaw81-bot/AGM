@@ -9,6 +9,10 @@ import {
 
 const originalPipeline = globalThis.EngineGenerationPipeline;
 const originalProvinces = globalThis.Provinces;
+const originalWindowDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "window",
+);
 
 function createEmptyPack() {
   return {
@@ -127,8 +131,24 @@ function createResampleContext() {
 
 describe("Resampler", () => {
   afterEach(() => {
+    vi.restoreAllMocks();
     globalThis.EngineGenerationPipeline = originalPipeline;
     globalThis.Provinces = originalProvinces;
+    if (originalWindowDescriptor) {
+      Object.defineProperty(globalThis, "window", originalWindowDescriptor);
+    }
+  });
+
+  it("can be imported when window access throws", async () => {
+    vi.resetModules();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+
+    await expect(import("./resample")).resolves.toBeDefined();
   });
 
   it("runs the resample pipeline against an explicit runtime context", () => {

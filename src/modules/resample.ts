@@ -20,6 +20,14 @@ declare global {
   var Resample: Resampler;
 }
 
+function getWindow(): (Window & typeof globalThis) | undefined {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+}
+
 interface ResamplerProcessOptions {
   projection: (x: number, y: number) => [number, number];
   inverse: (x: number, y: number) => [number, number];
@@ -594,6 +602,5 @@ export class Resampler {
   }
 }
 
-if (typeof window !== "undefined") {
-  window.Resample = new Resampler();
-}
+const runtimeWindow = getWindow();
+if (runtimeWindow) runtimeWindow.Resample = new Resampler();

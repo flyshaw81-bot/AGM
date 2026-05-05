@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 196 test files, 799 tests.
+- `npm.cmd run test -- --run` passed: 196 test files, 805 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2201,6 +2201,11 @@ import path while preserving the existing public mount names.
 `States`, `Provinces`, `Zones`, and `Markers` compatibility mounts now also
 guard blocked `window` access at import time. These remain AGM entity-generator
 module mounts for the public compatibility path.
+
+`Burgs`, `Cultures`, `Military`, `Religions`, `Resample`, and `COA`
+compatibility mounts now also guard blocked `window` access at import time.
+After this pass, the remaining `window.*` hits under `src/modules` are guarded
+AGM compatibility mounts rather than naked import-time browser reads.
 
 ## Next Recommended Slice
 

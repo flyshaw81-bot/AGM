@@ -15,6 +15,14 @@ declare global {
   var Cultures: CulturesModule;
 }
 
+function getWindow(): (Window & typeof globalThis) | undefined {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+}
+
 export interface Culture {
   name: string;
   i: number;
@@ -1429,6 +1437,5 @@ export class CulturesModule {
   }
 }
 
-if (typeof window !== "undefined") {
-  window.Cultures = new CulturesModule();
-}
+const runtimeWindow = getWindow();
+if (runtimeWindow) runtimeWindow.Cultures = new CulturesModule();

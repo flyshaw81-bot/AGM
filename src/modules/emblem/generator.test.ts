@@ -1,4 +1,4 @@
-import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type EmblemGeneratorModuleType from "./generator";
 import type { EmblemShapeDomTargets, EmblemShapeTargets } from "./generator";
 import {
@@ -8,6 +8,10 @@ import {
 
 const originalPack = globalThis.pack;
 const originalDocument = globalThis.document;
+const originalWindowDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "window",
+);
 let EmblemGeneratorModule: typeof EmblemGeneratorModuleType;
 
 function createEmblemGenerator(targets: EmblemShapeTargets) {
@@ -27,12 +31,28 @@ describe("EmblemGeneratorModule", () => {
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     globalThis.pack = originalPack;
     Object.defineProperty(globalThis, "document", {
       configurable: true,
       value: originalDocument,
       writable: true,
     });
+    if (originalWindowDescriptor) {
+      Object.defineProperty(globalThis, "window", originalWindowDescriptor);
+    }
+  });
+
+  it("can be imported when window access throws", async () => {
+    vi.resetModules();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+
+    await expect(import("./generator")).resolves.toBeDefined();
   });
 
   it("uses an injected fixed shield shape without reading document", () => {

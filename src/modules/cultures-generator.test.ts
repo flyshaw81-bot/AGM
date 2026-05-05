@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { type Culture, CulturesModule } from "./cultures-generator";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
 import type { NameBase } from "./names-generator";
@@ -6,6 +6,11 @@ import {
   createTestNoteService,
   createTestRuntimeAdapters,
 } from "./test-runtime-context";
+
+const originalWindowDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "window",
+);
 
 function createCultureContext(): EngineRuntimeContext {
   return {
@@ -116,6 +121,25 @@ function createGenerateCultureContext(): EngineRuntimeContext {
 }
 
 describe("CulturesModule", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    if (originalWindowDescriptor) {
+      Object.defineProperty(globalThis, "window", originalWindowDescriptor);
+    }
+  });
+
+  it("can be imported when window access throws", async () => {
+    vi.resetModules();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+
+    await expect(import("./cultures-generator")).resolves.toBeDefined();
+  });
+
   it("gets random shields through the runtime heraldry service", () => {
     expect(new CulturesModule().getRandomShield(createCultureContext())).toBe(
       "round",

@@ -10,6 +10,15 @@ import {
 declare global {
   var Burgs: BurgModule;
 }
+
+function getWindow(): (Window & typeof globalThis) | undefined {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+}
+
 export interface Burg {
   cell: number;
   x: number;
@@ -807,6 +816,5 @@ export class BurgModule {
     context.rendering?.removeBurg(burg.i!);
   }
 }
-if (typeof window !== "undefined") {
-  window.Burgs = new BurgModule();
-}
+const runtimeWindow = getWindow();
+if (runtimeWindow) runtimeWindow.Burgs = new BurgModule();

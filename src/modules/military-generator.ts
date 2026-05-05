@@ -14,6 +14,14 @@ declare global {
   var Military: MilitaryModule;
 }
 
+function getWindow(): (Window & typeof globalThis) | undefined {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+}
+
 export interface MilitaryRegiment {
   i: number;
   t: number; // total troops
@@ -640,6 +648,5 @@ export class MilitaryModule {
   }
 }
 
-if (typeof window !== "undefined") {
-  window.Military = new MilitaryModule();
-}
+const runtimeWindow = getWindow();
+if (runtimeWindow) runtimeWindow.Military = new MilitaryModule();
