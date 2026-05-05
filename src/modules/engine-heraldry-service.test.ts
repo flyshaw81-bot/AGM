@@ -6,11 +6,23 @@ import {
 } from "./engine-heraldry-service";
 
 const originalCoa = globalThis.COA;
+const originalCoaDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "COA",
+);
 const originalMathRandom = Math.random;
 
 describe("createGlobalHeraldryService", () => {
   afterEach(() => {
-    globalThis.COA = originalCoa;
+    if (originalCoaDescriptor) {
+      Object.defineProperty(globalThis, "COA", originalCoaDescriptor);
+    } else {
+      Object.defineProperty(globalThis, "COA", {
+        configurable: true,
+        value: originalCoa,
+        writable: true,
+      });
+    }
     Math.random = originalMathRandom;
   });
 
@@ -100,6 +112,21 @@ describe("createGlobalHeraldryService", () => {
 
   it("uses stable fallbacks when the heraldry module is not mounted", () => {
     globalThis.COA = undefined as unknown as typeof COA;
+
+    const heraldry = createGlobalHeraldryService();
+
+    expect(heraldry.generate("parent", null, "dominion")).toEqual({});
+    expect(heraldry.getShield(1, 2)).toBe("heater");
+    expect(heraldry.getRandomShield()).toBe("heater");
+  });
+
+  it("uses stable fallbacks when the heraldry module access throws", () => {
+    Object.defineProperty(globalThis, "COA", {
+      configurable: true,
+      get: () => {
+        throw new Error("COA blocked");
+      },
+    });
 
     const heraldry = createGlobalHeraldryService();
 

@@ -19,7 +19,9 @@ export function createEngineFeedbackService(
 export function createGlobalFeedbackTargets(): EngineFeedbackServiceTargets {
   return {
     showToast: (message, isSuccess, type) => {
-      globalThis.tip?.(message, isSuccess, type as any);
+      getGlobalFunction<
+        (message: string, isSuccess?: boolean, type?: any) => void
+      >("tip")?.(message, isSuccess, type);
     },
   };
 }
@@ -28,4 +30,15 @@ export function createGlobalFeedbackService(
   targets: EngineFeedbackServiceTargets = createGlobalFeedbackTargets(),
 ): EngineFeedbackService {
   return createEngineFeedbackService(targets);
+}
+
+function getGlobalFunction<T extends (...args: never[]) => unknown>(
+  name: string,
+): T | undefined {
+  try {
+    const value = (globalThis as Record<string, unknown>)[name];
+    return typeof value === "function" ? (value as T) : undefined;
+  } catch {
+    return undefined;
+  }
 }

@@ -9,11 +9,31 @@ import type { EngineRuntimeContext } from "./engine-runtime-context";
 
 const originalBurgs = globalThis.Burgs;
 const originalPack = globalThis.pack;
+const originalBurgsDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "Burgs",
+);
+const originalPackDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "pack",
+);
 
 describe("createGlobalBurgService", () => {
   afterEach(() => {
-    globalThis.Burgs = originalBurgs;
-    globalThis.pack = originalPack;
+    for (const [name, descriptor, value] of [
+      ["Burgs", originalBurgsDescriptor, originalBurgs],
+      ["pack", originalPackDescriptor, originalPack],
+    ] as const) {
+      if (descriptor) {
+        Object.defineProperty(globalThis, name, descriptor);
+      } else {
+        Object.defineProperty(globalThis, name, {
+          configurable: true,
+          value,
+          writable: true,
+        });
+      }
+    }
   });
 
   it("forwards burg commands to the current AGM Burgs module mount", () => {
@@ -87,6 +107,29 @@ describe("createGlobalBurgService", () => {
     expect(() => burgs.remove(3)).not.toThrow();
     expect(burgs.findById(3)).toBeUndefined();
     expect(burgs.getType(3, 0)).toBe("Generic");
+  });
+
+  it("keeps command calls safe when burg globals are blocked", () => {
+    for (const name of ["Burgs", "pack"]) {
+      Object.defineProperty(globalThis, name, {
+        configurable: true,
+        get: () => {
+          throw new Error(`${name} blocked`);
+        },
+      });
+    }
+
+    const burgs = createGlobalBurgService();
+
+    expect(burgs.add([10, 20])).toBeNull();
+    expect(() => burgs.remove(3)).not.toThrow();
+    expect(burgs.findById(3)).toBeUndefined();
+    expect(burgs.getType(3, 0)).toBe("Generic");
+    expect(() =>
+      createRuntimeBurgService({
+        pack: { burgs: [] },
+      } as unknown as EngineRuntimeContext),
+    ).not.toThrow();
   });
 
   it("reads runtime burg data from context pack instead of global pack", () => {

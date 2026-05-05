@@ -51,11 +51,19 @@ export function createEngineHeraldryService(
 
 export function createGlobalHeraldryServiceTargets(): EngineHeraldryServiceTargets {
   return {
-    getHeraldryModule: () => globalThis.COA,
+    getHeraldryModule: () => getGlobalValue<EngineHeraldryModule>("COA"),
     pickWeighted: rw,
   };
 }
 
 export function createGlobalHeraldryService(): EngineHeraldryService {
   return createEngineHeraldryService(createGlobalHeraldryServiceTargets());
+}
+
+function getGlobalValue<T>(name: string): T | undefined {
+  try {
+    return (globalThis as Record<string, unknown>)[name] as T | undefined;
+  } catch {
+    return undefined;
+  }
 }

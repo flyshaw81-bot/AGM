@@ -2324,6 +2324,10 @@ helper lookups. Missing or blocked `defineMapSize`, `calculateMapCoordinates`,
 `addLakesInDeepDepressions`, `openNearSeaLakes`, `OceanLayers`, and
 `showStatistics` compatibility helpers degrade to no-op calls while injected
 service targets remain explicit.
+Feedback, burg, naming, and heraldry default service targets now guard their
+browser/global compatibility reads as well. Blocked `tip`, `Burgs`, `pack`,
+`Names`, or `COA` getters now fall back to existing no-op/default behavior
+without affecting injected service targets.
 
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`

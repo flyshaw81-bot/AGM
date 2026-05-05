@@ -46,8 +46,9 @@ export function createEngineBurgService(
 
 export function createGlobalBurgServiceTargets(): EngineBurgServiceTargets {
   return {
-    getBurgModule: () => globalThis.Burgs,
-    getBurgs: () => globalThis.pack?.burgs as (Burg | undefined)[] | undefined,
+    getBurgModule: () => getGlobalValue<EngineBurgModule>("Burgs"),
+    getBurgs: () =>
+      getGlobalValue<{ burgs?: (Burg | undefined)[] }>("pack")?.burgs,
   };
 }
 
@@ -57,11 +58,21 @@ export function createGlobalBurgService(): EngineBurgService {
 
 export function createRuntimeBurgService(
   context: EngineRuntimeContext,
-  burgModule: EngineBurgModule | undefined = globalThis.Burgs,
+  burgModule: EngineBurgModule | undefined = getGlobalValue<EngineBurgModule>(
+    "Burgs",
+  ),
 ): EngineBurgService {
   return createEngineBurgService({
     getBurgModule: () => burgModule,
     getBurgs: () => context.pack.burgs as (Burg | undefined)[] | undefined,
     getBurgContext: () => context,
   });
+}
+
+function getGlobalValue<T>(name: string): T | undefined {
+  try {
+    return (globalThis as Record<string, unknown>)[name] as T | undefined;
+  } catch {
+    return undefined;
+  }
 }

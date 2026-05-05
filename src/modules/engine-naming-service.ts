@@ -59,10 +59,18 @@ export function createEngineNamingService(
 
 export function createGlobalNamingServiceTargets(): EngineNamingServiceTargets {
   return {
-    getNamesModule: () => globalThis.Names,
+    getNamesModule: () => getGlobalValue<EngineNamesModule>("Names"),
   };
 }
 
 export function createGlobalNamingService(): EngineNamingService {
   return createEngineNamingService(createGlobalNamingServiceTargets());
+}
+
+function getGlobalValue<T>(name: string): T | undefined {
+  try {
+    return (globalThis as Record<string, unknown>)[name] as T | undefined;
+  } catch {
+    return undefined;
+  }
 }

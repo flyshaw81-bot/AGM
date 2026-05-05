@@ -6,10 +6,22 @@ import {
 } from "./engine-naming-service";
 
 const originalNames = globalThis.Names;
+const originalNamesDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "Names",
+);
 
 describe("createGlobalNamingService", () => {
   afterEach(() => {
-    globalThis.Names = originalNames;
+    if (originalNamesDescriptor) {
+      Object.defineProperty(globalThis, "Names", originalNamesDescriptor);
+    } else {
+      Object.defineProperty(globalThis, "Names", {
+        configurable: true,
+        value: originalNames,
+        writable: true,
+      });
+    }
   });
 
   it("forwards naming calls to the current AGM Names module mount", () => {
@@ -88,6 +100,25 @@ describe("createGlobalNamingService", () => {
 
   it("uses stable fallbacks when the names module is not mounted", () => {
     globalThis.Names = undefined as unknown as typeof Names;
+
+    const naming = createGlobalNamingService();
+
+    expect(naming.getCulture(7)).toBe("Culture 7");
+    expect(naming.getCultureShort(7)).toBe("C7");
+    expect(naming.getState("North", 2)).toBe("North State");
+    expect(naming.getBase?.(3)).toBe("Base 3");
+    expect(naming.getBaseShort?.(3)).toBe("B3");
+    expect(naming.getNameBases?.()).toEqual([]);
+    expect(() => naming.getMapName?.()).not.toThrow();
+  });
+
+  it("uses stable fallbacks when the names module access throws", () => {
+    Object.defineProperty(globalThis, "Names", {
+      configurable: true,
+      get: () => {
+        throw new Error("Names blocked");
+      },
+    });
 
     const naming = createGlobalNamingService();
 
