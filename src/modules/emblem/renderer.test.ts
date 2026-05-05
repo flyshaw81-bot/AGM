@@ -22,6 +22,8 @@ describe("EmblemRenderModule", () => {
   const originalDocument = globalThis.document;
   const originalEmblems = globalThis.emblems;
   const originalLayerIsOn = globalThis.layerIsOn;
+  const originalFetch = globalThis.fetch;
+  const originalError = globalThis.ERROR;
 
   afterEach(() => {
     Object.defineProperty(globalThis, "document", {
@@ -29,8 +31,26 @@ describe("EmblemRenderModule", () => {
       value: originalDocument,
       writable: true,
     });
-    globalThis.emblems = originalEmblems;
-    globalThis.layerIsOn = originalLayerIsOn;
+    Object.defineProperty(globalThis, "fetch", {
+      configurable: true,
+      value: originalFetch,
+      writable: true,
+    });
+    Object.defineProperty(globalThis, "emblems", {
+      configurable: true,
+      value: originalEmblems,
+      writable: true,
+    });
+    Object.defineProperty(globalThis, "layerIsOn", {
+      configurable: true,
+      value: originalLayerIsOn,
+      writable: true,
+    });
+    Object.defineProperty(globalThis, "ERROR", {
+      configurable: true,
+      value: originalError,
+      writable: true,
+    });
   });
 
   it("adds rendered use nodes through injected renderer targets", async () => {
@@ -135,5 +155,38 @@ describe("EmblemRenderModule", () => {
     );
     expect(() => targets.insertCoaSvg("<svg />")).not.toThrow();
     expect(targets.getElementById("coas")).toBeNull();
+  });
+
+  it("keeps global renderer targets safe when optional global access throws", async () => {
+    for (const name of ["fetch", "emblems", "layerIsOn", "ERROR"] as const) {
+      Object.defineProperty(globalThis, name, {
+        configurable: true,
+        get: () => {
+          throw new Error(`${name} blocked`);
+        },
+      });
+    }
+
+    const targets = createGlobalEmblemRendererTargets();
+
+    await expect(targets.fetchText("./charges/lion.svg")).rejects.toThrow(
+      "fetch is not available",
+    );
+    expect(targets.hasRenderedUses()).toBe(false);
+    expect(targets.isLayerOn("toggleEmblems")).toBe(false);
+    await expect(
+      new EmblemRenderModule(targets).trigger("burgCOA7", {
+        shield: "heater",
+        t1: "gules",
+        charges: [
+          {
+            stroke: "none",
+            charge: "lion",
+            t: "argent",
+            p: [5],
+          },
+        ],
+      }),
+    ).resolves.toBe(true);
   });
 });

@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 196 test files, 825 tests.
+- `npm.cmd run test -- --run` passed: 196 test files, 826 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2218,6 +2218,10 @@ Font browser resource targets now guard optional browser globals including
 `FontFace`, `FileReader`, `fetch`, `changeFont`, `tip`, `ERROR`, and `provs`.
 Unavailable or blocked globals now fall back to no-op behavior or explicit
 resource loading errors.
+
+Emblem renderer browser targets now guard optional browser globals including
+`fetch`, `emblems`, `layerIsOn`, and `ERROR`. Blocked globals now fall back to
+explicit fetch errors, no rendered uses, disabled layers, and no error logging.
 
 `ocean-layers.ts` now routes outline-chain error reporting through
 `OceanLayerLogTargets`, keeping the default `globalThis.ERROR` compatibility

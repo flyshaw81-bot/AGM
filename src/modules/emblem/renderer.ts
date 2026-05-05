@@ -36,10 +36,44 @@ function getWindow(): (Window & typeof globalThis) | undefined {
   }
 }
 
+function getFetch(): typeof fetch | undefined {
+  try {
+    return globalThis.fetch;
+  } catch {
+    return undefined;
+  }
+}
+
+function getEmblems(): typeof emblems | undefined {
+  try {
+    return globalThis.emblems;
+  } catch {
+    return undefined;
+  }
+}
+
+function getLayerIsOn(): typeof layerIsOn | undefined {
+  try {
+    return globalThis.layerIsOn;
+  } catch {
+    return undefined;
+  }
+}
+
+function getErrorFlag(): boolean {
+  try {
+    return Boolean(globalThis.ERROR);
+  } catch {
+    return false;
+  }
+}
+
 export function createGlobalEmblemRendererTargets(): EmblemRendererTargets {
   return {
     fetchText: async (url) => {
-      const res = await fetch(url);
+      const fetchResource = getFetch();
+      if (!fetchResource) throw new Error("fetch is not available");
+      const res = await fetchResource(url);
       if (res.ok) return res.text();
       throw new Error("Cannot fetch charge");
     },
@@ -58,9 +92,8 @@ export function createGlobalEmblemRendererTargets(): EmblemRendererTargets {
         ?.insertAdjacentHTML("beforeend", svg);
     },
     getElementById: (id) => getDocument()?.getElementById(id) ?? null,
-    hasRenderedUses: () =>
-      Boolean(globalThis.emblems?.selectAll?.("use")?.size?.()),
-    isLayerOn: (layer) => globalThis.layerIsOn?.(layer) ?? false,
+    hasRenderedUses: () => Boolean(getEmblems()?.selectAll?.("use")?.size?.()),
+    isLayerOn: (layer) => getLayerIsOn()?.(layer) ?? false,
   };
 }
 
@@ -132,7 +165,7 @@ export default class EmblemRenderModule {
         return this.targets.parseChargeGroup(text, `${charge}_${id}`);
       })
       .catch((err) => {
-        ERROR && console.error(err);
+        if (getErrorFlag()) console.error(err);
       });
     return fetched;
   }
