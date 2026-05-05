@@ -11,6 +11,14 @@ declare global {
   var Zones: ZonesModule;
 }
 
+function getWindow(): (Window & typeof globalThis) | undefined {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+}
+
 export interface Zone {
   i: number;
   name: string;
@@ -683,6 +691,5 @@ export class ZonesModule {
   }
 }
 
-if (typeof window !== "undefined") {
-  window.Zones = new ZonesModule();
-}
+const runtimeWindow = getWindow();
+if (runtimeWindow) runtimeWindow.Zones = new ZonesModule();

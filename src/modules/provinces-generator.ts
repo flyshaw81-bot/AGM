@@ -13,6 +13,14 @@ declare global {
   var Provinces: ProvinceModule;
 }
 
+function getWindow(): (Window & typeof globalThis) | undefined {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+}
+
 export interface Province {
   i: number;
   removed?: boolean;
@@ -426,6 +434,5 @@ export class ProvinceModule {
   }
 }
 
-if (typeof window !== "undefined") {
-  window.Provinces = new ProvinceModule();
-}
+const runtimeWindow = getWindow();
+if (runtimeWindow) runtimeWindow.Provinces = new ProvinceModule();

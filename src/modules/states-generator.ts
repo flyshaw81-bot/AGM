@@ -14,6 +14,14 @@ declare global {
   var States: StatesModule;
 }
 
+function getWindow(): (Window & typeof globalThis) | undefined {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+}
+
 interface Campaign {
   name: string;
   start: number;
@@ -853,6 +861,5 @@ export class StatesModule {
   }
 }
 
-if (typeof window !== "undefined") {
-  window.States = new StatesModule();
-}
+const runtimeWindow = getWindow();
+if (runtimeWindow) runtimeWindow.States = new StatesModule();

@@ -8,6 +8,10 @@ import {
 } from "./test-runtime-context";
 
 const originalRandom = Math.random;
+const originalWindowDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "window",
+);
 
 function createProvinceContext(): EngineRuntimeContext {
   const cells = {
@@ -120,7 +124,23 @@ function createProvinceContext(): EngineRuntimeContext {
 
 describe("ProvinceModule", () => {
   afterEach(() => {
+    vi.restoreAllMocks();
     Math.random = originalRandom;
+    if (originalWindowDescriptor) {
+      Object.defineProperty(globalThis, "window", originalWindowDescriptor);
+    }
+  });
+
+  it("can be imported when window access throws", async () => {
+    vi.resetModules();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+
+    await expect(import("./provinces-generator")).resolves.toBeDefined();
   });
 
   it("generates provinces against an explicit runtime context", () => {

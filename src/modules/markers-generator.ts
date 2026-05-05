@@ -17,6 +17,14 @@ declare global {
   var Markers: MarkersModule;
 }
 
+function getWindow(): (Window & typeof globalThis) | undefined {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+}
+
 type MarkerConfig = {
   type: string;
   icon: string;
@@ -1965,6 +1973,5 @@ export class MarkersModule {
   }
 }
 
-if (typeof window !== "undefined") {
-  window.Markers = new MarkersModule();
-}
+const runtimeWindow = getWindow();
+if (runtimeWindow) runtimeWindow.Markers = new MarkersModule();

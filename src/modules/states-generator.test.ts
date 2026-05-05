@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PackedGraph } from "../types/PackedGraph";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
 import { type State, StatesModule } from "./states-generator";
@@ -6,6 +6,11 @@ import {
   createTestNoteService,
   createTestRuntimeAdapters,
 } from "./test-runtime-context";
+
+const originalWindowDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "window",
+);
 
 function createStatesContext(): EngineRuntimeContext {
   return {
@@ -59,6 +64,25 @@ function createStatesContext(): EngineRuntimeContext {
 }
 
 describe("StatesModule", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    if (originalWindowDescriptor) {
+      Object.defineProperty(globalThis, "window", originalWindowDescriptor);
+    }
+  });
+
+  it("can be imported when window access throws", async () => {
+    vi.resetModules();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+
+    await expect(import("./states-generator")).resolves.toBeDefined();
+  });
+
   it("uses the runtime random service for state expansionism", () => {
     const context = createStatesContext();
     context.random = {
