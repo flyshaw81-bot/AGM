@@ -11,6 +11,10 @@ const originalWindowDescriptor = Object.getOwnPropertyDescriptor(
   globalThis,
   "window",
 );
+const originalDocumentDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "document",
+);
 
 function createMarkersContext(): EngineRuntimeContext {
   return {
@@ -70,6 +74,9 @@ describe("MarkersModule", () => {
     if (originalWindowDescriptor) {
       Object.defineProperty(globalThis, "window", originalWindowDescriptor);
     }
+    if (originalDocumentDescriptor) {
+      Object.defineProperty(globalThis, "document", originalDocumentDescriptor);
+    }
   });
 
   it("can be imported when window access throws", async () => {
@@ -78,6 +85,18 @@ describe("MarkersModule", () => {
       configurable: true,
       get: () => {
         throw new Error("window blocked");
+      },
+    });
+
+    await expect(import("./markers-generator")).resolves.toBeDefined();
+  });
+
+  it("can be imported when document access throws", async () => {
+    vi.resetModules();
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
       },
     });
 
@@ -160,5 +179,18 @@ describe("MarkersModule", () => {
       { i: 0, type: "stale", icon: "x", cell: 0 },
     ]);
     expect(context.notes.all()).toEqual([]);
+  });
+
+  it("reads the culture set through injected browser targets", () => {
+    const getCultureSetValue = vi.fn(() => "highFantasy");
+    const markers = new MarkersModule({
+      getCultureSetValue,
+    });
+
+    expect(getCultureSetValue).toHaveBeenCalledTimes(1);
+    expect(
+      markers.getConfig().find((config) => config.type === "portals")
+        ?.multiplier,
+    ).toBe(1);
   });
 });

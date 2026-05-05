@@ -5,7 +5,6 @@ import { generateDate } from "../utils/commonUtils";
 import { getAdjective } from "../utils/languageUtils";
 import { rn } from "../utils/numberUtils";
 import { gauss, P, ra, rand, rw } from "../utils/probabilityUtils";
-import { byId } from "../utils/shorthands";
 import { capitalize } from "../utils/stringUtils";
 import { convertTemperature } from "../utils/unitUtils";
 import {
@@ -23,6 +22,26 @@ function getWindow(): (Window & typeof globalThis) | undefined {
   } catch {
     return undefined;
   }
+}
+
+function getDocument(): Document | undefined {
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
+}
+
+export type MarkersBrowserTargets = {
+  getCultureSetValue: () => string;
+};
+
+export function createGlobalMarkersBrowserTargets(): MarkersBrowserTargets {
+  return {
+    getCultureSetValue: () =>
+      (getDocument()?.getElementById("culturesSet") as HTMLSelectElement | null)
+        ?.value ?? "",
+  };
 }
 
 type MarkerConfig = {
@@ -53,8 +72,12 @@ export class MarkersModule {
   private config: MarkerConfig[];
   private occupied: boolean[];
   private runtimeContext?: EngineRuntimeContext;
+  private browserTargets: MarkersBrowserTargets;
 
-  constructor() {
+  constructor(
+    browserTargets: MarkersBrowserTargets = createGlobalMarkersBrowserTargets(),
+  ) {
+    this.browserTargets = browserTargets;
     this.config = this.getDefaultConfig();
     this.occupied = [];
   }
@@ -120,10 +143,7 @@ export class MarkersModule {
   }
 
   private getDefaultConfig(): MarkerConfig[] {
-    const culturesSet =
-      typeof document === "undefined"
-        ? ""
-        : (byId("culturesSet") as HTMLSelectElement)?.value || "";
+    const culturesSet = this.browserTargets.getCultureSetValue();
     const isFantasy = culturesSet.includes("Fantasy");
 
     /*

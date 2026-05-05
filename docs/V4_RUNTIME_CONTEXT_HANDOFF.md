@@ -2256,6 +2256,10 @@ reads the existing DOM control.
 `engine-options-session.ts` no longer depends on global `byId` to find
 `templateInput`; the default browser-control adapter now uses a guarded local
 document lookup before delegating to `applyOption`.
+`markers-generator.ts` now reads the culture-set selector through injectable
+`MarkersBrowserTargets`, keeping the DOM lookup in the default compatibility
+adapter and allowing tests/runtime callers to choose fantasy marker config
+without browser globals.
 
 `ocean-layers.ts` now routes outline-chain error reporting through
 `OceanLayerLogTargets`, keeping the default `globalThis.ERROR` compatibility
