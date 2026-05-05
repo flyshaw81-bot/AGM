@@ -1,6 +1,6 @@
 import type { StudioLanguage, StudioState } from "../types";
 import { renderDirectWorkbenchQueueHistoryRows } from "./directWorkbenchDirectoryHistoryRowsView";
-import { createNativeRelationshipHistoryPresenter } from "./nativeRelationshipHistoryPresenter";
+import { createDirectRelationshipHistoryPresenter } from "./nativeRelationshipHistoryPresenter";
 import {
   countDirectRelationshipHistoryRowStatuses,
   getDirectRelationshipHistoryStatusSuffix,
@@ -35,7 +35,7 @@ export function createDirectWorkbenchQueueHistoryView(
   const queueHistoryFilterSummary = `${t(language, "当前筛选", "Current filter")}: ${t(language, "全部", "All")} · ${t(language, "可见", "Visible")}: ${queueHistoryLog.length} / ${queueHistoryLog.length}`;
   const queueHistoryLogRows = renderDirectWorkbenchQueueHistoryRows({
     language,
-    presenter: createNativeRelationshipHistoryPresenter(language),
+    presenter: createDirectRelationshipHistoryPresenter(language),
     queueHistoryLog,
   });
 

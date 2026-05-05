@@ -9,7 +9,7 @@ import {
 } from "./nativeRelationshipQueue";
 import { t } from "./shellShared";
 
-export function createNativeRelationshipHistoryLabels(
+export function createDirectRelationshipHistoryLabels(
   language: StudioLanguage,
 ) {
   const getNativeRelationshipHistoryEntityLabel = (
@@ -87,3 +87,6 @@ export function createNativeRelationshipHistoryLabels(
     getNativeRelationshipHistoryValueLabel,
   };
 }
+
+export const createNativeRelationshipHistoryLabels =
+  createDirectRelationshipHistoryLabels;

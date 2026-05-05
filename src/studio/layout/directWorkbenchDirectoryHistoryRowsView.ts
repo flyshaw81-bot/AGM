@@ -1,5 +1,5 @@
 import type { StudioLanguage, StudioState } from "../types";
-import type { createNativeRelationshipHistoryPresenter } from "./nativeRelationshipHistoryPresenter";
+import type { createDirectRelationshipHistoryPresenter } from "./nativeRelationshipHistoryPresenter";
 import {
   getDirectRelationshipHistoryRecoveryState,
   getDirectRelationshipHistoryRowStatus,
@@ -7,24 +7,24 @@ import {
 } from "./nativeRelationshipHistoryStatus";
 import { escapeHtml, t } from "./shellShared";
 
-type NativeRelationshipHistoryPresenter = ReturnType<
-  typeof createNativeRelationshipHistoryPresenter
+type DirectRelationshipHistoryPresenter = ReturnType<
+  typeof createDirectRelationshipHistoryPresenter
 >;
-type NativeRelationshipHistoryLog =
+type DirectRelationshipHistoryLog =
   StudioState["directEditor"]["relationshipQueueHistoryLog"];
-type NativeRelationshipHistoryItem = NativeRelationshipHistoryLog[number];
+type DirectRelationshipHistoryItem = DirectRelationshipHistoryLog[number];
 
 type RenderDirectWorkbenchQueueHistoryRowsOptions = {
   language: StudioLanguage;
-  presenter: NativeRelationshipHistoryPresenter;
-  queueHistoryLog: NativeRelationshipHistoryLog;
+  presenter: DirectRelationshipHistoryPresenter;
+  queueHistoryLog: DirectRelationshipHistoryLog;
 };
 
 function renderQueueHistoryChangeRows(
-  item: NativeRelationshipHistoryItem,
+  item: DirectRelationshipHistoryItem,
   index: number,
   language: StudioLanguage,
-  presenter: NativeRelationshipHistoryPresenter,
+  presenter: DirectRelationshipHistoryPresenter,
 ) {
   return item.undoChanges
     .map((change, changeIndex) => {
@@ -41,7 +41,7 @@ function renderQueueHistoryChangeRows(
 }
 
 function getQueueHistoryDetailStatus(
-  item: NativeRelationshipHistoryItem,
+  item: DirectRelationshipHistoryItem,
   index: number,
   language: StudioLanguage,
 ) {
@@ -68,7 +68,7 @@ function getQueueHistoryDetailStatus(
 }
 
 function getQueueHistoryStatusBadge(
-  item: NativeRelationshipHistoryItem,
+  item: DirectRelationshipHistoryItem,
   index: number,
   language: StudioLanguage,
 ) {
@@ -80,10 +80,10 @@ function getQueueHistoryStatusBadge(
 }
 
 function renderQueueHistoryRecoveryPath(
-  item: NativeRelationshipHistoryItem,
+  item: DirectRelationshipHistoryItem,
   index: number,
   language: StudioLanguage,
-  presenter: NativeRelationshipHistoryPresenter,
+  presenter: DirectRelationshipHistoryPresenter,
 ) {
   const recoveryState = getDirectRelationshipHistoryRecoveryState(item, index);
   if (recoveryState === "hidden") return "";

@@ -1,18 +1,18 @@
 import type { StudioLanguage } from "../types";
-import type { createNativeRelationshipHistoryLabels } from "./nativeRelationshipHistoryLabels";
+import type { createDirectRelationshipHistoryLabels } from "./nativeRelationshipHistoryLabels";
 import type {
   NativeRelationshipQueueHistory,
   NativeRelationshipQueueUndoChange,
 } from "./nativeRelationshipQueue";
 import { t } from "./shellShared";
 
-type NativeRelationshipHistoryLabels = ReturnType<
-  typeof createNativeRelationshipHistoryLabels
+type DirectRelationshipHistoryLabels = ReturnType<
+  typeof createDirectRelationshipHistoryLabels
 >;
 
-export function createNativeRelationshipHistorySummaries(
+export function createDirectRelationshipHistorySummaries(
   language: StudioLanguage,
-  labels: NativeRelationshipHistoryLabels,
+  labels: DirectRelationshipHistoryLabels,
 ) {
   const {
     getNativeRelationshipHistoryCurrentState,
@@ -151,3 +151,8 @@ export function createNativeRelationshipHistorySummaries(
     getNativeRelationshipHistoryStatus,
   };
 }
+
+export type NativeRelationshipHistoryLabels = DirectRelationshipHistoryLabels;
+
+export const createNativeRelationshipHistorySummaries =
+  createDirectRelationshipHistorySummaries;
