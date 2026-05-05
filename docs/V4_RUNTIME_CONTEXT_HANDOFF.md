@@ -2425,6 +2425,8 @@ Canvas overlay and selection-highlight targets now guard blocked overlay queries
 state highlight lookups, SVG type checks, and parent append reordering.
 Engine editor handler/dialog targets now guard blocked window/document/style
 reads plus best-effort Studio and compatibility dialog close operations.
+Engine render adapter DOM cleanup now guards blocked rendered-node removal and
+SVG path-length reads while keeping injected render targets intact.
 
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`

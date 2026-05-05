@@ -79,7 +79,11 @@ export function createEngineRenderAdapter(
       targets.removeBurgLabel(burgId);
     },
     removeBurgCoa: (burgId) => {
-      targets.getElementById(`burgCOA${burgId}`)?.remove();
+      try {
+        targets.getElementById(`burgCOA${burgId}`)?.remove();
+      } catch {
+        // DOM removal is best-effort for compatibility-rendered burg COA nodes.
+      }
       targets.removeBurgEmblemUse(burgId);
     },
     redrawIceberg: (iceId) => {
@@ -89,13 +93,21 @@ export function createEngineRenderAdapter(
       targets.redrawGlacier(iceId);
     },
     removeElementById: (id) => {
-      targets.getElementById(id)?.remove();
+      try {
+        targets.getElementById(id)?.remove();
+      } catch {
+        // DOM removal is best-effort for compatibility-rendered nodes.
+      }
     },
     getElementTotalLengthById: (id) => {
-      const element = targets.getElementById(id) as
-        | (SVGElement & { getTotalLength?: () => number })
-        | null;
-      return element?.getTotalLength?.();
+      try {
+        const element = targets.getElementById(id) as
+          | (SVGElement & { getTotalLength?: () => number })
+          | null;
+        return element?.getTotalLength?.();
+      } catch {
+        return undefined;
+      }
     },
     drawScaleBar: () => {
       targets.drawScaleBar(targets.selectScaleBar(), targets.getScale());

@@ -182,6 +182,35 @@ describe("createGlobalRenderAdapter", () => {
     expect(rendering.getElementTotalLengthById?.("route3")).toBeUndefined();
   });
 
+  it("keeps rendered DOM cleanup safe when element methods throw", () => {
+    globalThis.document = {
+      getElementById: (id: string) => {
+        if (id === "route3")
+          return {
+            getTotalLength: () => {
+              throw new Error("length blocked");
+            },
+          };
+        return {
+          remove: () => {
+            throw new Error("remove blocked");
+          },
+        };
+      },
+    } as unknown as Document;
+    globalThis.emblems = {
+      select: () => ({
+        remove: () => undefined,
+      }),
+    } as unknown as typeof emblems;
+
+    const rendering = createGlobalRenderAdapter();
+
+    expect(() => rendering.removeBurgCoa(9)).not.toThrow();
+    expect(() => rendering.removeElementById("marker12")).not.toThrow();
+    expect(rendering.getElementTotalLengthById?.("route3")).toBeUndefined();
+  });
+
   it("exposes global render DOM targets for explicit composition", () => {
     const getElementById = vi.fn(() => ({ id: "marker12" }));
     globalThis.document = {
