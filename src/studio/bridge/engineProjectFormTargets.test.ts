@@ -13,11 +13,44 @@ type TestFormGlobals = typeof globalThis & {
 const testGlobals = globalThis as TestFormGlobals;
 const originalDocument = globalThis.document;
 const originalOptions = testGlobals.options;
+const originalDocumentDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "document",
+);
+const originalOptionsDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "options",
+);
+const originalWindowDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "window",
+);
 
 describe("createGlobalProjectFormTargets", () => {
   afterEach(() => {
-    globalThis.document = originalDocument;
-    testGlobals.options = originalOptions;
+    if (originalDocumentDescriptor) {
+      Object.defineProperty(globalThis, "document", originalDocumentDescriptor);
+    } else {
+      Object.defineProperty(globalThis, "document", {
+        configurable: true,
+        writable: true,
+        value: originalDocument,
+      });
+    }
+    if (originalOptionsDescriptor) {
+      Object.defineProperty(globalThis, "options", originalOptionsDescriptor);
+    } else {
+      Object.defineProperty(globalThis, "options", {
+        configurable: true,
+        writable: true,
+        value: originalOptions,
+      });
+    }
+    if (originalWindowDescriptor) {
+      Object.defineProperty(globalThis, "window", originalWindowDescriptor);
+    } else {
+      delete (globalThis as { window?: unknown }).window;
+    }
   });
 
   it("reads inputs, outputs, text, and visibility from the active document", () => {
@@ -98,6 +131,37 @@ describe("createGlobalProjectFormTargets", () => {
     expect(targets.hasVisibleInlineDisplay("savePresetButton", true)).toBe(
       true,
     );
+    expect(targets.getWindOption(1)).toBe("");
+    expect(targets.getWindTierRotation(1)).toBe("");
+  });
+
+  it("keeps default form targets safe when browser globals throw", () => {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "options", {
+      configurable: true,
+      get: () => {
+        throw new Error("options blocked");
+      },
+    });
+
+    const targets = createGlobalProjectFormTargets();
+
+    expect(targets.getInputValue("pointsInput", "10000")).toBe("10000");
+    expect(targets.getOutputValue("pointsOutputFormatted", "10k")).toBe("10k");
+    expect(targets.getTextValue("temperatureEquatorF", "82F")).toBe("82F");
+    expect(targets.getSelect("templateInput")).toBeNull();
+    expect(targets.hasVisibleInlineDisplay("savePresetButton")).toBe(false);
     expect(targets.getWindOption(1)).toBe("");
     expect(targets.getWindTierRotation(1)).toBe("");
   });

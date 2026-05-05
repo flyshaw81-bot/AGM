@@ -45,23 +45,49 @@ export type EngineProjectFormTargets = {
 };
 
 function getFormWindow(): EngineProjectFormWindow {
-  return (globalThis.window ?? globalThis) as EngineProjectFormWindow;
+  try {
+    return (globalThis.window ?? globalThis) as EngineProjectFormWindow;
+  } catch {
+    return globalThis as EngineProjectFormWindow;
+  }
 }
 
 function getDocument(): Document | undefined {
-  return globalThis.document;
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
 }
 
 export function createGlobalProjectFormDomAdapter(): EngineProjectFormDomAdapter {
   return {
-    getElementById: (id) => getDocument()?.getElementById(id) ?? null,
-    querySelector: (selector) => getDocument()?.querySelector(selector) ?? null,
+    getElementById: (id) => {
+      try {
+        return getDocument()?.getElementById(id) ?? null;
+      } catch {
+        return null;
+      }
+    },
+    querySelector: (selector) => {
+      try {
+        return getDocument()?.querySelector(selector) ?? null;
+      } catch {
+        return null;
+      }
+    },
   };
 }
 
 export function createGlobalProjectFormRuntimeAdapter(): EngineProjectFormRuntimeAdapter {
   return {
-    getWinds: () => getFormWindow().options?.winds,
+    getWinds: () => {
+      try {
+        return getFormWindow().options?.winds;
+      } catch {
+        return undefined;
+      }
+    },
   };
 }
 

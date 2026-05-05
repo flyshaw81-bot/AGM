@@ -2352,6 +2352,9 @@ Project-control defaults now guard window, document, options, temperature
 conversion, wind coordinate helpers, and wind storage writes. Blocked browser
 project-control globals fall back to null/undefined/false/no-op behavior while
 injected DOM, runtime, and storage adapters remain explicit.
+Project-form defaults now guard window, document, and options/wind reads.
+Blocked browser project-form globals fall back to existing form defaults while
+injected DOM and runtime adapters keep the Studio-owned path explicit.
 
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`
