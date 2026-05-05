@@ -595,12 +595,25 @@ const getDocument = (): Document | undefined => {
 export function createGlobalDrawHeightsTargets(): DrawHeightsTargets {
   return {
     createCanvas: (width, height) => {
-      const canvas = getDocument()?.createElement("canvas") ?? {
-        width: 0,
-        height: 0,
-        getContext: () => null,
-        toDataURL: () => "",
-      };
+      const canvas = (() => {
+        try {
+          return (
+            getDocument()?.createElement("canvas") ?? {
+              width: 0,
+              height: 0,
+              getContext: () => null,
+              toDataURL: () => "",
+            }
+          );
+        } catch {
+          return {
+            width: 0,
+            height: 0,
+            getContext: () => null,
+            toDataURL: () => "",
+          };
+        }
+      })();
       canvas.width = width;
       canvas.height = height;
       return canvas;

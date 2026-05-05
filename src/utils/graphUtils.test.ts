@@ -81,6 +81,29 @@ describe("drawHeights", () => {
       }),
     ).toThrow("Cannot draw heights without a 2D canvas context");
   });
+
+  it("keeps global draw heights targets safe when canvas creation throws", () => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: {
+        createElement: () => {
+          throw new Error("canvas creation blocked");
+        },
+      },
+      writable: true,
+    });
+
+    expect(() =>
+      drawHeights({
+        heights: [10],
+        width: 1,
+        height: 1,
+        scheme: () => "#000000",
+        renderOcean: false,
+        targets: createGlobalDrawHeightsTargets(),
+      }),
+    ).toThrow("Cannot draw heights without a 2D canvas context");
+  });
 });
 
 describe("grid point settings", () => {

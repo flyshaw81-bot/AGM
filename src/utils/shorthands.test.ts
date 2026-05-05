@@ -36,4 +36,18 @@ describe("byId", () => {
 
     expect(byId("map", createGlobalDomLookupTargets())).toBeUndefined();
   });
+
+  it("keeps global DOM lookup safe when element lookup throws", () => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: {
+        getElementById: () => {
+          throw new Error("element lookup blocked");
+        },
+      },
+      writable: true,
+    });
+
+    expect(byId("map", createGlobalDomLookupTargets())).toBeUndefined();
+  });
 });

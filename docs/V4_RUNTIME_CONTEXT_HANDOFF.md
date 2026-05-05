@@ -2403,6 +2403,11 @@ Render-adapter defaults now guard blocked DOM element lookups and throwing
 render helper calls. Missing or failing compatibility renderers degrade to
 undefined/false/no-op behavior while injected render targets remain strict.
 
+Shared DOM shorthand and graph height-preview defaults now guard blocked
+`getElementById(...)` and canvas creation. These low-level utility boundaries
+fall back to undefined/null-canvas behavior instead of leaking browser DOM
+failures into runtime helpers.
+
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`
 dimensions. `engine-generation-session-services.ts` now exposes
