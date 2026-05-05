@@ -51,8 +51,8 @@ describe("draw burg icon renderer globals", () => {
     });
 
     const { removeBurgIconRenderer } = await import("./draw-burg-icons");
-    const icon = { remove: vi.fn() };
-    const anchor = { remove: vi.fn() };
+    const icon = { remove: vi.fn() } as unknown as Element;
+    const anchor = { remove: vi.fn() } as unknown as Element;
     const getElementById = vi.fn((id: string) => {
       if (id === "burg7") return icon;
       if (id === "anchor7") return anchor;
@@ -60,10 +60,10 @@ describe("draw burg icon renderer globals", () => {
     });
 
     removeBurgIconRenderer(7, {
-      getDocument: () =>
-        ({
-          getElementById,
-        }) as unknown as Document,
+      getDocument: () => ({}) as Document,
+      getElementById,
+      querySelector: () => null,
+      querySelectorAll: () => [],
     });
 
     expect(getElementById).toHaveBeenCalledWith("burg7");

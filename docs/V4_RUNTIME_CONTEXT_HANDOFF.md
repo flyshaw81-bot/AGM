@@ -2239,6 +2239,10 @@ injectable `FeatureRendererLogTargets`. The default target keeps current
 stalled heightmap vertex chains through injectable `HeightmapRendererLogTargets`.
 The default target keeps current `ERROR` compatibility while blocked `ERROR`
 access falls back without throwing.
+`draw-burg-icons.ts` now routes icon/anchor DOM reads through
+`BurgIconRendererTargets` (`getElementById`, `querySelector`, and
+`querySelectorAll`) instead of letting renderer logic call `document.*`
+directly after acquiring the global document.
 
 `ocean-layers.ts` now routes outline-chain error reporting through
 `OceanLayerLogTargets`, keeping the default `globalThis.ERROR` compatibility

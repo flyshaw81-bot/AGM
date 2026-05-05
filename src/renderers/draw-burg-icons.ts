@@ -13,6 +13,9 @@ interface BurgGroup {
 
 export interface BurgIconRendererTargets {
   getDocument: () => Document | undefined;
+  getElementById: (id: string) => Element | null;
+  querySelector: <T extends Element>(selector: string) => T | null;
+  querySelectorAll: (selector: string) => Element[];
 }
 
 const getDocument = (): Document | undefined => {
@@ -26,6 +29,10 @@ const getDocument = (): Document | undefined => {
 export function createGlobalBurgIconRendererTargets(): BurgIconRendererTargets {
   return {
     getDocument,
+    getElementById: (id) => getDocument()?.getElementById(id) ?? null,
+    querySelector: (selector) => getDocument()?.querySelector(selector) ?? null,
+    querySelectorAll: (selector) =>
+      Array.from(getDocument()?.querySelectorAll(selector) ?? []),
   };
 }
 
@@ -53,7 +60,7 @@ export const burgIconsRenderer = (
     );
     if (!burgsInGroup.length) continue;
 
-    const iconsGroup = document.querySelector<SVGGElement>(
+    const iconsGroup = targets.querySelector<SVGGElement>(
       `#burgIcons > g#${name}`,
     );
     if (!iconsGroup) continue;
@@ -69,7 +76,7 @@ export const burgIconsRenderer = (
     const portsInGroup = burgsInGroup.filter((b) => b.port);
     if (!portsInGroup.length) continue;
 
-    const portGroup = document.querySelector<SVGGElement>(
+    const portGroup = targets.querySelector<SVGGElement>(
       `#anchors > g#${name}`,
     );
     if (!portGroup) continue;
@@ -122,13 +129,10 @@ export const removeBurgIconRenderer = (
   burgId: number,
   targets: BurgIconRendererTargets = defaultBurgIconRendererTargets,
 ): void => {
-  const document = targets.getDocument();
-  if (!document) return;
-
-  const existingIcon = document.getElementById(`burg${burgId}`);
+  const existingIcon = targets.getElementById(`burg${burgId}`);
   if (existingIcon) existingIcon.remove();
 
-  const existingAnchor = document.getElementById(`anchor${burgId}`);
+  const existingAnchor = targets.getElementById(`anchor${burgId}`);
   if (existingAnchor) existingAnchor.remove();
 };
 
@@ -137,7 +141,7 @@ function createIconGroups(targets: BurgIconRendererTargets): void {
   if (!document) return;
 
   // save existing styles and remove all groups
-  document.querySelectorAll("g#burgIcons > g").forEach((group) => {
+  targets.querySelectorAll("g#burgIcons > g").forEach((group) => {
     style.burgIcons[group.id] = Array.from(group.attributes).reduce(
       (acc: { [key: string]: string }, attribute) => {
         acc[attribute.name] = attribute.value;
@@ -148,7 +152,7 @@ function createIconGroups(targets: BurgIconRendererTargets): void {
     group.remove();
   });
 
-  document.querySelectorAll("g#anchors > g").forEach((group) => {
+  targets.querySelectorAll("g#anchors > g").forEach((group) => {
     style.anchors[group.id] = Array.from(group.attributes).reduce(
       (acc: { [key: string]: string }, attribute) => {
         acc[attribute.name] = attribute.value;
