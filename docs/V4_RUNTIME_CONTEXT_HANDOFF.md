@@ -2344,6 +2344,10 @@ Entity mutation and focus-geometry default targets now guard `pack`, graph/svg
 dimensions, and redraw helper lookups. Blocked global entity data or renderer
 helper access falls back to undefined/no-op behavior while runtime/injected
 lookup and redraw adapters remain explicit.
+Project-summary defaults now guard document, storage, cached-summary, and local
+database compatibility reads. Blocked browser project-summary globals fall back
+to false/null/undefined/no-op behavior while injected cache, storage, document,
+and database adapters keep strict ownership.
 
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`

@@ -19,10 +19,30 @@ const originalLocalStorage = globalThis.localStorage;
 const originalSessionStorage = globalThis.sessionStorage;
 const originalSummary = testGlobal.__studioProjectSummary;
 const originalLdb = testGlobal.ldb;
+const originalDocumentDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "document",
+);
+const originalSummaryDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "__studioProjectSummary",
+);
+const originalLdbDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "ldb",
+);
 
 describe("createGlobalProjectSummaryTargets", () => {
   afterEach(() => {
-    globalThis.document = originalDocument;
+    if (originalDocumentDescriptor) {
+      Object.defineProperty(globalThis, "document", originalDocumentDescriptor);
+    } else {
+      Object.defineProperty(globalThis, "document", {
+        configurable: true,
+        writable: true,
+        value: originalDocument,
+      });
+    }
     Object.defineProperty(globalThis, "localStorage", {
       configurable: true,
       value: originalLocalStorage,
@@ -31,8 +51,26 @@ describe("createGlobalProjectSummaryTargets", () => {
       configurable: true,
       value: originalSessionStorage,
     });
-    testGlobal.__studioProjectSummary = originalSummary;
-    testGlobal.ldb = originalLdb;
+    if (originalSummaryDescriptor) {
+      Object.defineProperty(
+        globalThis,
+        "__studioProjectSummary",
+        originalSummaryDescriptor,
+      );
+    } else {
+      delete testGlobal.__studioProjectSummary;
+      if (originalSummary !== undefined) {
+        testGlobal.__studioProjectSummary = originalSummary;
+      }
+    }
+    if (originalLdbDescriptor) {
+      Object.defineProperty(globalThis, "ldb", originalLdbDescriptor);
+    } else {
+      delete testGlobal.ldb;
+      if (originalLdb !== undefined) {
+        testGlobal.ldb = originalLdb;
+      }
+    }
   });
 
   it("reads and writes the cached Studio project summary", () => {
@@ -96,6 +134,39 @@ describe("createGlobalProjectSummaryTargets", () => {
 
     expect(targets.getLocalStorageItem("lastMap")).toBeNull();
     expect(targets.getSessionStorageItem("lastMap")).toBeNull();
+  });
+
+  it("keeps summary targets safe when document, cache, or database globals throw", async () => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "__studioProjectSummary", {
+      configurable: true,
+      get: () => {
+        throw new Error("summary blocked");
+      },
+      set: () => {
+        throw new Error("summary write blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "ldb", {
+      configurable: true,
+      get: () => {
+        throw new Error("database blocked");
+      },
+    });
+
+    const targets = createGlobalProjectSummaryTargets();
+
+    expect(targets.hasElement("optionsSeed")).toBe(false);
+    expect(targets.getCachedSummary()).toBeUndefined();
+    expect(() =>
+      targets.setCachedSummary({ pendingSeed: "abc" } as EngineProjectSummary),
+    ).not.toThrow();
+    await expect(targets.readLocalDatabaseSnapshot()).resolves.toBeUndefined();
   });
 
   it("composes project summary targets from injected adapters", async () => {

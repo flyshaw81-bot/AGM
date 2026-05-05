@@ -44,7 +44,11 @@ function getSummaryGlobal(): EngineProjectSummaryGlobal {
 }
 
 function getDocument(): Document | undefined {
-  return globalThis.document;
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
 }
 
 function getLocalStorage(): Storage | undefined {
@@ -65,17 +69,39 @@ function getSessionStorage(): Storage | undefined {
 
 export function createGlobalProjectSummaryCacheAdapter(): EngineProjectSummaryCacheAdapter {
   return {
-    getCachedSummary: () => getSummaryGlobal().__studioProjectSummary,
+    getCachedSummary: () => {
+      try {
+        return getSummaryGlobal().__studioProjectSummary;
+      } catch {
+        return undefined;
+      }
+    },
     setCachedSummary: (summary) => {
-      getSummaryGlobal().__studioProjectSummary = summary;
+      try {
+        getSummaryGlobal().__studioProjectSummary = summary;
+      } catch {
+        // Compatibility cache is best-effort; injected adapters own strict state.
+      }
     },
   };
 }
 
 export function createGlobalProjectSummaryStorageAdapter(): EngineProjectSummaryStorageAdapter {
   return {
-    getLocalStorageItem: (key) => getLocalStorage()?.getItem(key) ?? null,
-    getSessionStorageItem: (key) => getSessionStorage()?.getItem(key) ?? null,
+    getLocalStorageItem: (key) => {
+      try {
+        return getLocalStorage()?.getItem(key) ?? null;
+      } catch {
+        return null;
+      }
+    },
+    getSessionStorageItem: (key) => {
+      try {
+        return getSessionStorage()?.getItem(key) ?? null;
+      } catch {
+        return null;
+      }
+    },
   };
 }
 
@@ -88,10 +114,14 @@ export function createGlobalProjectSummaryDocumentAdapter(): EngineProjectSummar
 export function createGlobalProjectSummaryDatabaseAdapter(): EngineProjectSummaryDatabaseAdapter {
   return {
     readLocalDatabaseSnapshot: async () => {
-      const localDatabase = getSummaryGlobal().ldb;
-      return typeof localDatabase?.get === "function"
-        ? localDatabase.get("lastMap")
-        : undefined;
+      try {
+        const localDatabase = getSummaryGlobal().ldb;
+        return typeof localDatabase?.get === "function"
+          ? localDatabase.get("lastMap")
+          : undefined;
+      } catch {
+        return undefined;
+      }
     },
   };
 }
