@@ -2376,6 +2376,11 @@ writes, and export runtime helper lookups/calls. Blocked export compatibility
 helpers fall back to fallback values, unavailable capability flags, or no-op
 behavior while injected settings and runtime adapters remain explicit.
 
+Project-climate defaults now guard window, document, pack, climate helper,
+renderer, and scheduler compatibility reads/calls. Blocked climate pipeline or
+redraw globals now fall back to false/undefined/no-op behavior while injected
+DOM, pipeline, renderer, and scheduler adapters remain the explicit path.
+
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`
 dimensions. `engine-generation-session-services.ts` now exposes

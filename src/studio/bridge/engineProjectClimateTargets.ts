@@ -96,11 +96,19 @@ export type EngineProjectClimateSchedulerAdapter = {
 };
 
 function getClimateWindow(): ClimateWindow {
-  return (globalThis.window ?? globalThis) as ClimateWindow;
+  try {
+    return (globalThis.window ?? globalThis) as ClimateWindow;
+  } catch {
+    return globalThis as ClimateWindow;
+  }
 }
 
 function getDocument(): Document | undefined {
-  return globalThis.document;
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
 }
 
 function isFunction(value: unknown): value is () => void {
@@ -108,23 +116,39 @@ function isFunction(value: unknown): value is () => void {
 }
 
 function getPackCells() {
-  return getClimateWindow().pack?.cells;
+  try {
+    return getClimateWindow().pack?.cells;
+  } catch {
+    return undefined;
+  }
 }
 
 function isClimatePipelineAvailable(options: EngineClimateRedrawOptions) {
-  const engineWindow = getClimateWindow();
-  return (
-    (!options.updateGlobePosition ||
-      isFunction(engineWindow.updateGlobePosition)) &&
-    isFunction(engineWindow.calculateTemperatures) &&
-    isFunction(engineWindow.generatePrecipitation) &&
-    isFunction(engineWindow.Rivers?.generate) &&
-    isFunction(engineWindow.Rivers?.specify) &&
-    isFunction(engineWindow.Biomes?.define) &&
-    isFunction(engineWindow.Features?.defineGroups) &&
-    isFunction(engineWindow.Lakes?.defineNames) &&
-    Boolean(getPackCells()?.h)
-  );
+  try {
+    const engineWindow = getClimateWindow();
+    return (
+      (!options.updateGlobePosition ||
+        isFunction(engineWindow.updateGlobePosition)) &&
+      isFunction(engineWindow.calculateTemperatures) &&
+      isFunction(engineWindow.generatePrecipitation) &&
+      isFunction(engineWindow.Rivers?.generate) &&
+      isFunction(engineWindow.Rivers?.specify) &&
+      isFunction(engineWindow.Biomes?.define) &&
+      isFunction(engineWindow.Features?.defineGroups) &&
+      isFunction(engineWindow.Lakes?.defineNames) &&
+      Boolean(getPackCells()?.h)
+    );
+  } catch {
+    return false;
+  }
+}
+
+function callClimateHelper(callback: () => void) {
+  try {
+    callback();
+  } catch {
+    // Climate compatibility helpers are best-effort behind injected adapters.
+  }
 }
 
 export function createGlobalProjectClimateTargets(
@@ -141,13 +165,23 @@ export function createGlobalProjectClimateTargets(
 export function createGlobalProjectClimateDomAdapter(): EngineProjectClimateDomAdapter {
   return {
     shouldAutoApplyClimate: () => {
-      const wcAutoChange = getDocument()?.getElementById("wcAutoChange") as
-        | HTMLInputElement
-        | null
-        | undefined;
-      return wcAutoChange ? wcAutoChange.checked : true;
+      try {
+        const wcAutoChange = getDocument()?.getElementById("wcAutoChange") as
+          | HTMLInputElement
+          | null
+          | undefined;
+        return wcAutoChange ? wcAutoChange.checked : true;
+      } catch {
+        return true;
+      }
     },
-    hasCanvas3d: () => Boolean(getDocument()?.getElementById("canvas3d")),
+    hasCanvas3d: () => {
+      try {
+        return Boolean(getDocument()?.getElementById("canvas3d"));
+      } catch {
+        return false;
+      }
+    },
   };
 }
 
@@ -155,46 +189,84 @@ export function createGlobalProjectClimatePipelineAdapter(
   options: EngineClimateRedrawOptions = {},
 ): EngineProjectClimatePipelineAdapter {
   return {
-    canUpdateGlobePosition: () =>
-      isFunction(getClimateWindow().updateGlobePosition),
+    canUpdateGlobePosition: () => {
+      try {
+        return isFunction(getClimateWindow().updateGlobePosition);
+      } catch {
+        return false;
+      }
+    },
     canApplyClimatePipeline: () => isClimatePipelineAvailable(options),
-    updateGlobeTemperature: () => getClimateWindow().updateGlobeTemperature?.(),
-    updateGlobePosition: () => getClimateWindow().updateGlobePosition?.(),
-    calculateTemperatures: () => getClimateWindow().calculateTemperatures?.(),
-    generatePrecipitation: () => getClimateWindow().generatePrecipitation?.(),
+    updateGlobeTemperature: () =>
+      callClimateHelper(() => getClimateWindow().updateGlobeTemperature?.()),
+    updateGlobePosition: () =>
+      callClimateHelper(() => getClimateWindow().updateGlobePosition?.()),
+    calculateTemperatures: () =>
+      callClimateHelper(() => getClimateWindow().calculateTemperatures?.()),
+    generatePrecipitation: () =>
+      callClimateHelper(() => getClimateWindow().generatePrecipitation?.()),
     cloneHeights: () => {
-      const heights = getPackCells()?.h;
-      return heights ? new Uint8Array(heights) : undefined;
+      try {
+        const heights = getPackCells()?.h;
+        return heights ? new Uint8Array(heights) : undefined;
+      } catch {
+        return undefined;
+      }
     },
-    generateRivers: () => getClimateWindow().Rivers?.generate?.(),
-    specifyRivers: () => getClimateWindow().Rivers?.specify?.(),
+    generateRivers: () =>
+      callClimateHelper(() => getClimateWindow().Rivers?.generate?.()),
+    specifyRivers: () =>
+      callClimateHelper(() => getClimateWindow().Rivers?.specify?.()),
     restoreHeights: (heights) => {
-      const cells = getPackCells();
-      if (cells) cells.h = new Float32Array(heights);
+      try {
+        const cells = getPackCells();
+        if (cells) cells.h = new Float32Array(heights);
+      } catch {
+        // Pack height restore is best-effort for compatibility targets.
+      }
     },
-    defineBiomes: () => getClimateWindow().Biomes?.define?.(),
-    defineFeatureGroups: () => getClimateWindow().Features?.defineGroups?.(),
-    defineLakeNames: () => getClimateWindow().Lakes?.defineNames?.(),
+    defineBiomes: () =>
+      callClimateHelper(() => getClimateWindow().Biomes?.define?.()),
+    defineFeatureGroups: () =>
+      callClimateHelper(() => getClimateWindow().Features?.defineGroups?.()),
+    defineLakeNames: () =>
+      callClimateHelper(() => getClimateWindow().Lakes?.defineNames?.()),
   };
 }
 
 export function createGlobalProjectClimateRendererAdapter(): EngineProjectClimateRendererAdapter {
   return {
-    isLayerOn: (layer) => getClimateWindow().layerIsOn?.(layer) === true,
-    drawTemperature: () => getClimateWindow().drawTemperature?.(),
-    drawPrecipitation: () => getClimateWindow().drawPrecipitation?.(),
-    drawBiomes: () => getClimateWindow().drawBiomes?.(),
-    drawCoordinates: () => getClimateWindow().drawCoordinates?.(),
-    drawRivers: () => getClimateWindow().drawRivers?.(),
-    updateThreeD: () => getClimateWindow().ThreeD?.update?.(),
+    isLayerOn: (layer) => {
+      try {
+        return getClimateWindow().layerIsOn?.(layer) === true;
+      } catch {
+        return false;
+      }
+    },
+    drawTemperature: () =>
+      callClimateHelper(() => getClimateWindow().drawTemperature?.()),
+    drawPrecipitation: () =>
+      callClimateHelper(() => getClimateWindow().drawPrecipitation?.()),
+    drawBiomes: () =>
+      callClimateHelper(() => getClimateWindow().drawBiomes?.()),
+    drawCoordinates: () =>
+      callClimateHelper(() => getClimateWindow().drawCoordinates?.()),
+    drawRivers: () =>
+      callClimateHelper(() => getClimateWindow().drawRivers?.()),
+    updateThreeD: () =>
+      callClimateHelper(() => getClimateWindow().ThreeD?.update?.()),
   };
 }
 
 export function createGlobalProjectClimateSchedulerAdapter(): EngineProjectClimateSchedulerAdapter {
   return {
     schedule: (callback, delay) => {
-      const scheduler = getClimateWindow().setTimeout;
-      if (typeof scheduler === "function") scheduler(callback, delay);
+      try {
+        const scheduler = getClimateWindow().setTimeout;
+        if (typeof scheduler === "function") scheduler(callback, delay);
+      } catch {
+        // Scheduling is optional in compatibility mode.
+      }
     },
   };
 }
