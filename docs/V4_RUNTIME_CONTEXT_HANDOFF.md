@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 197 test files, 836 tests.
+- `npm.cmd run test -- --run` passed: 197 test files, 922 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2428,6 +2428,29 @@ reads plus best-effort Studio and compatibility dialog close operations.
 Engine render adapter DOM cleanup now guards blocked rendered-node removal and
 SVG path-length reads while keeping injected render targets intact.
 
+## Non-UI Boundary Closeout
+
+As of this handoff update, the non-UI runtime/context adapter hardening pass is
+treated as stage-complete for the current migration cycle. Recent work moved the
+highest-risk browser global and DOM reads behind guarded target factories across
+generation settings, runtime settings, project actions, export/data/style/layer
+targets, draft IO, host/style/canvas targets, editor dialog targets, and render
+cleanup.
+
+This does not mean AGM Studio has removed all compatibility debt. The remaining
+work should be handled as planned slices instead of continuing an open-ended
+adapter sweep:
+
+1. old public UI and jQuery dialog replacement,
+2. command-layer ownership for the remaining rendered editor operations,
+3. gradual replacement of default global target factories with real services,
+4. Pencil-guided Studio UI migration.
+
+Recommended V4 judgment for this checkpoint: verify the guarded boundaries,
+confirm the test/build gate below, and treat new low-level adapter hardening
+findings as follow-up debt unless they expose a user-visible breakage, data loss
+risk, or unguarded import-time crash.
+
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`
 dimensions. `engine-generation-session-services.ts` now exposes
@@ -2465,18 +2488,24 @@ compatible but are no longer embedded directly in the adapter composition.
 
 ## Next Recommended Slice
 
-Move the next high-value generation step into explicit context. Recommended
-order:
+Move out of open-ended adapter hardening and into planned product migration.
+Recommended order:
 
-1. Move the remaining context type re-exports gradually to direct imports from
+1. Run V4 checkpoint review on the current non-UI boundary closeout. Focus on
+   import-time crashes, unguarded browser globals outside target factories,
+   stale public UI dialog paths, and whether AGM module mounts are correctly
+   classified as compatibility exports rather than old algorithms.
+2. Read the Pencil design file before any UI implementation and choose one
+   Studio-owned business surface for the first UI migration slice.
+3. Move the remaining context type re-exports gradually to direct imports from
    their adapter modules in touched files, without doing a noisy repo-wide
    churn pass.
-2. Start a command-layer slice for route/editor/query helpers rather than
+4. Start a command-layer slice for route/editor/query helpers rather than
    mixing rendered editor state into pure generation migration.
-3. Continue reducing module-level browser UI exits. `fonts.ts` now has a
+5. Continue reducing module-level browser UI exits. `fonts.ts` now has a
    formal `EngineFontResourceService`, a typed runtime factory, and a
    centralized compatibility installer; the next high-value step is to replace
    public UI/export `AGMFontResources` callers with injected font-resource
    commands where Studio-owned flows call it.
-4. Defer manual Burgs editor methods (`add/remove/changeGroup`) until the
+6. Defer manual Burgs editor methods (`add/remove/changeGroup`) until the
    editor command layer can own rendered icons, labels, routes, and COA updates.
