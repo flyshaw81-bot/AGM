@@ -7,10 +7,22 @@ import {
 } from "./engineAutoFixStateTargets";
 
 const originalPack = globalThis.pack;
+const originalPackDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "pack",
+);
 
 describe("createGlobalStateWritebackTargets", () => {
   afterEach(() => {
-    globalThis.pack = originalPack;
+    if (originalPackDescriptor) {
+      Object.defineProperty(globalThis, "pack", originalPackDescriptor);
+    } else {
+      Object.defineProperty(globalThis, "pack", {
+        configurable: true,
+        value: originalPack,
+        writable: true,
+      });
+    }
   });
 
   it("resolves writable state and skips removed state", () => {
@@ -56,5 +68,18 @@ describe("createGlobalStateWritebackTargets", () => {
 
     expect(targets.getWritableState(2)).toBe(state);
     expect(targets.getWritableState(3)).toBeUndefined();
+  });
+
+  it("keeps global state writeback safe when pack access throws", () => {
+    Object.defineProperty(globalThis, "pack", {
+      configurable: true,
+      get: () => {
+        throw new Error("pack blocked");
+      },
+    });
+
+    expect(
+      createGlobalStateWritebackTargets().getWritableState(2),
+    ).toBeUndefined();
   });
 });

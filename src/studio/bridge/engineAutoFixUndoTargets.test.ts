@@ -8,11 +8,31 @@ import {
 
 const originalPack = globalThis.pack;
 const originalBiomesData = globalThis.biomesData;
+const originalPackDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "pack",
+);
+const originalBiomesDataDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "biomesData",
+);
 
 describe("createGlobalAutoFixUndoTargets", () => {
   afterEach(() => {
-    globalThis.pack = originalPack;
-    globalThis.biomesData = originalBiomesData;
+    for (const [name, descriptor, value] of [
+      ["pack", originalPackDescriptor, originalPack],
+      ["biomesData", originalBiomesDataDescriptor, originalBiomesData],
+    ] as const) {
+      if (descriptor) {
+        Object.defineProperty(globalThis, name, descriptor);
+      } else {
+        Object.defineProperty(globalThis, name, {
+          configurable: true,
+          value,
+          writable: true,
+        });
+      }
+    }
   });
 
   it("resolves writable province and skips removed province", () => {
@@ -93,6 +113,19 @@ describe("createGlobalAutoFixUndoTargets", () => {
     expect(targets.getWritableState(2)).toBe(state);
     expect(targets.getWritableState(3)).toBeUndefined();
     expect(targets.getWritableBiomeData()).toBe(biomeData);
+  });
+
+  it("keeps global undo targets safe when pack access throws", () => {
+    Object.defineProperty(globalThis, "pack", {
+      configurable: true,
+      get: () => {
+        throw new Error("pack blocked");
+      },
+    });
+    const targets = createGlobalAutoFixUndoTargets();
+
+    expect(targets.getWritableProvince(4)).toBeUndefined();
+    expect(targets.getWritableState(2)).toBeUndefined();
   });
 
   it("creates undo targets from an injected runtime context", () => {

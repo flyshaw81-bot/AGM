@@ -104,13 +104,13 @@ function writableProvinceOrUndefined(
 
 export function createGlobalRouteWritebackMapAdapter(): EngineRouteWritebackMapAdapter {
   return {
-    getCellIds: () => Array.from(globalThis.pack?.cells?.i || []),
-    getCellHeight: (cellId) => globalThis.pack?.cells?.h?.[cellId],
-    getCellProvince: (cellId) => globalThis.pack?.cells?.province?.[cellId],
-    getCellState: (cellId) => globalThis.pack?.cells?.state?.[cellId],
-    getCellRoutes: (cellId) => globalThis.pack?.cells?.routes?.[cellId],
+    getCellIds: () => Array.from(getGlobalPack()?.cells?.i || []),
+    getCellHeight: (cellId) => getGlobalPack()?.cells?.h?.[cellId],
+    getCellProvince: (cellId) => getGlobalPack()?.cells?.province?.[cellId],
+    getCellState: (cellId) => getGlobalPack()?.cells?.state?.[cellId],
+    getCellRoutes: (cellId) => getGlobalPack()?.cells?.routes?.[cellId],
     getProvince: (provinceId) =>
-      globalThis.pack?.provinces?.[provinceId] as unknown as
+      getGlobalPack()?.provinces?.[provinceId] as unknown as
         | AgmWritableProvince
         | undefined,
   };
@@ -153,4 +153,12 @@ export function createRuntimeRouteWritebackTargets(
   return createRouteWritebackTargets(
     createRuntimeRouteWritebackMapAdapter(context),
   );
+}
+
+function getGlobalPack(): typeof pack | undefined {
+  try {
+    return globalThis.pack;
+  } catch {
+    return undefined;
+  }
 }

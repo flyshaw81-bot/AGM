@@ -8,10 +8,22 @@ import {
 } from "./engineAutoFixSettlementTargets";
 
 const originalPack = globalThis.pack;
+const originalPackDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "pack",
+);
 
 describe("createGlobalSettlementWritebackTargets", () => {
   afterEach(() => {
-    globalThis.pack = originalPack;
+    if (originalPackDescriptor) {
+      Object.defineProperty(globalThis, "pack", originalPackDescriptor);
+    } else {
+      Object.defineProperty(globalThis, "pack", {
+        configurable: true,
+        value: originalPack,
+        writable: true,
+      });
+    }
   });
 
   it("uses an existing state burg point when available", () => {
@@ -80,6 +92,26 @@ describe("createGlobalSettlementWritebackTargets", () => {
     expect(
       createGlobalSettlementWritebackTargets().resolveSettlementPoint(change),
     ).toEqual({ x: 300, y: 420 });
+  });
+
+  it("keeps global settlement writeback safe when pack access throws", () => {
+    Object.defineProperty(globalThis, "pack", {
+      configurable: true,
+      get: () => {
+        throw new Error("pack blocked");
+      },
+    });
+    const change = {
+      id: "burg:state:4",
+      operation: "create",
+      entity: "burg",
+      summary: "Add support settlement",
+      refs: { states: [4], provinces: [7] },
+    } satisfies EngineAutoFixPreviewChange;
+
+    expect(
+      createGlobalSettlementWritebackTargets().resolveSettlementPoint(change),
+    ).toBeNull();
   });
 
   it("composes settlement writeback targets from an injected map adapter", () => {

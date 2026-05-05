@@ -64,7 +64,7 @@ function pointOrUndefined(
 export function createGlobalSettlementWritebackMapAdapter(): EngineSettlementWritebackMapAdapter {
   return {
     findStateBurg: (stateId) => {
-      const burg = globalThis.pack?.burgs?.find(
+      const burg = getGlobalPack()?.burgs?.find(
         (item) =>
           item &&
           !item.removed &&
@@ -75,13 +75,13 @@ export function createGlobalSettlementWritebackMapAdapter(): EngineSettlementWri
       return burg ? { x: burg.x, y: burg.y } : undefined;
     },
     getStateCellIds: (stateId) =>
-      Array.from(globalThis.pack?.cells?.i || []).filter(
-        (cellId) => globalThis.pack?.cells?.state?.[cellId] === stateId,
+      Array.from(getGlobalPack()?.cells?.i || []).filter(
+        (cellId) => getGlobalPack()?.cells?.state?.[cellId] === stateId,
       ),
     getCellPoint: (cellId) =>
-      pointOrUndefined(globalThis.pack?.cells?.p?.[cellId]),
+      pointOrUndefined(getGlobalPack()?.cells?.p?.[cellId]),
     getProvinceCenterCell: (provinceId) =>
-      globalThis.pack?.provinces?.[provinceId]?.center,
+      getGlobalPack()?.provinces?.[provinceId]?.center,
   };
 }
 
@@ -132,4 +132,12 @@ export function createRuntimeSettlementWritebackTargets(
   return createSettlementWritebackTargets(
     createRuntimeSettlementWritebackMapAdapter(context),
   );
+}
+
+function getGlobalPack(): typeof pack | undefined {
+  try {
+    return globalThis.pack;
+  } catch {
+    return undefined;
+  }
 }

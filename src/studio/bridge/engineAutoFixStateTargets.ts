@@ -17,7 +17,7 @@ function writableStateOrUndefined(state: AgmWritableState | undefined) {
 export function createGlobalStateLookupAdapter(): EngineStateLookupAdapter {
   return {
     getState: (stateId) =>
-      globalThis.pack?.states?.[stateId] as unknown as
+      getGlobalPack()?.states?.[stateId] as unknown as
         | AgmWritableState
         | undefined,
   };
@@ -51,4 +51,12 @@ export function createRuntimeStateWritebackTargets(
   context: EngineRuntimeContext,
 ): EngineStateWritebackTargets {
   return createStateWritebackTargets(createRuntimeStateLookupAdapter(context));
+}
+
+function getGlobalPack(): typeof pack | undefined {
+  try {
+    return globalThis.pack;
+  } catch {
+    return undefined;
+  }
 }

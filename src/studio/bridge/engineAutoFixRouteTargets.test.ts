@@ -8,10 +8,22 @@ import {
 } from "./engineAutoFixRouteTargets";
 
 const originalPack = globalThis.pack;
+const originalPackDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "pack",
+);
 
 describe("createGlobalRouteWritebackTargets", () => {
   afterEach(() => {
-    globalThis.pack = originalPack;
+    if (originalPackDescriptor) {
+      Object.defineProperty(globalThis, "pack", originalPackDescriptor);
+    } else {
+      Object.defineProperty(globalThis, "pack", {
+        configurable: true,
+        value: originalPack,
+        writable: true,
+      });
+    }
   });
 
   it("resolves a disconnected land cell from referenced provinces", () => {
@@ -88,6 +100,26 @@ describe("createGlobalRouteWritebackTargets", () => {
     expect(createGlobalRouteWritebackTargets().resolveRouteCell(change)).toBe(
       31,
     );
+  });
+
+  it("keeps global route writeback safe when pack access throws", () => {
+    Object.defineProperty(globalThis, "pack", {
+      configurable: true,
+      get: () => {
+        throw new Error("pack blocked");
+      },
+    });
+    const change = {
+      id: "route:blocked",
+      operation: "link",
+      entity: "route",
+      summary: "Connect province",
+      refs: { provinces: [4], states: [3] },
+    } satisfies EngineAutoFixPreviewChange;
+    const targets = createGlobalRouteWritebackTargets();
+
+    expect(targets.resolveRouteCell(change)).toBeUndefined();
+    expect(targets.getWritableProvince(4)).toBeUndefined();
   });
 
   it("composes route writeback targets from an injected map adapter", () => {

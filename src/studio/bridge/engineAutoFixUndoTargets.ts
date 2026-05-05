@@ -52,7 +52,7 @@ function writableBiomeDataOrUndefined(
 export function createGlobalAutoFixUndoProvinceAdapter(): EngineAutoFixUndoProvinceAdapter {
   return {
     getProvince: (provinceId) =>
-      globalThis.pack?.provinces?.[provinceId] as unknown as
+      getGlobalPack()?.provinces?.[provinceId] as unknown as
         | AgmWritableProvince
         | undefined,
   };
@@ -72,7 +72,7 @@ export function createRuntimeAutoFixUndoProvinceAdapter(
 export function createGlobalAutoFixUndoStateAdapter(): EngineAutoFixUndoStateAdapter {
   return {
     getState: (stateId) =>
-      globalThis.pack?.states?.[stateId] as unknown as
+      getGlobalPack()?.states?.[stateId] as unknown as
         | AgmWritableState
         | undefined,
   };
@@ -136,4 +136,12 @@ export function createRuntimeAutoFixUndoTargets(
     createRuntimeAutoFixUndoStateAdapter(context),
     createRuntimeAutoFixUndoBiomeAdapter(context),
   );
+}
+
+function getGlobalPack(): typeof pack | undefined {
+  try {
+    return globalThis.pack;
+  } catch {
+    return undefined;
+  }
 }

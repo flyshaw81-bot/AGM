@@ -2336,6 +2336,10 @@ the preferred path.
 State service defaults now guard the `States` compatibility mount as well, so
 blocked state-module access falls back to empty campaign/no-op pole behavior
 while explicit runtime state services keep receiving injected modules.
+Auto-fix route, settlement, state, and undo writeback targets now guard their
+default `pack` compatibility reads. Blocked pack access no longer throws during
+preview/writeback target resolution; global adapters fall back to undefined/null
+results while injected runtime context adapters remain unchanged.
 
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`
