@@ -11,6 +11,18 @@ function getWindow(): (Window & typeof globalThis) | undefined {
   }
 }
 
+function getDocument(): Document | undefined {
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
+}
+
+function getElementById<T extends HTMLElement>(id: string): T | undefined {
+  return (getDocument()?.getElementById(id) as T | null) ?? undefined;
+}
+
 export function shouldForceDefaultOptions(
   searchParams: URLSearchParams,
 ): boolean {
@@ -65,7 +77,7 @@ export function createGlobalOptionsBrowserControlTargets(): EngineOptionsBrowser
     },
     applyHeightmapTemplate: (template, name) => {
       (globalThis as any).applyOption(
-        (globalThis as any).byId("templateInput"),
+        getElementById<HTMLInputElement>("templateInput"),
         template,
         name,
       );

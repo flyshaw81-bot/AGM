@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  createGlobalOptionsBrowserControlTargets,
   createGlobalOptionsControlAdapter,
   createGlobalOptionsWriterAdapter,
   createRuntimeOptionsNamingAdapter,
@@ -300,6 +301,28 @@ describe("EngineOptionsSessionModule", () => {
     expect(targets.setYear).toHaveBeenCalledWith(1492);
     expect(targets.setEra).toHaveBeenCalledWith("Copper Moon");
     expect(targets.syncEraOptions).toHaveBeenCalled();
+  });
+
+  it("keeps global template control lookup safe when document access throws", () => {
+    const applyOption = vi.fn();
+    vi.stubGlobal("applyOption", applyOption);
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
+
+    createGlobalOptionsBrowserControlTargets().applyHeightmapTemplate(
+      "continental",
+      "Continental",
+    );
+
+    expect(applyOption).toHaveBeenCalledWith(
+      undefined,
+      "continental",
+      "Continental",
+    );
   });
 
   it("routes era generation through the naming adapter", () => {
