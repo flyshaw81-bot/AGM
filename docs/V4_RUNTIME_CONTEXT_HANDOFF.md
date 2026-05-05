@@ -2273,6 +2273,9 @@ from the template generation path outside the default compatibility adapter.
 through `EngineOptionsHeightmapTemplateTargets`, so option randomization can
 read from an injected template catalog instead of scanning `heightmapTemplates`
 directly.
+`engine-climate-context.ts` now routes height exponent, point count, and
+precipitation input lookups through `EngineClimateInputTargets`, so global
+input controls remain isolated in the default climate compatibility adapter.
 
 `ocean-layers.ts` now routes outline-chain error reporting through
 `OceanLayerLogTargets`, keeping the default `globalThis.ERROR` compatibility

@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   createClimateContext,
   createGlobalClimateContext,
+  createGlobalClimateContextTargets,
+  createGlobalClimateInputTargets,
 } from "./engine-climate-context";
 
 const originalGrid = globalThis.grid;
@@ -12,6 +14,18 @@ const originalOptions = globalThis.options;
 const originalHeightExponentInput = globalThis.heightExponentInput;
 const originalPointsInput = globalThis.pointsInput;
 const originalPrecInput = globalThis.precInput;
+const originalHeightExponentInputDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "heightExponentInput",
+);
+const originalPointsInputDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "pointsInput",
+);
+const originalPrecInputDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "precInput",
+);
 const originalPrec = globalThis.prec;
 const originalDebug = globalThis.DEBUG;
 const originalTime = globalThis.TIME;
@@ -23,9 +37,45 @@ describe("createGlobalClimateContext", () => {
     globalThis.graphWidth = originalGraphWidth;
     globalThis.graphHeight = originalGraphHeight;
     globalThis.options = originalOptions;
-    globalThis.heightExponentInput = originalHeightExponentInput;
-    globalThis.pointsInput = originalPointsInput;
-    globalThis.precInput = originalPrecInput;
+    if (originalHeightExponentInputDescriptor) {
+      Object.defineProperty(
+        globalThis,
+        "heightExponentInput",
+        originalHeightExponentInputDescriptor,
+      );
+    } else {
+      Object.defineProperty(globalThis, "heightExponentInput", {
+        configurable: true,
+        value: originalHeightExponentInput,
+        writable: true,
+      });
+    }
+    if (originalPointsInputDescriptor) {
+      Object.defineProperty(
+        globalThis,
+        "pointsInput",
+        originalPointsInputDescriptor,
+      );
+    } else {
+      Object.defineProperty(globalThis, "pointsInput", {
+        configurable: true,
+        value: originalPointsInput,
+        writable: true,
+      });
+    }
+    if (originalPrecInputDescriptor) {
+      Object.defineProperty(
+        globalThis,
+        "precInput",
+        originalPrecInputDescriptor,
+      );
+    } else {
+      Object.defineProperty(globalThis, "precInput", {
+        configurable: true,
+        value: originalPrecInput,
+        writable: true,
+      });
+    }
     globalThis.prec = originalPrec;
     globalThis.DEBUG = originalDebug;
     globalThis.TIME = originalTime;
@@ -81,6 +131,57 @@ describe("createGlobalClimateContext", () => {
       debugTemperature: false,
       shouldTime: false,
     });
+  });
+
+  it("keeps global climate input targets safe when control access throws", () => {
+    Object.defineProperty(globalThis, "heightExponentInput", {
+      configurable: true,
+      get: () => {
+        throw new Error("height exponent blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "pointsInput", {
+      configurable: true,
+      get: () => {
+        throw new Error("points blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "precInput", {
+      configurable: true,
+      get: () => {
+        throw new Error("precipitation blocked");
+      },
+    });
+
+    const targets = createGlobalClimateInputTargets();
+
+    expect(targets.getHeightExponentInput()).toBeUndefined();
+    expect(targets.getPointsInput()).toBeUndefined();
+    expect(targets.getPrecipitationInput()).toBeUndefined();
+  });
+
+  it("routes climate input reads through injected input targets", () => {
+    globalThis.grid = { cells: { i: [0] } } as typeof grid;
+    globalThis.mapCoordinates = { latT: 120, latN: 80, latS: -40 };
+    globalThis.graphWidth = 480;
+    globalThis.graphHeight = 320;
+    globalThis.options = { temperatureEquator: 28 } as typeof options;
+    globalThis.prec = { selectAll: () => ({ remove: () => {} }) } as any;
+    globalThis.DEBUG = {};
+    globalThis.TIME = false;
+
+    const context = createClimateContext(
+      createGlobalClimateContextTargets({
+        getHeightExponentInput: () => ({ value: "2.1" }) as HTMLInputElement,
+        getPointsInput: () =>
+          ({ dataset: { cells: "16000" } }) as unknown as HTMLInputElement,
+        getPrecipitationInput: () => ({ value: "65" }) as HTMLInputElement,
+      }),
+    );
+
+    expect(context.heightExponent).toBe(2.1);
+    expect(context.pointsCount).toBe(16000);
+    expect(context.precipitationPercent).toBe(65);
   });
 
   it("builds a climate runtime context from injected targets", () => {

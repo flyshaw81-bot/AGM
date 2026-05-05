@@ -14,10 +14,28 @@ export type EngineClimateContextTargets = {
   getShouldTime: () => boolean;
 };
 
-function getGlobalInput(name: string): HTMLInputElement | undefined {
-  return globalThis[name as keyof typeof globalThis] as
-    | HTMLInputElement
-    | undefined;
+export type EngineClimateInputTargets = {
+  getHeightExponentInput: () => HTMLInputElement | undefined;
+  getPointsInput: () => HTMLInputElement | undefined;
+  getPrecipitationInput: () => HTMLInputElement | undefined;
+};
+
+function getGlobalInput(
+  name: keyof typeof globalThis,
+): HTMLInputElement | undefined {
+  try {
+    return globalThis[name] as HTMLInputElement | undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export function createGlobalClimateInputTargets(): EngineClimateInputTargets {
+  return {
+    getHeightExponentInput: () => getGlobalInput("heightExponentInput"),
+    getPointsInput: () => getGlobalInput("pointsInput"),
+    getPrecipitationInput: () => getGlobalInput("precInput"),
+  };
 }
 
 export function createClimateContext(
@@ -38,7 +56,9 @@ export function createClimateContext(
   };
 }
 
-export function createGlobalClimateContextTargets(): EngineClimateContextTargets {
+export function createGlobalClimateContextTargets(
+  inputTargets: EngineClimateInputTargets = createGlobalClimateInputTargets(),
+): EngineClimateContextTargets {
   return {
     getGrid: () => grid,
     getCoordinates: () => mapCoordinates as ClimateMapCoordinates,
@@ -46,11 +66,11 @@ export function createGlobalClimateContextTargets(): EngineClimateContextTargets
     getGraphHeight: () => graphHeight,
     getOptions: () => options,
     getHeightExponent: () =>
-      Number(getGlobalInput("heightExponentInput")?.value ?? 1),
+      Number(inputTargets.getHeightExponentInput()?.value ?? 1),
     getPointsCount: () =>
-      Number(getGlobalInput("pointsInput")?.dataset?.cells ?? 0),
+      Number(inputTargets.getPointsInput()?.dataset?.cells ?? 0),
     getPrecipitationPercent: () =>
-      Number(getGlobalInput("precInput")?.value ?? 100),
+      Number(inputTargets.getPrecipitationInput()?.value ?? 100),
     getPrecipitationLayer: () => prec,
     getDebugTemperature: () => Boolean(DEBUG.temperature),
     getShouldTime: () => TIME,
