@@ -10,6 +10,14 @@ declare global {
   var armies: import("d3").Selection<SVGGElement, unknown, null, undefined>;
 }
 
+const getWindow = (): (Window & typeof globalThis) | undefined => {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+};
+
 const militaryRenderer = (): void => {
   TIME && console.time("drawMilitary");
 
@@ -206,7 +214,10 @@ const moveRegimentRenderer = (
     .attr("width", "6");
 };
 
-window.drawMilitary = militaryRenderer;
-window.drawRegiments = drawRegimentsRenderer;
-window.drawRegiment = drawRegimentRenderer;
-window.moveRegiment = moveRegimentRenderer;
+const runtimeWindow = getWindow();
+if (runtimeWindow) {
+  runtimeWindow.drawMilitary = militaryRenderer;
+  runtimeWindow.drawRegiments = drawRegimentsRenderer;
+  runtimeWindow.drawRegiment = drawRegimentRenderer;
+  runtimeWindow.moveRegiment = moveRegimentRenderer;
+}

@@ -11,6 +11,14 @@ interface IceElement {
   offset?: [number, number];
 }
 
+const getWindow = (): (Window & typeof globalThis) | undefined => {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+};
+
 const iceRenderer = (): void => {
   TIME && console.time("drawIce");
 
@@ -97,6 +105,9 @@ function getIcebergHtml(iceberg: IceElement): string {
   return `<polygon points="${iceberg.points}" data-id="${iceberg.i}" ${iceberg.offset ? `transform="translate(${iceberg.offset[0]},${iceberg.offset[1]})"` : ""}/>`;
 }
 
-window.drawIce = iceRenderer;
-window.redrawIceberg = redrawIcebergRenderer;
-window.redrawGlacier = redrawGlacierRenderer;
+const runtimeWindow = getWindow();
+if (runtimeWindow) {
+  runtimeWindow.drawIce = iceRenderer;
+  runtimeWindow.redrawIceberg = redrawIcebergRenderer;
+  runtimeWindow.redrawGlacier = redrawGlacierRenderer;
+}

@@ -1,5 +1,5 @@
 import { extent, polygonContains } from "d3";
-import { minmax, rand, rn } from "../utils";
+import { minmax, poissonDiscSampler, rand, rn } from "../utils";
 
 interface ReliefIcon {
   i: string;
@@ -13,6 +13,14 @@ declare global {
   var terrain: import("d3").Selection<SVGGElement, unknown, null, undefined>;
   var getPackPolygon: (i: number) => [number, number][];
 }
+
+const getWindow = (): (Window & typeof globalThis) | undefined => {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+};
 
 const reliefIconsRenderer = (): void => {
   TIME && console.time("drawRelief");
@@ -43,7 +51,7 @@ const reliefIconsRenderer = (): void => {
       const radius = 2 / iconsDensity / density;
       if (Math.random() > iconsDensity * 10) return;
 
-      for (const [cx, cy] of window.poissonDiscSampler(
+      for (const [cx, cy] of poissonDiscSampler(
         minX,
         minY,
         maxX,
@@ -67,7 +75,7 @@ const reliefIconsRenderer = (): void => {
       const radius = 2 / density;
       const [icon, h] = getReliefIcon(i, height);
 
-      for (const [cx, cy] of window.poissonDiscSampler(
+      for (const [cx, cy] of poissonDiscSampler(
         minX,
         minY,
         maxX,
@@ -161,4 +169,5 @@ const reliefIconsRenderer = (): void => {
   }
 };
 
-window.drawReliefIcons = reliefIconsRenderer;
+const runtimeWindow = getWindow();
+if (runtimeWindow) runtimeWindow.drawReliefIcons = reliefIconsRenderer;
