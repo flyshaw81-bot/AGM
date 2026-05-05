@@ -16,9 +16,17 @@ export type NodeIdTargets = {
   getElementById: (id: string) => Element | null;
 };
 
+const getDocument = (): Document | undefined => {
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
+};
+
 export function createGlobalNodeIdTargets(): NodeIdTargets {
   return {
-    getElementById: (id) => document.getElementById(id),
+    getElementById: (id) => getDocument()?.getElementById(id) ?? null,
   };
 }
 

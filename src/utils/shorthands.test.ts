@@ -1,7 +1,21 @@
-import { describe, expect, it, vi } from "vitest";
-import { byId, type DomLookupTargets } from "./shorthands";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  byId,
+  createGlobalDomLookupTargets,
+  type DomLookupTargets,
+} from "./shorthands";
 
 describe("byId", () => {
+  const originalDocument = globalThis.document;
+
+  afterEach(() => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: originalDocument,
+      writable: true,
+    });
+  });
+
   it("uses injected DOM lookup targets", () => {
     const element = { id: "map" } as HTMLElement;
     const targets: DomLookupTargets = {
@@ -10,5 +24,16 @@ describe("byId", () => {
 
     expect(byId("map", targets)).toBe(element);
     expect(targets.getElementById).toHaveBeenCalledWith("map");
+  });
+
+  it("keeps global DOM lookup safe when document access throws", () => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
+
+    expect(byId("map", createGlobalDomLookupTargets())).toBeUndefined();
   });
 });

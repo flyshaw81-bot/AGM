@@ -4,14 +4,25 @@ import { getGridPolygon } from "./graphUtils";
 import { normalize } from "./numberUtils";
 import { round } from "./stringUtils";
 
+const getWindow = (): Window | undefined => {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+};
+
 /**
  * Drawing cell values and polygons for debugging purposes
  * @param {any[]} data - Array of data values corresponding to each cell
  * @param {any} packedGraph - The packed graph object containing cell positions
  */
 export const drawCellsValue = (data: any[], packedGraph: any): void => {
-  window.debug.selectAll("text").remove();
-  window.debug
+  const debug = getWindow()?.debug;
+  if (!debug) return;
+
+  debug.selectAll("text").remove();
+  debug
     .selectAll("text")
     .data(data)
     .enter()
@@ -26,6 +37,10 @@ export const drawCellsValue = (data: any[], packedGraph: any): void => {
  * @param {any} terrs - The SVG group element where the polygons will be drawn
  */
 export const drawPolygons = (data: number[], terrs: any, grid: any): void => {
+  const window = getWindow();
+  const debug = window?.debug;
+  if (!window?.getColorScheme || !debug) return;
+
   const maximum: number = max(data) as number;
   const minimum: number = min(data) as number;
   const scheme = window.getColorScheme(
@@ -33,8 +48,8 @@ export const drawPolygons = (data: number[], terrs: any, grid: any): void => {
   );
 
   data = data.map((d) => 1 - normalize(d, minimum, maximum));
-  window.debug.selectAll("polygon").remove();
-  window.debug
+  debug.selectAll("polygon").remove();
+  debug
     .selectAll("polygon")
     .data(data)
     .enter()
@@ -49,8 +64,11 @@ export const drawPolygons = (data: number[], terrs: any, grid: any): void => {
  * @param {any} pack - The packed graph object containing cell positions and routes
  */
 export const drawRouteConnections = (packedGraph: any): void => {
-  window.debug.select("#connections").remove();
-  const routes = window.debug
+  const debug = getWindow()?.debug;
+  if (!debug) return;
+
+  debug.select("#connections").remove();
+  const routes = debug
     .append("g")
     .attr("id", "connections")
     .attr("stroke-width", 0.8);
@@ -88,7 +106,10 @@ export const drawPoint = (
   [x, y]: [number, number],
   { color = "red", radius = 0.5 },
 ): void => {
-  window.debug
+  const debug = getWindow()?.debug;
+  if (!debug) return;
+
+  debug
     .append("circle")
     .attr("cx", x)
     .attr("cy", y)
@@ -107,8 +128,11 @@ export const drawPath = (
   points: [number, number][],
   { color = "red", width = 0.5 },
 ): void => {
+  const debug = getWindow()?.debug;
+  if (!debug) return;
+
   const lineGen = line().curve(curveBundle);
-  window.debug
+  debug
     .append("path")
     .attr("d", round(lineGen(points) as string))
     .attr("stroke", color)

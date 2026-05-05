@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 183 test files, 760 tests.
+- `npm.cmd run test -- --run` passed: 184 test files, 765 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2116,6 +2116,9 @@ mount object in restricted runtime harnesses instead of failing module load.
 Common utility browser targets now guard blocked or absent navigator, window,
 XHR, FileReader, and Studio prompt DOM access. Graph height preview canvas
 creation also degrades to an inert canvas target when `document` is blocked.
+Node and shorthand DOM lookup helpers now guard blocked `document` access.
+Debug drawing helpers now no-op when `window` or the debug SVG layer is absent,
+while preserving the mounted debug-layer path.
 `getEngineWorldDimensions(context)` now centralizes the compatibility fallback
 from runtime world settings to browser graph globals. Burgs, Cultures, and
 Rivers consume that helper instead of reading `globalThis.graphWidth` /
