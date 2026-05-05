@@ -18,13 +18,22 @@ export function createMapGraphLifecycleService(
   };
 }
 
+function getGlobalFunction(name: string): (() => void) | undefined {
+  try {
+    const value = (globalThis as Record<string, unknown>)[name];
+    return typeof value === "function" ? (value as () => void) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function createGlobalMapGraphLifecycleTargets(): EngineMapGraphLifecycleTargets {
   return {
     rebuildGraph: () => {
-      globalThis.reGraph?.();
+      getGlobalFunction("reGraph")?.();
     },
     createDefaultRuler: () => {
-      globalThis.createDefaultRuler?.();
+      getGlobalFunction("createDefaultRuler")?.();
     },
   };
 }

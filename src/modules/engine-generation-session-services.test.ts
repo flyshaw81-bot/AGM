@@ -16,9 +16,43 @@ import { EngineOptionsSession } from "./engine-options-session";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
 
 describe("createGlobalGenerationSessionServices", () => {
+  const originalGridDescriptor = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "grid",
+  );
+  const originalSeedDescriptor = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "seed",
+  );
+  const originalGraphWidthDescriptor = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "graphWidth",
+  );
+  const originalGraphHeightDescriptor = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "graphHeight",
+  );
+  const originalInvokeActiveZoomingDescriptor = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "invokeActiveZooming",
+  );
+
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
+    for (const [name, descriptor] of [
+      ["grid", originalGridDescriptor],
+      ["seed", originalSeedDescriptor],
+      ["graphWidth", originalGraphWidthDescriptor],
+      ["graphHeight", originalGraphHeightDescriptor],
+      ["invokeActiveZooming", originalInvokeActiveZoomingDescriptor],
+    ] as const) {
+      if (descriptor) {
+        Object.defineProperty(globalThis, name, descriptor);
+      } else {
+        delete (globalThis as Record<string, unknown>)[name];
+      }
+    }
   });
 
   it("assembles the default compatibility session services", () => {
@@ -259,6 +293,81 @@ describe("createGlobalGenerationSessionServices", () => {
     createGlobalGenerationSessionLifecycleTargets().invokeActiveZooming();
 
     expect(invokeActiveZooming).toHaveBeenCalledWith();
+  });
+
+  it("keeps active-view reset safe when the compatibility helper is absent", () => {
+    vi.stubGlobal("invokeActiveZooming", undefined);
+
+    expect(() =>
+      createGlobalGenerationSessionLifecycleTargets().invokeActiveZooming(),
+    ).not.toThrow();
+  });
+
+  it("keeps active-view reset safe when compatibility helper access throws", () => {
+    Object.defineProperty(globalThis, "invokeActiveZooming", {
+      configurable: true,
+      get: () => {
+        throw new Error("invokeActiveZooming blocked");
+      },
+    });
+
+    expect(() =>
+      createGlobalGenerationSessionLifecycleTargets().invokeActiveZooming(),
+    ).not.toThrow();
+  });
+
+  it("keeps browser global grid targets safe when compatibility globals are absent", () => {
+    vi.stubGlobal("grid", undefined);
+    vi.stubGlobal("seed", undefined);
+    vi.stubGlobal("graphWidth", undefined);
+    vi.stubGlobal("graphHeight", undefined);
+    const targets = createGlobalGridSessionTargets();
+    const nextGrid = { cells: { i: [1] } } as typeof grid;
+
+    expect(targets.getGrid()).toEqual({});
+    expect(targets.getSeed()).toBe("");
+    expect(targets.getGraphWidth()).toBe(0);
+    expect(targets.getGraphHeight()).toBe(0);
+    expect(() => targets.setGrid(nextGrid)).not.toThrow();
+  });
+
+  it("keeps browser global grid targets safe when compatibility global access throws", () => {
+    Object.defineProperty(globalThis, "grid", {
+      configurable: true,
+      get: () => {
+        throw new Error("grid blocked");
+      },
+      set: () => {
+        throw new Error("grid write blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "seed", {
+      configurable: true,
+      get: () => {
+        throw new Error("seed blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "graphWidth", {
+      configurable: true,
+      get: () => {
+        throw new Error("graphWidth blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "graphHeight", {
+      configurable: true,
+      get: () => {
+        throw new Error("graphHeight blocked");
+      },
+    });
+    const targets = createGlobalGridSessionTargets();
+
+    expect(targets.getGrid()).toEqual({});
+    expect(targets.getSeed()).toBe("");
+    expect(targets.getGraphWidth()).toBe(0);
+    expect(targets.getGraphHeight()).toBe(0);
+    expect(() =>
+      targets.setGrid({ cells: { i: [1] } } as typeof grid),
+    ).not.toThrow();
   });
 });
 

@@ -71,6 +71,31 @@ export type EngineGenerationSessionAdapter = {
   ) => void;
 };
 
+function getGlobalValue<T = unknown>(name: string): T | undefined {
+  try {
+    return (globalThis as Record<string, unknown>)[name] as T | undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function setGlobalValue<T>(name: string, value: T) {
+  try {
+    (globalThis as Record<string, unknown>)[name] = value;
+  } catch {
+    // Ignore read-only compatibility globals.
+  }
+}
+
+function getGlobalNumber(name: string): number {
+  const value = getGlobalValue<unknown>(name);
+  return typeof value === "number" ? value : 0;
+}
+
+function callGlobal(name: string) {
+  getGlobalValue<() => void>(name)?.();
+}
+
 export function createGridSessionService(
   targets: EngineGridSessionTargets,
 ): EngineGridSessionService {
@@ -118,13 +143,13 @@ export function createGlobalGridSessionTargets(
 
 export function createBrowserGlobalGridSessionTargets(): EngineGlobalGridSessionTargets {
   return {
-    getGrid: () => globalThis.grid,
+    getGrid: () => getGlobalValue<typeof grid>("grid") ?? ({} as typeof grid),
     setGrid: (nextGrid) => {
-      globalThis.grid = nextGrid;
+      setGlobalValue("grid", nextGrid);
     },
-    getSeed: () => globalThis.seed,
-    getGraphWidth: () => globalThis.graphWidth,
-    getGraphHeight: () => globalThis.graphHeight,
+    getSeed: () => getGlobalValue<string>("seed") ?? "",
+    getGraphWidth: () => getGlobalNumber("graphWidth"),
+    getGraphHeight: () => getGlobalNumber("graphHeight"),
   };
 }
 
@@ -157,7 +182,7 @@ export function createRuntimeGridSessionService(
 export function createGlobalGenerationSessionLifecycleTargets(): EngineGenerationSessionLifecycleTargets {
   return {
     invokeActiveZooming: () => {
-      invokeActiveZooming();
+      callGlobal("invokeActiveZooming");
     },
   };
 }

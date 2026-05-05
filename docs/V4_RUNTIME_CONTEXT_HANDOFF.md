@@ -2310,6 +2310,14 @@ while explicit/runtime targets remain unchanged.
 cell search, COA drawing, routes, layers, burg icons/labels, emblems, ice,
 scale-bar, canvas redraw, and zoom helpers. Missing compatibility helpers now
 degrade to no-op behavior while injected render targets keep the explicit path.
+`engine-map-graph-lifecycle-service.ts` now guards `reGraph` and
+`createDefaultRuler` lookups, so blocked compatibility helper globals degrade
+to no-op lifecycle calls instead of throwing.
+`engine-generation-session-services.ts` now guards default grid/session
+compatibility access for `grid`, `seed`, graph dimensions, and
+`invokeActiveZooming`. Runtime services still prefer explicit context services,
+while the browser fallback no longer throws when these compatibility globals
+are missing or blocked.
 
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`

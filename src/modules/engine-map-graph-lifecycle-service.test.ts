@@ -7,11 +7,39 @@ import {
 
 const originalReGraph = globalThis.reGraph;
 const originalCreateDefaultRuler = globalThis.createDefaultRuler;
+const originalReGraphDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "reGraph",
+);
+const originalCreateDefaultRulerDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "createDefaultRuler",
+);
 
 describe("EngineMapGraphLifecycleService", () => {
   afterEach(() => {
-    globalThis.reGraph = originalReGraph;
-    globalThis.createDefaultRuler = originalCreateDefaultRuler;
+    if (originalReGraphDescriptor) {
+      Object.defineProperty(globalThis, "reGraph", originalReGraphDescriptor);
+    } else {
+      Object.defineProperty(globalThis, "reGraph", {
+        configurable: true,
+        value: originalReGraph,
+        writable: true,
+      });
+    }
+    if (originalCreateDefaultRulerDescriptor) {
+      Object.defineProperty(
+        globalThis,
+        "createDefaultRuler",
+        originalCreateDefaultRulerDescriptor,
+      );
+    } else {
+      Object.defineProperty(globalThis, "createDefaultRuler", {
+        configurable: true,
+        value: originalCreateDefaultRuler,
+        writable: true,
+      });
+    }
   });
 
   it("routes graph lifecycle operations through injected targets", () => {
@@ -44,6 +72,25 @@ describe("EngineMapGraphLifecycleService", () => {
     globalThis.reGraph = undefined as unknown as typeof reGraph;
     globalThis.createDefaultRuler =
       undefined as unknown as typeof createDefaultRuler;
+    const targets = createGlobalMapGraphLifecycleTargets();
+
+    expect(() => targets.rebuildGraph()).not.toThrow();
+    expect(() => targets.createDefaultRuler()).not.toThrow();
+  });
+
+  it("keeps global graph lifecycle targets safe when helper access throws", () => {
+    Object.defineProperty(globalThis, "reGraph", {
+      configurable: true,
+      get: () => {
+        throw new Error("reGraph blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "createDefaultRuler", {
+      configurable: true,
+      get: () => {
+        throw new Error("createDefaultRuler blocked");
+      },
+    });
     const targets = createGlobalMapGraphLifecycleTargets();
 
     expect(() => targets.rebuildGraph()).not.toThrow();
