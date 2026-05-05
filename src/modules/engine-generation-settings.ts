@@ -55,9 +55,17 @@ export type EngineGenerationSettingsStore = {
   ) => EngineGenerationSettings;
 };
 
+function getDocument(): Document | undefined {
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
+}
+
 export function createGlobalGenerationDomTargets(): EngineGenerationDomTargets {
   return {
-    getElementById: (id) => globalThis.document?.getElementById(id) ?? null,
+    getElementById: (id) => getDocument()?.getElementById(id) ?? null,
   };
 }
 

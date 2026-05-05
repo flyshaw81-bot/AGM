@@ -18,9 +18,13 @@ const originalHeightExponentInput = globalThis.heightExponentInput;
 function installDocument(
   controls: Record<string, Partial<HTMLInputElement | HTMLSelectElement>>,
 ): void {
-  globalThis.document = {
-    getElementById: (id: string) => controls[id] ?? null,
-  } as unknown as Document;
+  Object.defineProperty(globalThis, "document", {
+    configurable: true,
+    value: {
+      getElementById: (id: string) => controls[id] ?? null,
+    } as unknown as Document,
+    writable: true,
+  });
 }
 
 function createTargets(
@@ -37,7 +41,11 @@ function createTargets(
 
 describe("createGlobalGenerationSettings", () => {
   afterEach(() => {
-    globalThis.document = originalDocument;
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: originalDocument,
+      writable: true,
+    });
     globalThis.pointsInput = originalPointsInput;
     globalThis.heightExponentInput = originalHeightExponentInput;
   });
@@ -70,6 +78,37 @@ describe("createGlobalGenerationSettings", () => {
 
   it("keeps global generation DOM targets safe when document is absent", () => {
     globalThis.document = undefined as unknown as Document;
+    globalThis.pointsInput = undefined as unknown as HTMLInputElement;
+    globalThis.heightExponentInput = undefined as unknown as HTMLInputElement;
+
+    expect(createGlobalGenerationSettings()).toEqual({
+      heightmapTemplateId: undefined,
+      pointsCount: 0,
+      heightExponent: 1,
+      lakeElevationLimit: 0,
+      resolveDepressionsSteps: 0,
+      statesCount: 0,
+      manorsCount: 1000,
+      religionsCount: 0,
+      provincesRatio: 100,
+      culturesCount: 0,
+      cultureSet: "random",
+      cultureSetMax: 0,
+      cultureEmblemShape: "",
+      cultureNeutralRate: 1,
+      stateSizeVariety: 1,
+      globalGrowthRate: 1,
+      statesGrowthRate: 1,
+    });
+  });
+
+  it("keeps global generation DOM targets safe when document access throws", () => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
     globalThis.pointsInput = undefined as unknown as HTMLInputElement;
     globalThis.heightExponentInput = undefined as unknown as HTMLInputElement;
 

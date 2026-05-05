@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 181 test files, 742 tests.
+- `npm.cmd run test -- --run` passed: 181 test files, 743 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2092,6 +2092,8 @@ default preference and project-center adapters.
 Engine host DOM and dialog DOM adapters now also guard blocked `document`
 access; host lookups return null, created elements fall back to inert objects,
 and dialog queries return an empty list.
+Generation settings DOM targets now guard blocked `document` access and keep
+the default settings fallback path available without browser controls.
 `getEngineWorldDimensions(context)` now centralizes the compatibility fallback
 from runtime world settings to browser graph globals. Burgs, Cultures, and
 Rivers consume that helper instead of reading `globalThis.graphWidth` /
