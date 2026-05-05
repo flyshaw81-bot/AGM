@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createGlobalGraphRuntimeTargets,
+  createGlobalGraphSessionTargets,
+  createGlobalGraphSvgTargets,
   createRuntimeGraphSession,
   createRuntimeGraphSessionTargets,
   type EngineGraphRuntimeTargets,
@@ -31,6 +33,26 @@ function createSelection(calls: Call[], selector: string) {
 
 describe("EngineGraphSessionModule", () => {
   const originalWindow = globalThis.window;
+  const originalMapWidthInputDescriptor = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "mapWidthInput",
+  );
+  const originalMapHeightInputDescriptor = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "mapHeightInput",
+  );
+  const originalGraphWidthDescriptor = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "graphWidth",
+  );
+  const originalGraphHeightDescriptor = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "graphHeight",
+  );
+  const originalLandmassDescriptor = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "landmass",
+  );
 
   afterEach(() => {
     vi.resetModules();
@@ -39,6 +61,19 @@ describe("EngineGraphSessionModule", () => {
       value: originalWindow,
       writable: true,
     });
+    for (const [name, descriptor] of [
+      ["mapWidthInput", originalMapWidthInputDescriptor],
+      ["mapHeightInput", originalMapHeightInputDescriptor],
+      ["graphWidth", originalGraphWidthDescriptor],
+      ["graphHeight", originalGraphHeightDescriptor],
+      ["landmass", originalLandmassDescriptor],
+    ] as const) {
+      if (descriptor) {
+        Object.defineProperty(globalThis, name, descriptor);
+      } else {
+        delete (globalThis as Record<string, unknown>)[name];
+      }
+    }
   });
 
   it("applies graph dimensions to the runtime graph and canvas masks", () => {
@@ -174,6 +209,67 @@ describe("EngineGraphSessionModule", () => {
 
     expect(globalThis.graphWidth).toBe(1300);
     expect(globalThis.graphHeight).toBe(700);
+  });
+
+  it("keeps global graph runtime targets safe when compatibility globals are absent", () => {
+    const targets = createGlobalGraphRuntimeTargets();
+
+    expect(targets.getMapWidth()).toBe(0);
+    expect(targets.getMapHeight()).toBe(0);
+    expect(() => targets.setGraphSize(1300, 700)).not.toThrow();
+  });
+
+  it("keeps global graph runtime targets safe when compatibility global access throws", () => {
+    Object.defineProperty(globalThis, "mapWidthInput", {
+      configurable: true,
+      get: () => {
+        throw new Error("map width blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "mapHeightInput", {
+      configurable: true,
+      get: () => {
+        throw new Error("map height blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "graphWidth", {
+      configurable: true,
+      set: () => {
+        throw new Error("graph width blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "graphHeight", {
+      configurable: true,
+      set: () => {
+        throw new Error("graph height blocked");
+      },
+    });
+    const targets = createGlobalGraphRuntimeTargets();
+
+    expect(targets.getMapWidth()).toBe(0);
+    expect(targets.getMapHeight()).toBe(0);
+    expect(() => targets.setGraphSize(1300, 700)).not.toThrow();
+  });
+
+  it("keeps global graph SVG targets inert when compatibility SVG globals are absent", () => {
+    const targets = createGlobalGraphSvgTargets();
+
+    expect(() => {
+      targets.getLandmassRect().attr("width", 1200);
+      targets.getOceanPatternRect().attr("height", 800);
+      targets.getOceanLayersRect().attr("x", 0);
+      targets.getFoggingRects().attr("y", 0);
+      targets.getFogMaskRect().attr("width", 1200);
+      targets.getWaterMaskRect().attr("height", 800);
+    }).not.toThrow();
+  });
+
+  it("keeps global graph session targets safe when compatibility globals are absent", () => {
+    expect(() =>
+      new EngineGraphSessionModule(
+        createGlobalGraphSessionTargets(),
+      ).applyGraphSize(),
+    ).not.toThrow();
   });
 
   it("writes graph dimensions into the runtime context before delegating", () => {

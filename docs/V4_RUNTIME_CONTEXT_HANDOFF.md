@@ -2302,6 +2302,10 @@ Default log adapters in `names-generator.ts`, `heightmap-generator.ts`, and
 compatibility globals no longer throw while diagnostics remain injectable.
 `engine-log-service.ts` now applies the same guarded flag reads at the shared
 runtime logging service boundary.
+`engine-graph-session.ts` now guards default graph-size control reads, graph
+dimension writes, and SVG selection lookups. Missing or blocked compatibility
+globals fall back to zero dimensions and inert SVG targets instead of throwing,
+while explicit/runtime targets remain unchanged.
 
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`

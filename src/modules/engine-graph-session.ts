@@ -18,6 +18,49 @@ type AttributeTarget = {
   selectAll?: (selector: string) => AttributeTarget;
 };
 
+const inertAttributeTarget: AttributeTarget = {
+  attr: () => inertAttributeTarget,
+  select: () => inertAttributeTarget,
+  selectAll: () => inertAttributeTarget,
+};
+
+function getGlobalValue<T = unknown>(name: string): T | undefined {
+  try {
+    return (globalThis as Record<string, unknown>)[name] as T | undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function setGlobalValue(name: string, value: number) {
+  try {
+    (globalThis as Record<string, unknown>)[name] = value;
+  } catch {
+    // Ignore read-only compatibility globals.
+  }
+}
+
+function getInputNumber(name: string): number {
+  const input = getGlobalValue<{ value: string | number }>(name);
+  return Number(input?.value ?? 0);
+}
+
+function selectFromGlobal(name: string, selector: string): AttributeTarget {
+  return (
+    getGlobalValue<{ select?: (selector: string) => AttributeTarget }>(
+      name,
+    )?.select?.(selector) ?? inertAttributeTarget
+  );
+}
+
+function selectAllFromGlobal(name: string, selector: string): AttributeTarget {
+  return (
+    getGlobalValue<{ selectAll?: (selector: string) => AttributeTarget }>(
+      name,
+    )?.selectAll?.(selector) ?? inertAttributeTarget
+  );
+}
+
 function setRectBounds(target: AttributeTarget, width: number, height: number) {
   target.attr("x", 0).attr("y", 0).attr("width", width).attr("height", height);
 }
@@ -91,25 +134,23 @@ export class EngineGraphSessionModule {
 
 export function createGlobalGraphRuntimeTargets(): EngineGraphRuntimeTargets {
   return {
-    getMapWidth: () => Number((globalThis as any).mapWidthInput.value),
-    getMapHeight: () => Number((globalThis as any).mapHeightInput.value),
+    getMapWidth: () => getInputNumber("mapWidthInput"),
+    getMapHeight: () => getInputNumber("mapHeightInput"),
     setGraphSize: (width, height) => {
-      globalThis.graphWidth = width;
-      globalThis.graphHeight = height;
+      setGlobalValue("graphWidth", width);
+      setGlobalValue("graphHeight", height);
     },
   };
 }
 
 export function createGlobalGraphSvgTargets(): EngineGraphSvgTargets {
   return {
-    getLandmassRect: () => (globalThis as any).landmass.select("rect"),
-    getOceanPatternRect: () => (globalThis as any).oceanPattern.select("rect"),
-    getOceanLayersRect: () =>
-      globalThis.oceanLayers.select("rect") as unknown as AttributeTarget,
-    getFoggingRects: () => (globalThis as any).fogging.selectAll("rect"),
-    getFogMaskRect: () => (globalThis as any).defs.select("mask#fog > rect"),
-    getWaterMaskRect: () =>
-      (globalThis as any).defs.select("mask#water > rect"),
+    getLandmassRect: () => selectFromGlobal("landmass", "rect"),
+    getOceanPatternRect: () => selectFromGlobal("oceanPattern", "rect"),
+    getOceanLayersRect: () => selectFromGlobal("oceanLayers", "rect"),
+    getFoggingRects: () => selectAllFromGlobal("fogging", "rect"),
+    getFogMaskRect: () => selectFromGlobal("defs", "mask#fog > rect"),
+    getWaterMaskRect: () => selectFromGlobal("defs", "mask#water > rect"),
   };
 }
 
