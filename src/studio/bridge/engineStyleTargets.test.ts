@@ -74,6 +74,20 @@ describe("createGlobalStyleTargets", () => {
     expect(changeStyle).toHaveBeenCalledWith("night");
   });
 
+  it("keeps preset storage safe when browser storage access throws", () => {
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      get: () => {
+        throw new Error("localStorage blocked");
+      },
+    });
+
+    const targets = createGlobalStyleTargets();
+
+    expect(targets.getStoredPresetValue()).toBeNull();
+    expect(() => targets.storePresetValue("atlas")).not.toThrow();
+  });
+
   it("updates toggle checkboxes and dispatches change", () => {
     const dispatchEvent = vi.fn();
     const input = {

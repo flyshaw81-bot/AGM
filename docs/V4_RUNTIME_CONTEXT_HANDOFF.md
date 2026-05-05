@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 181 test files, 731 tests.
+- `npm.cmd run test -- --run` passed: 181 test files, 734 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2070,6 +2070,10 @@ now guard missing `window`, `document`, and `Event` browser globals. Startup
 body writes, loading cleanup, resize/visibility listeners, host element
 creation, form event dispatch, and stored-setting locks all degrade safely in
 no-browser target tests.
+Project summary, project control, and style bridge targets now also guard
+blocked browser storage getters. If `localStorage` or `sessionStorage` access
+throws, summary/style reads return null and project-control/style writes become
+safe no-ops while runtime state updates continue.
 `getEngineWorldDimensions(context)` now centralizes the compatibility fallback
 from runtime world settings to browser graph globals. Burgs, Cultures, and
 Rivers consume that helper instead of reading `globalThis.graphWidth` /

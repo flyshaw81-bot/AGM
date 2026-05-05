@@ -95,6 +95,23 @@ describe("createGlobalProjectControlTargets", () => {
     expect(setItem).toHaveBeenCalledWith("winds", "0,0,135,0,0,0");
   });
 
+  it("keeps wind persistence safe when browser storage access throws", () => {
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      get: () => {
+        throw new Error("localStorage blocked");
+      },
+    });
+    globalThis.options = {
+      winds: [0, 0, 0],
+    };
+
+    const targets = createGlobalProjectControlTargets();
+
+    expect(targets.applyWindTierToRuntime(1, 90)).toBe(false);
+    expect(globalThis.options.winds[1]).toBe(90);
+  });
+
   it("composes project control targets from injected DOM, runtime, and storage adapters", () => {
     const label = { textContent: "" } as HTMLElement;
     const setOptionNumber = vi.fn();

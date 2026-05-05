@@ -78,6 +78,26 @@ describe("createGlobalProjectSummaryTargets", () => {
     });
   });
 
+  it("keeps summary storage reads safe when browser storage access throws", () => {
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      get: () => {
+        throw new Error("localStorage blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "sessionStorage", {
+      configurable: true,
+      get: () => {
+        throw new Error("sessionStorage blocked");
+      },
+    });
+
+    const targets = createGlobalProjectSummaryTargets();
+
+    expect(targets.getLocalStorageItem("lastMap")).toBeNull();
+    expect(targets.getSessionStorageItem("lastMap")).toBeNull();
+  });
+
   it("composes project summary targets from injected adapters", async () => {
     const summary = { pendingSeed: "abc" } as EngineProjectSummary;
     const setCachedSummary = vi.fn();

@@ -48,11 +48,19 @@ function getDocument(): Document | undefined {
 }
 
 function getLocalStorage(): Storage | undefined {
-  return globalThis.localStorage;
+  try {
+    return globalThis.localStorage;
+  } catch {
+    return undefined;
+  }
 }
 
 function getSessionStorage(): Storage | undefined {
-  return globalThis.sessionStorage;
+  try {
+    return globalThis.sessionStorage;
+  } catch {
+    return undefined;
+  }
 }
 
 export function createGlobalProjectSummaryCacheAdapter(): EngineProjectSummaryCacheAdapter {

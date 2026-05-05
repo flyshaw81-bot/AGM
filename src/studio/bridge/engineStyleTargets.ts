@@ -46,7 +46,11 @@ function getDocument(): Document | undefined {
 }
 
 function getLocalStorage(): Storage | undefined {
-  return globalThis.localStorage;
+  try {
+    return globalThis.localStorage;
+  } catch {
+    return undefined;
+  }
 }
 
 function getInput(id: string) {
