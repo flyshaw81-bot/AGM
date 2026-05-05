@@ -2222,6 +2222,9 @@ resource loading errors.
 Emblem renderer browser targets now guard optional browser globals including
 `fetch`, `emblems`, `layerIsOn`, and `ERROR`. Blocked globals now fall back to
 explicit fetch errors, no rendered uses, disabled layers, and no error logging.
+Charge SVG fetch failures now report through
+`EmblemRendererTargets.reportChargeFetchError`, so `EmblemRenderModule` no
+longer reads the global `ERROR` flag directly.
 Emblem generator shield selection now uses injectable `EmblemRuntimeTargets` for
 state/culture shield lookup and missing-shield diagnostics. The default target
 keeps current `pack` / `ERROR` compatibility while blocked globals fall back to

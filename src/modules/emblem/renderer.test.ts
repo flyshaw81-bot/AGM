@@ -10,6 +10,7 @@ function createTargets(
   return {
     fetchText: vi.fn().mockResolvedValue("<svg><g><path /></g></svg>"),
     parseChargeGroup: vi.fn((_svg, id) => `<g id="${id}"><path /></g>`),
+    reportChargeFetchError: vi.fn(),
     insertCoaSvg: vi.fn(),
     getElementById: vi.fn(() => null),
     hasRenderedUses: vi.fn(() => false),
@@ -188,5 +189,29 @@ describe("EmblemRenderModule", () => {
         ],
       }),
     ).resolves.toBe(true);
+  });
+
+  it("routes charge fetch failures through injected renderer targets", async () => {
+    const error = new Error("charge unavailable");
+    const targets = createTargets({
+      fetchText: vi.fn().mockRejectedValue(error),
+    });
+
+    await expect(
+      new EmblemRenderModule(targets).trigger("burgCOA7", {
+        shield: "heater",
+        t1: "gules",
+        charges: [
+          {
+            stroke: "none",
+            charge: "lion",
+            t: "argent",
+            p: [5],
+          },
+        ],
+      }),
+    ).resolves.toBe(true);
+
+    expect(targets.reportChargeFetchError).toHaveBeenCalledWith(error);
   });
 });

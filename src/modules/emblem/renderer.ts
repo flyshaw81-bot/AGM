@@ -14,6 +14,7 @@ declare global {
 export type EmblemRendererTargets = {
   fetchText: (url: string) => Promise<string>;
   parseChargeGroup: (svgText: string, id: string) => string;
+  reportChargeFetchError: (error: unknown) => void;
   insertCoaSvg: (svg: string) => void;
   getElementById: (id: string) => HTMLElement | SVGElement | null;
   hasRenderedUses: () => boolean;
@@ -85,6 +86,9 @@ export function createGlobalEmblemRendererTargets(): EmblemRendererTargets {
       const g = html.querySelector("g") as SVGAElement;
       g.setAttribute("id", id);
       return g.outerHTML;
+    },
+    reportChargeFetchError: (error) => {
+      if (getErrorFlag()) console.error(error);
     },
     insertCoaSvg: (svg) => {
       getDocument()
@@ -165,7 +169,7 @@ export default class EmblemRenderModule {
         return this.targets.parseChargeGroup(text, `${charge}_${id}`);
       })
       .catch((err) => {
-        if (getErrorFlag()) console.error(err);
+        this.targets.reportChargeFetchError(err);
       });
     return fetched;
   }
