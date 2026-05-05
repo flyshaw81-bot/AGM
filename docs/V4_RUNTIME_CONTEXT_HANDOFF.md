@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 196 test files, 823 tests.
+- `npm.cmd run test -- --run` passed: 196 test files, 824 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2211,6 +2211,9 @@ Seed session runtime global access now guards `mapHistory`, `location`, and
 `aleaPRNG` reads. The default seed runtime target preserves compatibility while
 blocked globals now fall back to no history, empty URL params, and no RNG
 replacement.
+Runtime settings global access now guards world, population, unit, and timing
+globals. Blocked getters fall back to empty coordinates, zero numeric settings,
+`m` height units, and disabled timing.
 
 `ocean-layers.ts` now routes outline-chain error reporting through
 `OceanLayerLogTargets`, keeping the default `globalThis.ERROR` compatibility

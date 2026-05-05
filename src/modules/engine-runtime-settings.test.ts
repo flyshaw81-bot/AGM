@@ -296,6 +296,53 @@ describe("runtime setting adapters", () => {
     expect(createGlobalTimingRuntimeTargets().getShouldTime()).toBe(false);
   });
 
+  it("keeps global runtime targets safe when runtime global access throws", () => {
+    const descriptors = new Map<string, PropertyDescriptor | undefined>(
+      [
+        "mapCoordinates",
+        "graphWidth",
+        "graphHeight",
+        "populationRate",
+        "urbanDensity",
+        "urbanization",
+        "heightUnit",
+        "TIME",
+      ].map((name) => [
+        name,
+        Object.getOwnPropertyDescriptor(globalThis, name),
+      ]),
+    );
+
+    for (const name of descriptors.keys()) {
+      Object.defineProperty(globalThis, name, {
+        configurable: true,
+        get: () => {
+          throw new Error(`${name} blocked`);
+        },
+      });
+    }
+
+    try {
+      const worldTargets = createGlobalWorldRuntimeTargets();
+      const populationTargets = createGlobalPopulationRuntimeTargets();
+
+      expect(worldTargets.getMapCoordinates()).toEqual({});
+      expect(worldTargets.getGraphWidth()).toBe(0);
+      expect(worldTargets.getGraphHeight()).toBe(0);
+      expect(populationTargets.getPopulationRate()).toBe(0);
+      expect(populationTargets.getUrbanDensity()).toBe(0);
+      expect(populationTargets.getUrbanization()).toBe(0);
+      expect(createGlobalUnitRuntimeTargets().getHeightUnit()).toBe("m");
+      expect(createGlobalTimingRuntimeTargets().getShouldTime()).toBe(false);
+    } finally {
+      for (const [name, descriptor] of descriptors) {
+        if (descriptor) {
+          Object.defineProperty(globalThis, name, descriptor);
+        }
+      }
+    }
+  });
+
   it("stores, patches, and refreshes world settings through a runtime store", () => {
     const context = {
       worldSettings: createWorldSettings({

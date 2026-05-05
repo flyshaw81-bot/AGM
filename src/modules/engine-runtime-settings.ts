@@ -124,6 +124,39 @@ function getDocument(): Document | undefined {
   }
 }
 
+function getGlobalMapCoordinates(): typeof mapCoordinates {
+  try {
+    return globalThis.mapCoordinates ?? ({} as typeof mapCoordinates);
+  } catch {
+    return {} as typeof mapCoordinates;
+  }
+}
+
+function getGlobalNumber(name: keyof typeof globalThis, fallback: number) {
+  try {
+    const value = globalThis[name];
+    return typeof value === "number" ? value : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function getGlobalHeightUnit(): string {
+  try {
+    return globalThis.heightUnit?.value ?? "m";
+  } catch {
+    return "m";
+  }
+}
+
+function getGlobalTimeFlag(): boolean {
+  try {
+    return Boolean(globalThis.TIME);
+  } catch {
+    return false;
+  }
+}
+
 export function createGlobalSettingsDomTargets(): EngineSettingsDomTargets {
   return {
     getInput: (id) =>
@@ -133,29 +166,29 @@ export function createGlobalSettingsDomTargets(): EngineSettingsDomTargets {
 
 export function createGlobalWorldRuntimeTargets(): EngineWorldRuntimeTargets {
   return {
-    getMapCoordinates: () => mapCoordinates,
-    getGraphWidth: () => graphWidth,
-    getGraphHeight: () => graphHeight,
+    getMapCoordinates: () => getGlobalMapCoordinates(),
+    getGraphWidth: () => getGlobalNumber("graphWidth", 0),
+    getGraphHeight: () => getGlobalNumber("graphHeight", 0),
   };
 }
 
 export function createGlobalPopulationRuntimeTargets(): EnginePopulationRuntimeTargets {
   return {
-    getPopulationRate: () => populationRate,
-    getUrbanDensity: () => urbanDensity,
-    getUrbanization: () => urbanization,
+    getPopulationRate: () => getGlobalNumber("populationRate", 0),
+    getUrbanDensity: () => getGlobalNumber("urbanDensity", 0),
+    getUrbanization: () => getGlobalNumber("urbanization", 0),
   };
 }
 
 export function createGlobalUnitRuntimeTargets(): EngineUnitRuntimeTargets {
   return {
-    getHeightUnit: () => heightUnit.value,
+    getHeightUnit: getGlobalHeightUnit,
   };
 }
 
 export function createGlobalTimingRuntimeTargets(): EngineTimingRuntimeTargets {
   return {
-    getShouldTime: () => TIME,
+    getShouldTime: getGlobalTimeFlag,
   };
 }
 
