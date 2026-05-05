@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  createGlobalHeightmapPngExportTargets,
   createHeightmapPngBlob,
   createHeightmapRaw16Blob,
   type HeightmapPngCanvas,
@@ -47,6 +48,16 @@ function createHeightfield() {
 }
 
 describe("worldDocumentHeightmapExports", () => {
+  const originalDocument = globalThis.document;
+
+  afterEach(() => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: originalDocument,
+      writable: true,
+    });
+  });
+
   it("creates PNG blobs through injected canvas targets", async () => {
     const imageData = {
       data: new Uint8ClampedArray(8),
@@ -87,5 +98,19 @@ describe("worldDocumentHeightmapExports", () => {
     expect(blob.type).toBe("application/octet-stream");
     expect(view.getUint16(0, true)).toBe(0);
     expect(view.getUint16(2, true)).toBe(65535);
+  });
+
+  it("keeps global PNG targets safe when document access throws", async () => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
+    const targets = createGlobalHeightmapPngExportTargets();
+
+    await expect(
+      createHeightmapPngBlob(createHeightfield(), targets),
+    ).rejects.toThrow("Heightmap PNG canvas context is unavailable");
   });
 });

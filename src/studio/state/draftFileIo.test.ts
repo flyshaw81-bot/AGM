@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  createGlobalDraftFileIoTargets,
   createSafeAgmFilename,
   createSafeFilename,
   type DraftFileIoTargets,
@@ -30,6 +31,22 @@ function createTargets(overrides: Partial<DraftFileIoTargets> = {}) {
 }
 
 describe("draft file IO helpers", () => {
+  const originalDocument = globalThis.document;
+  const originalWindow = globalThis.window;
+
+  afterEach(() => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: originalDocument,
+      writable: true,
+    });
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: originalWindow,
+      writable: true,
+    });
+  });
+
   it("creates stable export filenames from user document names", () => {
     expect(createSafeFilename("Northwatch Campaign", "agm-world.json")).toBe(
       "Northwatch-Campaign.agm-world.json",
@@ -105,5 +122,26 @@ describe("draft file IO helpers", () => {
 
     await expect(loadJsZip(targets)).resolves.toBe(FakeZip);
     expect(targets.loadJsZipScript).not.toHaveBeenCalled();
+  });
+
+  it("keeps global file targets safe when document and window access throw", async () => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("document blocked");
+      },
+    });
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+    const targets = createGlobalDraftFileIoTargets();
+
+    const link = targets.createDownloadLink();
+    expect(() => targets.appendToBody(link)).not.toThrow();
+    expect(targets.getJsZip()).toBeUndefined();
+    await expect(targets.loadJsZipScript()).resolves.toBeUndefined();
   });
 });

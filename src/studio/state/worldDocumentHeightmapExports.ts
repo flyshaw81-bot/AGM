@@ -43,9 +43,23 @@ export type HeightmapPngExportTargets = {
   createCanvas: () => HeightmapPngCanvas;
 };
 
+const getDocument = (): Document | undefined => {
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
+};
+
 export function createGlobalHeightmapPngExportTargets(): HeightmapPngExportTargets {
   return {
-    createCanvas: () => document.createElement("canvas"),
+    createCanvas: () =>
+      getDocument()?.createElement("canvas") ?? {
+        width: 0,
+        height: 0,
+        getContext: () => null,
+        toBlob: (callback) => callback(null),
+      },
   };
 }
 

@@ -27,16 +27,45 @@ export type DraftFileIoTargets = {
   loadJsZipScript: () => Promise<void>;
 };
 
+const getDocument = (): Document | undefined => {
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
+};
+
+const getWindow = (): Window | undefined => {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+};
+
 export function createGlobalDraftFileIoTargets(): DraftFileIoTargets {
   return {
     createObjectUrl: (blob) => URL.createObjectURL(blob),
     revokeObjectUrl: (url) => URL.revokeObjectURL(url),
-    createDownloadLink: () => document.createElement("a"),
-    appendToBody: (element) =>
-      document.body.appendChild(element as HTMLAnchorElement),
-    getJsZip: () => window.JSZip,
+    createDownloadLink: () =>
+      getDocument()?.createElement("a") ?? {
+        href: "",
+        download: "",
+        click: () => undefined,
+        remove: () => undefined,
+      },
+    appendToBody: (element) => {
+      getDocument()?.body?.appendChild(element as HTMLAnchorElement);
+    },
+    getJsZip: () => getWindow()?.JSZip,
     loadJsZipScript: () =>
       new Promise<void>((resolve, reject) => {
+        const document = getDocument();
+        if (!document) {
+          resolve();
+          return;
+        }
+
         const existingScript = document.querySelector<HTMLScriptElement>(
           "script[data-agm-jszip]",
         );
