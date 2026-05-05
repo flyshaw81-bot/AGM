@@ -113,4 +113,21 @@ describe("worldDocumentHeightmapExports", () => {
       createHeightmapPngBlob(createHeightfield(), targets),
     ).rejects.toThrow("Heightmap PNG canvas context is unavailable");
   });
+
+  it("keeps global PNG targets safe when canvas creation throws", async () => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: {
+        createElement: () => {
+          throw new Error("canvas blocked");
+        },
+      },
+      writable: true,
+    });
+    const targets = createGlobalHeightmapPngExportTargets();
+
+    await expect(
+      createHeightmapPngBlob(createHeightfield(), targets),
+    ).rejects.toThrow("Heightmap PNG canvas context is unavailable");
+  });
 });

@@ -43,6 +43,13 @@ export type HeightmapPngExportTargets = {
   createCanvas: () => HeightmapPngCanvas;
 };
 
+const createUnavailableCanvas = (): HeightmapPngCanvas => ({
+  width: 0,
+  height: 0,
+  getContext: () => null,
+  toBlob: (callback) => callback(null),
+});
+
 const getDocument = (): Document | undefined => {
   try {
     return globalThis.document;
@@ -53,13 +60,15 @@ const getDocument = (): Document | undefined => {
 
 export function createGlobalHeightmapPngExportTargets(): HeightmapPngExportTargets {
   return {
-    createCanvas: () =>
-      getDocument()?.createElement("canvas") ?? {
-        width: 0,
-        height: 0,
-        getContext: () => null,
-        toBlob: (callback) => callback(null),
-      },
+    createCanvas: () => {
+      try {
+        return (
+          getDocument()?.createElement("canvas") ?? createUnavailableCanvas()
+        );
+      } catch {
+        return createUnavailableCanvas();
+      }
+    },
   };
 }
 

@@ -2411,6 +2411,8 @@ failures into runtime helpers.
 Node-id and language-list utilities now guard blocked element/language lookups.
 Global ID generation falls back to the requested base id, and list formatting
 falls back to English when browser language metadata is unavailable or blocked.
+Heightmap PNG export targets now also guard blocked canvas creation and fall
+back to an unavailable canvas instead of leaking DOM failures.
 
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`
