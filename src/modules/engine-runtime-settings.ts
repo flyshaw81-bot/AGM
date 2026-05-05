@@ -159,8 +159,13 @@ function getGlobalTimeFlag(): boolean {
 
 export function createGlobalSettingsDomTargets(): EngineSettingsDomTargets {
   return {
-    getInput: (id) =>
-      getDocument()?.getElementById(id) as HTMLInputElement | null,
+    getInput: (id) => {
+      try {
+        return getDocument()?.getElementById(id) as HTMLInputElement | null;
+      } catch {
+        return null;
+      }
+    },
   };
 }
 

@@ -201,6 +201,25 @@ describe("runtime setting adapters", () => {
     ).toBe(31);
   });
 
+  it("keeps global settings DOM targets safe when element lookup throws", () => {
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      value: {
+        getElementById: () => {
+          throw new Error("element lookup blocked");
+        },
+      },
+      writable: true,
+    });
+
+    expect(
+      createSettingsInputNumberReader(createGlobalSettingsDomTargets())(
+        "mapSizeOutput",
+        33,
+      ),
+    ).toBe(33);
+  });
+
   it("composes world settings from separate DOM and runtime targets", () => {
     const domTargets: EngineSettingsDomTargets = {
       getInput: (id) =>

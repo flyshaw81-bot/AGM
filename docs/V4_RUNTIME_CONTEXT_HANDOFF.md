@@ -2390,6 +2390,11 @@ Generation-settings DOM defaults now also guard blocked element lookups, so a
 throwing `document.getElementById(...)` falls back to stable generation defaults
 instead of escaping the global compatibility adapter.
 
+Runtime-settings DOM defaults now apply the same element-lookup guard for map
+size, latitude, and longitude controls. Blocked browser control queries fall
+back to caller-provided numeric defaults while explicit runtime targets stay
+unchanged.
+
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`
 dimensions. `engine-generation-session-services.ts` now exposes
