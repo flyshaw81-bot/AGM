@@ -203,6 +203,69 @@ describe("font resource compatibility facade", () => {
     expect(() => adapter.setSelectedFont("Display Font")).not.toThrow();
   });
 
+  it("keeps browser font targets safe when optional global access throws", async () => {
+    const descriptors = new Map<string, PropertyDescriptor | undefined>(
+      [
+        "FontFace",
+        "changeFont",
+        "tip",
+        "provs",
+        "ERROR",
+        "fetch",
+        "FileReader",
+      ].map((name) => [
+        name,
+        Object.getOwnPropertyDescriptor(globalThis, name),
+      ]),
+    );
+
+    for (const name of descriptors.keys()) {
+      Object.defineProperty(globalThis, name, {
+        configurable: true,
+        get: () => {
+          throw new Error(`${name} blocked`);
+        },
+      });
+    }
+
+    try {
+      const { createBrowserFontResourceAdapter } = await import("./fonts");
+      const adapter = createBrowserFontResourceAdapter();
+
+      expect(() =>
+        adapter.registerFontFace({
+          family: "Display Font",
+          src: "url(https://example.test/display.woff2)",
+        }),
+      ).not.toThrow();
+      await expect(
+        adapter.loadFontFace({
+          family: "Loaded Font",
+          src: "url(https://example.test/loaded.woff2)",
+        }),
+      ).resolves.toBeUndefined();
+      expect(() => adapter.applySelectedFont()).not.toThrow();
+      expect(() => adapter.showToast("Loaded", "success")).not.toThrow();
+      expect(() => adapter.logError(new Error("font failed"))).not.toThrow();
+      expect(adapter.getProvinceFont()).toBeNull();
+      await expect(
+        adapter.fetchText("https://example.test/font.css"),
+      ).rejects.toThrow("fetch is not available");
+      await expect(
+        adapter.fetchBlob("https://example.test/font.woff2"),
+      ).rejects.toThrow("fetch is not available");
+      await expect(
+        adapter.readBlobAsDataUrl(new Blob(["font"])),
+      ).rejects.toThrow("FileReader is not available");
+    } finally {
+      for (const [name, descriptor] of descriptors) {
+        if (descriptor) {
+          Object.defineProperty(globalThis, name, descriptor);
+        }
+      }
+    }
+  });
+
   it("reports an explicit failure when the browser cannot read font blobs", async () => {
     globalThis.FileReader = undefined as unknown as typeof FileReader;
 

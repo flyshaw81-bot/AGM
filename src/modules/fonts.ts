@@ -297,11 +297,12 @@ const fontDefinitions: FontDefinition[] = [
 
 function readBlobAsDataURL(blob: Blob) {
   return new Promise<string>((resolve, reject) => {
-    if (!globalThis.FileReader) {
+    const FileReaderConstructor = getFileReaderConstructor();
+    if (!FileReaderConstructor) {
       reject(new Error("FileReader is not available"));
       return;
     }
-    const reader = new FileReader();
+    const reader = new FileReaderConstructor();
     reader.onloadend = () => resolve(reader.result as string);
     reader.onerror = reject;
     reader.readAsDataURL(blob);
@@ -311,13 +312,70 @@ function readBlobAsDataURL(blob: Blob) {
 function createFontFace(font: FontDefinition) {
   const { family, src, ...rest } = font;
   if (!src) return null;
-  if (!globalThis.FontFace) return null;
-  return new globalThis.FontFace(family, src, { ...rest, display: "block" });
+  const FontFaceConstructor = getFontFaceConstructor();
+  if (!FontFaceConstructor) return null;
+  return new FontFaceConstructor(family, src, { ...rest, display: "block" });
 }
 
 function getDocument(): Document | undefined {
   try {
     return globalThis.document;
+  } catch {
+    return undefined;
+  }
+}
+
+function getFontFaceConstructor(): typeof FontFace | undefined {
+  try {
+    return globalThis.FontFace;
+  } catch {
+    return undefined;
+  }
+}
+
+function getFileReaderConstructor(): typeof FileReader | undefined {
+  try {
+    return globalThis.FileReader;
+  } catch {
+    return undefined;
+  }
+}
+
+function getFetch(): typeof fetch | undefined {
+  try {
+    return globalThis.fetch;
+  } catch {
+    return undefined;
+  }
+}
+
+function getChangeFont(): typeof changeFont | undefined {
+  try {
+    return globalThis.changeFont;
+  } catch {
+    return undefined;
+  }
+}
+
+function getTip(): typeof tip | undefined {
+  try {
+    return globalThis.tip;
+  } catch {
+    return undefined;
+  }
+}
+
+function getErrorFlag(): boolean {
+  try {
+    return Boolean(globalThis.ERROR);
+  } catch {
+    return false;
+  }
+}
+
+function getProvinceLayer(): typeof provs | undefined {
+  try {
+    return globalThis.provs;
   } catch {
     return undefined;
   }
@@ -343,22 +401,26 @@ export function createGlobalBrowserFontResourceTargets(): EngineBrowserFontResou
       ) as HTMLSelectElement | null;
       if (select) select.value = family;
     },
-    applySelectedFont: () => globalThis.changeFont?.(),
+    applySelectedFont: () => getChangeFont()?.(),
     showToast: (message, type, duration = 4000) =>
-      globalThis.tip?.(message, true, type, duration),
+      getTip()?.(message, true, type, duration),
     logError: (error) => {
-      globalThis.ERROR && console.error(error);
+      getErrorFlag() && console.error(error);
     },
     fetchText: async (url) => {
-      const response = await globalThis.fetch(url);
+      const fetchResource = getFetch();
+      if (!fetchResource) throw new Error("fetch is not available");
+      const response = await fetchResource(url);
       return response.text();
     },
     fetchBlob: async (url) => {
-      const response = await globalThis.fetch(url);
+      const fetchResource = getFetch();
+      if (!fetchResource) throw new Error("fetch is not available");
+      const response = await fetchResource(url);
       return response.blob();
     },
     readBlobAsDataUrl: readBlobAsDataURL,
-    getProvinceFont: () => globalThis.provs?.attr("font-family") || null,
+    getProvinceFont: () => getProvinceLayer()?.attr("font-family") || null,
   };
 }
 
