@@ -13,6 +13,8 @@ interface BurgGroup {
 
 export interface BurgLabelRendererTargets {
   getDocument: () => Document | undefined;
+  getElementById: (id: string) => Element | null;
+  querySelectorAll: (selector: string) => Element[];
 }
 
 const getDocument = (): Document | undefined => {
@@ -26,6 +28,9 @@ const getDocument = (): Document | undefined => {
 export function createGlobalBurgLabelRendererTargets(): BurgLabelRendererTargets {
   return {
     getDocument,
+    getElementById: (id) => getDocument()?.getElementById(id) ?? null,
+    querySelectorAll: (selector) =>
+      Array.from(getDocument()?.querySelectorAll(selector) ?? []),
   };
 }
 
@@ -105,10 +110,7 @@ export const removeBurgLabelRenderer = (
   burgId: number,
   targets: BurgLabelRendererTargets = defaultBurgLabelRendererTargets,
 ): void => {
-  const document = targets.getDocument();
-  if (!document) return;
-
-  const existingLabel = document.getElementById(`burgLabel${burgId}`);
+  const existingLabel = targets.getElementById(`burgLabel${burgId}`);
   if (existingLabel) existingLabel.remove();
 };
 
@@ -117,7 +119,7 @@ function createLabelGroups(targets: BurgLabelRendererTargets): void {
   if (!document) return;
 
   // save existing styles and remove all groups
-  document.querySelectorAll("g#burgLabels > g").forEach((group) => {
+  targets.querySelectorAll("g#burgLabels > g").forEach((group) => {
     style.burgLabels[group.id] = Array.from(group.attributes).reduce(
       (acc: { [key: string]: string }, attribute) => {
         acc[attribute.name] = attribute.value;

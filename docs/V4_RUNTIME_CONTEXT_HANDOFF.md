@@ -2243,6 +2243,9 @@ access falls back without throwing.
 `BurgIconRendererTargets` (`getElementById`, `querySelector`, and
 `querySelectorAll`) instead of letting renderer logic call `document.*`
 directly after acquiring the global document.
+`draw-burg-labels.ts` now follows the same target split for label DOM reads,
+using `BurgLabelRendererTargets.getElementById` and `querySelectorAll` while
+keeping the default global document adapter as the compatibility path.
 
 `ocean-layers.ts` now routes outline-chain error reporting through
 `OceanLayerLogTargets`, keeping the default `globalThis.ERROR` compatibility

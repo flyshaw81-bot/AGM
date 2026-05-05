@@ -51,16 +51,15 @@ describe("draw burg label renderer globals", () => {
     });
 
     const { removeBurgLabelRenderer } = await import("./draw-burg-labels");
-    const label = { remove: vi.fn() };
+    const label = { remove: vi.fn() } as unknown as Element;
     const getElementById = vi.fn((id: string) =>
       id === "burgLabel7" ? label : null,
     );
 
     removeBurgLabelRenderer(7, {
-      getDocument: () =>
-        ({
-          getElementById,
-        }) as unknown as Document,
+      getDocument: () => ({}) as Document,
+      getElementById,
+      querySelectorAll: () => [],
     });
 
     expect(getElementById).toHaveBeenCalledWith("burgLabel7");
