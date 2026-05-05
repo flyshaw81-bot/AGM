@@ -31,15 +31,34 @@ export type CanvasInteractionGeometryTargets = {
   ) => CanvasPaintPreviewState | null;
 };
 
+export type CanvasInteractionGeometryDomTargets = Pick<
+  CanvasInteractionGeometryTargets,
+  "getCanvasFrame"
+>;
+
 export function createCanvasInteractionGeometryTargets(
   targets: CanvasInteractionGeometryTargets,
 ): CanvasInteractionGeometryTargets {
   return targets;
 }
 
+function getDocument(): Document | undefined {
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
+}
+
+export function createGlobalCanvasInteractionGeometryDomTargets(): CanvasInteractionGeometryDomTargets {
+  return {
+    getCanvasFrame: () => getCanvasFrameElement(),
+  };
+}
+
 export function createGlobalCanvasInteractionGeometryTargets(): CanvasInteractionGeometryTargets {
   return createCanvasInteractionGeometryTargets({
-    getCanvasFrame: () => getCanvasFrameElement(),
+    ...createGlobalCanvasInteractionGeometryDomTargets(),
     getGraphSize: getEngineCanvasGraphSize,
     getPack: () => getEnginePack() as CanvasInteractionPack | undefined,
     getPaintPreviewForCell: getCanvasPaintPreviewForCell,
@@ -48,11 +67,12 @@ export function createGlobalCanvasInteractionGeometryTargets(): CanvasInteractio
 
 export function createRuntimeCanvasInteractionGeometryTargets(
   context: EngineRuntimeContext,
+  domTargets: CanvasInteractionGeometryDomTargets = createGlobalCanvasInteractionGeometryDomTargets(),
 ): CanvasInteractionGeometryTargets {
   const paintTargets: CanvasPaintEditingTargets =
     createRuntimeCanvasPaintEditingTargets(context);
   return createCanvasInteractionGeometryTargets({
-    getCanvasFrame: () => getCanvasFrameElement(),
+    ...domTargets,
     getGraphSize: () => ({
       width: Number(context.worldSettings.graphWidth) || 0,
       height: Number(context.worldSettings.graphHeight) || 0,
@@ -64,5 +84,5 @@ export function createRuntimeCanvasInteractionGeometryTargets(
 }
 
 function getCanvasFrameElement(): HTMLElement | null {
-  return globalThis.document?.getElementById("studioCanvasFrame") ?? null;
+  return getDocument()?.getElementById("studioCanvasFrame") ?? null;
 }

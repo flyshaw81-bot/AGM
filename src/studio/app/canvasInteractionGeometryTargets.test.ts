@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 import {
   createCanvasInteractionGeometryTargets,
+  createGlobalCanvasInteractionGeometryDomTargets,
   createGlobalCanvasInteractionGeometryTargets,
   createRuntimeCanvasInteractionGeometryTargets,
 } from "./canvasInteractionGeometryTargets";
@@ -49,6 +50,29 @@ describe("canvas interaction geometry targets", () => {
       expect(targets.getCanvasFrame()).toBeNull();
     } finally {
       globalThis.document = originalDocument;
+    }
+  });
+
+  it("keeps geometry DOM adapter safe when document access throws", () => {
+    const originalDescriptor = Object.getOwnPropertyDescriptor(
+      globalThis,
+      "document",
+    );
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      get: () => {
+        throw new Error("blocked document");
+      },
+    });
+
+    try {
+      const targets = createGlobalCanvasInteractionGeometryDomTargets();
+
+      expect(targets.getCanvasFrame()).toBeNull();
+    } finally {
+      if (originalDescriptor) {
+        Object.defineProperty(globalThis, "document", originalDescriptor);
+      }
     }
   });
 

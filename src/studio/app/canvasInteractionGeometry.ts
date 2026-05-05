@@ -17,6 +17,7 @@ import { isPaintCanvasTool } from "./canvasPaintEditing";
 export {
   type CanvasInteractionGeometryTargets,
   createCanvasInteractionGeometryTargets,
+  createGlobalCanvasInteractionGeometryDomTargets,
   createGlobalCanvasInteractionGeometryTargets,
   createRuntimeCanvasInteractionGeometryTargets,
 } from "./canvasInteractionGeometryTargets";
