@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 196 test files, 785 tests.
+- `npm.cmd run test -- --run` passed: 196 test files, 789 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2138,6 +2138,9 @@ service composition separate from browser/runtime globals. `CellRanking`,
 `Lakes`, `EngineOptionsSession`, `EngineGraphSession`, and `EngineSeedSession`
 compatibility mounts now also guard blocked `window` access; focused tests
 cover the import path that previously failed through the runtime-context chain.
+`Biomes`, `Features`, `Ice`, and `OceanLayers` compatibility mounts now guard
+blocked `window` access as well. These remain AGM module mounts for the public
+orchestration path, not old-system algorithm dependencies.
 `getEngineWorldDimensions(context)` now centralizes the compatibility fallback
 from runtime world settings to browser graph globals. Burgs, Cultures, and
 Rivers consume that helper instead of reading `globalThis.graphWidth` /

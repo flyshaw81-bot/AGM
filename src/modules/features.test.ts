@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PackedGraph } from "../types/PackedGraph";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
 import { FeatureModule, type PackedGraphFeature } from "./features";
@@ -79,6 +79,17 @@ function createFeatureContext(): EngineRuntimeContext {
 }
 
 describe("FeatureModule", () => {
+  const originalWindow = globalThis.window;
+
+  afterEach(() => {
+    vi.resetModules();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: originalWindow,
+      writable: true,
+    });
+  });
+
   it("marks grid features from an explicit engine runtime context", () => {
     const context = createFeatureContext();
 
@@ -136,5 +147,16 @@ describe("FeatureModule", () => {
     new FeatureModule().defineGroups(context);
 
     expect(context.pack.features[1].group).toBe("continent");
+  });
+
+  it("can be imported when window access throws", async () => {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+
+    await expect(import("./features")).resolves.toBeDefined();
   });
 });

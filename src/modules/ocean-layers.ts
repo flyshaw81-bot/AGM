@@ -13,6 +13,14 @@ declare global {
   var OceanLayers: typeof OceanModule.prototype.draw;
 }
 
+function getWindow(): (Window & typeof globalThis) | undefined {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+}
+
 export type OceanLayerLogTargets = {
   error: (message: string) => void;
 };
@@ -155,6 +163,8 @@ export class OceanModule {
   }
 }
 
-if (typeof window !== "undefined") {
-  window.OceanLayers = (context) => new OceanModule(oceanLayers).draw(context);
+const runtimeWindow = getWindow();
+if (runtimeWindow) {
+  runtimeWindow.OceanLayers = (context) =>
+    new OceanModule(oceanLayers).draw(context);
 }

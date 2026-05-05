@@ -10,6 +10,14 @@ declare global {
   var Biomes: BiomesModule;
 }
 
+function getWindow(): (Window & typeof globalThis) | undefined {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+}
+
 export class BiomesModule {
   private MIN_LAND_HEIGHT = 20;
 
@@ -187,6 +195,5 @@ export class BiomesModule {
   }
 }
 
-if (typeof window !== "undefined") {
-  window.Biomes = new BiomesModule();
-}
+const runtimeWindow = getWindow();
+if (runtimeWindow) runtimeWindow.Biomes = new BiomesModule();

@@ -1,9 +1,31 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { OceanModule } from "./ocean-layers";
 
 describe("OceanModule", () => {
+  const originalWindow = globalThis.window;
+
+  afterEach(() => {
+    vi.resetModules();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: originalWindow,
+      writable: true,
+    });
+  });
+
   it("can be imported without browser globals", () => {
     expect(OceanModule).toBeTypeOf("function");
+  });
+
+  it("can be imported when window access throws", async () => {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+
+    await expect(import("./ocean-layers")).resolves.toBeDefined();
   });
 
   it("reports stalled vertex chains through injected log targets", () => {

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PackedGraph } from "../types/PackedGraph";
 import { BiomesModule } from "./biomes";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
@@ -65,6 +65,17 @@ function createBiomesContext(): EngineRuntimeContext {
 }
 
 describe("BiomesModule", () => {
+  const originalWindow = globalThis.window;
+
+  afterEach(() => {
+    vi.resetModules();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: originalWindow,
+      writable: true,
+    });
+  });
+
   it("defines biomes from an explicit engine runtime context", () => {
     const context = createBiomesContext();
 
@@ -75,5 +86,16 @@ describe("BiomesModule", () => {
     expect(context.pack.cells.biome[0]).toBe(0);
     expect(context.pack.cells.biome[1]).toBeGreaterThan(0);
     expect(context.pack.cells.biome[2]).toBeGreaterThan(0);
+  });
+
+  it("can be imported when window access throws", async () => {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+
+    await expect(import("./biomes")).resolves.toBeDefined();
   });
 });

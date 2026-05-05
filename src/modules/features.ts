@@ -19,6 +19,14 @@ declare global {
   var Features: FeatureModule;
 }
 
+function getWindow(): (Window & typeof globalThis) | undefined {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+}
+
 type FeatureType = "ocean" | "lake" | "island";
 
 export interface PackedGraphFeature {
@@ -445,6 +453,5 @@ export class FeatureModule {
   }
 }
 
-if (typeof window !== "undefined") {
-  window.Features = new FeatureModule();
-}
+const runtimeWindow = getWindow();
+if (runtimeWindow) runtimeWindow.Features = new FeatureModule();

@@ -15,6 +15,14 @@ declare global {
   var Ice: IceModule;
 }
 
+function getWindow(): (Window & typeof globalThis) | undefined {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+}
+
 export class IceModule {
   // Find next available id for new ice element idealy filling gaps
   private getNextId(
@@ -203,6 +211,5 @@ export class IceModule {
   }
 }
 
-if (typeof window !== "undefined") {
-  window.Ice = new IceModule();
-}
+const runtimeWindow = getWindow();
+if (runtimeWindow) runtimeWindow.Ice = new IceModule();

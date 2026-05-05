@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
 import { IceModule } from "./ice";
 import {
@@ -99,6 +99,17 @@ function createIceContext() {
 }
 
 describe("IceModule", () => {
+  const originalWindow = globalThis.window;
+
+  afterEach(() => {
+    vi.resetModules();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: originalWindow,
+      writable: true,
+    });
+  });
+
   it("adds and removes icebergs through runtime context adapters", () => {
     const { calls, context } = createIceContext();
     const ice = new IceModule();
@@ -125,5 +136,16 @@ describe("IceModule", () => {
     } finally {
       Math.random = originalRandom;
     }
+  });
+
+  it("can be imported when window access throws", async () => {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      get: () => {
+        throw new Error("window blocked");
+      },
+    });
+
+    await expect(import("./ice")).resolves.toBeDefined();
   });
 });
