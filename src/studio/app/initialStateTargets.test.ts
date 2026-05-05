@@ -92,4 +92,35 @@ describe("initial state targets", () => {
       globalThis.document = originalDocument;
     }
   });
+
+  it("keeps default startup adapters safe when browser storage access throws", () => {
+    const originalLocalStorage = globalThis.localStorage;
+    const originalDocument = globalThis.document;
+    Object.defineProperty(globalThis, "localStorage", {
+      configurable: true,
+      get: () => {
+        throw new Error("localStorage blocked");
+      },
+    });
+    globalThis.document = {
+      getElementById: vi.fn(() => null),
+      documentElement: {
+        lang: "",
+        dataset: {},
+      },
+    } as unknown as Document;
+
+    try {
+      const targets = createGlobalInitialStateTargets();
+
+      expect(targets.preferences.getStorageItem("language")).toBeNull();
+      expect(targets.projectCenter.getStorageItem("recent")).toBeNull();
+    } finally {
+      Object.defineProperty(globalThis, "localStorage", {
+        configurable: true,
+        value: originalLocalStorage,
+      });
+      globalThis.document = originalDocument;
+    }
+  });
 });
