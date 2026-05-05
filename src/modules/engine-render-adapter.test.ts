@@ -169,6 +169,19 @@ describe("createGlobalRenderAdapter", () => {
     expect(rendering.getElementTotalLengthById?.("route3")).toBeUndefined();
   });
 
+  it("keeps global render DOM lookup safe when element lookup throws", () => {
+    globalThis.document = {
+      getElementById: () => {
+        throw new Error("element lookup blocked");
+      },
+    } as unknown as Document;
+
+    const rendering = createGlobalRenderAdapter();
+
+    expect(() => rendering.removeElementById("marker12")).not.toThrow();
+    expect(rendering.getElementTotalLengthById?.("route3")).toBeUndefined();
+  });
+
   it("exposes global render DOM targets for explicit composition", () => {
     const getElementById = vi.fn(() => ({ id: "marker12" }));
     globalThis.document = {
@@ -215,6 +228,85 @@ describe("createGlobalRenderAdapter", () => {
     (globalThis as any).drawCells = undefined;
     globalThis.invokeActiveZooming =
       undefined as unknown as typeof invokeActiveZooming;
+    const rendering = createGlobalRenderAdapter();
+
+    expect(rendering.findCell(1, 2)).toBeUndefined();
+    expect(rendering.isLayerOn("toggleRoutes")).toBe(false);
+    expect(() => {
+      rendering.addBurgCoa(5, { shield: "heater" }, 12, 14);
+      rendering.drawRoute({ id: "route1" });
+      rendering.drawBurg({ i: 7 });
+      rendering.removeBurg(7);
+      rendering.removeBurgCoa(9);
+      rendering.redrawIceberg(1);
+      rendering.redrawGlacier(2);
+      rendering.drawScaleBar();
+      rendering.drawHeightmap?.();
+      rendering.drawBiomes?.();
+      rendering.drawCells?.();
+      rendering.invokeActiveZooming?.();
+    }).not.toThrow();
+  });
+
+  it("keeps global render targets safe when compatibility helpers throw", () => {
+    (globalThis as { findCell?: unknown }).findCell = () => {
+      throw new Error("findCell blocked");
+    };
+    globalThis.COArenderer = {
+      add: () => {
+        throw new Error("coa blocked");
+      },
+    } as unknown as typeof COArenderer;
+    globalThis.drawRoute = (() => {
+      throw new Error("route blocked");
+    }) as typeof drawRoute;
+    globalThis.layerIsOn = (() => {
+      throw new Error("layer blocked");
+    }) as typeof layerIsOn;
+    globalThis.drawBurgIcon = (() => {
+      throw new Error("icon blocked");
+    }) as typeof drawBurgIcon;
+    globalThis.drawBurgLabel = (() => {
+      throw new Error("label blocked");
+    }) as typeof drawBurgLabel;
+    globalThis.removeBurgIcon = (() => {
+      throw new Error("remove icon blocked");
+    }) as typeof removeBurgIcon;
+    globalThis.removeBurgLabel = (() => {
+      throw new Error("remove label blocked");
+    }) as typeof removeBurgLabel;
+    globalThis.emblems = {
+      select: () => {
+        throw new Error("emblems blocked");
+      },
+    } as unknown as typeof emblems;
+    globalThis.redrawIceberg = (() => {
+      throw new Error("iceberg blocked");
+    }) as typeof redrawIceberg;
+    globalThis.redrawGlacier = (() => {
+      throw new Error("glacier blocked");
+    }) as typeof redrawGlacier;
+    globalThis.svg = {
+      select: () => {
+        throw new Error("svg blocked");
+      },
+    } as unknown as typeof svg;
+    globalThis.drawScaleBar = (() => {
+      throw new Error("scale blocked");
+    }) as typeof drawScaleBar;
+    globalThis.drawHeightmap = (() => {
+      throw new Error("heightmap blocked");
+    }) as typeof drawHeightmap;
+    (globalThis as any).drawBiomes = () => {
+      throw new Error("biomes blocked");
+    };
+    (globalThis as any).drawCells = () => {
+      throw new Error("cells blocked");
+    };
+    globalThis.invokeActiveZooming = (() => {
+      throw new Error("zoom blocked");
+    }) as typeof invokeActiveZooming;
+
     const rendering = createGlobalRenderAdapter();
 
     expect(rendering.findCell(1, 2)).toBeUndefined();

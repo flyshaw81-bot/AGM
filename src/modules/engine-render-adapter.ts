@@ -135,12 +135,22 @@ function callGlobal<T extends (...args: never[]) => unknown>(
   name: string,
   ...args: Parameters<T>
 ) {
-  getGlobalValue<T>(name)?.(...args);
+  try {
+    getGlobalValue<T>(name)?.(...args);
+  } catch {
+    // Render compatibility helpers are best-effort behind injected targets.
+  }
 }
 
 export function createGlobalRenderDomTargets(): EngineRenderDomTargets {
   return {
-    getElementById: (id) => getDocument()?.getElementById(id) ?? null,
+    getElementById: (id) => {
+      try {
+        return getDocument()?.getElementById(id) ?? null;
+      } catch {
+        return null;
+      }
+    },
   };
 }
 
@@ -148,24 +158,41 @@ export function createGlobalRenderTargets(
   domTargets: EngineRenderDomTargets = createGlobalRenderDomTargets(),
 ): EngineRenderTargets {
   return {
-    findCell: (x, y, radius, graph) =>
-      getGlobalValue<EngineRenderTargets["findCell"]>("findCell")?.(
-        x,
-        y,
-        radius,
-        graph,
-      ),
+    findCell: (x, y, radius, graph) => {
+      try {
+        return getGlobalValue<EngineRenderTargets["findCell"]>("findCell")?.(
+          x,
+          y,
+          radius,
+          graph,
+        );
+      } catch {
+        return undefined;
+      }
+    },
     getPack: () => getGlobalValue<PackedGraph>("pack") ?? ({} as PackedGraph),
     addCoa: (type, id, coa, x, y) => {
-      getGlobalValue<{ add?: EngineRenderTargets["addCoa"] }>(
-        "COArenderer",
-      )?.add?.(type, id, coa, x, y);
+      try {
+        getGlobalValue<{ add?: EngineRenderTargets["addCoa"] }>(
+          "COArenderer",
+        )?.add?.(type, id, coa, x, y);
+      } catch {
+        // Optional compatibility renderer.
+      }
     },
     drawRoute: (route) => {
       callGlobal<(route: unknown) => void>("drawRoute", route);
     },
-    isLayerOn: (layer) =>
-      getGlobalValue<(layer: string) => boolean>("layerIsOn")?.(layer) ?? false,
+    isLayerOn: (layer) => {
+      try {
+        return (
+          getGlobalValue<(layer: string) => boolean>("layerIsOn")?.(layer) ??
+          false
+        );
+      } catch {
+        return false;
+      }
+    },
     drawBurgIcon: (burg) => {
       callGlobal<(burg: unknown) => void>("drawBurgIcon", burg);
     },
@@ -180,11 +207,15 @@ export function createGlobalRenderTargets(
     },
     getElementById: domTargets.getElementById,
     removeBurgEmblemUse: (burgId) => {
-      getGlobalValue<{
-        select?: (selector: string) => { remove?: () => void };
-      }>("emblems")
-        ?.select?.(`#burgEmblems > use[data-i='${burgId}']`)
-        ?.remove?.();
+      try {
+        getGlobalValue<{
+          select?: (selector: string) => { remove?: () => void };
+        }>("emblems")
+          ?.select?.(`#burgEmblems > use[data-i='${burgId}']`)
+          ?.remove?.();
+      } catch {
+        // Optional compatibility emblem renderer.
+      }
     },
     redrawIceberg: (iceId) => {
       callGlobal<(iceId: number) => void>("redrawIceberg", iceId);
@@ -192,15 +223,24 @@ export function createGlobalRenderTargets(
     redrawGlacier: (iceId) => {
       callGlobal<(iceId: number) => void>("redrawGlacier", iceId);
     },
-    selectScaleBar: () =>
-      getGlobalValue<{ select?: (selector: string) => unknown }>(
-        "svg",
-      )?.select?.("#scaleBar"),
+    selectScaleBar: () => {
+      try {
+        return getGlobalValue<{ select?: (selector: string) => unknown }>(
+          "svg",
+        )?.select?.("#scaleBar");
+      } catch {
+        return undefined;
+      }
+    },
     getScale: () => getGlobalValue<number>("scale") ?? 0,
     drawScaleBar: (scaleBar, scale) => {
-      getGlobalValue<(scaleBar: unknown, scale: number) => void>(
-        "drawScaleBar",
-      )?.(scaleBar, scale);
+      try {
+        getGlobalValue<(scaleBar: unknown, scale: number) => void>(
+          "drawScaleBar",
+        )?.(scaleBar, scale);
+      } catch {
+        // Optional compatibility renderer.
+      }
     },
     drawHeightmap: () => {
       callGlobal<() => void>("drawHeightmap");

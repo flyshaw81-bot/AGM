@@ -2399,6 +2399,10 @@ Seed-session defaults now guard blocked `optionsSeed` element lookups and seed
 global writes. The compatibility path still mirrors seeds into browser globals
 when available, but blocked DOM/runtime globals now degrade to no-op behavior.
 
+Render-adapter defaults now guard blocked DOM element lookups and throwing
+render helper calls. Missing or failing compatibility renderers degrade to
+undefined/false/no-op behavior while injected render targets remain strict.
+
 `engine-graph-session.ts` now applies explicit width/height parameters when
 setting graph rectangle bounds instead of re-reading stale `globalThis`
 dimensions. `engine-generation-session-services.ts` now exposes
