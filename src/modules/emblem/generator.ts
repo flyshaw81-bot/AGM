@@ -33,11 +33,33 @@ export type EmblemShapeTargets = {
   getSelectedShape: () => EmblemShapeSelection | null;
 };
 
+export type EmblemRuntimeTargets = {
+  getStateShield: (state?: number) => string | undefined;
+  getCultureShield: (culture: number) => string | undefined;
+  reportMissingCultureShield: (culture: number) => void;
+};
+
 function getDocument(): Document | undefined {
   try {
     return globalThis.document;
   } catch {
     return undefined;
+  }
+}
+
+function getPack(): typeof pack | undefined {
+  try {
+    return globalThis.pack;
+  } catch {
+    return undefined;
+  }
+}
+
+function getErrorFlag(): boolean {
+  try {
+    return Boolean(globalThis.ERROR);
+  } catch {
+    return false;
   }
 }
 
@@ -72,6 +94,23 @@ export function createGlobalEmblemShapeTargets(
   domTargets: EmblemShapeDomTargets = createGlobalEmblemShapeDomTargets(),
 ): EmblemShapeTargets {
   return createEmblemShapeTargets(domTargets);
+}
+
+export function createGlobalEmblemRuntimeTargets(): EmblemRuntimeTargets {
+  return {
+    getStateShield: (state) => {
+      if (!state) return undefined;
+      return getPack()?.states?.[state]?.coa?.shield;
+    },
+    getCultureShield: (culture) => getPack()?.cultures?.[culture]?.shield,
+    reportMissingCultureShield: (culture) => {
+      if (!getErrorFlag()) return;
+      console.error(
+        "Shield shape is not defined on culture level",
+        getPack()?.cultures?.[culture],
+      );
+    },
+  };
 }
 
 export interface EmblemCharge {
@@ -112,6 +151,7 @@ export interface Emblem {
 class EmblemGeneratorModule {
   constructor(
     private readonly shapeTargets: EmblemShapeTargets = createGlobalEmblemShapeTargets(),
+    private readonly runtimeTargets: EmblemRuntimeTargets = createGlobalEmblemRuntimeTargets(),
   ) {}
 
   generate(
@@ -624,14 +664,14 @@ class EmblemGeneratorModule {
     const shapeGroup = selectedShape?.group || "Diversiform";
     if (shapeGroup !== "Diversiform") return selectedShape?.value || "heater";
 
-    if (selectedShape?.value === "state" && state && pack.states[state].coa)
-      return pack.states[state].coa!.shield!;
-    if (pack.cultures[culture].shield) return pack.cultures[culture].shield!;
-    ERROR &&
-      console.error(
-        "Shield shape is not defined on culture level",
-        pack.cultures[culture],
-      );
+    if (selectedShape?.value === "state") {
+      const stateShield = this.runtimeTargets.getStateShield(state);
+      if (stateShield) return stateShield;
+    }
+
+    const cultureShield = this.runtimeTargets.getCultureShield(culture);
+    if (cultureShield) return cultureShield;
+    this.runtimeTargets.reportMissingCultureShield(culture);
     return "heater";
   }
 

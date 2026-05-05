@@ -640,7 +640,7 @@ Completed:
 
 - `npm.cmd run lint` passed.
 - `npm.cmd run typecheck` passed.
-- `npm.cmd run test -- --run` passed: 196 test files, 826 tests.
+- `npm.cmd run test -- --run` passed: 196 test files, 828 tests.
 - `npm.cmd run build` passed.
 - `npm.cmd run test:e2e:studio` passed earlier in this runtime-context batch:
   154 Playwright tests. Re-run Playwright before release-candidate handoff,
@@ -2222,6 +2222,10 @@ resource loading errors.
 Emblem renderer browser targets now guard optional browser globals including
 `fetch`, `emblems`, `layerIsOn`, and `ERROR`. Blocked globals now fall back to
 explicit fetch errors, no rendered uses, disabled layers, and no error logging.
+Emblem generator shield selection now uses injectable `EmblemRuntimeTargets` for
+state/culture shield lookup and missing-shield diagnostics. The default target
+keeps current `pack` / `ERROR` compatibility while blocked globals fall back to
+the heater shield without throwing.
 
 `ocean-layers.ts` now routes outline-chain error reporting through
 `OceanLayerLogTargets`, keeping the default `globalThis.ERROR` compatibility
