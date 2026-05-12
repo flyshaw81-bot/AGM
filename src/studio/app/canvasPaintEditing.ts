@@ -120,6 +120,13 @@ function writeCanvasCellEdit(
   if (height !== null && gridCells?.h && Number.isFinite(gridCellId))
     gridCells.h[gridCellId] = height;
   if (biomeId !== null && biomeByCell) biomeByCell[entry.cellId] = biomeId;
+
+  // DPAGM native engine hides #terrs and #biomes — unhide so our redraw is visible
+  const terrsEl = document.getElementById("terrs");
+  const biomesEl = document.getElementById("biomes");
+  if (terrsEl) terrsEl.style.display = "";
+  if (biomesEl) biomesEl.style.display = "";
+
   targets.redrawEditLayers();
   return true;
 }

@@ -167,6 +167,8 @@ function createBuilderTargets(): WorldDocumentDraftBuilderTargets {
       provinces: [],
       routes: [],
       zones: [],
+      markers: [],
+      military: [],
     })),
     getLayerStates: vi.fn(
       () =>
@@ -190,8 +192,6 @@ function createFileIoTargets(): DraftFileIoTargets {
     revokeObjectUrl: vi.fn(),
     createDownloadLink: vi.fn(() => link),
     appendToBody: vi.fn(),
-    getJsZip: vi.fn(),
-    loadJsZipScript: vi.fn(async () => undefined),
   };
 }
 
@@ -289,25 +289,16 @@ describe("worldDocumentDraft", () => {
   });
 
   it("composes engine package defaults from injected file IO targets", async () => {
-    class FakeZip {
-      file() {}
-      async generateAsync() {
-        return new Blob(["zip"]);
-      }
-    }
     const fileIoTargets = createFileIoTargets();
-    vi.mocked(fileIoTargets.getJsZip)
-      .mockReturnValueOnce(undefined)
-      .mockReturnValueOnce(FakeZip);
     const targets = createGlobalWorldDocumentDraftTargets({ fileIoTargets });
 
-    await targets.enginePackageTargets?.loadZip();
+    const ZipCtor = await targets.enginePackageTargets?.loadZip();
+    expect(ZipCtor).toBeDefined();
     targets.enginePackageTargets?.downloadBlob(
       "package.zip",
       new Blob(["zip"]),
     );
 
-    expect(fileIoTargets.loadJsZipScript).toHaveBeenCalledWith();
     expect(fileIoTargets.createObjectUrl).toHaveBeenCalledWith(
       expect.any(Blob),
     );

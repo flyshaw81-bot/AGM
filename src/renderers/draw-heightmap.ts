@@ -1,13 +1,15 @@
-import type { CurveFactory } from "d3";
+import type { EngineRuntimeContext } from "../modules/engine-runtime-context";
+import { round } from "../utils";
+import { color } from "../utils/colorCore";
+import type { CurveFactory } from "../utils/shapeUtils";
 import {
-  color,
   curveBasisClosed,
   curveLinear,
   curveStep,
   line,
-  range,
-} from "d3";
-import { round } from "../utils";
+} from "../utils/shapeUtils";
+import { range } from "../utils/statUtils";
+import { createBrowserRendererContext } from "./renderer-runtime-context";
 
 declare global {
   var drawHeightmap: () => void;
@@ -101,8 +103,8 @@ export function connectHeightmapVertices({
   return chain;
 }
 
-const heightmapRenderer = (): void => {
-  TIME && console.time("drawHeightmap");
+export const heightmapRenderer = (context: EngineRuntimeContext): void => {
+  context.timing.shouldTime && console.time("drawHeightmap");
 
   const ocean = terrs.select<SVGGElement>("#oceanHeights");
   const land = terrs.select<SVGGElement>("#landHeights");
@@ -111,7 +113,9 @@ const heightmapRenderer = (): void => {
   land.selectAll("*").remove();
 
   const paths: (string | undefined)[] = new Array(101);
-  const { cells, vertices } = grid;
+  const { cells, vertices } = context.grid;
+  const graphWidth = context.worldSettings.graphWidth ?? 0;
+  const graphHeight = context.worldSettings.graphHeight ?? 0;
   const used = new Uint8Array(cells.i.length);
   const heights = Array.from(cells.i as number[]).sort(
     (a, b) => cells.h[a] - cells.h[b],
@@ -241,8 +245,10 @@ const heightmapRenderer = (): void => {
     return chain.filter((_d, i) => i % n === 0);
   }
 
-  TIME && console.timeEnd("drawHeightmap");
+  context.timing.shouldTime && console.timeEnd("drawHeightmap");
 };
 
 const runtimeWindow = getWindow();
-if (runtimeWindow) runtimeWindow.drawHeightmap = heightmapRenderer;
+if (runtimeWindow)
+  runtimeWindow.drawHeightmap = () =>
+    heightmapRenderer(createBrowserRendererContext());

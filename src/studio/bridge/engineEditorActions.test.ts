@@ -33,45 +33,36 @@ describe("engine editor actions", () => {
   it("builds editor availability through injected targets", () => {
     const { targets } = createTargets({
       handlers: {
-        editStates: true,
-        editBiomes: true,
+        stateWorkbench: true,
+        biomeWorkbench: true,
       },
     });
 
     expect(getEngineEditorAvailability(targets)).toMatchObject({
-      editStates: true,
-      editCultures: false,
-      editBiomes: true,
+      stateWorkbench: true,
+      cultureWorkbench: false,
+      biomeWorkbench: true,
     });
   });
 
-  it("resolves open editor state through injected dialog targets", () => {
-    const { targets } = createTargets({ openDialogs: ["biomesEditor"] });
+  it("does not infer native editor state from removed legacy dialogs", () => {
+    const { targets } = createTargets({ openDialogs: ["studioEngineEditor"] });
 
-    expect(isEngineEditorOpen("editBiomes", targets)).toBe(true);
-    expect(getOpenEngineEditor(targets)).toBe("editBiomes");
+    expect(isEngineEditorOpen("biomeWorkbench", targets)).toBe(false);
+    expect(getOpenEngineEditor(targets)).toBeNull();
     expect(syncEngineEditorState(targets)).toEqual({
-      activeEditor: "editBiomes",
-      editorDialogOpen: true,
+      activeEditor: null,
+      editorDialogOpen: false,
     });
   });
 
   it("closes editor dialogs and opens the requested editor through targets", async () => {
     const { targets, closedDialogs, runEditorHandler } = createTargets();
 
-    closeEngineEditor("editStates", targets);
-    await openEngineEditor("editBiomes", targets);
+    closeEngineEditor("stateWorkbench", targets);
+    await openEngineEditor("biomeWorkbench", targets);
 
-    expect(closedDialogs).toContain("statesEditor");
-    expect(closedDialogs).toEqual([
-      "statesEditor",
-      "statesEditor",
-      "culturesEditor",
-      "religionsEditor",
-      "provincesEditor",
-      "zonesEditor",
-      "diplomacyEditor",
-    ]);
-    expect(runEditorHandler).toHaveBeenCalledWith("editBiomes");
+    expect(closedDialogs).toEqual(["studioEngineEditor", "studioEngineEditor"]);
+    expect(runEditorHandler).toHaveBeenCalledWith("biomeWorkbench");
   });
 });

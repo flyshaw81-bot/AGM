@@ -1,6 +1,7 @@
 import type { StudioState } from "../types";
 import {
   formatProjectCenterTime,
+  getProjectDeliveryStatusLabel,
   getProjectStatusLabel,
 } from "./projectPanelFormatters";
 import { GAME_WORLD_PROFILE_UI_LABELS } from "./shellConstants";
@@ -19,10 +20,11 @@ export function renderProjectRecentProjectsSection(state: StudioState) {
           ${recentProjects
             .map(
               (project) => `
-            <article class="studio-balance-card${project.id === state.projectCenter.activeProjectId ? " is-active" : ""}">
+            <article class="studio-balance-card${project.id === state.projectCenter.activeProjectId ? " is-active" : ""}" data-project-delivery-status="${project.deliveryStatus || "unchecked"}">
               <div class="studio-balance-card__title">${escapeHtml(project.name)}</div>
               <div class="studio-panel__text">${GAME_WORLD_PROFILE_UI_LABELS[state.language][project.gameProfile]} · ${project.width} × ${project.height} · ${escapeHtml(project.seed || "-")}</div>
               <div class="studio-kv"><span>${t(state.language, "状态", "Status")}</span><strong>${getProjectStatusLabel(project.status, state.language)}</strong></div>
+              <div class="studio-kv"><span>${t(state.language, "交付", "Delivery")}</span><strong>${getProjectDeliveryStatusLabel(project.deliveryStatus, state.language)}</strong></div>
               <div class="studio-kv"><span>${t(state.language, "更新时间", "Updated")}</span><strong>${formatProjectCenterTime(project.updatedAt, state.language)}</strong></div>
             </article>
           `,

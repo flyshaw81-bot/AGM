@@ -1,33 +1,65 @@
 import type {
   EngineEntitySummary,
   EngineEntitySummaryItem,
+  EngineWorldResourceSummary,
 } from "../bridge/engineActions";
 import type {
   DirectDiplomacyFilterMode,
   StudioLanguage,
   StudioState,
 } from "../types";
+import { renderDirectDiplomacyDetail } from "./directDiplomacyWorkbenchDetail";
 import {
-  DIPLOMACY_RELATION_OPTIONS,
   filterDirectDiplomacyRelations,
   getActiveDirectDiplomacyStates,
-  getDirectDiplomacyPairKey,
   getDirectDiplomacyRelation,
   selectDirectDiplomacyObject,
   selectDirectDiplomacySubject,
 } from "./directDiplomacyWorkbenchModel";
 import { normalizeWorkbenchQuery } from "./directWorkbenchFiltering";
 import {
-  getDirectWorkbenchEditStatus,
   limitDirectWorkbenchRows,
   renderDirectSelectOptions,
-  renderDirectWorkbenchEditStatus,
 } from "./directWorkbenchShared";
-import { renderFocusButton } from "./focusControls";
-import { escapeHtml, t } from "./shellShared";
+import { renderDirectWorkbenchToolbar } from "./directWorkbenchToolbar";
+import { renderDirectWorkbenchEntityRow } from "./directWorkbenchViewParts";
+import { t } from "./shellShared";
+
+function renderNativeDiplomacyListHeader(
+  language: StudioLanguage,
+  activeCount: number,
+  visibleCount: number,
+) {
+  return `<div class="studio-native-identity__list-title">
+    <div>
+      <h3>${t(language, "外交关系", "Diplomacy")}</h3>
+    </div>
+    <strong>${visibleCount}/${Math.max(activeCount - 1, 0)}</strong>
+  </div>`;
+}
+
+function renderDiplomacySubjectSelect(
+  states: EngineEntitySummaryItem[],
+  subject: EngineEntitySummaryItem | undefined,
+  language: StudioLanguage,
+) {
+  return `<label class="studio-native-identity__select">
+    <span>${t(language, "主体国家", "Subject state")}</span>
+    <select id="studioDiplomacySubjectSelect">
+      ${renderDirectSelectOptions(
+        states.map((state) => ({
+          value: state.id,
+          label: `${state.name} #${state.id}`,
+        })),
+        subject?.id ?? 0,
+      )}
+    </select>
+  </label>`;
+}
 
 export function renderDirectDiplomacyWorkbench(
   entitySummary: EngineEntitySummary,
+  worldResources: EngineWorldResourceSummary,
   directEditor: StudioState["directEditor"],
   language: StudioLanguage,
 ) {
@@ -50,112 +82,59 @@ export function renderDirectDiplomacyWorkbench(
     directEditor.diplomacyFilterMode,
     query,
   );
-  const selectedRelation = getDirectDiplomacyRelation(subject, object);
-  const pairKey = getDirectDiplomacyPairKey(subject, object);
-  const diplomacyStatus = getDirectWorkbenchEditStatus(
-    Boolean(pairKey && directEditor.lastAppliedDiplomacyPair === pairKey),
-  );
   const filterOptions: { value: DirectDiplomacyFilterMode; label: string }[] = [
     { value: "all", label: t(language, "全部关系", "All relations") },
     { value: "conflict", label: t(language, "冲突关系", "Conflict") },
     { value: "positive", label: t(language, "正向关系", "Positive") },
   ];
-  const renderRelationRow = (
-    state: EngineEntitySummaryItem,
-    selected: boolean,
-  ) => `
-    <button class="studio-state-row${selected ? " is-active" : ""}" data-studio-action="direct-diplomacy-object-select" data-state-id="${state.id}">
-      <span class="studio-state-row__swatch" style="background: ${escapeHtml(state.color || "var(--studio-accent)")}"></span>
-      <span class="studio-state-row__main"><strong>${escapeHtml(state.name)}</strong><small>${escapeHtml(relationFor(state))}</small></span>
-      <span class="studio-state-row__metric">#${state.id}</span>
-    </button>
-  `;
+  const visibleRelations = limitDirectWorkbenchRows(filteredRelations);
 
   return `
-    <section id="studioDirectDiplomacyWorkbench" class="studio-panel studio-direct-editor studio-direct-diplomacy-editor" data-direct-workbench="diplomacy">
-      <div class="studio-direct-editor__header">
-        <div>
-          <div class="studio-panel__eyebrow">${t(language, "AGM editor", "AGM editor")}</div>
-          <h2 class="studio-panel__hero">${t(language, "Diplomacy Workbench", "Diplomacy Workbench")}</h2>
-        </div>
-        <div class="studio-direct-editor__badge">${t(language, "直接编辑", "Direct edit")}</div>
-      </div>
-      <p class="studio-panel__text">${t(language, "Choose the subject state in the AGM panel, then maintain its relation to other states; vassal/suzerain writes the reciprocal relation automatically.", "Choose the subject state in the AGM panel, then maintain its relation to other states; vassal/suzerain writes the reciprocal relation automatically.")}</p>
-      <div class="studio-direct-state-controls">
-        <label class="studio-stack-field studio-state-search-field">
-          <span>${t(language, "主体国家", "Subject state")}</span>
-          <select id="studioDiplomacySubjectSelect">
-            ${renderDirectSelectOptions(
-              states.map((state) => ({
-                value: state.id,
-                label: `${state.name} #${state.id}`,
-              })),
-              subject?.id ?? 0,
-            )}
-          </select>
-        </label>
-        <label class="studio-stack-field studio-state-search-field">
-          <span>${t(language, "搜索关系", "Search relations")}</span>
-          <input id="studioDiplomacySearchInput" class="studio-input" type="search" value="${escapeHtml(directEditor.diplomacySearchQuery)}" placeholder="${t(language, "State, ID or relation", "State, ID or relation")}" autocomplete="off" />
-        </label>
-        <label class="studio-stack-field">
-          <span>${t(language, "Filter", "Filter")}</span>
-          <select id="studioDiplomacyFilterSelect">
-            ${renderDirectSelectOptions(filterOptions, directEditor.diplomacyFilterMode)}
-          </select>
-        </label>
-      </div>
-      <div class="studio-direct-states">
-        <div class="studio-direct-states__list">
+    <section id="studioDirectDiplomacyWorkbench" class="studio-native-identity studio-native-identity--diplomacy studio-direct-editor studio-direct-diplomacy-editor" data-native-diplomacy-drawer="true" data-direct-workbench="diplomacy">
+      ${renderDirectWorkbenchToolbar({
+        filterId: "studioDiplomacyFilterSelect",
+        filterOptions,
+        filterValue: directEditor.diplomacyFilterMode,
+        language,
+        searchId: "studioDiplomacySearchInput",
+        searchPlaceholder: t(
+          language,
+          "搜索国家、ID 或关系",
+          "Search state, ID, or relation",
+        ),
+        searchValue: directEditor.diplomacySearchQuery,
+      })}
+      <aside class="studio-native-identity__list studio-native-identity__list--relations">
+        ${renderNativeDiplomacyListHeader(language, states.length, filteredRelations.length)}
+        ${renderDiplomacySubjectSelect(states, subject, language)}
+        <div class="studio-native-identity__rows">
           ${
-            limitDirectWorkbenchRows(filteredRelations)
-              .map((state) => renderRelationRow(state, state.id === object?.id))
+            visibleRelations
+              .map((state) =>
+                renderDirectWorkbenchEntityRow({
+                  action: "direct-diplomacy-object-select",
+                  color: state.color || "var(--studio-native-accent)",
+                  id: state.id,
+                  idDataAttribute: "state-id",
+                  meta: relationFor(state),
+                  metric: `#${state.id}`,
+                  selected: state.id === object?.id,
+                  title: state.name,
+                }),
+              )
               .join("") ||
-            `<div class="studio-panel__text">${t(language, "No matching relations", "No matching relations")}</div>`
+            `<div class="studio-native-identity__empty">${t(language, "没有匹配的外交关系", "No matching relations")}</div>`
           }
         </div>
-        <div class="studio-direct-states__detail">
-          <div class="studio-state-inspector__hero" style="--state-color: ${escapeHtml(subject?.color || "var(--studio-accent)")}">
-            <span class="studio-state-inspector__color-ring"></span>
-            <div>
-              <div class="studio-panel__eyebrow">${t(language, "当前关系", "Selected relation")}</div>
-              <h3 class="studio-panel__title">${subject && object ? `${escapeHtml(subject.name)} - ${escapeHtml(object.name)}` : "-"}</h3>
-            </div>
-          </div>
-          ${
-            subject && object
-              ? `
-            <div class="studio-state-editor-grid">
-              <label class="studio-stack-field studio-state-field">
-                <span>${t(language, "关系", "Relation")}</span>
-                <select id="studioDiplomacyRelationSelect">
-                  ${renderDirectSelectOptions(
-                    DIPLOMACY_RELATION_OPTIONS.map((relation) => ({
-                      value: relation,
-                      label: relation,
-                    })),
-                    selectedRelation,
-                  )}
-                </select>
-              </label>
-            </div>
-            <div class="studio-state-readonly-grid">
-              <div class="studio-kv"><span>${t(language, "主体", "Subject")}</span><strong>${escapeHtml(subject.fullName || subject.name)} #${subject.id}</strong></div>
-              <div class="studio-kv"><span>${t(language, "对象", "Object")}</span><strong>${escapeHtml(object.fullName || object.name)} #${object.id}</strong></div>
-              <div class="studio-kv"><span>${t(language, "当前关系", "Current relation")}</span><strong>${escapeHtml(selectedRelation)}</strong></div>
-            </div>
-          `
-              : ""
-          }
-          <div class="studio-panel__actions studio-state-inspector__actions">
-            ${subject && object ? renderDirectWorkbenchEditStatus("studioDiplomacyEditStatus", language, diplomacyStatus) : ""}
-            ${subject && object ? `<button class="studio-primary-action" data-studio-action="direct-diplomacy-apply" data-subject-id="${subject.id}" data-object-id="${object.id}">${t(language, "应用关系", "Apply relation")}</button>` : ""}
-            ${subject && object ? `<button class="studio-ghost" data-studio-action="direct-diplomacy-reset" data-subject-id="${subject.id}" data-object-id="${object.id}">${t(language, "重置", "Reset")}</button>` : ""}
-            ${subject ? renderFocusButton("state", subject.id, "direct-diplomacy-subject", "focus", language) : ""}
-            ${object ? renderFocusButton("state", object.id, "direct-diplomacy-object", "focus", language) : ""}
-          </div>
-        </div>
-      </div>
+      </aside>
+      <div class="studio-native-identity__divider"></div>
+      ${renderDirectDiplomacyDetail({
+        language,
+        directEditor,
+        object,
+        subject,
+        worldResources,
+      })}
     </section>
   `;
 }

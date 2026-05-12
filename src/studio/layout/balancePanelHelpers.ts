@@ -44,9 +44,9 @@ export function renderReferenceList(
 }
 
 export function getBalanceHintEditorAction(category: string): EditorAction {
-  if (category === "habitability") return "editBiomes";
-  if (category === "connectivity") return "editProvinces";
-  return "editStates";
+  if (category === "habitability") return "biomeWorkbench";
+  if (category === "connectivity") return "provinceWorkbench";
+  return "stateWorkbench";
 }
 
 function getTargetTypeFromRef(
@@ -66,8 +66,8 @@ export function renderEditorEntry(
 ) {
   const buttonLabel =
     label ?? `Open ${getEditorLabel(action, language)} editor`;
-  const actionName = action === "editStates" ? "section" : "editor";
-  const value = action === "editStates" ? "editors" : action;
+  const actionName = action === "stateWorkbench" ? "section" : "editor";
+  const value = action === "stateWorkbench" ? "editors" : action;
   return `<button class="studio-ghost" data-studio-action="${actionName}" data-value="${value}"${editorAvailability[action] ? "" : " disabled"}>${buttonLabel}</button>`;
 }
 

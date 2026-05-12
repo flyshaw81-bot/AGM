@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  createBrowserEngineRuntimeContext,
+  createEngineRuntimeContext,
   getEngineWorldDimensions,
-  getGlobalEngineRuntimeContext,
 } from "./engine-runtime-context";
+import { createEngineWorldState } from "./engine-world-state";
 
-describe("getGlobalEngineRuntimeContext", () => {
+describe("createBrowserEngineRuntimeContext", () => {
   it("assembles generation session services into the runtime context", () => {
     const originalDocument = globalThis.document;
 
@@ -26,19 +28,15 @@ describe("getGlobalEngineRuntimeContext", () => {
     globalThis.pointsInput = {
       dataset: { cells: "100" },
     } as unknown as HTMLInputElement;
-    globalThis.heightExponentInput = {
-      value: "1",
-    } as HTMLInputElement;
-    globalThis.precInput = {
-      value: "100",
-    } as HTMLInputElement;
+    globalThis.heightExponent = 1;
+    globalThis.precipitationPercent = 100;
     globalThis.prec = {} as typeof prec;
     const runtimeNotes = [{ id: "n1", name: "Runtime", legend: "Note" }];
     globalThis.notes = runtimeNotes;
     globalThis.populationRate = 1;
     globalThis.urbanDensity = 1;
     globalThis.urbanization = 1;
-    globalThis.heightUnit = { value: "m" } as HTMLSelectElement;
+    globalThis.heightUnit = "m";
     globalThis.TIME = false;
     globalThis.DEBUG = {};
     globalThis.biomesData = {
@@ -63,7 +61,7 @@ describe("getGlobalEngineRuntimeContext", () => {
       remove: () => {},
     } as unknown as typeof Burgs;
 
-    const context = getGlobalEngineRuntimeContext();
+    const context = createBrowserEngineRuntimeContext();
 
     expect(typeof context.burgs.add).toBe("function");
     expect(context.burgs.findById(2)).toBe(burg);
@@ -89,7 +87,10 @@ describe("getGlobalEngineRuntimeContext", () => {
       "function",
     );
     context.notes.push({ id: "n2", name: "Context", legend: "Note" });
-    expect(context.notes.all().map((note) => note.id)).toEqual(["n1", "n2"]);
+    expect(context.notes.all().map((note: { id: string }) => note.id)).toEqual([
+      "n1",
+      "n2",
+    ]);
     context.grid = {
       seed: "runtime",
       cellsDesired: 100,
@@ -115,13 +116,38 @@ describe("getGlobalEngineRuntimeContext", () => {
 });
 
 describe("getEngineWorldDimensions", () => {
+  it("builds a runtime context from explicit AGM world state", () => {
+    const state = createEngineWorldState({
+      grid: { cells: {} } as typeof grid,
+      pack: { cells: {} } as typeof pack,
+      options: { era: "runtime" } as typeof options,
+      seed: "owned-seed",
+      worldSettings: {
+        graphWidth: 640,
+        graphHeight: 360,
+      },
+    });
+
+    const context = createEngineRuntimeContext(state);
+
+    expect(context.worldState).toBe(state);
+    expect(context.grid).toBe(state.grid);
+    expect(context.pack).toBe(state.pack);
+    expect(context.options).toBe(state.options);
+    expect(context.seed).toBe("owned-seed");
+    expect(getEngineWorldDimensions(context)).toEqual({
+      graphWidth: 640,
+      graphHeight: 360,
+    });
+  });
+
   it("prefers explicit runtime world dimensions", () => {
     const context = {
       worldSettings: {
         graphWidth: 320,
         graphHeight: 180,
       },
-    } as ReturnType<typeof getGlobalEngineRuntimeContext>;
+    } as ReturnType<typeof createBrowserEngineRuntimeContext>;
 
     expect(getEngineWorldDimensions(context)).toEqual({
       graphWidth: 320,
@@ -129,16 +155,14 @@ describe("getEngineWorldDimensions", () => {
     });
   });
 
-  it("falls back to browser graph globals at the compatibility boundary", () => {
+  it("reads browser graph globals only through the browser world-state adapter", () => {
     const originalGraphWidth = globalThis.graphWidth;
     const originalGraphHeight = globalThis.graphHeight;
 
     try {
       globalThis.graphWidth = 960;
       globalThis.graphHeight = 540;
-      const context = {
-        worldSettings: {},
-      } as ReturnType<typeof getGlobalEngineRuntimeContext>;
+      const context = createBrowserEngineRuntimeContext();
 
       expect(getEngineWorldDimensions(context)).toEqual({
         graphWidth: 960,

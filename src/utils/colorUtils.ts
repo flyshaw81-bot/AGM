@@ -1,12 +1,7 @@
-import {
-  color,
-  interpolate,
-  interpolateRainbow,
-  type RGBColor,
-  range,
-  scaleSequential,
-  shuffler,
-} from "d3";
+import { color, interpolate, type RGBColor } from "./colorCore";
+import { interpolateRainbow, shuffler } from "./interpolateUtils";
+import { scaleSequential } from "./scaleUtils";
+import { range } from "./statUtils";
 
 /**
  * Convert RGB or RGBA color to HEX

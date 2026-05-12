@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   getEngineDataActions,
   getEngineProjectSummary,
 } from "../bridge/engineActions";
@@ -41,14 +41,14 @@ export function renderProjectDocumentSection(
       </label>
       <div class="studio-kv"><span>${t(state.language, "项目名称", "Project name")}</span><strong>${escapeHtml(state.document.name)}</strong></div>
       <div class="studio-kv"><span>${t(state.language, "种子", "Seed")}</span><strong>${state.document.seed || "-"}</strong></div>
-      <div class="studio-kv"><span>${t(state.language, "画幅", "Frame")}</span><strong>${state.document.documentWidth || state.viewport.width} × ${state.document.documentHeight || state.viewport.height}</strong></div>
+      <div class="studio-kv"><span>${t(state.language, "画幅", "Frame")}</span><strong>${state.document.documentWidth || state.viewport.width} x ${state.document.documentHeight || state.viewport.height}</strong></div>
       <div class="studio-kv"><span>${t(state.language, "风格", "Style")}</span><strong>${escapeHtml(state.document.stylePreset)}</strong></div>
       <div class="studio-kv"><span>${t(state.language, "本地快照", "Local snapshot")}</span><strong>${localSnapshotLabel}</strong></div>
       <div class="studio-kv"><span>${t(state.language, "上次保存", "Last saved")}</span><strong>${formatProjectCenterTime(state.projectCenter.lastSavedAt, state.language)}</strong></div>
-        <div class="studio-kv"><span>${t(state.language, "文档来源", "Document source")}</span><strong>${state.document.source === "agm" ? "AGM Studio" : localizeProjectSourceDisplayValue("AGM Core", state.language)}</strong></div>
+      <div class="studio-kv"><span>${t(state.language, "文档来源", "Document source")}</span><strong>${state.document.source === "agm" ? "AGM Studio" : localizeProjectSourceDisplayValue("AGM Core", state.language)}</strong></div>
       <div class="studio-panel__actions">
-        <button class="studio-ghost" data-studio-action="data" data-value="quick-load"${dataActions.canQuickLoad ? "" : " disabled"}>${t(state.language, "快速加载", "Quick load")}</button>
-        <button class="studio-ghost" data-studio-action="data" data-value="save-storage"${dataActions.canSaveToStorage ? "" : " disabled"}>${t(state.language, "保存到存储", "Save to storage")}</button>
+        <button class="studio-ghost" data-studio-action="data" data-value="load-browser-snapshot"${dataActions.canLoadBrowserSnapshot ? "" : " disabled"}>${t(state.language, "加载快照", "Load snapshot")}</button>
+        <button class="studio-ghost" data-studio-action="data" data-value="save-browser-snapshot"${dataActions.canSaveBrowserSnapshot ? "" : " disabled"}>${t(state.language, "保存快照", "Save snapshot")}</button>
         <button class="studio-ghost" data-studio-action="data" data-value="open-file"${dataActions.canOpenFile ? "" : " disabled"}>${t(state.language, "打开文件", "Open file")}</button>
         <button class="studio-ghost studio-ghost--primary" data-studio-action="project" data-value="save-agm-draft">${t(state.language, "保存 AGM 草稿", "Save AGM draft")}</button>
         <button class="studio-ghost" data-studio-action="project" data-value="restore-agm-draft">${t(state.language, "恢复 AGM 草稿", "Restore AGM draft")}</button>

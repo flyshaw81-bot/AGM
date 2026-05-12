@@ -19,6 +19,7 @@ export type DirectWorkbenchClearFilterPatches = {
   >;
   route: Pick<DirectEditorState, "routeSearchQuery" | "routeFilterMode">;
   zone: Pick<DirectEditorState, "zoneSearchQuery" | "zoneFilterMode">;
+  marker: Pick<DirectEditorState, "markerSearchQuery" | "markerFilterMode">;
   diplomacy: Pick<
     DirectEditorState,
     "diplomacySearchQuery" | "diplomacyFilterMode"
@@ -39,6 +40,7 @@ export function createDirectWorkbenchClearFilterPatches(): DirectWorkbenchClearF
     province: { provinceSearchQuery: "", provinceFilterMode: "all" },
     route: { routeSearchQuery: "", routeFilterMode: "all" },
     zone: { zoneSearchQuery: "", zoneFilterMode: "all" },
+    marker: { markerSearchQuery: "", markerFilterMode: "all" },
     diplomacy: { diplomacySearchQuery: "", diplomacyFilterMode: "all" },
     biome: { biomeSearchQuery: "", biomeFilterMode: "all" },
   };

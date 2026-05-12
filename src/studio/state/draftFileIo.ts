@@ -1,13 +1,4 @@
-type JsZipInstance = {
-  file: (path: string, content: string | Blob) => void;
-  generateAsync: (options: { type: "blob" }) => Promise<Blob>;
-};
-
-declare global {
-  interface Window {
-    JSZip?: new () => JsZipInstance;
-  }
-}
+import { ZipArchive } from "../../utils/zipArchive";
 
 export type DraftDownloadLink =
   | HTMLAnchorElement
@@ -23,8 +14,6 @@ export type DraftFileIoTargets = {
   revokeObjectUrl: (url: string) => void;
   createDownloadLink: () => DraftDownloadLink;
   appendToBody: (element: DraftDownloadLink) => void;
-  getJsZip: () => Window["JSZip"];
-  loadJsZipScript: () => Promise<void>;
 };
 
 const createUnavailableDownloadLink = (): DraftDownloadLink => ({
@@ -37,14 +26,6 @@ const createUnavailableDownloadLink = (): DraftDownloadLink => ({
 const getDocument = (): Document | undefined => {
   try {
     return globalThis.document;
-  } catch {
-    return undefined;
-  }
-};
-
-const getWindow = (): Window | undefined => {
-  try {
-    return globalThis.window;
   } catch {
     return undefined;
   }
@@ -70,53 +51,6 @@ export function createGlobalDraftFileIoTargets(): DraftFileIoTargets {
         // Download fallback links may be detached in restricted runtimes.
       }
     },
-    getJsZip: () => getWindow()?.JSZip,
-    loadJsZipScript: () =>
-      new Promise<void>((resolve, reject) => {
-        const document = getDocument();
-        if (!document) {
-          resolve();
-          return;
-        }
-
-        let existingScript: HTMLScriptElement | null = null;
-        try {
-          existingScript = document.querySelector<HTMLScriptElement>(
-            "script[data-agm-jszip]",
-          );
-        } catch {
-          reject(new Error("JSZip failed to load"));
-          return;
-        }
-        if (existingScript) {
-          existingScript.addEventListener("load", () => resolve(), {
-            once: true,
-          });
-          existingScript.addEventListener(
-            "error",
-            () => reject(new Error("JSZip failed to load")),
-            { once: true },
-          );
-          return;
-        }
-
-        let script: HTMLScriptElement;
-        try {
-          script = document.createElement("script");
-        } catch {
-          reject(new Error("JSZip failed to load"));
-          return;
-        }
-        script.dataset.agmJszip = "true";
-        script.src = `${import.meta.env.BASE_URL}libs/jszip.min.js`;
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error("JSZip failed to load"));
-        try {
-          document.head.appendChild(script);
-        } catch {
-          reject(new Error("JSZip failed to load"));
-        }
-      }),
   };
 }
 
@@ -160,13 +94,12 @@ export function downloadJsonDraft(
   );
 }
 
-export async function loadJsZip(
-  targets: DraftFileIoTargets = createGlobalDraftFileIoTargets(),
-) {
-  if (!targets.getJsZip()) await targets.loadJsZipScript();
-  const JsZip = targets.getJsZip();
-  if (!JsZip) throw new Error("JSZip is unavailable for Engine Package export");
-  return JsZip;
+/**
+ * Returns the ZipArchive constructor for creating ZIP files.
+ * This replaces the old JSZip lazy-loading mechanism.
+ */
+export function loadZipConstructor(): typeof ZipArchive {
+  return ZipArchive;
 }
 
 export function stringifyPackageFile(value: unknown) {

@@ -60,6 +60,18 @@ describe("studio renderer targets", () => {
     expect(vi.isMockFunction(targets.syncProjectSummary)).toBe(false);
   });
 
+  it("skips identical root html writes to avoid unnecessary full-tree churn", () => {
+    const targets = createGlobalStudioRendererTargets();
+    const root = {
+      dataset: {},
+      innerHTML: "<main>Studio</main>",
+    } as unknown as HTMLElement;
+
+    targets.setRootHtml(root, "<main>Studio</main>");
+
+    expect(root.innerHTML).toBe("<main>Studio</main>");
+  });
+
   it("routes renderer canvas paint through runtime context", () => {
     const drawHeightmap = vi.fn();
     const context = {

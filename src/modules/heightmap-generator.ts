@@ -1,14 +1,11 @@
-import Alea from "alea";
-import { range as d3Range, leastIndex, mean } from "d3";
+﻿import Alea from "../utils/alea";
 import { createTypedArray } from "../utils/arrayUtils";
 import { findGridCell } from "../utils/graphUtils";
 import { lim, minmax } from "../utils/numberUtils";
 import { getNumberInRange, P, rand } from "../utils/probabilityUtils";
+import { range as d3Range, leastIndex, mean } from "../utils/statUtils";
 import type { EngineRandomService } from "./engine-random-service";
-import {
-  type EngineRuntimeContext,
-  getGlobalEngineRuntimeContext,
-} from "./engine-runtime-context";
+import type { EngineRuntimeContext } from "./engine-runtime-context";
 
 declare global {
   var HeightmapGenerator: HeightmapModule;
@@ -139,6 +136,7 @@ export class HeightmapModule {
   blobPower: number = 0;
   linePower: number = 0;
   private randomSource?: EngineRandomService;
+  private runtimeWorldTargets?: HeightmapWorldTargets;
 
   constructor(
     private readonly imageTargets: HeightmapImageTargets = createGlobalHeightmapImageTargets(),
@@ -157,11 +155,17 @@ export class HeightmapModule {
   }
 
   private getGraphWidth(): number {
-    return this.worldTargets.getGraphWidth();
+    return (
+      this.runtimeWorldTargets?.getGraphWidth() ??
+      this.worldTargets.getGraphWidth()
+    );
   }
 
   private getGraphHeight(): number {
-    return this.worldTargets.getGraphHeight();
+    return (
+      this.runtimeWorldTargets?.getGraphHeight() ??
+      this.worldTargets.getGraphHeight()
+    );
   }
 
   private getBlobPower(cells: number): number {
@@ -745,16 +749,21 @@ export class HeightmapModule {
 
   async generate(
     graph: any,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context: EngineRuntimeContext,
   ): Promise<Uint8Array> {
     const shouldTime = context.timing.shouldTime;
     shouldTime && console.time("defineHeightmap");
     const id = context.generationSettings.heightmapTemplateId ?? "";
     const previousRandomSource = this.randomSource;
+    const previousWorldTargets = this.runtimeWorldTargets;
     const previousRandom = Math.random;
 
     try {
       this.randomSource = context.random;
+      this.runtimeWorldTargets = {
+        getGraphWidth: () => Number(context.worldSettings?.graphWidth) || 0,
+        getGraphHeight: () => Number(context.worldSettings?.graphHeight) || 0,
+      };
       Math.random = Alea(context.seed);
       const isTemplate = this.templateTargets.hasTemplate(id);
       const heights = isTemplate
@@ -766,6 +775,7 @@ export class HeightmapModule {
       return heights as Uint8Array;
     } finally {
       this.randomSource = previousRandomSource;
+      this.runtimeWorldTargets = previousWorldTargets;
       Math.random = previousRandom;
     }
   }
@@ -803,7 +813,7 @@ export class HeightmapModule {
   }
 
   fromPrecreated(graph: any, id: string): Promise<Uint8Array> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       // create canvas where 1px corresponds to a cell
       const canvas = this.imageTargets.createCanvas();
       const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
@@ -813,7 +823,6 @@ export class HeightmapModule {
 
       // load heightmap into image and render to canvas
       const img = this.imageTargets.createImage();
-      img.src = `./heightmaps/${id}.png`;
       img.onload = () => {
         if (!ctx) {
           throw new Error("Could not get canvas context");
@@ -827,6 +836,12 @@ export class HeightmapModule {
         img.remove();
         resolve(this.heights);
       };
+      img.onerror = () => {
+        canvas.remove();
+        img.remove();
+        reject(new Error(`Heightmap image failed to load: ${id || "(empty)"}`));
+      };
+      img.src = `./heightmaps/${id}.png`;
     });
   }
 

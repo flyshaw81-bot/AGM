@@ -23,8 +23,8 @@ export function renderDirectWorkbenchRepairQueue(
   } = queueHistoryView;
 
   return `
-          <div class="studio-direct-workbench-directory__queue" data-direct-relationship-queue="true" data-empty-label="${t(language, "队列为空", "Queue is empty")}" data-ready-label="${t(language, "队列已准备应用。", "Queue is ready to apply.")}" data-conflict-label="${t(language, "队列需要复查：存在重复字段或排队后值已变化。", "Queue needs review: duplicate fields or stale source values were detected.")}">
-            <div class="studio-direct-workbench-directory__queue-head">
+          <div class="studio-native-repair__queue studio-direct-workbench-directory__queue" data-direct-relationship-queue="true" data-empty-label="${t(language, "队列为空", "Queue is empty")}" data-ready-label="${t(language, "队列已准备应用。", "Queue is ready to apply.")}" data-conflict-label="${t(language, "队列需要复查：存在重复字段或排队后值已变化。", "Queue needs review: duplicate fields or stale source values were detected.")}">
+            <div class="studio-native-repair__queue-head studio-direct-workbench-directory__queue-head">
               <span>${t(language, "修复队列", "Repair queue")}</span>
               <strong data-direct-relationship-queue-count="true">0</strong>
               <button class="studio-ghost studio-direct-workbench-directory__queue-toggle" data-studio-action="direct-relationship-queue-toggle" type="button">${t(language, "展开", "Details")}</button>

@@ -1,5 +1,6 @@
 import type {
   ProjectCenterState,
+  ProjectDeliveryStatus,
   RecentProjectEntry,
   StudioState,
 } from "../types";
@@ -16,6 +17,12 @@ export {
 export const PROJECT_CENTER_STORAGE_KEY = "agm.projectCenter.recentProjects";
 const PROJECT_CENTER_MAX_RECENT = 6;
 
+export type ProjectCenterUpdateOptions = {
+  saved?: boolean;
+  exportReady?: boolean;
+  deliveryStatus?: ProjectDeliveryStatus;
+};
+
 function createProjectId(name: string, seed: string) {
   return (
     `${name || "untitled"}-${seed || "draft"}`
@@ -25,21 +32,42 @@ function createProjectId(name: string, seed: string) {
   );
 }
 
+function isProjectDeliveryStatus(
+  value: unknown,
+): value is ProjectDeliveryStatus {
+  return value === "unchecked" || value === "needs-repair" || value === "ready";
+}
+
+function normalizeRecentProjectEntry(
+  entry: unknown,
+): RecentProjectEntry | null {
+  if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
+  const item = entry as Partial<RecentProjectEntry>;
+  if (
+    typeof item.id !== "string" ||
+    typeof item.name !== "string" ||
+    typeof item.updatedAt !== "number"
+  ) {
+    return null;
+  }
+  return {
+    ...item,
+    deliveryStatus: isProjectDeliveryStatus(item.deliveryStatus)
+      ? item.deliveryStatus
+      : item.exportReady
+        ? "ready"
+        : "unchecked",
+  } as RecentProjectEntry;
+}
+
 function parseRecentProjectEntries(raw: string | null): RecentProjectEntry[] {
   if (!raw) return [];
   try {
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter((entry): entry is RecentProjectEntry => {
-      if (!entry || typeof entry !== "object" || Array.isArray(entry))
-        return false;
-      const item = entry as Partial<RecentProjectEntry>;
-      return (
-        typeof item.id === "string" &&
-        typeof item.name === "string" &&
-        typeof item.updatedAt === "number"
-      );
-    });
+    return parsed
+      .map(normalizeRecentProjectEntry)
+      .filter((entry): entry is RecentProjectEntry => Boolean(entry));
   } catch (error) {
     console.warn("AGM Studio could not read recent projects.", error);
     return [];
@@ -75,7 +103,7 @@ function persistProjectCenterState(
 
 export function updateProjectCenterState(
   state: StudioState,
-  options: { saved?: boolean; exportReady?: boolean } = {},
+  options: ProjectCenterUpdateOptions = {},
   targets: ProjectCenterTargets = createGlobalProjectCenterTargets(),
 ) {
   const projectSummary = targets.getProjectSummary();
@@ -84,11 +112,16 @@ export function updateProjectCenterState(
     state.document.name,
     state.document.seed || projectSummary.pendingSeed,
   );
-  const status: RecentProjectEntry["status"] = options.exportReady
-    ? "export-ready"
-    : state.document.dirty
-      ? "dirty"
-      : "draft";
+  const deliveryStatus =
+    options.deliveryStatus || (options.exportReady ? "ready" : "unchecked");
+  const status: RecentProjectEntry["status"] =
+    options.exportReady || deliveryStatus === "ready"
+      ? options.exportReady
+        ? "export-ready"
+        : "validated"
+      : state.document.dirty
+        ? "dirty"
+        : "draft";
   const activeProject: RecentProjectEntry = {
     id: activeProjectId,
     name: state.document.name,
@@ -102,6 +135,7 @@ export function updateProjectCenterState(
     updatedAt: now,
     hasLocalSnapshot: projectSummary.hasLocalSnapshot,
     exportReady: Boolean(options.exportReady),
+    deliveryStatus,
   };
 
   state.projectCenter = {

@@ -1,5 +1,4 @@
-import type { PackedGraph } from "../types/PackedGraph";
-import type { ClimateRuntimeContext } from "./climate";
+﻿import type { ClimateRuntimeContext } from "./climate";
 import {
   createRuntimeBurgService,
   type EngineBurgService,
@@ -18,13 +17,12 @@ import {
   type EngineGridSessionService,
 } from "./engine-generation-session-services";
 import {
-  createGlobalGenerationSettings,
   createRuntimeGenerationSettingsStore,
   type EngineGenerationSettings,
   type EngineGenerationSettingsStore,
 } from "./engine-generation-settings";
 import {
-  createGlobalGenerationStatisticsService,
+  createRuntimeGenerationStatisticsService,
   type EngineGenerationStatisticsService,
 } from "./engine-generation-statistics-service";
 import {
@@ -32,7 +30,7 @@ import {
   type EngineGraphSessionModule as EngineGraphSessionService,
 } from "./engine-graph-session";
 import {
-  createGlobalHeraldryService,
+  createRuntimeHeraldryService,
   type EngineHeraldryService,
 } from "./engine-heraldry-service";
 import {
@@ -44,16 +42,16 @@ import {
   type EngineLogService,
 } from "./engine-log-service";
 import {
-  createGlobalMapGraphLifecycleService,
+  createRuntimeMapGraphLifecycleService,
   type EngineMapGraphLifecycleService,
 } from "./engine-map-graph-lifecycle-service";
 import {
-  createGlobalMapPlacementService,
+  createRuntimeMapPlacementService,
   type EngineMapPlacementService,
 } from "./engine-map-placement-service";
 import { createRuntimeMapStore, type EngineMapStore } from "./engine-map-store";
 import {
-  createGlobalNamingService,
+  createRuntimeNamingService,
   type EngineNamingService,
 } from "./engine-naming-service";
 import {
@@ -74,6 +72,7 @@ import {
 } from "./engine-random-service";
 import {
   createGlobalRenderAdapter,
+  createRuntimeRenderAdapter,
   type EngineRenderAdapter,
 } from "./engine-render-adapter";
 import {
@@ -84,7 +83,6 @@ import {
   createGlobalPopulationSettings,
   createGlobalTimingSettings,
   createGlobalUnitSettings,
-  createGlobalWorldSettings,
   createRuntimeWorldSettingsStore,
   type EnginePopulationSettings,
   type EngineTimingSettings,
@@ -104,6 +102,15 @@ import {
   createGlobalWaterFeatureService,
   type EngineWaterFeatureService,
 } from "./engine-water-feature-service";
+import {
+  createBrowserEngineWorldState,
+  type EngineBiomeData,
+  type EngineGrid,
+  type EngineOptions,
+  type EnginePack,
+  type EngineSeed,
+  type EngineWorldState,
+} from "./engine-world-state";
 
 export type { EngineBurgService } from "./engine-burg-service";
 export type { EngineFeedbackService } from "./engine-feedback-service";
@@ -121,23 +128,14 @@ export type { EngineRenderAdapter } from "./engine-render-adapter";
 export type { EngineRouteService } from "./engine-route-service";
 export type { EngineStateService } from "./engine-state-service";
 export type { EngineWaterFeatureService } from "./engine-water-feature-service";
-
-export type EngineBiomeData = {
-  i: number[];
-  name: string[];
-  color: string[];
-  biomesMatrix: Uint8Array[];
-  habitability: number[];
-  iconsDensity: number[];
-  icons: string[][];
-  cost: number[];
-};
+export type { EngineBiomeData, EngineWorldState } from "./engine-world-state";
 
 export type EngineRuntimeContext = {
-  grid: typeof grid;
-  pack: PackedGraph;
-  options: typeof options;
-  seed: typeof seed;
+  worldState?: EngineWorldState;
+  grid: EngineGrid;
+  pack: EnginePack;
+  options: EngineOptions;
+  seed: EngineSeed;
   worldSettings: EngineWorldSettings;
   worldSettingsStore?: EngineWorldSettingsStore;
   generationSettings: EngineGenerationSettings;
@@ -173,71 +171,126 @@ export type EngineRuntimeContext = {
   biomesData: EngineBiomeData;
 };
 
+export type EngineRuntimeServiceOverrides = Partial<
+  Omit<
+    EngineRuntimeContext,
+    | "worldState"
+    | "grid"
+    | "pack"
+    | "options"
+    | "seed"
+    | "worldSettings"
+    | "generationSettings"
+    | "biomesData"
+  >
+>;
+
 export function getEngineWorldDimensions(context: EngineRuntimeContext): {
   graphWidth: number;
   graphHeight: number;
 } {
   return {
-    graphWidth: context.worldSettings.graphWidth ?? globalThis.graphWidth,
-    graphHeight: context.worldSettings.graphHeight ?? globalThis.graphHeight,
+    graphWidth: context.worldSettings.graphWidth ?? 0,
+    graphHeight: context.worldSettings.graphHeight ?? 0,
   };
 }
 
-export function getGlobalEngineRuntimeContext(): EngineRuntimeContext {
-  const feedback = createGlobalFeedbackService();
+export function createEngineRuntimeContext(
+  state: EngineWorldState,
+  services: EngineRuntimeServiceOverrides = {},
+): EngineRuntimeContext {
+  const feedback = services.feedback ?? createGlobalFeedbackService();
   const context = {
-    grid,
-    pack,
-    options,
-    seed,
-    worldSettings: createGlobalWorldSettings(),
+    worldState: state,
+    grid: state.grid,
+    pack: state.pack,
+    options: state.options,
+    seed: state.seed,
+    worldSettings: state.worldSettings,
     worldSettingsStore: undefined as never,
-    generationSettings: createGlobalGenerationSettings(),
+    generationSettings: state.generationSettings,
     generationSettingsStore: undefined as never,
-    generationStatistics: undefined,
-    populationSettings: createGlobalPopulationSettings(),
-    naming: createGlobalNamingService(),
+    generationStatistics: services.generationStatistics,
+    populationSettings:
+      services.populationSettings ?? createGlobalPopulationSettings(),
+    naming: services.naming ?? undefined,
     burgs: undefined as never,
     routes: undefined as never,
     states: undefined as never,
-    units: createGlobalUnitSettings(),
-    heraldry: createGlobalHeraldryService(),
+    units: services.units ?? createGlobalUnitSettings(),
+    heraldry: services.heraldry ?? undefined,
     mapStore: undefined as never,
-    mapGraphLifecycle: undefined,
-    mapPlacement: undefined,
-    waterFeatures: undefined,
+    mapGraphLifecycle: services.mapGraphLifecycle,
+    mapPlacement: services.mapPlacement,
+    waterFeatures: services.waterFeatures,
     seedSession: undefined as never,
     graphSession: undefined as never,
     optionsSession: undefined as never,
     gridSession: undefined as never,
-    sessionLifecycle: createGlobalGenerationSessionLifecycle(),
+    sessionLifecycle:
+      services.sessionLifecycle ?? createGlobalGenerationSessionLifecycle(),
     generationSession: undefined as never,
-    lifecycle: createGlobalLifecycleAdapter(getGlobalEngineRuntimeContext),
-    notes: createRuntimeNoteService(notes),
-    notices: createGlobalNoticeService(),
-    logs: createGlobalLogService(),
+    lifecycle: undefined as never,
+    notes: services.notes ?? createRuntimeNoteService(getBrowserNotes()),
+    notices: services.notices ?? createGlobalNoticeService(),
+    logs: services.logs ?? createGlobalLogService(),
     feedback,
-    random: createGlobalRandomService(),
-    rendering: createGlobalRenderAdapter(),
-    climate: createGlobalClimateContext(),
-    timing: createGlobalTimingSettings(),
-    biomesData,
+    random: services.random ?? createGlobalRandomService(),
+    rendering: services.rendering ?? undefined,
+    climate: services.climate ?? createGlobalClimateContext(),
+    profile: services.profile,
+    timing: services.timing ?? createGlobalTimingSettings(),
+    biomesData: state.biomesData,
   } as EngineRuntimeContext;
-  context.burgs = createRuntimeBurgService(context);
-  context.routes = createRuntimeRouteService(context);
-  context.states = createRuntimeStateService(context);
-  context.mapStore = createRuntimeMapStore(context, () => context);
-  context.mapGraphLifecycle = createGlobalMapGraphLifecycleService();
-  context.mapPlacement = createGlobalMapPlacementService();
-  context.waterFeatures = createGlobalWaterFeatureService();
-  context.worldSettingsStore = createRuntimeWorldSettingsStore(context);
+  context.lifecycle =
+    services.lifecycle ?? createGlobalLifecycleAdapter(() => context);
+  context.naming = services.naming ?? createRuntimeNamingService(context);
+  context.heraldry = services.heraldry ?? createRuntimeHeraldryService(context);
+  context.burgs = services.burgs ?? createRuntimeBurgService(context);
+  context.routes = services.routes ?? createRuntimeRouteService(context);
+  context.states = services.states ?? createRuntimeStateService(context);
+  context.mapStore =
+    services.mapStore ?? createRuntimeMapStore(context, () => context);
+  context.mapGraphLifecycle =
+    services.mapGraphLifecycle ??
+    createRuntimeMapGraphLifecycleService(context);
+  context.mapPlacement =
+    services.mapPlacement ?? createRuntimeMapPlacementService(context);
+  context.waterFeatures =
+    services.waterFeatures ?? createGlobalWaterFeatureService();
+  context.worldSettingsStore =
+    services.worldSettingsStore ?? createRuntimeWorldSettingsStore(context);
   context.generationSettingsStore =
+    services.generationSettingsStore ??
     createRuntimeGenerationSettingsStore(context);
-  context.generationStatistics = createGlobalGenerationStatisticsService();
-  context.seedSession = createRuntimeSeedSession(context);
-  context.graphSession = createRuntimeGraphSession(context);
-  context.gridSession = createRuntimeGridSessionService(context);
-  context.optionsSession = createRuntimeOptionsSession(context);
-  context.generationSession = createRuntimeGenerationSessionAdapter(context);
+  context.generationStatistics =
+    services.generationStatistics ??
+    createRuntimeGenerationStatisticsService(context);
+  context.rendering =
+    services.rendering ??
+    createRuntimeRenderAdapter(context, createGlobalRenderAdapter());
+  context.seedSession =
+    services.seedSession ?? createRuntimeSeedSession(context);
+  context.graphSession =
+    services.graphSession ?? createRuntimeGraphSession(context);
+  context.gridSession =
+    services.gridSession ?? createRuntimeGridSessionService(context);
+  context.optionsSession =
+    services.optionsSession ?? createRuntimeOptionsSession(context);
+  context.generationSession =
+    services.generationSession ??
+    createRuntimeGenerationSessionAdapter(context);
   return context;
+}
+
+export function createBrowserEngineRuntimeContext(): EngineRuntimeContext {
+  return createEngineRuntimeContext(createBrowserEngineWorldState());
+}
+
+function getBrowserNotes() {
+  try {
+    return globalThis.notes ?? [];
+  } catch {
+    return [];
+  }
 }

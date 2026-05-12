@@ -1,32 +1,25 @@
-import { getEngineTopbarActions } from "../bridge/engineActions";
 import type { StudioState } from "../types";
-import {
-  renderTopbarContextControls,
-  renderTopbarUtilityControls,
-  topbarActionButton,
-} from "./shellChrome";
-import { studioThemeLogoUrl, t } from "./shellShared";
-
-const TOPBAR_ACTIONS = ["open", "save", "new", "export"] as const;
+import { renderTopbarUtilityControls } from "./shellChrome";
+import { studioMaterialSymbolIcon, studioThemeLogoUrl, t } from "./shellShared";
 
 export function renderStudioTopbar(state: StudioState) {
-  const topbarActions = getEngineTopbarActions();
   const themeLogo = studioThemeLogoUrl(state.theme);
+  const navigationToggleLabel = state.shell.navigationCollapsed
+    ? t(state.language, "展开导航", "Expand navigation")
+    : t(state.language, "收起导航", "Collapse navigation");
 
   return `
-    <header class="studio-topbar">
+    <header class="studio-topbar studio-native-topbar">
       <div class="studio-topbar__group studio-topbar__group--brand">
-        <a class="studio-brand" href="#" aria-label="AGM Studio — Atlas Generation Matrix" title="AGM Studio — Atlas Generation Matrix">
+        <button class="studio-topbar__native-menu" data-studio-action="toggle-navigation-collapse" aria-label="${navigationToggleLabel}" aria-expanded="${state.shell.navigationCollapsed ? "false" : "true"}" title="${navigationToggleLabel}">
+          ${studioMaterialSymbolIcon("menu_open", "studio-topbar__native-menu-icon studio-material-symbol-icon")}
+        </button>
+        <button class="studio-brand studio-brand--native" data-studio-action="section" data-value="project" aria-label="AGM Studio">
           <img class="studio-brand__logo" src="${themeLogo}" alt="" />
-        </a>
+        </button>
+        <span class="studio-topbar__native-name">AGM 工作室</span>
       </div>
-      ${renderTopbarContextControls(state)}
       <div class="studio-topbar__group studio-topbar__group--actions">
-        <div class="studio-topbar__command-group" aria-label="${t(state.language, "文件与生成命令", "File and generation commands")}">
-          ${TOPBAR_ACTIONS.map((action) =>
-            topbarActionButton(action, topbarActions[action], state.language),
-          ).join("")}
-        </div>
         ${renderTopbarUtilityControls(state)}
       </div>
     </header>

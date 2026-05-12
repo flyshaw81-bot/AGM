@@ -6,7 +6,6 @@ import type { StudioLanguage, StudioState } from "../types";
 import { renderDirectStateDetailActions } from "./directStatesWorkbenchDetailActions";
 import { renderDirectStateDetailContent } from "./directStatesWorkbenchDetailContent";
 import { getDirectWorkbenchEditStatus } from "./directWorkbenchShared";
-import { escapeHtml, t } from "./shellShared";
 
 type NativeStateDetailOptions = {
   cultureOptions: EngineEntitySummaryItem[];
@@ -31,21 +30,16 @@ export function renderNativeStateDetail({
     ),
   );
 
-  return `<div class="studio-direct-states__detail">
-          <div class="studio-state-inspector__hero" style="--state-color: ${escapeHtml(selectedColor)}">
-            <span class="studio-state-inspector__color-ring"></span>
-            <div>
-              <div class="studio-panel__eyebrow">${t(language, "当前选中", "Selected")}</div>
-              <h3 class="studio-panel__title">${selectedState ? escapeHtml(selectedState.fullName || selectedState.name) : "-"}</h3>
-            </div>
+  return `<div class="studio-native-state-detail studio-direct-states__detail" data-native-state-detail="true">
+          <div class="studio-native-state-detail__scroll">
+            ${renderDirectStateDetailContent({
+              cultureOptions,
+              entitySummary,
+              language,
+              selectedColor,
+              selectedState,
+            })}
           </div>
-          ${renderDirectStateDetailContent({
-            cultureOptions,
-            entitySummary,
-            language,
-            selectedColor,
-            selectedState,
-          })}
           ${renderDirectStateDetailActions({
             language,
             selectedState,

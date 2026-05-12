@@ -1,4 +1,4 @@
-import type { EditorAction } from "../bridge/engineActionTypes";
+﻿import type { EditorAction } from "../bridge/engineActionTypes";
 import type { StudioSection, StudioState } from "../types";
 import { bindBiomeInsightEvents } from "./biomeInsightEvents";
 import { bindProjectWorkspaceEvents } from "./projectWorkspaceEvents";
@@ -11,6 +11,67 @@ import { bindNumberInput } from "./shellEventDom";
 import type { StudioShellEventHandlers } from "./shellEventTypes";
 import { bindActionClick, bindFileInput } from "./studioEventBinding";
 
+function closestElement(
+  target: EventTarget | null,
+  selector: string,
+): Element | null {
+  const maybeElement = target as {
+    closest?: (selector: string) => Element | null;
+  } | null;
+  if (!maybeElement?.closest) return null;
+  try {
+    return maybeElement.closest(selector);
+  } catch {
+    return null;
+  }
+}
+
+const NATIVE_EDITOR_DRAWER_SAFE_CLICK_TARGETS = [
+  ".studio-native-drawer",
+  ".studio-native-v8-info-panel",
+  ".studio-native-iconbar",
+  ".studio-native-topbar",
+  ".studio-floating-toolbar",
+  ".studio-native-layerbar",
+  ".studio-native-v8-bottom",
+  ".studio-map-zoom",
+  ".studio-native-biome-popover",
+] as const;
+
+export function shouldDismissNativeEditorDrawerClick(
+  state: Pick<StudioState, "section">,
+  target: EventTarget | null,
+) {
+  if (state.section !== "editors") return false;
+  if (!closestElement(target, ".studio-native-app")) return false;
+  if (closestElement(target, ".studio-native-app--v8")) return false;
+  if (
+    NATIVE_EDITOR_DRAWER_SAFE_CLICK_TARGETS.some((selector) =>
+      closestElement(target, selector),
+    )
+  )
+    return false;
+  return true;
+}
+
+function bindNativeEditorOutsideDismiss(
+  state: StudioState,
+  onSectionChange: (section: StudioSection) => void,
+) {
+  const app = document.getElementById("studioApp");
+  app?.addEventListener(
+    "click",
+    (event) => {
+      if (shouldDismissNativeEditorDrawerClick(state, event.target)) {
+        event.preventDefault();
+        event.stopPropagation();
+        onSectionChange("canvas");
+      }
+    },
+    true,
+  );
+}
+
 export function bindShellCoreEvents(
   state: StudioState,
   {
@@ -18,6 +79,7 @@ export function bindShellCoreEvents(
     onExportSettingChange,
     onTopbarAction,
     onLayerAction,
+    onLayerPin,
     onDataAction,
     onProjectAction,
     onAgmFileImport,
@@ -27,6 +89,8 @@ export function bindShellCoreEvents(
     onBiomeCoverageChange,
   }: StudioShellEventHandlers,
 ) {
+  bindNativeEditorOutsideDismiss(state, onSectionChange);
+
   bindActionClick("section", (button) =>
     onSectionChange(button.dataset.value as StudioSection),
   );
@@ -60,19 +124,19 @@ export function bindShellCoreEvents(
     onLayerAction(button.dataset.value as keyof typeof LAYER_CONTROL_LABELS),
   );
 
+  bindActionClick("layer-pin", (button) =>
+    onLayerPin(button.dataset.value ?? ""),
+  );
+
   bindActionClick("data", (button) =>
     onDataAction(
       button.dataset.value as
-        | "quick-load"
-        | "save-storage"
-        | "save-machine"
-        | "save-dropbox"
-        | "connect-dropbox"
-        | "load-dropbox"
-        | "share-dropbox"
-        | "new-map"
+        | "load-browser-snapshot"
+        | "save-browser-snapshot"
+        | "download-project"
+        | "create-generated-world"
         | "open-file"
-        | "load-url",
+        | "open-url-source",
     ),
   );
 

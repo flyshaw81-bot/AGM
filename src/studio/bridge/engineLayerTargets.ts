@@ -1,3 +1,7 @@
+import {
+  createGlobalRenderAdapter,
+  type EngineRenderAdapter,
+} from "../../modules/engine-render-adapter";
 import type { LayerAction } from "./engineActionTypes";
 
 type EngineLayerWindow = Window &
@@ -43,15 +47,14 @@ function getDocument(): Document | undefined {
   }
 }
 
-export function createGlobalLayerRuntimeAdapter(): EngineLayerRuntimeAdapter {
+export function createGlobalLayerRuntimeAdapter(
+  rendering: Pick<
+    EngineRenderAdapter,
+    "isLayerOn"
+  > = createGlobalRenderAdapter(),
+): EngineLayerRuntimeAdapter {
   return {
-    isLayerOn: (action) => {
-      try {
-        return getLayerWindow().layerIsOn?.(action) === true;
-      } catch {
-        return false;
-      }
-    },
+    isLayerOn: rendering.isLayerOn,
     getHandler: (action) => {
       try {
         const handler = getLayerWindow()[action];

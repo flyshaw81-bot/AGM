@@ -8,7 +8,7 @@ export const workspaceLayoutNavigationStyles = `    .studio-body {
       position: relative;
       z-index: 2;
       border-right: 1px solid var(--studio-accent-18);
-      background: color-mix(in srgb, var(--agm-surface-dark) 92%, #000000);
+      background: color-mix(in srgb, var(--agm-surface-dark) 92%, #08111a);
       overflow: auto;
       box-shadow: none;
       scrollbar-width: thin;
@@ -19,7 +19,7 @@ export const workspaceLayoutNavigationStyles = `    .studio-body {
       border-right: 0;
       border-left: 1px solid var(--studio-accent-16);
       padding: 14px;
-      background: color-mix(in srgb, var(--agm-surface-dark) 94%, #000000);
+      background: color-mix(in srgb, var(--agm-surface-dark) 94%, #08111a);
     }
 
     .studio-nav-collapse-toggle {
@@ -31,7 +31,7 @@ export const workspaceLayoutNavigationStyles = `    .studio-body {
       margin: 12px 14px 2px;
       border: 1px solid var(--studio-accent-18);
       border-radius: 7px;
-      background: color-mix(in srgb, var(--agm-surface-dark-2) 88%, #000000);
+      background: color-mix(in srgb, var(--agm-surface-dark-2) 88%, #08111a);
       color: var(--studio-accent-text);
       font: inherit;
       font-size: 11px;
@@ -45,7 +45,7 @@ export const workspaceLayoutNavigationStyles = `    .studio-body {
     .studio-nav-collapse-toggle:focus-visible {
       border-color: var(--studio-accent-34);
       background: var(--studio-accent-10);
-      color: #fff8ec;
+      color: #e9eef1;
       outline: none;
     }
 
@@ -91,7 +91,7 @@ export const workspaceLayoutNavigationStyles = `    .studio-body {
       padding: 8px 10px;
       border-radius: 7px;
       text-align: left;
-      background: color-mix(in srgb, var(--agm-surface-dark-2) 86%, #000000);
+      background: color-mix(in srgb, var(--agm-surface-dark-2) 86%, #08111a);
     }
 
     .studio-nav__item.is-active::before {

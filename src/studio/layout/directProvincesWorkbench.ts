@@ -16,12 +16,22 @@ import {
 } from "./directProvincesWorkbenchModel";
 import { normalizeWorkbenchQuery } from "./directWorkbenchFiltering";
 import { limitDirectWorkbenchRows } from "./directWorkbenchShared";
-import {
-  renderDirectWorkbenchEntityRow,
-  renderDirectWorkbenchHeader,
-  renderDirectWorkbenchSearchControls,
-} from "./directWorkbenchViewParts";
+import { renderDirectWorkbenchToolbar } from "./directWorkbenchToolbar";
+import { renderDirectWorkbenchEntityRow } from "./directWorkbenchViewParts";
 import { t } from "./shellShared";
+
+function renderNativeProvinceListHeader(
+  language: StudioLanguage,
+  activeCount: number,
+  visibleCount: number,
+) {
+  return `<div class="studio-native-identity__list-title">
+    <div>
+      <h3>${t(language, "省份列表", "Province list")}</h3>
+    </div>
+    <strong>${visibleCount}/${activeCount}</strong>
+  </div>`;
+}
 
 export function renderDirectProvincesWorkbench(
   provinces: EngineProvinceSummaryItem[],
@@ -62,70 +72,58 @@ export function renderDirectProvincesWorkbench(
       value: "selected-state",
       label: t(language, "当前国家", "Selected state"),
     },
-    { value: "has-burg", label: t(language, "Has burg", "Has burg") },
+    { value: "has-burg", label: t(language, "有关联城镇", "Has burg") },
   ];
+  const visibleProvinces = limitDirectWorkbenchRows(filteredProvinces);
 
   return `
-    <section id="studioDirectProvincesWorkbench" class="studio-panel studio-direct-editor studio-direct-province-editor" data-direct-workbench="provinces">
-      ${renderDirectWorkbenchHeader({
-        eyebrow: t(language, "AGM editor", "AGM editor"),
-        title: t(language, "Provinces Workbench", "Provinces Workbench"),
-        badge: t(language, "直接编辑", "Direct edit"),
-      })}
-      <p class="studio-panel__text">${t(language, "Province editing moves into the AGM native panel: search provinces, filter by selected state, focus the map, and maintain name, type, state, linked burg, and color directly.", "Province editing moves into the AGM native panel: search provinces, filter by selected state, focus the map, and maintain name, type, state, linked burg, and color directly.")}</p>
-      ${renderDirectWorkbenchSearchControls({
+    <section id="studioDirectProvincesWorkbench" class="studio-native-identity studio-native-identity--provinces studio-direct-editor" data-native-place-drawer="provinces" data-direct-workbench="provinces">
+      ${renderDirectWorkbenchToolbar({
+        filterId: "studioProvinceFilterSelect",
+        filterOptions,
+        filterValue: directEditor.provinceFilterMode,
+        language,
         searchId: "studioProvinceSearchInput",
-        searchLabel: t(language, "搜索省份", "Search provinces"),
         searchPlaceholder: t(
           language,
-          "输入名称、ID、国家或城镇",
-          "Name, ID, state or burg",
+          "搜索省份、ID、国家或城镇",
+          "Search province, ID, state, or burg",
         ),
         searchValue: directEditor.provinceSearchQuery,
-        selects: [
-          {
-            id: "studioProvinceFilterSelect",
-            label: t(language, "Filter", "Filter"),
-            options: filterOptions,
-            value: directEditor.provinceFilterMode,
-          },
-        ],
-        summary: {
-          label: t(language, "当前列表", "Current list"),
-          value: filteredProvinces.length,
-        },
       })}
-      <div class="studio-direct-states">
-        <div class="studio-direct-states__list">
+      <aside class="studio-native-identity__list">
+        ${renderNativeProvinceListHeader(language, activeProvinces.length, filteredProvinces.length)}
+        <div class="studio-native-identity__rows">
           ${
-            limitDirectWorkbenchRows(filteredProvinces)
+            visibleProvinces
               .map((province) =>
                 renderDirectWorkbenchEntityRow({
                   action: "direct-province-select",
                   color: province.color || "#8fbf7a",
                   id: province.id,
                   idDataAttribute: "province-id",
-                  meta: `${getStateName(province.state)} · ${province.type || t(language, "省份", "Province")}`,
+                  meta: `${getStateName(province.state)} / ${province.type || t(language, "省份", "Province")}`,
                   metric: `#${province.id}`,
                   selected: province.id === selectedProvince?.id,
                   title: province.name,
                 }),
               )
               .join("") ||
-            `<div class="studio-panel__text">${t(language, "No matching provinces", "No matching provinces")}</div>`
+            `<div class="studio-native-identity__empty">${t(language, "没有匹配的省份", "No matching provinces")}</div>`
           }
         </div>
-        ${renderDirectProvinceDetail({
-          burgOptions,
-          getBurgName,
-          getStateName,
-          language,
-          directEditor,
-          selectedColor,
-          selectedProvince,
-          stateOptions,
-        })}
-      </div>
+      </aside>
+      <div class="studio-native-identity__divider"></div>
+      ${renderDirectProvinceDetail({
+        burgOptions,
+        getBurgName,
+        getStateName,
+        language,
+        directEditor,
+        selectedColor,
+        selectedProvince,
+        stateOptions,
+      })}
     </section>
   `;
 }

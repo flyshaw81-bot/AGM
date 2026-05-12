@@ -1,3 +1,4 @@
+import { getBrowserRuntimeValue } from "./engine-browser-runtime-globals";
 import {
   createGlobalGenerationStatisticsService,
   type EngineGenerationStatisticsService,
@@ -34,8 +35,14 @@ export type EngineMapCoordinateSettings = {
 };
 
 export type EngineLifecycleTargets = {
-  addLakesInDeepDepressions: (lakeElevationLimit: number) => void;
-  openNearSeaLakes: (heightmapTemplateId: string | undefined) => void;
+  addLakesInDeepDepressions: (
+    context: EngineRuntimeContext,
+    lakeElevationLimit: number,
+  ) => void;
+  openNearSeaLakes: (
+    context: EngineRuntimeContext,
+    heightmapTemplateId: string | undefined,
+  ) => void;
   drawOceanLayers: (context: EngineRuntimeContext) => void;
   defineMapSize: (heightmapTemplateId: string | undefined) => void;
   calculateMapCoordinates: (settings: EngineMapCoordinateSettings) => void;
@@ -76,6 +83,118 @@ export function createLifecycleSettingsSnapshot(
   };
 }
 
+const lifecycleRuntimeGlobalKeys = [
+  "grid",
+  "pack",
+  "options",
+  "biomesData",
+  "seed",
+  "graphWidth",
+  "graphHeight",
+  "mapCoordinates",
+] as const;
+
+type LifecycleRuntimeGlobalKey = (typeof lifecycleRuntimeGlobalKeys)[number];
+
+type LifecycleRuntimeGlobalSnapshot = {
+  descriptor: PropertyDescriptor | undefined;
+  key: LifecycleRuntimeGlobalKey;
+};
+
+function getGlobalValue<T = unknown>(
+  key: LifecycleRuntimeGlobalKey,
+): T | undefined {
+  try {
+    return (globalThis as Record<string, unknown>)[key] as T | undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function setGlobalValue(key: LifecycleRuntimeGlobalKey, value: unknown): void {
+  try {
+    (globalThis as Record<string, unknown>)[key] = value;
+  } catch {
+    // Compatibility globals can be read-only in tests or embedding contexts.
+  }
+}
+
+function snapshotLifecycleRuntimeGlobals(): LifecycleRuntimeGlobalSnapshot[] {
+  return lifecycleRuntimeGlobalKeys.map((key) => ({
+    descriptor: Object.getOwnPropertyDescriptor(globalThis, key),
+    key,
+  }));
+}
+
+function restoreLifecycleRuntimeGlobals(
+  snapshots: LifecycleRuntimeGlobalSnapshot[],
+): void {
+  for (const { descriptor, key } of snapshots) {
+    try {
+      if (descriptor) {
+        Object.defineProperty(globalThis, key, descriptor);
+      } else {
+        delete (globalThis as Record<string, unknown>)[key];
+      }
+    } catch {
+      if (!descriptor) setGlobalValue(key, undefined);
+    }
+  }
+}
+
+function readContextWorldSettings(context: EngineRuntimeContext) {
+  return context.worldSettingsStore?.get() ?? context.worldSettings;
+}
+
+function refreshContextWorldSettings(context: EngineRuntimeContext): void {
+  const mapCoordinatesValue = getBrowserRuntimeValue("mapCoordinates");
+  const graphWidthValue = getGlobalValue<number>("graphWidth");
+  const graphHeightValue = getGlobalValue<number>("graphHeight");
+  const patch: Partial<EngineRuntimeContext["worldSettings"]> = {};
+
+  if (mapCoordinatesValue) patch.mapCoordinates = mapCoordinatesValue;
+  if (typeof graphWidthValue === "number") patch.graphWidth = graphWidthValue;
+  if (typeof graphHeightValue === "number")
+    patch.graphHeight = graphHeightValue;
+
+  if (Object.keys(patch).length) {
+    context.worldSettings = context.worldSettingsStore?.patch?.(patch) ?? {
+      ...context.worldSettings,
+      ...patch,
+    };
+  }
+  if (context.climate && mapCoordinatesValue) {
+    context.climate.coordinates = mapCoordinatesValue as NonNullable<
+      EngineRuntimeContext["climate"]
+    >["coordinates"];
+    context.climate.graphWidth = context.worldSettings.graphWidth ?? 0;
+    context.climate.graphHeight = context.worldSettings.graphHeight ?? 0;
+  }
+}
+
+function withLifecycleRuntimeGlobals(
+  context: EngineRuntimeContext,
+  callback: () => void,
+): void {
+  const worldSettings = readContextWorldSettings(context);
+  const snapshots = snapshotLifecycleRuntimeGlobals();
+  setGlobalValue("grid", context.grid);
+  setGlobalValue("pack", context.pack);
+  setGlobalValue("options", context.options);
+  setGlobalValue("biomesData", context.biomesData);
+  setGlobalValue("seed", context.seed);
+  setGlobalValue("graphWidth", worldSettings.graphWidth);
+  setGlobalValue("graphHeight", worldSettings.graphHeight);
+  setGlobalValue("mapCoordinates", worldSettings.mapCoordinates);
+
+  try {
+    callback();
+    refreshContextWorldSettings(context);
+  } finally {
+    restoreLifecycleRuntimeGlobals(snapshots);
+  }
+}
+
 export function createGlobalLifecycleTargets(): EngineLifecycleTargets {
   return createLifecycleTargets({
     generationStatistics: createGlobalGenerationStatisticsService(),
@@ -89,11 +208,14 @@ export function createLifecycleTargets(
   services: EngineLifecycleRuntimeServices,
 ): EngineLifecycleTargets {
   return {
-    addLakesInDeepDepressions: (lakeElevationLimit) => {
-      services.waterFeatures.addLakesInDeepDepressions(lakeElevationLimit);
+    addLakesInDeepDepressions: (context, lakeElevationLimit) => {
+      services.waterFeatures.addLakesInDeepDepressions(
+        context,
+        lakeElevationLimit,
+      );
     },
-    openNearSeaLakes: (heightmapTemplateId) => {
-      services.waterFeatures.openNearSeaLakes(heightmapTemplateId);
+    openNearSeaLakes: (context, heightmapTemplateId) => {
+      services.waterFeatures.openNearSeaLakes(context, heightmapTemplateId);
     },
     drawOceanLayers: (context) => {
       services.waterFeatures.drawOceanLayers(context);
@@ -125,18 +247,22 @@ export function createLifecycleAdapter(
       const settings = createLifecycleSettingsSnapshot(context);
       if (context.waterFeatures) {
         context.waterFeatures.addLakesInDeepDepressions(
+          context,
           settings.lakeElevationLimit,
         );
       } else {
-        targets.addLakesInDeepDepressions(settings.lakeElevationLimit);
+        targets.addLakesInDeepDepressions(context, settings.lakeElevationLimit);
       }
     },
     openNearSeaLakes: (context = getCurrentContext()) => {
       const settings = createLifecycleSettingsSnapshot(context);
       if (context.waterFeatures) {
-        context.waterFeatures.openNearSeaLakes(settings.heightmapTemplateId);
+        context.waterFeatures.openNearSeaLakes(
+          context,
+          settings.heightmapTemplateId,
+        );
       } else {
-        targets.openNearSeaLakes(settings.heightmapTemplateId);
+        targets.openNearSeaLakes(context, settings.heightmapTemplateId);
       }
     },
     drawOceanLayers: (context = getCurrentContext()) => {
@@ -148,11 +274,14 @@ export function createLifecycleAdapter(
     },
     defineMapSize: (context = getCurrentContext()) => {
       const settings = createLifecycleSettingsSnapshot(context);
-      if (context.mapPlacement) {
-        context.mapPlacement.defineMapSize(settings.heightmapTemplateId);
-      } else {
-        targets.defineMapSize(settings.heightmapTemplateId);
-      }
+      withLifecycleRuntimeGlobals(context, () => {
+        if (context.mapPlacement) {
+          context.mapPlacement.defineMapSize(settings.heightmapTemplateId);
+        } else {
+          targets.defineMapSize(settings.heightmapTemplateId);
+        }
+      });
+      context.worldSettingsStore?.refresh?.();
     },
     calculateMapCoordinates: (context = getCurrentContext()) => {
       const settings = createLifecycleSettingsSnapshot(context);
@@ -161,35 +290,43 @@ export function createLifecycleAdapter(
         latitudePercent: settings.latitudePercent,
         longitudePercent: settings.longitudePercent,
       };
-      if (context.mapPlacement) {
-        context.mapPlacement.calculateMapCoordinates(mapCoordinates);
-      } else {
-        targets.calculateMapCoordinates(mapCoordinates);
-      }
+      withLifecycleRuntimeGlobals(context, () => {
+        if (context.mapPlacement) {
+          context.mapPlacement.calculateMapCoordinates(mapCoordinates);
+        } else {
+          targets.calculateMapCoordinates(mapCoordinates);
+        }
+      });
     },
     rebuildGraph: (context = getCurrentContext()) => {
-      if (context.mapGraphLifecycle) {
-        context.mapGraphLifecycle.rebuildGraph();
-      } else {
-        targets.rebuildGraph();
-      }
+      withLifecycleRuntimeGlobals(context, () => {
+        if (context.mapGraphLifecycle) {
+          context.mapGraphLifecycle.rebuildGraph();
+        } else {
+          targets.rebuildGraph();
+        }
+      });
     },
     createDefaultRuler: (context = getCurrentContext()) => {
-      if (context.mapGraphLifecycle) {
-        context.mapGraphLifecycle.createDefaultRuler();
-      } else {
-        targets.createDefaultRuler();
-      }
+      withLifecycleRuntimeGlobals(context, () => {
+        if (context.mapGraphLifecycle) {
+          context.mapGraphLifecycle.createDefaultRuler();
+        } else {
+          targets.createDefaultRuler();
+        }
+      });
     },
     showStatistics: (context = getCurrentContext()) => {
       const settings = createLifecycleSettingsSnapshot(context);
-      if (context.generationStatistics) {
-        context.generationStatistics.showStatistics(
-          settings.heightmapTemplateId,
-        );
-      } else {
-        targets.showStatistics(settings.heightmapTemplateId);
-      }
+      withLifecycleRuntimeGlobals(context, () => {
+        if (context.generationStatistics) {
+          context.generationStatistics.showStatistics(
+            settings.heightmapTemplateId,
+          );
+        } else {
+          targets.showStatistics(settings.heightmapTemplateId);
+        }
+      });
     },
   };
 }

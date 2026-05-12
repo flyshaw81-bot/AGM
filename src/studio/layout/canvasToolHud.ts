@@ -28,21 +28,16 @@ export function renderCanvasToolHud(
   viewport: StudioState["viewport"],
   language: StudioLanguage,
 ) {
-  const item = CANVAS_TOOL_LABELS[language][viewport.canvasTool];
-  const selection = viewport.selectedCanvasEntity;
+  if (!isPaintTool(viewport.canvasTool)) return "";
   const paintPreview = viewport.paintPreview;
   const latestEdit = viewport.canvasEditHistory[0];
   const canApply = paintPreview && paintPreview.tool === viewport.canvasTool;
+  if (!canApply && (!latestEdit || latestEdit.undone)) return "";
+  const item = CANVAS_TOOL_LABELS[language][viewport.canvasTool];
   const details =
-    viewport.canvasTool === "pan"
-      ? `${t(language, "偏移", "Offset")} ${Math.round(viewport.panX)}, ${Math.round(viewport.panY)}`
-      : paintPreview && paintPreview.tool === viewport.canvasTool
-        ? `${t(language, "绘制", "Painting")} ${paintPreview.label}`
-        : selection
-          ? `${t(language, "已选择", "Selected")} ${selection.label}`
-          : item.hint;
-  const actions = isPaintTool(viewport.canvasTool)
-    ? `<div class="studio-canvas-tool-hud__actions"><button data-studio-action="canvas-edit-undo"${latestEdit && !latestEdit.undone ? "" : " disabled"}>${t(language, "撤销", "Undo")}</button></div>`
-    : "";
-  return `<div class="studio-canvas-tool-hud" data-canvas-tool-hud="true" data-active-tool="${viewport.canvasTool}" data-pan-x="${Math.round(viewport.panX)}" data-pan-y="${Math.round(viewport.panY)}" data-selected-canvas-entity="${selection ? `${selection.targetType}:${selection.targetId}` : ""}" data-preview-cell="${canApply ? String(paintPreview.cellId) : ""}" data-edit-count="${viewport.canvasEditHistory.length}" data-latest-edit-cell="${latestEdit ? String(latestEdit.cellId) : ""}" data-latest-edit-after-height="${latestEdit?.afterHeight ?? ""}"><strong>${escapeHtml(item.label)}</strong><span>${escapeHtml(details)}</span>${actions}</div>`;
+    canApply && paintPreview
+      ? `${t(language, "绘制", "Painting")} ${paintPreview.label}`
+      : item.hint;
+  const actions = `<div class="studio-canvas-tool-hud__actions"><button data-studio-action="canvas-edit-undo"${latestEdit && !latestEdit.undone ? "" : " disabled"}>${t(language, "撤销", "Undo")}</button></div>`;
+  return `<div class="studio-canvas-tool-hud" data-canvas-tool-hud="true" data-active-tool="${viewport.canvasTool}" data-pan-x="${Math.round(viewport.panX)}" data-pan-y="${Math.round(viewport.panY)}" data-preview-cell="${canApply && paintPreview ? String(paintPreview.cellId) : ""}" data-edit-count="${viewport.canvasEditHistory.length}" data-latest-edit-cell="${latestEdit ? String(latestEdit.cellId) : ""}" data-latest-edit-after-height="${latestEdit?.afterHeight ?? ""}"><strong>${escapeHtml(item.label)}</strong><span>${escapeHtml(details)}</span>${actions}</div>`;
 }

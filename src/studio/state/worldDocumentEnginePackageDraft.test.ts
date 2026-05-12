@@ -114,38 +114,25 @@ describe("exportEnginePackageBundle", () => {
   });
 
   it("composes global package targets from injected file IO targets", async () => {
-    class FakeZip implements EnginePackageZipInstance {
-      file() {}
-
-      async generateAsync() {
-        return new Blob(["zip"]);
-      }
-    }
     const link = {
       href: "",
       download: "",
       click: vi.fn(),
       remove: vi.fn(),
     };
-    const getJsZip = vi
-      .fn()
-      .mockReturnValueOnce(undefined)
-      .mockReturnValueOnce(FakeZip);
     const fileIoTargets = {
       createObjectUrl: vi.fn(() => "blob:agm"),
       revokeObjectUrl: vi.fn(),
       createDownloadLink: vi.fn(() => link),
       appendToBody: vi.fn(),
-      getJsZip,
-      loadJsZipScript: vi.fn(async () => undefined),
     };
 
     const targets = createGlobalEnginePackageBundleTargets({ fileIoTargets });
 
-    await expect(targets.loadZip()).resolves.toBe(FakeZip);
+    const ZipCtor = await targets.loadZip();
+    expect(ZipCtor).toBeDefined();
     targets.downloadBlob("package.zip", new Blob(["zip"]));
 
-    expect(fileIoTargets.loadJsZipScript).toHaveBeenCalledWith();
     expect(fileIoTargets.createObjectUrl).toHaveBeenCalledWith(
       expect.any(Blob),
     );

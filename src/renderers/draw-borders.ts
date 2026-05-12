@@ -1,3 +1,6 @@
+import type { EngineRuntimeContext } from "../modules/engine-runtime-context";
+import { createBrowserRendererContext } from "./renderer-runtime-context";
+
 declare global {
   var drawBorders: () => void;
 }
@@ -10,9 +13,9 @@ const getWindow = (): (Window & typeof globalThis) | undefined => {
   }
 };
 
-const bordersRenderer = () => {
-  TIME && console.time("drawBorders");
-  const { cells, vertices } = pack;
+export const bordersRenderer = (context: EngineRuntimeContext) => {
+  context.timing.shouldTime && console.time("drawBorders");
+  const { cells, vertices } = context.pack;
 
   const statePath: string[] = [];
   const provincePath: string[] = [];
@@ -141,7 +144,7 @@ const bordersRenderer = () => {
     checkVertex,
     addToChecked,
   }: {
-    vertices: typeof pack.vertices;
+    vertices: EngineRuntimeContext["pack"]["vertices"];
     startingVertex: number;
     checkCell: (cellId: number) => boolean;
     checkVertex: (vertex: number) => boolean;
@@ -183,8 +186,10 @@ const bordersRenderer = () => {
     return chain;
   }
 
-  TIME && console.timeEnd("drawBorders");
+  context.timing.shouldTime && console.timeEnd("drawBorders");
 };
 
 const runtimeWindow = getWindow();
-if (runtimeWindow) runtimeWindow.drawBorders = bordersRenderer;
+if (runtimeWindow)
+  runtimeWindow.drawBorders = () =>
+    bordersRenderer(createBrowserRendererContext());

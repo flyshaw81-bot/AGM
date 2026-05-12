@@ -14,6 +14,7 @@ describe("createStudioEngineCommandTargets", () => {
     const applyStylePreset = vi.fn();
     const setExportSetting = vi.fn();
     const runTopbarAction = vi.fn(async () => undefined);
+    const setPendingCanvasSize = vi.fn();
     const markDocumentClean = vi.fn();
     const applyGenerationProfileOverrides = vi.fn();
     const targets = createStudioEngineCommandTargets(
@@ -33,6 +34,7 @@ describe("createStudioEngineCommandTargets", () => {
       },
       {
         runTopbarAction,
+        setPendingCanvasSize,
         toggleLayer: vi.fn(),
         runDataAction: vi.fn(async () => undefined),
         runLayersPresetAction: vi.fn(),
@@ -61,12 +63,14 @@ describe("createStudioEngineCommandTargets", () => {
     targets.applyStylePreset("pencil");
     targets.setExportSetting("png-resolution", 2);
     await targets.runTopbarAction("save");
+    targets.setPendingCanvasSize(1440, 900);
     targets.markDocumentClean();
     targets.applyGenerationProfileOverrides({} as never);
 
     expect(applyStylePreset).toHaveBeenCalledWith("pencil");
     expect(setExportSetting).toHaveBeenCalledWith("png-resolution", 2);
     expect(runTopbarAction).toHaveBeenCalledWith("save");
+    expect(setPendingCanvasSize).toHaveBeenCalledWith(1440, 900);
     expect(markDocumentClean).toHaveBeenCalledWith();
     expect(applyGenerationProfileOverrides).toHaveBeenCalledWith({});
   });

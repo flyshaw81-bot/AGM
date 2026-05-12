@@ -46,6 +46,7 @@ function createState(): StudioState {
           updatedAt: 10,
           hasLocalSnapshot: false,
           exportReady: false,
+          deliveryStatus: "unchecked",
         },
       ],
     },
@@ -77,6 +78,7 @@ describe("projectCenter", () => {
         id: "northwatch-42",
         name: "Northwatch",
         updatedAt: 10,
+        deliveryStatus: "needs-repair",
       },
       {
         id: 1,
@@ -94,6 +96,7 @@ describe("projectCenter", () => {
         id: "northwatch-42",
         name: "Northwatch",
         updatedAt: 10,
+        deliveryStatus: "needs-repair",
       },
     ]);
     expect(targets.getStorageItem).toHaveBeenCalledWith(
@@ -119,10 +122,43 @@ describe("projectCenter", () => {
       status: "export-ready",
       hasLocalSnapshot: true,
       exportReady: true,
+      deliveryStatus: "ready",
     });
     expect(targets.setStorageItem).toHaveBeenCalledWith(
       PROJECT_CENTER_STORAGE_KEY,
       JSON.stringify(state.projectCenter.recentProjects),
     );
+  });
+
+  it("keeps relationship repair delivery status on recent project entries", () => {
+    const state = createState();
+    const targets = createTargets();
+
+    updateProjectCenterState(
+      state,
+      { exportReady: false, deliveryStatus: "needs-repair" },
+      targets,
+    );
+
+    expect(state.projectCenter.recentProjects[0]).toMatchObject({
+      id: "northwatch-42",
+      status: "draft",
+      exportReady: false,
+      deliveryStatus: "needs-repair",
+    });
+  });
+
+  it("marks a project validated when relationship repair is ready before export", () => {
+    const state = createState();
+    const targets = createTargets();
+
+    updateProjectCenterState(state, { deliveryStatus: "ready" }, targets);
+
+    expect(state.projectCenter.recentProjects[0]).toMatchObject({
+      id: "northwatch-42",
+      status: "validated",
+      exportReady: false,
+      deliveryStatus: "ready",
+    });
   });
 });

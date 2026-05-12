@@ -12,7 +12,6 @@ import {
   createGlobalEngineHostDialogDomAdapter,
   createGlobalEngineHostDomAdapter,
   createGlobalEngineHostTargets,
-  createJQueryEngineHostDialogAdapter,
   createStudioEngineHostDialogAdapter,
   type EngineHostTargets,
 } from "./engineHostTargets";
@@ -167,21 +166,7 @@ describe("engine host", () => {
     expect(targets.queryDialogs()).toEqual([dialog]);
   });
 
-  it("keeps old dialog wrapper queries inside the default dialog adapter", () => {
-    const { element: dialog } = createElement("dialog");
-    const domAdapter = {
-      querySelectorAll: vi.fn(() => [dialog]),
-    };
-
-    const adapter = createJQueryEngineHostDialogAdapter(domAdapter);
-
-    expect(adapter.queryDialogs()).toEqual([dialog]);
-    expect(domAdapter.querySelectorAll).toHaveBeenCalledWith(
-      "#dialogs > .ui-dialog",
-    );
-  });
-
-  it("queries Studio-owned engine dialogs without jQuery UI selectors", () => {
+  it("queries Studio-owned engine dialogs without legacy wrapper selectors", () => {
     const { element: dialog } = createElement("dialog");
     const domAdapter = {
       querySelectorAll: vi.fn(() => [dialog]),
@@ -217,10 +202,12 @@ describe("engine host", () => {
     try {
       const adapter = createGlobalEngineHostDialogDomAdapter();
 
-      expect(adapter.querySelectorAll("#dialogs > .ui-dialog")).toEqual([
-        dialog,
-      ]);
-      expect(querySelectorAll).toHaveBeenCalledWith("#dialogs > .ui-dialog");
+      expect(
+        adapter.querySelectorAll("#dialogs > [data-agm-engine-dialog]"),
+      ).toEqual([dialog]);
+      expect(querySelectorAll).toHaveBeenCalledWith(
+        "#dialogs > [data-agm-engine-dialog]",
+      );
     } finally {
       globalThis.document = originalDocument;
     }
@@ -260,7 +247,9 @@ describe("engine host", () => {
       expect(element.id).toBe("");
       expect(() => domAdapter.appendToBody(element)).not.toThrow();
       expect(
-        dialogDomAdapter.querySelectorAll("#dialogs > .ui-dialog"),
+        dialogDomAdapter.querySelectorAll(
+          "#dialogs > [data-agm-engine-dialog]",
+        ),
       ).toEqual([]);
     } finally {
       Object.defineProperty(globalThis, "document", {
@@ -301,7 +290,9 @@ describe("engine host", () => {
       expect(element.id).toBe("");
       expect(() => domAdapter.appendToBody(element)).not.toThrow();
       expect(
-        dialogDomAdapter.querySelectorAll("#dialogs > .ui-dialog"),
+        dialogDomAdapter.querySelectorAll(
+          "#dialogs > [data-agm-engine-dialog]",
+        ),
       ).toEqual([]);
     } finally {
       Object.defineProperty(globalThis, "document", {

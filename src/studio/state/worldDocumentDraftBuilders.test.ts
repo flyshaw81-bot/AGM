@@ -96,6 +96,8 @@ function createTargets(): WorldDocumentDraftBuilderTargets {
     provinces: [],
     routes: [],
     zones: [],
+    markers: [],
+    military: [],
   };
   return {
     getEntities: vi.fn(() => entities),

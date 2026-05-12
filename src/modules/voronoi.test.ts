@@ -1,5 +1,5 @@
-import Delaunator from "delaunator";
 import { describe, expect, it } from "vitest";
+import Delaunator from "../utils/delaunator";
 import { type Point, Voronoi } from "./voronoi";
 
 function normalizeZero(value: number) {

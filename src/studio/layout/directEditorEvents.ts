@@ -24,6 +24,11 @@ export function bindDirectEditorEvents({
   onDirectDiplomacyObjectSelect,
   onDirectDiplomacyReset,
   onDirectDiplomacySubjectSelect,
+  onDirectMilitaryListChange,
+  onDirectMarkerApply,
+  onDirectMarkerListChange,
+  onDirectMarkerReset,
+  onDirectMarkerSelect,
   onDirectProvinceApply,
   onDirectProvinceListChange,
   onDirectProvinceReset,
@@ -101,5 +106,10 @@ export function bindDirectEditorEvents({
     onDirectDiplomacyObjectSelect,
     onDirectDiplomacyReset,
     onDirectDiplomacySubjectSelect,
+    onDirectMilitaryListChange,
+    onDirectMarkerApply,
+    onDirectMarkerListChange,
+    onDirectMarkerReset,
+    onDirectMarkerSelect,
   });
 }

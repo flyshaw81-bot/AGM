@@ -1,5 +1,6 @@
-import type {
+﻿import type {
   GenerationProfileOverrideKey,
+  StudioEditorModule,
   StudioLanguage,
   StudioSection,
   StudioState,
@@ -13,7 +14,10 @@ import type {
 
 export type StudioShellEventHandlers = {
   onSectionChange: (section: StudioSection) => void;
-  onViewportChange: (patch: Partial<StudioState["viewport"]>) => void;
+  onEditorModuleChange: (module: StudioEditorModule) => void;
+  onViewportChange: (
+    patch: Partial<StudioState["viewport"]>,
+  ) => void | Promise<void>;
   onStyleChange: (preset: string) => void;
   onExportFormatChange: (format: "svg" | "png" | "jpeg") => void;
   onStyleToggle: (action: "hide-labels" | "rescale-labels") => void;
@@ -23,18 +27,15 @@ export type StudioShellEventHandlers = {
   ) => void;
   onTopbarAction: (action: keyof typeof TOPBAR_ACTION_LABELS) => void;
   onLayerAction: (action: keyof typeof LAYER_CONTROL_LABELS) => void;
+  onLayerPin: (action: string) => void;
   onDataAction: (
     action:
-      | "quick-load"
-      | "save-storage"
-      | "save-machine"
-      | "save-dropbox"
-      | "connect-dropbox"
-      | "load-dropbox"
-      | "share-dropbox"
-      | "new-map"
+      | "load-browser-snapshot"
+      | "save-browser-snapshot"
+      | "download-project"
+      | "create-generated-world"
       | "open-file"
-      | "load-url",
+      | "open-url-source",
   ) => void;
   onProjectAction: (
     action:
@@ -176,6 +177,29 @@ export type StudioShellEventHandlers = {
       Pick<StudioState["directEditor"], "zoneSearchQuery" | "zoneFilterMode">
     >,
   ) => void;
+  onDirectMarkerSelect: (markerId: number) => void;
+  onDirectMarkerApply: (
+    markerId: number,
+    next: {
+      type?: string;
+      icon?: string;
+      size?: number;
+      pin?: string;
+      fill?: string;
+      stroke?: string;
+      pinned?: boolean;
+      locked?: boolean;
+    },
+  ) => void;
+  onDirectMarkerReset: (markerId: number) => void;
+  onDirectMarkerListChange: (
+    patch: Partial<
+      Pick<
+        StudioState["directEditor"],
+        "markerSearchQuery" | "markerFilterMode"
+      >
+    >,
+  ) => void;
   onDirectDiplomacySubjectSelect: (stateId: number) => void;
   onDirectDiplomacyObjectSelect: (stateId: number) => void;
   onDirectDiplomacyApply: (
@@ -189,6 +213,14 @@ export type StudioShellEventHandlers = {
       Pick<
         StudioState["directEditor"],
         "diplomacySearchQuery" | "diplomacyFilterMode"
+      >
+    >,
+  ) => void;
+  onDirectMilitaryListChange: (
+    patch: Partial<
+      Pick<
+        StudioState["directEditor"],
+        "militarySearchQuery" | "militaryFilterMode"
       >
     >,
   ) => void;

@@ -9,7 +9,7 @@ export const foundationControlsStyles = `    .studio-ghost,
       min-height: 32px;
       border: 1px solid transparent;
       background: transparent;
-      color: #efe4d0;
+      color: #dfe7ec;
       border-radius: 6px;
       padding: 0 12px;
       font-size: 12px;
@@ -22,7 +22,7 @@ export const foundationControlsStyles = `    .studio-ghost,
     .studio-topbar__command-group .studio-ghost {
       position: relative;
       min-width: 72px;
-      background: color-mix(in srgb, var(--agm-surface-dark) 84%, #000000);
+      background: color-mix(in srgb, var(--agm-surface-dark) 84%, #08111a);
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
     }
 
@@ -43,7 +43,7 @@ export const foundationControlsStyles = `    .studio-ghost,
       transform: none;
       border-color: var(--studio-accent-48);
       background: color-mix(in srgb, var(--studio-accent) 14%, var(--agm-surface-dark-2));
-      color: #ffffff;
+      color: #f8fbfc;
       box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.055),
         0 10px 22px rgba(0, 0, 0, 0.22);
@@ -98,14 +98,14 @@ export const foundationControlsStyles = `    .studio-ghost,
 
     .studio-ghost--generate {
       border-color: var(--studio-accent-34);
-      background: color-mix(in srgb, var(--agm-surface-dark-2) 86%, #000000);
-      color: #f3ead9;
+      background: color-mix(in srgb, var(--agm-surface-dark-2) 86%, #08111a);
+      color: #dfe7ec;
     }
 
     .studio-ghost--export {
       border-color: var(--studio-accent-34);
-      background: color-mix(in srgb, var(--agm-surface-dark-2) 86%, #000000);
-      color: #f3ead9;
+      background: color-mix(in srgb, var(--agm-surface-dark-2) 86%, #08111a);
+      color: #dfe7ec;
     }
 
     .studio-segment {
@@ -119,7 +119,7 @@ export const foundationControlsStyles = `    .studio-ghost,
       padding: 3px;
       border-radius: 6px;
       border: 1px solid transparent;
-      background: color-mix(in srgb, var(--agm-surface-dark) 86%, #000000);
+      background: color-mix(in srgb, var(--agm-surface-dark) 86%, #08111a);
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
     }
 
@@ -129,7 +129,7 @@ export const foundationControlsStyles = `    .studio-ghost,
       padding: 0 10px;
       border: 0;
       background: transparent;
-      color: #bfb39e;
+      color: #8fa0aa;
       font-size: 11px;
       font-weight: 850;
       border-radius: 4px;
@@ -137,7 +137,7 @@ export const foundationControlsStyles = `    .studio-ghost,
 
     .studio-language-switch .studio-segment__button.is-selected {
       background: var(--studio-accent-panel);
-      color: #ffffff;
+      color: #f8fbfc;
       box-shadow:
         inset 0 0 0 1px var(--studio-accent-34),
         0 6px 14px rgba(0, 0, 0, 0.18);

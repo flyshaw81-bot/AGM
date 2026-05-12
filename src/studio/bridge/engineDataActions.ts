@@ -1,4 +1,4 @@
-import type { DataAction } from "./engineActionTypes";
+﻿import type { DataAction } from "./engineActionTypes";
 import {
   createGlobalDataActionTargets,
   type EngineDataActionTargets,
@@ -10,40 +10,18 @@ export function getEngineDataActions(
   targets.ensureDocumentSourceTracking();
   const documentSource = targets.getDocumentSourceSummary();
   const saveTarget = targets.getSaveTargetSummary();
-  const dropbox = targets.getDropboxState();
-  const selectedDropboxFile = dropbox.selectedFile;
-  const hasDropboxSelection = Boolean(selectedDropboxFile);
 
   return {
-    canQuickLoad: targets.canQuickLoad(),
-    canSaveToStorage: targets.canSaveMap(),
-    canSaveToMachine: targets.canSaveMap(),
-    canSaveToDropbox: targets.canSaveMap(),
-    canConnectDropbox:
-      targets.canConnectDropbox() && dropbox.connectButtonAvailable,
-    canLoadFromDropbox:
-      targets.canLoadFromDropbox() &&
-      dropbox.connected &&
-      hasDropboxSelection &&
-      dropbox.buttonsVisible,
-    canShareDropbox:
-      targets.canShareDropbox() &&
-      dropbox.connected &&
-      hasDropboxSelection &&
-      dropbox.buttonsVisible,
-    hasDropboxSelection,
-    dropboxConnected: dropbox.connected,
-    selectedDropboxFile,
-    selectedDropboxLabel: dropbox.selectedLabel,
-    hasDropboxShareLink: dropbox.hasShareLink,
-    dropboxShareUrl: dropbox.shareUrl,
+    canLoadBrowserSnapshot: targets.canLoadBrowserSnapshot(),
+    canSaveBrowserSnapshot: targets.canSaveProject(),
+    canDownloadProject: targets.canSaveProject(),
     sourceLabel: documentSource.sourceLabel,
     sourceDetail: documentSource.sourceDetail,
     saveLabel: saveTarget.saveLabel,
     saveDetail: saveTarget.saveDetail,
-    canCreateNew: targets.canGenerateMapOnLoad(),
+    canCreateGeneratedWorld: targets.canCreateGeneratedWorld(),
     canOpenFile: targets.hasFileInput(),
-    canLoadUrl: targets.canLoadUrl(),
+    canOpenUrlSource: targets.canOpenUrlSource(),
   };
 }
 
@@ -53,53 +31,30 @@ export async function runEngineDataAction(
 ) {
   targets.ensureDocumentSourceTracking();
 
-  if (action === "quick-load" && targets.canQuickLoad()) {
-    await targets.quickLoad();
+  if (action === "load-browser-snapshot" && targets.canLoadBrowserSnapshot()) {
+    await targets.loadBrowserSnapshot();
     targets.setDocumentSourceSummary({
       sourceLabel: "Browser snapshot",
-      sourceDetail: "Quick load",
+      sourceDetail: "Browser snapshot",
     });
     return;
   }
 
-  if (action === "save-storage" && targets.canSaveMap()) {
-    await targets.saveMap("storage");
+  if (action === "save-browser-snapshot" && targets.canSaveProject()) {
+    await targets.saveProject("storage");
     return;
   }
 
-  if (action === "save-machine" && targets.canSaveMap()) {
-    await targets.saveMap("machine");
+  if (action === "download-project" && targets.canSaveProject()) {
+    await targets.saveProject("machine");
     return;
   }
 
-  if (action === "save-dropbox" && targets.canSaveMap()) {
-    await targets.saveMap("dropbox");
-    return;
-  }
-
-  if (action === "connect-dropbox" && targets.canConnectDropbox()) {
-    await targets.connectDropbox();
-    return;
-  }
-
-  if (action === "load-dropbox" && targets.canLoadFromDropbox()) {
-    const dropbox = targets.getDropboxState();
-    await targets.loadFromDropbox();
-    targets.setDocumentSourceSummary({
-      sourceLabel: "Dropbox",
-      sourceDetail:
-        dropbox.selectedLabel || dropbox.selectedFile || "Selected file",
-    });
-    return;
-  }
-
-  if (action === "share-dropbox" && targets.canShareDropbox()) {
-    await targets.createSharableDropboxLink();
-    return;
-  }
-
-  if (action === "new-map" && targets.canGenerateMapOnLoad()) {
-    await targets.generateMapOnLoad();
+  if (
+    action === "create-generated-world" &&
+    targets.canCreateGeneratedWorld()
+  ) {
+    await targets.createGeneratedWorld();
     targets.setDocumentSourceSummary({
       sourceLabel: "Generated",
       sourceDetail: "Current settings",
@@ -112,7 +67,7 @@ export async function runEngineDataAction(
     return;
   }
 
-  if (action === "load-url" && targets.canLoadUrl()) {
-    targets.loadUrl();
+  if (action === "open-url-source" && targets.canOpenUrlSource()) {
+    targets.openUrlSource();
   }
 }

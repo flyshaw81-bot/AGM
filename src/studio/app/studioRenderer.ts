@@ -13,7 +13,7 @@ export {
 } from "./studioRendererTargets";
 
 function syncViewport(state: StudioState, targets: StudioRendererTargets) {
-  targets.syncViewport(
+  const syncedSize = targets.syncViewport(
     state.viewport.presetId,
     state.viewport.orientation,
     state.viewport.fitMode,
@@ -21,6 +21,9 @@ function syncViewport(state: StudioState, targets: StudioRendererTargets) {
     state.viewport.panX,
     state.viewport.panY,
   );
+  if (!syncedSize) return;
+  state.viewport.width = syncedSize.width;
+  state.viewport.height = syncedSize.height;
 }
 
 export function renderStudioApp(

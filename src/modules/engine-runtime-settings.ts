@@ -1,7 +1,12 @@
+import {
+  type EngineBrowserMapCoordinates,
+  getBrowserRuntimeNumber,
+  getBrowserRuntimeValue,
+} from "./engine-browser-runtime-globals";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
 
 export type EngineWorldSettings = {
-  mapCoordinates?: typeof mapCoordinates;
+  mapCoordinates?: EngineBrowserMapCoordinates;
   graphWidth?: number;
   graphHeight?: number;
   mapSizePercent?: number;
@@ -24,7 +29,7 @@ export type EngineTimingSettings = {
 };
 
 export type EngineWorldSettingsTargets = {
-  getMapCoordinates: () => typeof mapCoordinates;
+  getMapCoordinates: () => EngineBrowserMapCoordinates;
   getGraphWidth: () => number;
   getGraphHeight: () => number;
   getMapSizePercent: () => number;
@@ -51,9 +56,12 @@ export type EngineSettingsDomTargets = {
 };
 
 export type EngineWorldRuntimeTargets = {
-  getMapCoordinates: () => typeof mapCoordinates;
+  getMapCoordinates: () => EngineBrowserMapCoordinates;
   getGraphWidth: () => number;
   getGraphHeight: () => number;
+  getMapSizePercent: () => number;
+  getLatitudePercent: () => number;
+  getLongitudePercent: () => number;
 };
 
 export type EnginePopulationRuntimeTargets = {
@@ -124,26 +132,19 @@ function getDocument(): Document | undefined {
   }
 }
 
-function getGlobalMapCoordinates(): typeof mapCoordinates {
-  try {
-    return globalThis.mapCoordinates ?? ({} as typeof mapCoordinates);
-  } catch {
-    return {} as typeof mapCoordinates;
-  }
+function getGlobalMapCoordinates(): EngineBrowserMapCoordinates {
+  return getBrowserRuntimeValue("mapCoordinates") ?? {};
 }
 
 function getGlobalNumber(name: keyof typeof globalThis, fallback: number) {
-  try {
-    const value = globalThis[name];
-    return typeof value === "number" ? value : fallback;
-  } catch {
-    return fallback;
-  }
+  return getBrowserRuntimeNumber(name as never, fallback);
 }
 
 function getGlobalHeightUnit(): string {
   try {
-    return globalThis.heightUnit?.value ?? "m";
+    return typeof globalThis.heightUnit === "string"
+      ? globalThis.heightUnit
+      : "m";
   } catch {
     return "m";
   }
@@ -174,6 +175,9 @@ export function createGlobalWorldRuntimeTargets(): EngineWorldRuntimeTargets {
     getMapCoordinates: () => getGlobalMapCoordinates(),
     getGraphWidth: () => getGlobalNumber("graphWidth", 0),
     getGraphHeight: () => getGlobalNumber("graphHeight", 0),
+    getMapSizePercent: () => getGlobalNumber("mapSizePercent", 0),
+    getLatitudePercent: () => getGlobalNumber("latitudePercent", 0),
+    getLongitudePercent: () => getGlobalNumber("longitudePercent", 0),
   };
 }
 
@@ -204,18 +208,16 @@ export function createSettingsInputNumberReader(
 }
 
 export function createGlobalWorldSettingsTargets(
-  domTargets: EngineSettingsDomTargets = createGlobalSettingsDomTargets(),
+  _domTargets: EngineSettingsDomTargets = createGlobalSettingsDomTargets(),
   runtimeTargets: EngineWorldRuntimeTargets = createGlobalWorldRuntimeTargets(),
 ): EngineWorldSettingsTargets {
-  const readInputNumber = createSettingsInputNumberReader(domTargets);
-
   return {
     getMapCoordinates: runtimeTargets.getMapCoordinates,
     getGraphWidth: runtimeTargets.getGraphWidth,
     getGraphHeight: runtimeTargets.getGraphHeight,
-    getMapSizePercent: () => readInputNumber("mapSizeOutput", 0),
-    getLatitudePercent: () => readInputNumber("latitudeOutput", 0),
-    getLongitudePercent: () => readInputNumber("longitudeOutput", 0),
+    getMapSizePercent: runtimeTargets.getMapSizePercent,
+    getLatitudePercent: runtimeTargets.getLatitudePercent,
+    getLongitudePercent: runtimeTargets.getLongitudePercent,
   };
 }
 
@@ -283,6 +285,7 @@ export function createRuntimeWorldSettingsStore(
     () => context.worldSettings,
     (nextSettings) => {
       context.worldSettings = nextSettings;
+      if (context.worldState) context.worldState.worldSettings = nextSettings;
     },
   );
 }

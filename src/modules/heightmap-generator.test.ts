@@ -74,6 +74,31 @@ function createImageTargets(data: Uint8ClampedArray): HeightmapImageTargets {
   };
 }
 
+function createFailingImageTargets(): HeightmapImageTargets {
+  return {
+    createCanvas: () =>
+      ({
+        width: 0,
+        height: 0,
+        getContext: () => ({
+          drawImage: () => {},
+          getImageData: () => ({ data: new Uint8ClampedArray() }),
+        }),
+        remove: vi.fn(),
+      }) as unknown as HTMLCanvasElement,
+    createImage: () => {
+      const image = {
+        onload: null as (() => void) | null,
+        onerror: null as (() => void) | null,
+        remove: vi.fn(),
+      };
+      return Object.defineProperty(image, "src", {
+        set: () => setTimeout(() => image.onerror?.(), 0),
+      }) as unknown as HTMLImageElement;
+    },
+  };
+}
+
 describe("HeightmapModule", () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -243,6 +268,14 @@ describe("HeightmapModule", () => {
     );
 
     expect(heights).toEqual(new Uint8Array([0, 29, 58, 100]));
+  });
+
+  it("rejects failed precreated heightmap loads instead of hanging", async () => {
+    const heightmap = new HeightmapModule(createFailingImageTargets());
+
+    await expect(
+      heightmap.fromPrecreated(createPrecreatedGraph(), ""),
+    ).rejects.toThrow("Heightmap image failed to load: (empty)");
   });
 
   it("restores global Math.random after generation", async () => {

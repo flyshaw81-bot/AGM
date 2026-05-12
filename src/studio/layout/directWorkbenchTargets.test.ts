@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   DIRECT_WORKBENCH_TARGETS,
   getDirectRelationshipSourceWorkbenchTarget,
+  getDirectWorkbenchModuleForTarget,
   getNativeRelationshipSourceWorkbenchTarget,
 } from "./directWorkbenchTargets";
 
@@ -23,5 +24,21 @@ describe("directWorkbenchTargets", () => {
     expect(getNativeRelationshipSourceWorkbenchTarget("state")).toBe(
       DIRECT_WORKBENCH_TARGETS.states,
     );
+  });
+
+  it("maps direct workbench targets back to product editor modules", () => {
+    expect(
+      getDirectWorkbenchModuleForTarget(DIRECT_WORKBENCH_TARGETS.states),
+    ).toBe("states");
+    expect(
+      getDirectWorkbenchModuleForTarget(DIRECT_WORKBENCH_TARGETS.cultures),
+    ).toBe("cultures");
+    expect(
+      getDirectWorkbenchModuleForTarget(DIRECT_WORKBENCH_TARGETS.military),
+    ).toBe("military");
+    expect(
+      getDirectWorkbenchModuleForTarget(DIRECT_WORKBENCH_TARGETS.markers),
+    ).toBe("markers");
+    expect(getDirectWorkbenchModuleForTarget("missing")).toBeNull();
   });
 });

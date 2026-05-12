@@ -36,11 +36,16 @@ type DirectEditorActionHandlers = Pick<
   | "onDirectZoneApply"
   | "onDirectZoneReset"
   | "onDirectZoneListChange"
+  | "onDirectMarkerSelect"
+  | "onDirectMarkerApply"
+  | "onDirectMarkerReset"
+  | "onDirectMarkerListChange"
   | "onDirectDiplomacySubjectSelect"
   | "onDirectDiplomacyObjectSelect"
   | "onDirectDiplomacyApply"
   | "onDirectDiplomacyReset"
   | "onDirectDiplomacyListChange"
+  | "onDirectMilitaryListChange"
   | "onDirectBiomeSelect"
   | "onDirectBiomeApply"
   | "onDirectBiomeReset"
@@ -80,6 +85,7 @@ export function createDirectEditorActionHandlers({
     }),
     onDirectDiplomacySubjectSelect: (stateId) => {
       if (!Number.isFinite(stateId)) return;
+      state.shell.activeEditorModule = "diplomacy";
       state.directEditor.selectedDiplomacySubjectId = stateId;
       state.directEditor.selectedDiplomacyObjectId = null;
       state.directEditor.lastAppliedDiplomacyPair = null;
@@ -89,6 +95,7 @@ export function createDirectEditorActionHandlers({
       if (!Number.isFinite(stateId)) return;
       state.directEditor.selectedDiplomacyObjectId = stateId;
       state.directEditor.lastAppliedDiplomacyPair = null;
+      state.shell.activeEditorModule = "diplomacy";
       state.balanceFocus = targets.resolveFocusGeometry({
         targetType: "state",
         targetId: stateId,
@@ -115,6 +122,7 @@ export function createDirectEditorActionHandlers({
       syncAndRender();
     },
     onDirectDiplomacyListChange: applyDirectEditorPatch,
+    onDirectMilitaryListChange: applyDirectEditorPatch,
     onDirectRelationshipQueueHistoryChange: (history) => {
       state.directEditor.relationshipQueueHistory = history;
       if (history) {

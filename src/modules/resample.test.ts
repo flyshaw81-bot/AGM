@@ -244,4 +244,52 @@ describe("Resampler", () => {
     expect(globalThis.Provinces.getPoles).toHaveBeenCalledWith(context);
     expect(globalThis.Markers.deleteMarker).toHaveBeenCalledWith(4, context);
   });
+
+  it("can build global targets from injected compatibility adapters", () => {
+    const context = createResampleContext().context;
+    const pipeline = {
+      markupGrid: vi.fn(),
+      calculateClimate: vi.fn(),
+      markupPack: vi.fn(),
+      generateIce: vi.fn(),
+    };
+    const markers = {
+      deleteMarker: vi.fn(),
+    };
+    const provinces = {
+      getPoles: vi.fn(),
+    };
+    const rivers = {
+      addMeandering: vi.fn(() => [[1, 2, 3]]),
+      getApproximateLength: vi.fn(() => 11),
+      getBasin: vi.fn(() => 5),
+    };
+
+    const targets = createGlobalResamplerTargets({
+      getEngineGenerationPipeline: () =>
+        pipeline as unknown as typeof EngineGenerationPipeline,
+      getMarkers: () => markers as unknown as typeof Markers,
+      getProvinces: () => provinces as unknown as typeof Provinces,
+      getRivers: () => rivers as unknown as typeof Rivers,
+    });
+
+    expect(targets.addRiverMeandering([1], [], 0.5, context)).toEqual([
+      [1, 2, 3],
+    ]);
+    expect(targets.getRiverApproximateLength([])).toBe(11);
+    expect(targets.getRiverBasin(1, context)).toBe(5);
+    targets.markupGrid(context);
+    targets.calculateClimate(context);
+    targets.markupPack(context);
+    targets.generateIce(context);
+    targets.getProvincePoles(context);
+    targets.deleteMarker(4, context);
+
+    expect(pipeline.markupGrid).toHaveBeenCalledWith(context);
+    expect(pipeline.calculateClimate).toHaveBeenCalledWith(context);
+    expect(pipeline.markupPack).toHaveBeenCalledWith(context);
+    expect(pipeline.generateIce).toHaveBeenCalledWith(context);
+    expect(provinces.getPoles).toHaveBeenCalledWith(context);
+    expect(markers.deleteMarker).toHaveBeenCalledWith(4, context);
+  });
 });

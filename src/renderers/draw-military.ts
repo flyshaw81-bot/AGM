@@ -1,13 +1,21 @@
-import { color, easeSinInOut, transition } from "d3";
+import type { EngineRuntimeContext } from "../modules/engine-runtime-context";
 import type { MilitaryRegiment } from "../modules/military-generator";
 import { rn } from "../utils";
+import { color } from "../utils/colorCore";
+import { easeSinInOut, transition } from "../utils/svgSelection";
+import { createBrowserRendererContext } from "./renderer-runtime-context";
 
 declare global {
   var drawMilitary: () => void;
   var drawRegiments: (regiments: MilitaryRegiment[], stateId: number) => void;
   var drawRegiment: (reg: MilitaryRegiment, stateId: number) => void;
   var moveRegiment: (reg: MilitaryRegiment, x: number, y: number) => void;
-  var armies: import("d3").Selection<SVGGElement, unknown, null, undefined>;
+  var armies: import("../utils/svgSelection").Selection<
+    SVGGElement,
+    unknown,
+    null,
+    undefined
+  >;
 }
 
 const getWindow = (): (Window & typeof globalThis) | undefined => {
@@ -18,20 +26,21 @@ const getWindow = (): (Window & typeof globalThis) | undefined => {
   }
 };
 
-const militaryRenderer = (): void => {
-  TIME && console.time("drawMilitary");
+export const militaryRenderer = (context: EngineRuntimeContext): void => {
+  context.timing.shouldTime && console.time("drawMilitary");
 
   armies.selectAll("g").remove();
-  pack.states
+  context.pack.states
     .filter((s) => s.i && !s.removed)
     .forEach((s) => {
-      drawRegiments(s.military || [], s.i);
+      drawRegimentsRenderer(context, s.military || [], s.i);
     });
 
-  TIME && console.timeEnd("drawMilitary");
+  context.timing.shouldTime && console.timeEnd("drawMilitary");
 };
 
 const drawRegimentsRenderer = (
+  context: EngineRuntimeContext,
   regiments: MilitaryRegiment[],
   s: number,
 ): void => {
@@ -41,7 +50,7 @@ const drawRegimentsRenderer = (
   const x = (d: MilitaryRegiment) => rn(d.x - w(d) / 2, 2);
   const y = (d: MilitaryRegiment) => rn(d.y - size, 2);
 
-  const stateColor = pack.states[s]?.color;
+  const stateColor = context.pack.states[s]?.color;
   const baseColor = stateColor && stateColor[0] === "#" ? stateColor : "#999";
   const darkerColor = color(baseColor)!.darker().formatHex();
   const army = armies
@@ -100,7 +109,11 @@ const drawRegimentsRenderer = (
     );
 };
 
-const drawRegimentRenderer = (reg: MilitaryRegiment, stateId: number): void => {
+const drawRegimentRenderer = (
+  context: EngineRuntimeContext,
+  reg: MilitaryRegiment,
+  stateId: number,
+): void => {
   const size = +armies.attr("box-size");
   const w = reg.n ? size * 4 : size * 6;
   const h = size * 2;
@@ -109,7 +122,7 @@ const drawRegimentRenderer = (reg: MilitaryRegiment, stateId: number): void => {
 
   let army = armies.select<SVGGElement>(`g#army${stateId}`);
   if (!army.size()) {
-    const stateColor = pack.states[stateId]?.color;
+    const stateColor = context.pack.states[stateId]?.color;
     const baseColor = stateColor && stateColor[0] === "#" ? stateColor : "#999";
     const darkerColor = color(baseColor)!.darker().formatHex();
     army = armies
@@ -216,8 +229,11 @@ const moveRegimentRenderer = (
 
 const runtimeWindow = getWindow();
 if (runtimeWindow) {
-  runtimeWindow.drawMilitary = militaryRenderer;
-  runtimeWindow.drawRegiments = drawRegimentsRenderer;
-  runtimeWindow.drawRegiment = drawRegimentRenderer;
+  runtimeWindow.drawMilitary = () =>
+    militaryRenderer(createBrowserRendererContext());
+  runtimeWindow.drawRegiments = (regiments, stateId) =>
+    drawRegimentsRenderer(createBrowserRendererContext(), regiments, stateId);
+  runtimeWindow.drawRegiment = (reg, stateId) =>
+    drawRegimentRenderer(createBrowserRendererContext(), reg, stateId);
   runtimeWindow.moveRegiment = moveRegimentRenderer;
 }

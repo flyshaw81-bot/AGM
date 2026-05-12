@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   getEngineDocumentState,
   markEngineDocumentClean,
+  readEngineViewportStatePatch,
   setEngineDocumentName,
   syncEngineViewport,
 } from "./engineMapHost";
@@ -139,8 +140,9 @@ describe("engine map host document state", () => {
       stylePreset: "default",
     });
 
+    let syncedSize: ReturnType<typeof syncEngineViewport>;
     try {
-      syncEngineViewport(
+      syncedSize = syncEngineViewport(
         "desktop-landscape",
         "landscape",
         "contain",
@@ -154,6 +156,7 @@ describe("engine map host document state", () => {
       globalThis.document = originalDocument;
     }
 
+    expect(syncedSize).toEqual({ width: 1440, height: 900 });
     expect(targets.applyFrameSize).toHaveBeenCalledWith(
       frame,
       1440,
@@ -175,6 +178,308 @@ describe("engine map host document state", () => {
       "translate(0 0) scale(1)",
     );
     expect(targets.syncSvgCompatibility).toHaveBeenCalledWith(1440, 900);
+  });
+
+  it("reads compatible D3 zoom back into Studio viewport state", () => {
+    const { targets, map } = createTargets({
+      mapId: "",
+      name: "Atlas",
+      documentWidth: 0,
+      documentHeight: 0,
+      seed: "",
+      stylePreset: "default",
+    });
+    const fitScale = 788 / 900;
+    const contentScale = fitScale * 2;
+    const panX = 120;
+    const panY = -40;
+    const viewportWidth = 1260;
+    const viewportHeight = 788;
+    (
+      map as SVGSVGElement & {
+        __zoom: { x: number; y: number; k: number };
+        getAttribute: (name: string) => string | null;
+      }
+    ).__zoom = {
+      x: (viewportWidth - 1440 * contentScale) / 2 + panX,
+      y: (viewportHeight - 900 * contentScale) / 2 + panY,
+      k: contentScale,
+    };
+    (
+      map as SVGSVGElement & {
+        getAttribute: (name: string) => string | null;
+      }
+    ).getAttribute = vi.fn((name: string) =>
+      name === "width" ? String(viewportWidth) : String(viewportHeight),
+    );
+
+    const patch = readEngineViewportStatePatch(
+      "desktop-landscape",
+      "landscape",
+      "cover",
+      targets,
+    );
+
+    expect(patch?.zoom).toBeCloseTo(2);
+    expect(patch?.panX).toBeCloseTo(panX);
+    expect(patch?.panY).toBeCloseTo(panY);
+  });
+
+  it("fits the native workbench frame inside the stage without scaler overflow", () => {
+    const originalWindow = globalThis.window;
+    const originalDocument = globalThis.document;
+    globalThis.window = {} as Window & typeof globalThis;
+    globalThis.document = {
+      getElementById: vi.fn(() => null),
+    } as unknown as Document;
+    const { targets, frameScaler, frame, map, stage, viewbox } = createTargets({
+      mapId: "",
+      name: "Atlas",
+      documentWidth: 0,
+      documentHeight: 0,
+      seed: "",
+      stylePreset: "default",
+    });
+    (
+      stage as HTMLElement & { closest: (selector: string) => Element | null }
+    ).closest = vi.fn((selector) =>
+      selector === ".studio-native-app" ? ({} as Element) : null,
+    );
+    targets.getStageInnerSize = vi.fn(() => ({ width: 1260, height: 856 }));
+
+    try {
+      syncEngineViewport(
+        "desktop-landscape",
+        "landscape",
+        "cover",
+        1,
+        0,
+        0,
+        targets,
+      );
+    } finally {
+      globalThis.window = originalWindow;
+      globalThis.document = originalDocument;
+    }
+
+    expect(targets.applyFrameSize).toHaveBeenCalledWith(
+      frame,
+      1260,
+      788,
+      "landscape",
+      "cover",
+    );
+    expect(targets.applyFrameScalerSize).toHaveBeenCalledWith(
+      frameScaler,
+      frame,
+      1260,
+      788,
+      1,
+    );
+    expect(targets.syncViewportSize).toHaveBeenCalledWith(1260, 788);
+    expect(targets.applyMapSize).toHaveBeenCalledWith(map, 1260, 788);
+    expect(targets.applyViewboxTransform).toHaveBeenCalledWith(
+      viewbox,
+      expect.stringContaining("scale(0.875"),
+    );
+    expect(targets.syncSvgCompatibility).toHaveBeenCalledWith(1260, 788);
+  });
+
+  it("keeps a native landscape frame inside the stage when height is constrained", () => {
+    const originalWindow = globalThis.window;
+    const originalDocument = globalThis.document;
+    globalThis.window = {} as Window & typeof globalThis;
+    globalThis.document = {
+      getElementById: vi.fn(() => null),
+    } as unknown as Document;
+    const { targets, frameScaler, frame, map, stage } = createTargets({
+      mapId: "",
+      name: "Atlas",
+      documentWidth: 0,
+      documentHeight: 0,
+      seed: "",
+      stylePreset: "default",
+    });
+    (
+      stage as HTMLElement & { closest: (selector: string) => Element | null }
+    ).closest = vi.fn((selector) =>
+      selector === ".studio-native-app" ? ({} as Element) : null,
+    );
+    targets.getStageInnerSize = vi.fn(() => ({ width: 1260, height: 700 }));
+
+    try {
+      syncEngineViewport(
+        "desktop-landscape",
+        "landscape",
+        "cover",
+        1,
+        0,
+        0,
+        targets,
+      );
+    } finally {
+      globalThis.window = originalWindow;
+      globalThis.document = originalDocument;
+    }
+
+    expect(targets.applyFrameSize).toHaveBeenCalledWith(
+      frame,
+      1120,
+      700,
+      "landscape",
+      "cover",
+    );
+    expect(targets.applyFrameScalerSize).toHaveBeenCalledWith(
+      frameScaler,
+      frame,
+      1120,
+      700,
+      1,
+    );
+    expect(targets.applyMapSize).toHaveBeenCalledWith(map, 1120, 700);
+  });
+
+  it("uses the largest complete native frame for a classic 4:3 canvas", () => {
+    const originalWindow = globalThis.window;
+    const originalDocument = globalThis.document;
+    globalThis.window = {} as Window & typeof globalThis;
+    globalThis.document = {
+      getElementById: vi.fn(() => null),
+    } as unknown as Document;
+    const { targets, frameScaler, frame, map, stage } = createTargets({
+      mapId: "",
+      name: "Atlas",
+      documentWidth: 0,
+      documentHeight: 0,
+      seed: "",
+      stylePreset: "default",
+    });
+    (
+      stage as HTMLElement & { closest: (selector: string) => Element | null }
+    ).closest = vi.fn((selector) =>
+      selector === ".studio-native-app" ? ({} as Element) : null,
+    );
+    targets.getStageInnerSize = vi.fn(() => ({ width: 1868, height: 995 }));
+
+    try {
+      syncEngineViewport(
+        "classic-landscape",
+        "landscape",
+        "cover",
+        1,
+        0,
+        0,
+        targets,
+      );
+    } finally {
+      globalThis.window = originalWindow;
+      globalThis.document = originalDocument;
+    }
+
+    expect(targets.applyFrameSize).toHaveBeenCalledWith(
+      frame,
+      1327,
+      995,
+      "landscape",
+      "cover",
+    );
+    expect(targets.applyFrameScalerSize).toHaveBeenCalledWith(
+      frameScaler,
+      frame,
+      1327,
+      995,
+      1,
+    );
+    expect(targets.applyMapSize).toHaveBeenCalledWith(map, 1327, 995);
+  });
+
+  it("does not rotate landscape map content inside a square canvas", () => {
+    const originalWindow = globalThis.window;
+    const originalDocument = globalThis.document;
+    globalThis.window = {} as Window & typeof globalThis;
+    globalThis.document = {
+      getElementById: vi.fn(() => null),
+    } as unknown as Document;
+    const { targets, viewbox } = createTargets({
+      mapId: "",
+      name: "Atlas",
+      documentWidth: 0,
+      documentHeight: 0,
+      seed: "",
+      stylePreset: "default",
+    });
+
+    try {
+      syncEngineViewport("square", "portrait", "cover", 1, 0, 0, targets);
+    } finally {
+      globalThis.window = originalWindow;
+      globalThis.document = originalDocument;
+    }
+
+    expect(targets.applyViewboxTransform).toHaveBeenCalledWith(
+      viewbox,
+      expect.not.stringContaining("rotate(90)"),
+    );
+  });
+
+  it("switches the native workbench frame to a portrait adaptive container", () => {
+    const originalWindow = globalThis.window;
+    const originalDocument = globalThis.document;
+    globalThis.window = {} as Window & typeof globalThis;
+    globalThis.document = {
+      getElementById: vi.fn(() => null),
+    } as unknown as Document;
+    const { targets, frameScaler, frame, map, stage, viewbox } = createTargets({
+      mapId: "",
+      name: "Atlas",
+      documentWidth: 0,
+      documentHeight: 0,
+      seed: "",
+      stylePreset: "default",
+    });
+    (
+      stage as HTMLElement & { closest: (selector: string) => Element | null }
+    ).closest = vi.fn((selector) =>
+      selector === ".studio-native-app" ? ({} as Element) : null,
+    );
+    targets.getStageInnerSize = vi.fn(() => ({ width: 1260, height: 856 }));
+
+    try {
+      syncEngineViewport(
+        "desktop-landscape",
+        "portrait",
+        "cover",
+        1,
+        0,
+        0,
+        targets,
+      );
+    } finally {
+      globalThis.window = originalWindow;
+      globalThis.document = originalDocument;
+    }
+
+    expect(targets.applyFrameSize).toHaveBeenCalledWith(
+      frame,
+      535,
+      856,
+      "portrait",
+      "cover",
+    );
+    expect(targets.applyFrameScalerSize).toHaveBeenCalledWith(
+      frameScaler,
+      frame,
+      535,
+      856,
+      1,
+    );
+    expect(targets.syncViewportSize).toHaveBeenCalledWith(535, 856);
+    expect(targets.applyMapSize).toHaveBeenCalledWith(map, 535, 856);
+    expect(targets.applyViewboxTransform).toHaveBeenCalledWith(
+      viewbox,
+      "translate(0 0) scale(0.5944444444444444) translate(900 0) rotate(90)",
+    );
+    expect(targets.syncSvgCompatibility).toHaveBeenCalledWith(535, 856);
   });
 
   it("rotates content for portrait viewport when graph is landscape", () => {

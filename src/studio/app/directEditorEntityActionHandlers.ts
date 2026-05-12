@@ -1,5 +1,5 @@
 import type { StudioShellEventHandlers } from "../layout/shellEvents";
-import type { StudioState } from "../types";
+import type { StudioEditorModule, StudioState } from "../types";
 import {
   createGlobalDirectEditorActionTargets,
   type DirectEditorActionTargets,
@@ -35,6 +35,10 @@ type DirectEditorEntityActionHandlers = Pick<
   | "onDirectZoneApply"
   | "onDirectZoneReset"
   | "onDirectZoneListChange"
+  | "onDirectMarkerSelect"
+  | "onDirectMarkerApply"
+  | "onDirectMarkerReset"
+  | "onDirectMarkerListChange"
   | "onDirectBiomeSelect"
   | "onDirectBiomeApply"
   | "onDirectBiomeReset"
@@ -68,19 +72,25 @@ export function createDirectEditorEntityActionHandlers({
     config: {
       selectedKey: string;
       lastAppliedKey: string;
-      targetType: NonNullable<StudioState["balanceFocus"]>["targetType"];
+      module: StudioEditorModule;
+      targetType?: NonNullable<StudioState["balanceFocus"]>["targetType"];
       sourceLabel: string;
     },
   ) => {
     if (!Number.isFinite(id)) return;
     setDirectEditorValue(config.selectedKey, id);
     setDirectEditorValue(config.lastAppliedKey, null);
-    state.balanceFocus = targets.resolveFocusGeometry({
-      targetType: config.targetType,
-      targetId: id,
-      sourceLabel: config.sourceLabel,
-      action: "focus",
-    });
+    state.shell.activeEditorModule = config.module;
+    if (config.targetType) {
+      state.balanceFocus = targets.resolveFocusGeometry({
+        targetType: config.targetType,
+        targetId: id,
+        sourceLabel: config.sourceLabel,
+        action: "focus",
+      });
+    } else {
+      state.balanceFocus = null;
+    }
     state.section = "editors";
     syncAndRender();
   };
@@ -113,6 +123,7 @@ export function createDirectEditorEntityActionHandlers({
     state: {
       selectedKey: "selectedStateId",
       lastAppliedKey: "lastAppliedStateId",
+      module: "states",
       targetType: "state",
       sourceLabel: "direct-states-workbench",
       update: targets.updateState,
@@ -120,6 +131,7 @@ export function createDirectEditorEntityActionHandlers({
     burg: {
       selectedKey: "selectedBurgId",
       lastAppliedKey: "lastAppliedBurgId",
+      module: "burgs",
       targetType: "burg",
       sourceLabel: "direct-burgs-workbench",
       update: targets.updateBurg,
@@ -127,6 +139,7 @@ export function createDirectEditorEntityActionHandlers({
     culture: {
       selectedKey: "selectedCultureId",
       lastAppliedKey: "lastAppliedCultureId",
+      module: "cultures",
       targetType: "culture",
       sourceLabel: "direct-cultures-workbench",
       update: targets.updateCulture,
@@ -134,6 +147,7 @@ export function createDirectEditorEntityActionHandlers({
     religion: {
       selectedKey: "selectedReligionId",
       lastAppliedKey: "lastAppliedReligionId",
+      module: "religions",
       targetType: "religion",
       sourceLabel: "direct-religions-workbench",
       update: targets.updateReligion,
@@ -141,6 +155,7 @@ export function createDirectEditorEntityActionHandlers({
     province: {
       selectedKey: "selectedProvinceId",
       lastAppliedKey: "lastAppliedProvinceId",
+      module: "provinces",
       targetType: "province",
       sourceLabel: "direct-provinces-workbench",
       update: targets.updateProvince,
@@ -148,6 +163,7 @@ export function createDirectEditorEntityActionHandlers({
     route: {
       selectedKey: "selectedRouteId",
       lastAppliedKey: "lastAppliedRouteId",
+      module: "routes",
       targetType: "route",
       sourceLabel: "direct-routes-workbench",
       update: targets.updateRoute,
@@ -155,13 +171,22 @@ export function createDirectEditorEntityActionHandlers({
     zone: {
       selectedKey: "selectedZoneId",
       lastAppliedKey: "lastAppliedZoneId",
+      module: "zones",
       targetType: "zone",
       sourceLabel: "direct-zones-workbench",
       update: targets.updateZone,
     },
+    marker: {
+      selectedKey: "selectedMarkerId",
+      lastAppliedKey: "lastAppliedMarkerId",
+      module: "markers",
+      sourceLabel: "direct-markers-workbench",
+      update: targets.updateMarker,
+    },
     biome: {
       selectedKey: "selectedBiomeId",
       lastAppliedKey: "lastAppliedBiomeId",
+      module: "biomes",
       targetType: "biome",
       sourceLabel: "direct-biomes-workbench",
       update: targets.updateBiome,
@@ -218,6 +243,13 @@ export function createDirectEditorEntityActionHandlers({
     onDirectZoneReset: (zoneId) =>
       resetNativeEntity(zoneId, nativeEntityConfigs.zone),
     onDirectZoneListChange: applyDirectEditorPatch,
+    onDirectMarkerSelect: (markerId) =>
+      selectNativeEntity(markerId, nativeEntityConfigs.marker),
+    onDirectMarkerApply: (markerId, next) =>
+      applyNativeEntity(markerId, next, nativeEntityConfigs.marker),
+    onDirectMarkerReset: (markerId) =>
+      resetNativeEntity(markerId, nativeEntityConfigs.marker),
+    onDirectMarkerListChange: applyDirectEditorPatch,
     onDirectBiomeSelect: (biomeId) =>
       selectNativeEntity(biomeId, nativeEntityConfigs.biome),
     onDirectBiomeApply: (biomeId, next) =>

@@ -11,7 +11,7 @@ export const themeSystemBaseStyles = `    #studioRoot[data-studio-theme="dayligh
       --pencil-text: #111827;
       --pencil-muted: #6b7280;
       --pencil-faint: #9ca3af;
-      --pencil-accent: #6f5cff;
+      --pencil-accent: #5d879d;
     }
 
     #studioRoot[data-studio-theme="night"] {
@@ -27,7 +27,7 @@ export const themeSystemBaseStyles = `    #studioRoot[data-studio-theme="dayligh
       --pencil-text: #f4f4f5;
       --pencil-muted: #a1a1aa;
       --pencil-faint: #71717a;
-      --pencil-accent: #a78bfa;
+      --pencil-accent: #7fa8bf;
     }
 
     #studioRoot[data-studio-theme="daylight"] .studio-app,

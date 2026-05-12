@@ -2,6 +2,7 @@ export { renderDirectBiomesWorkbench } from "./directBiomesWorkbench";
 export { renderDirectBurgsWorkbench } from "./directBurgsWorkbench";
 export { renderDirectCulturesWorkbench } from "./directCulturesWorkbench";
 export { renderDirectDiplomacyWorkbench } from "./directDiplomacyWorkbench";
+export { renderDirectMarkersWorkbench } from "./directMarkersWorkbench";
 export { renderDirectProvincesWorkbench } from "./directProvincesWorkbench";
 export { renderDirectReligionsWorkbench } from "./directReligionsWorkbench";
 export { renderDirectRoutesWorkbench } from "./directRoutesWorkbench";

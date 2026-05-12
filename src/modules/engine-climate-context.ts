@@ -1,11 +1,12 @@
 import type { ClimateMapCoordinates, ClimateRuntimeContext } from "./climate";
+import type { EngineGrid, EngineOptions } from "./engine-world-state";
 
 export type EngineClimateContextTargets = {
-  getGrid: () => typeof grid;
+  getGrid: () => EngineGrid;
   getCoordinates: () => ClimateMapCoordinates;
   getGraphWidth: () => number;
   getGraphHeight: () => number;
-  getOptions: () => typeof options;
+  getOptions: () => EngineOptions;
   getHeightExponent: () => number;
   getPointsCount: () => number;
   getPrecipitationPercent: () => number;
@@ -15,9 +16,9 @@ export type EngineClimateContextTargets = {
 };
 
 export type EngineClimateInputTargets = {
-  getHeightExponentInput: () => HTMLInputElement | undefined;
+  getHeightExponent: () => number;
   getPointsInput: () => HTMLInputElement | undefined;
-  getPrecipitationInput: () => HTMLInputElement | undefined;
+  getPrecipitationPercent: () => number;
 };
 
 function getGlobalInput(
@@ -32,9 +33,25 @@ function getGlobalInput(
 
 export function createGlobalClimateInputTargets(): EngineClimateInputTargets {
   return {
-    getHeightExponentInput: () => getGlobalInput("heightExponentInput"),
+    getHeightExponent: () => {
+      try {
+        return typeof globalThis.heightExponent === "number"
+          ? globalThis.heightExponent
+          : 1;
+      } catch {
+        return 1;
+      }
+    },
     getPointsInput: () => getGlobalInput("pointsInput"),
-    getPrecipitationInput: () => getGlobalInput("precInput"),
+    getPrecipitationPercent: () => {
+      try {
+        return typeof globalThis.precipitationPercent === "number"
+          ? globalThis.precipitationPercent
+          : 100;
+      } catch {
+        return 100;
+      }
+    },
   };
 }
 
@@ -65,12 +82,10 @@ export function createGlobalClimateContextTargets(
     getGraphWidth: () => graphWidth,
     getGraphHeight: () => graphHeight,
     getOptions: () => options,
-    getHeightExponent: () =>
-      Number(inputTargets.getHeightExponentInput()?.value ?? 1),
+    getHeightExponent: inputTargets.getHeightExponent,
     getPointsCount: () =>
       Number(inputTargets.getPointsInput()?.dataset?.cells ?? 0),
-    getPrecipitationPercent: () =>
-      Number(inputTargets.getPrecipitationInput()?.value ?? 100),
+    getPrecipitationPercent: inputTargets.getPrecipitationPercent,
     getPrecipitationLayer: () => prec,
     getDebugTemperature: () => Boolean(DEBUG.temperature),
     getShouldTime: () => TIME,

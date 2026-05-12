@@ -488,6 +488,7 @@ describe("EngineOptionsSessionModule", () => {
     const fallback = createWriter();
     const writer = createRuntimeOptionsWriterAdapter(context, fallback);
 
+    writer.applyHeightmapTemplate("continental", "Continental");
     writer.setStatesCount(24);
     writer.setCultureSet("highFantasy");
     writer.setTemperatureEquator(31);
@@ -495,11 +496,16 @@ describe("EngineOptionsSessionModule", () => {
     writer.setEra("Copper Moon");
     writer.syncEraOptions();
 
+    expect(context.generationSettings.heightmapTemplateId).toBe("continental");
     expect(context.generationSettings.statesCount).toBe(24);
     expect(context.generationSettings.cultureSet).toBe("highFantasy");
     expect(context.options.temperatureEquator).toBe(31);
     expect(context.units.height).toBe("ft");
     expect(context.options.eraShort).toBe("CM");
+    expect(fallback.applyHeightmapTemplate).toHaveBeenCalledWith(
+      "continental",
+      "Continental",
+    );
     expect(fallback.setStatesCount).toHaveBeenCalledWith(24);
     expect(fallback.setCultureSet).toHaveBeenCalledWith("highFantasy");
     expect(fallback.setTemperatureEquator).toHaveBeenCalledWith(31);
@@ -525,9 +531,11 @@ describe("EngineOptionsSessionModule", () => {
     const fallback = createWriter();
     const writer = createRuntimeOptionsWriterAdapter(context, fallback);
 
+    writer.applyHeightmapTemplate("shattered", "Shattered");
     writer.setStatesCount(21);
     writer.setGrowthRate(1.4);
 
+    expect(patch).toHaveBeenCalledWith({ heightmapTemplateId: "shattered" });
     expect(patch).toHaveBeenCalledWith({ statesCount: 21 });
     expect(patch).toHaveBeenCalledWith({ globalGrowthRate: 1.4 });
     expect(context.generationSettings.statesCount).toBe(21);

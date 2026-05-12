@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { AgmRuntimeDataFacade } from "../../modules/agm-runtime-data-facade";
 import type { EngineDocumentSourceTargets } from "./engineDocumentSource";
 import {
   createGlobalEngineDocumentSourceTargets,
@@ -8,30 +9,39 @@ import {
 } from "./engineDocumentSource";
 
 type TestRuntime = {
-  quickLoad?: () => Promise<void>;
-  loadFromDropbox?: () => Promise<void>;
-  loadMapFromURL?: (maplink: string, random?: number) => void;
-  uploadMap?: (file: Blob | File, callback?: () => void) => void;
-  generateMapOnLoad?: () => Promise<void>;
-  saveMap?: (method: "storage" | "machine" | "dropbox") => Promise<void>;
+  AgmRuntimeData?: AgmRuntimeDataFacade;
 };
 
 function createTargets(overrides: {
   runtime?: TestRuntime;
   mapFileName?: string;
-  dropboxSourceDetail?: string;
 }): EngineDocumentSourceTargets {
   const store = {};
-  const runtime = overrides.runtime ?? {};
-  const runtimeRecord = runtime as Record<string, unknown>;
+  const runtime = overrides.runtime ?? { AgmRuntimeData: {} };
+  if (!runtime.AgmRuntimeData) runtime.AgmRuntimeData = {};
   return {
     getStore: () => store,
     getMapFileName: () => overrides.mapFileName ?? "Current map",
-    getDropboxSourceDetail: () =>
-      overrides.dropboxSourceDetail ?? "Selected file",
-    getRuntimeFunction: (key) => runtimeRecord[key as string],
-    setRuntimeFunction: (key, value) => {
-      runtimeRecord[key as string] = value;
+    getBrowserSnapshotLoader: () => runtime.AgmRuntimeData?.loadBrowserSnapshot,
+    setBrowserSnapshotLoader: (loader) => {
+      runtime.AgmRuntimeData!.loadBrowserSnapshot = loader;
+    },
+    getUrlSourceLoader: () => runtime.AgmRuntimeData?.openUrlSource,
+    setUrlSourceLoader: (loader) => {
+      runtime.AgmRuntimeData!.openUrlSource = loader;
+    },
+    getFileUploader: () => runtime.AgmRuntimeData?.importProjectFile,
+    setFileUploader: (uploader) => {
+      runtime.AgmRuntimeData!.importProjectFile = uploader;
+    },
+    getGeneratedWorldCreator: () =>
+      runtime.AgmRuntimeData?.createGeneratedWorld,
+    setGeneratedWorldCreator: (creator) => {
+      runtime.AgmRuntimeData!.createGeneratedWorld = creator;
+    },
+    getProjectSaver: () => runtime.AgmRuntimeData?.saveProject,
+    setProjectSaver: (saver) => {
+      runtime.AgmRuntimeData!.saveProject = saver;
     },
   } as EngineDocumentSourceTargets;
 }
@@ -59,40 +69,34 @@ describe("engine document source tracking", () => {
     }
   });
 
-  it("tracks quick load through injected targets without browser globals", async () => {
-    const quickLoad = vi.fn(async () => undefined);
-    const targets = createTargets({ runtime: { quickLoad } });
+  it("tracks browser snapshot loading through injected targets without browser globals", async () => {
+    const loadBrowserSnapshot = vi.fn(async () => undefined);
+    const targets = createTargets({
+      runtime: { AgmRuntimeData: { loadBrowserSnapshot } },
+    });
 
     ensureEngineDocumentSourceTracking(targets);
-    await targets.getRuntimeFunction("quickLoad")?.();
+    await targets.getBrowserSnapshotLoader()?.();
 
-    expect(quickLoad).toHaveBeenCalledWith();
+    expect(loadBrowserSnapshot).toHaveBeenCalledWith();
     expect(getEngineDocumentSourceSummary(targets)).toEqual({
       sourceLabel: "Browser snapshot",
-      sourceDetail: "Quick load",
+      sourceDetail: "Browser snapshot",
     });
   });
 
-  it("tracks Dropbox load and URL source summaries through injected targets", async () => {
-    const loadFromDropbox = vi.fn(async () => undefined);
-    const loadMapFromURL = vi.fn();
+  it("tracks URL source summaries through injected targets", () => {
+    const openUrlSource = vi.fn();
     const targets = createTargets({
-      runtime: { loadFromDropbox, loadMapFromURL },
-      dropboxSourceDetail: "World From Dropbox",
+      runtime: { AgmRuntimeData: { openUrlSource } },
     });
 
     ensureEngineDocumentSourceTracking(targets);
-    await targets.getRuntimeFunction("loadFromDropbox")?.();
-    expect(getEngineDocumentSourceSummary(targets)).toEqual({
-      sourceLabel: "Dropbox",
-      sourceDetail: "World From Dropbox",
-    });
-
-    targets.getRuntimeFunction("loadMapFromURL")?.(
+    targets.getUrlSourceLoader()?.(
       "https%3A%2F%2Fexample.test%2Fmaps%2Fworld.map",
       1,
     );
-    expect(loadMapFromURL).toHaveBeenCalledWith(
+    expect(openUrlSource).toHaveBeenCalledWith(
       "https%3A%2F%2Fexample.test%2Fmaps%2Fworld.map",
       1,
     );
@@ -103,31 +107,35 @@ describe("engine document source tracking", () => {
   });
 
   it("tracks upload, generated maps, and save targets through injected targets", async () => {
-    const uploadMap = vi.fn();
-    const generateMapOnLoad = vi.fn(async () => undefined);
-    const saveMap = vi.fn(async () => undefined);
+    const importProjectFile = vi.fn();
+    const createGeneratedWorld = vi.fn(async () => undefined);
+    const saveProject = vi.fn(async () => undefined);
     const targets = createTargets({
-      runtime: { uploadMap, generateMapOnLoad, saveMap },
+      runtime: {
+        AgmRuntimeData: {
+          importProjectFile,
+          createGeneratedWorld,
+          saveProject,
+        },
+      },
       mapFileName: "Atlas.map",
     });
 
     ensureEngineDocumentSourceTracking(targets);
-    targets.getRuntimeFunction("uploadMap")?.(
-      new File(["map"], "Uploaded.map"),
-    );
+    targets.getFileUploader()?.(new File(["map"], "Uploaded.map"));
     expect(getEngineDocumentSourceSummary(targets)).toEqual({
       sourceLabel: "Local file",
       sourceDetail: "Uploaded.map",
     });
 
-    await targets.getRuntimeFunction("generateMapOnLoad")?.();
+    await targets.getGeneratedWorldCreator()?.();
     expect(getEngineDocumentSourceSummary(targets)).toEqual({
       sourceLabel: "Generated",
       sourceDetail: "Current settings",
     });
 
-    await targets.getRuntimeFunction("saveMap")?.("machine");
-    expect(saveMap).toHaveBeenCalledWith("machine");
+    await targets.getProjectSaver()?.("machine");
+    expect(saveProject).toHaveBeenCalledWith("machine");
     expect(getEngineSaveTargetSummary(targets)).toEqual({
       saveLabel: "Downloads",
       saveDetail: "Atlas.map",
@@ -150,10 +158,9 @@ describe("engine document source tracking", () => {
     const targets = createGlobalEngineDocumentSourceTargets();
 
     expect(targets.getMapFileName()).toBe("Current map");
-    expect(targets.getDropboxSourceDetail()).toBe("Selected file");
-    expect(targets.getRuntimeFunction("quickLoad")).toBeUndefined();
+    expect(targets.getBrowserSnapshotLoader()).toBeUndefined();
     expect(() =>
-      targets.setRuntimeFunction("quickLoad", async () => undefined),
+      targets.setBrowserSnapshotLoader(async () => undefined),
     ).not.toThrow();
     expect(() => ensureEngineDocumentSourceTracking(targets)).not.toThrow();
   });

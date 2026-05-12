@@ -20,7 +20,7 @@ export function renderSpawnDrillDownSection(
           .map(
             (candidate) => `
               <article class="studio-balance-card">
-                <div class="studio-balance-card__title">${escapeHtml(candidate.id)} · ${candidate.score}/100</div>
+                <div class="studio-balance-card__title">${escapeHtml(candidate.id)} 路 ${candidate.score}/100</div>
                 <div class="studio-balance-card__refs">
                   ${candidate.state === undefined ? "" : `<span>${t(language, "国家", "state")}: ${candidate.state}</span>`}
                   ${candidate.province === undefined ? "" : `<span>${t(language, "省份", "province")}: ${candidate.province}</span>`}
@@ -36,7 +36,7 @@ export function renderSpawnDrillDownSection(
                   ${renderFocusButton("burg", candidate.burg, candidate.id, "focus", language)}
                   ${renderFocusButton("biome", candidate.biome, candidate.id, "focus", language)}
                   ${renderFocusButton(candidate.province === undefined ? "state" : "province", candidate.province ?? candidate.state, candidate.id, "adjust", language)}
-                  ${renderEditorEntry(candidate.province === undefined ? "editStates" : "editProvinces", editorAvailability, t(language, "检查出生区域", "Review spawn region"), language)}
+                  ${renderEditorEntry(candidate.province === undefined ? "stateWorkbench" : "provinceWorkbench", editorAvailability, t(language, "检查出生区域", "Review spawn region"), language)}
                 </div>
               </article>
             `,

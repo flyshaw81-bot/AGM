@@ -7,7 +7,14 @@ import {
 type TestFormGlobals = typeof globalThis & {
   options?: {
     winds?: unknown[];
+    temperatureEquator?: unknown;
+    temperatureNorthPole?: unknown;
+    temperatureSouthPole?: unknown;
   };
+  convertTemperature?: (value: number, unit: string) => unknown;
+  mapSizePercent?: number;
+  latitudePercent?: number;
+  longitudePercent?: number;
 };
 
 const testGlobals = globalThis as TestFormGlobals;
@@ -57,7 +64,7 @@ describe("createGlobalProjectFormTargets", () => {
     const elements = new Map<string, unknown>([
       ["pointsInput", { value: "10000" }],
       ["pointsOutputFormatted", { value: "", textContent: "10k" }],
-      ["temperatureEquatorF", { textContent: "82°F" }],
+      ["statusText", { textContent: "ready" }],
       ["savePresetButton", { style: { display: "inline-block" } }],
     ]);
     globalThis.document = {
@@ -68,7 +75,7 @@ describe("createGlobalProjectFormTargets", () => {
 
     expect(targets.getInputValue("pointsInput")).toBe("10000");
     expect(targets.getOutputValue("pointsOutputFormatted")).toBe("10k");
-    expect(targets.getTextValue("temperatureEquatorF")).toBe("82°F");
+    expect(targets.getTextValue("statusText")).toBe("ready");
     expect(targets.hasVisibleInlineDisplay("savePresetButton")).toBe(true);
   });
 
@@ -97,23 +104,14 @@ describe("createGlobalProjectFormTargets", () => {
     ]);
   });
 
-  it("reads wind values from SVG rotation first and options fallback second", () => {
+  it("reads wind values from runtime options", () => {
     testGlobals.options = {
       winds: [0, 45],
     };
-    globalThis.document = {
-      querySelector: (selector: string) =>
-        selector.includes("data-tier='0'")
-          ? {
-              getAttribute: () => "rotate(225 210 6)",
-            }
-          : null,
-    } as unknown as Document;
 
     const targets = createGlobalProjectFormTargets();
 
-    expect(targets.getWindTierRotation(0)).toBe("225");
-    expect(targets.getWindTierRotation(1)).toBe("");
+    expect(targets.getWindOption(0)).toBe("0");
     expect(targets.getWindOption(1)).toBe("45");
   });
 
@@ -125,14 +123,13 @@ describe("createGlobalProjectFormTargets", () => {
 
     expect(targets.getInputValue("pointsInput", "10000")).toBe("10000");
     expect(targets.getOutputValue("pointsOutputFormatted", "10k")).toBe("10k");
-    expect(targets.getTextValue("temperatureEquatorF", "82F")).toBe("82F");
+    expect(targets.getTextValue("statusText", "ready")).toBe("ready");
     expect(targets.getSelect("templateInput")).toBeNull();
     expect(targets.hasVisibleInlineDisplay("savePresetButton")).toBe(false);
     expect(targets.hasVisibleInlineDisplay("savePresetButton", true)).toBe(
       true,
     );
     expect(targets.getWindOption(1)).toBe("");
-    expect(targets.getWindTierRotation(1)).toBe("");
   });
 
   it("keeps default form targets safe when browser globals throw", () => {
@@ -159,11 +156,10 @@ describe("createGlobalProjectFormTargets", () => {
 
     expect(targets.getInputValue("pointsInput", "10000")).toBe("10000");
     expect(targets.getOutputValue("pointsOutputFormatted", "10k")).toBe("10k");
-    expect(targets.getTextValue("temperatureEquatorF", "82F")).toBe("82F");
+    expect(targets.getTextValue("statusText", "ready")).toBe("ready");
     expect(targets.getSelect("templateInput")).toBeNull();
     expect(targets.hasVisibleInlineDisplay("savePresetButton")).toBe(false);
     expect(targets.getWindOption(1)).toBe("");
-    expect(targets.getWindTierRotation(1)).toBe("");
   });
 
   it("can read form values from injected DOM and runtime adapters", () => {
@@ -174,21 +170,32 @@ describe("createGlobalProjectFormTargets", () => {
     const targets = createProjectFormTargets(
       {
         getElementById: (id) => elements.get(id) ?? null,
-        querySelector: (selector) =>
-          selector.includes("data-tier='2'")
-            ? ({
-                getAttribute: () => "rotate(180 210 6)",
-              } as unknown as Element)
-            : null,
       },
       {
         getWinds: () => [0, 45, 90],
+        getPrecipitationPercent: () => 120,
+        getTemperatureOption: (key) =>
+          ({
+            temperatureEquator: 28,
+            temperatureNorthPole: -10,
+            temperatureSouthPole: -20,
+          })[key],
+        convertTemperature: (value) => `${value}F`,
+        getMapPlacementPercent: (key) =>
+          ({ mapSize: 80, latitude: 45, longitude: 15 })[key],
       },
     );
 
     expect(targets.getInputValue("pointsInput")).toBe("20000");
+    expect(targets.getInputValue("precInput")).toBe("120");
+    expect(targets.getTemperatureValue("temperatureEquator")).toBe("28");
+    expect(targets.getTemperatureFahrenheitLabel("temperatureEquator")).toBe(
+      "28F",
+    );
+    expect(targets.getMapPlacementValue("mapSize")).toBe("80");
+    expect(targets.getMapPlacementValue("latitude")).toBe("45");
+    expect(targets.getMapPlacementValue("longitude")).toBe("15");
     expect(targets.hasVisibleInlineDisplay("savePresetButton")).toBe(false);
     expect(targets.getWindOption(2)).toBe("90");
-    expect(targets.getWindTierRotation(2)).toBe("180");
   });
 });

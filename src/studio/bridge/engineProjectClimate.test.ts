@@ -7,10 +7,7 @@ function createTargets(
 ): EngineProjectClimateTargets {
   return {
     shouldAutoApplyClimate: vi.fn(() => true),
-    canUpdateGlobePosition: vi.fn(() => true),
     canApplyClimatePipeline: vi.fn(() => true),
-    updateGlobeTemperature: vi.fn(),
-    updateGlobePosition: vi.fn(),
     calculateTemperatures: vi.fn(),
     generatePrecipitation: vi.fn(),
     cloneHeights: vi.fn(() => new Uint8Array([1, 2, 3])),
@@ -39,7 +36,7 @@ describe("applyEngineWorldClimateRedraw", () => {
       shouldAutoApplyClimate: vi.fn(() => false),
     });
 
-    expect(applyEngineWorldClimateRedraw({}, targets)).toBe("disabled");
+    expect(applyEngineWorldClimateRedraw(targets)).toBe("disabled");
     expect(targets.canApplyClimatePipeline).not.toHaveBeenCalled();
     expect(targets.calculateTemperatures).not.toHaveBeenCalled();
   });
@@ -49,19 +46,8 @@ describe("applyEngineWorldClimateRedraw", () => {
       canApplyClimatePipeline: vi.fn(() => false),
     });
 
-    expect(applyEngineWorldClimateRedraw({}, targets)).toBe("unavailable");
+    expect(applyEngineWorldClimateRedraw(targets)).toBe("unavailable");
     expect(targets.calculateTemperatures).not.toHaveBeenCalled();
-  });
-
-  it("requires globe position support only when requested", () => {
-    const targets = createTargets({
-      canUpdateGlobePosition: vi.fn(() => false),
-    });
-
-    expect(
-      applyEngineWorldClimateRedraw({ updateGlobePosition: true }, targets),
-    ).toBe("unavailable");
-    expect(targets.canApplyClimatePipeline).not.toHaveBeenCalled();
   });
 
   it("applies the climate pipeline, redraws active layers, and schedules 3D refresh", () => {
@@ -77,15 +63,8 @@ describe("applyEngineWorldClimateRedraw", () => {
       hasCanvas3d: vi.fn(() => true),
     });
 
-    expect(
-      applyEngineWorldClimateRedraw(
-        { updateGlobePosition: true, updateGlobeTemperature: true },
-        targets,
-      ),
-    ).toBe("applied");
+    expect(applyEngineWorldClimateRedraw(targets)).toBe("applied");
 
-    expect(targets.updateGlobeTemperature).toHaveBeenCalledWith();
-    expect(targets.updateGlobePosition).toHaveBeenCalledWith();
     expect(targets.calculateTemperatures).toHaveBeenCalledWith();
     expect(targets.generatePrecipitation).toHaveBeenCalledWith();
     expect(targets.generateRivers).toHaveBeenCalledWith();

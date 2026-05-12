@@ -1,13 +1,10 @@
-import { quadtree } from "d3";
-import { getMixedColor, getRandomColor } from "../utils/colorUtils";
+﻿import { getMixedColor, getRandomColor } from "../utils/colorUtils";
 import { isWater } from "../utils/graphUtils";
 import { abbreviate, getAdjective, trimVowels } from "../utils/languageUtils";
 import { PriorityQueue } from "../utils/priorityQueue";
 import { each, gauss, ra, rand, rw } from "../utils/probabilityUtils";
-import {
-  type EngineRuntimeContext,
-  getGlobalEngineRuntimeContext,
-} from "./engine-runtime-context";
+import { quadtree } from "../utils/quadtree";
+import type { EngineRuntimeContext } from "./engine-runtime-context";
 
 declare global {
   var Religions: ReligionsModule;
@@ -520,7 +517,7 @@ const expansionismMap: Record<string, () => number> = {
 };
 
 export class ReligionsModule {
-  generate(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+  generate(context: EngineRuntimeContext) {
     const { pack } = context;
     context.timing.shouldTime && console.time("generateReligions");
     const lockedReligions =
@@ -690,7 +687,7 @@ export class ReligionsModule {
     return rawReligions;
 
     function getReligionColor(
-      culture: (typeof pack.cultures)[number],
+      culture: EngineRuntimeContext["pack"]["cultures"][number],
       type: string,
     ): string {
       if (!culture.i) return getRandomColor();
@@ -827,7 +824,7 @@ export class ReligionsModule {
   private defineOrigins(
     religionIds: Uint16Array,
     indexedReligions: Religion[],
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context: EngineRuntimeContext,
   ): Religion[] {
     const { pack } = context;
     const religionOriginsParamsMap: Record<
@@ -909,7 +906,7 @@ export class ReligionsModule {
   // growth algorithm to assign cells to religions
   private expandReligions(
     religions: Religion[],
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context: EngineRuntimeContext,
   ): Uint16Array {
     const { biomesData, pack } = context;
     const { cells } = pack;
@@ -987,7 +984,7 @@ export class ReligionsModule {
   // folk religions initially get all cells of their culture, and locked religions are retained
   private spreadFolkReligions(
     religions: Religion[],
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context: EngineRuntimeContext,
   ): Uint16Array {
     const cells = context.pack.cells;
     const hasPrior = cells.religion && true;
@@ -1013,9 +1010,7 @@ export class ReligionsModule {
     return religionIds;
   }
 
-  private checkCenters(
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  private checkCenters(context: EngineRuntimeContext) {
     const { pack } = context;
     const cells = pack.cells;
     pack.religions.forEach((r) => {
@@ -1030,7 +1025,7 @@ export class ReligionsModule {
     });
   }
 
-  recalculate(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+  recalculate(context: EngineRuntimeContext) {
     const { pack } = context;
     const newReligionIds = this.expandReligions(pack.religions, context);
     pack.cells.religion = newReligionIds;
@@ -1038,10 +1033,7 @@ export class ReligionsModule {
     this.checkCenters(context);
   }
 
-  add(
-    center: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  add(center: number, context: EngineRuntimeContext) {
     const { cells, cultures, religions } = context.pack;
     const religionId = cells.religion[center];
     const i = religions.length;
@@ -1121,7 +1113,7 @@ export class ReligionsModule {
   // get supreme deity name
   getDeityName(
     culture: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context: EngineRuntimeContext,
   ): string | undefined {
     return this.getDeityNameForContext(culture, context);
   }
@@ -1144,7 +1136,7 @@ export class ReligionsModule {
     form: string,
     deity: string | null,
     center: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context: EngineRuntimeContext,
   ): [string, string] {
     const { cells, cultures, burgs, states } = context.pack;
 

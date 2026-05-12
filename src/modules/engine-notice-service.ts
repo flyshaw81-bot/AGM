@@ -27,16 +27,99 @@ export type EngineNoticeService = {
   showGenerationError: (error: unknown) => void;
 };
 
-export function createJQueryNoticeDialogHost(): EngineNoticeDialogHost {
+declare global {
+  var EngineNoticeService: EngineNoticeService;
+}
+
+function getDocument(): Document | undefined {
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
+}
+
+function getNoticeContainer(documentRef: Document) {
+  const existing = documentRef.getElementById("dialogs");
+  if (existing) return existing;
+
+  const container = documentRef.createElement("div");
+  container.id = "dialogs";
+  documentRef.body?.appendChild(container);
+  return container;
+}
+
+export function createBrowserNoticeDialogHost(): EngineNoticeDialogHost {
+  let html = "";
+
   return {
-    setHtml: (html) => {
-      if (globalThis.alertMessage) globalThis.alertMessage.innerHTML = html;
+    setHtml: (nextHtml) => {
+      html = nextHtml;
+      const documentRef = getDocument();
+      if (!documentRef) return;
+
+      const message = documentRef.getElementById("agmNoticeDialogMessage");
+      if (message) message.innerHTML = html;
     },
-    open: (notice) => {
-      globalThis.$?.("#alert")?.dialog?.(notice);
+    open: ({ title, buttons }) => {
+      const documentRef = getDocument();
+      if (!documentRef) return;
+
+      const container = getNoticeContainer(documentRef);
+      const dialog =
+        documentRef.getElementById("agmNoticeDialog") ??
+        documentRef.createElement("section");
+      dialog.id = "agmNoticeDialog";
+      dialog.dataset.agmEngineDialog = "notice";
+      dialog.setAttribute("role", "dialog");
+      dialog.setAttribute("aria-modal", "true");
+      dialog.hidden = false;
+      dialog.className = "studio-input-dialog";
+      dialog.innerHTML = /* html */ `
+        <div class="studio-input-dialog__scrim"></div>
+        <div class="studio-input-dialog__panel">
+          <div class="studio-input-dialog__label"></div>
+          <div id="agmNoticeDialogMessage"></div>
+          <div class="studio-input-dialog__actions"></div>
+        </div>
+      `;
+
+      const titleNode = dialog.querySelector<HTMLElement>(
+        ".studio-input-dialog__label",
+      );
+      if (titleNode) titleNode.textContent = title;
+
+      const message = dialog.querySelector<HTMLElement>(
+        "#agmNoticeDialogMessage",
+      );
+      if (message) message.innerHTML = html;
+
+      const actions = dialog.querySelector<HTMLElement>(
+        ".studio-input-dialog__actions",
+      );
+      if (actions) {
+        actions.innerHTML = "";
+        for (const [label, action] of Object.entries(buttons ?? {})) {
+          const button = documentRef.createElement("button");
+          button.type = "button";
+          button.className = "studio-input-dialog__button";
+          button.textContent = label;
+          button.addEventListener("click", () => action.call(dialog));
+          actions.appendChild(button);
+        }
+      }
+
+      if (!dialog.parentElement) container.appendChild(dialog);
     },
     close: (dialog) => {
-      globalThis.$?.(dialog)?.dialog?.("close");
+      if (typeof HTMLElement !== "undefined" && dialog instanceof HTMLElement) {
+        dialog.hidden = true;
+        return;
+      }
+
+      const documentRef = getDocument();
+      const notice = documentRef?.getElementById("agmNoticeDialog");
+      if (notice) notice.hidden = true;
     },
   };
 }
@@ -104,8 +187,20 @@ export function createEngineNoticeService(
 }
 
 export function createGlobalNoticeService(
-  dialogHost: EngineNoticeDialogHost = createJQueryNoticeDialogHost(),
+  dialogHost: EngineNoticeDialogHost = createBrowserNoticeDialogHost(),
   actionTargets: EngineNoticeActionTargets = createGlobalNoticeActionTargets(),
 ): EngineNoticeService {
   return createEngineNoticeService(dialogHost, actionTargets);
 }
+
+function getWindow(): (Window & typeof globalThis) | undefined {
+  try {
+    return globalThis.window;
+  } catch {
+    return undefined;
+  }
+}
+
+const runtimeWindow = getWindow();
+if (runtimeWindow)
+  runtimeWindow.EngineNoticeService = createGlobalNoticeService();

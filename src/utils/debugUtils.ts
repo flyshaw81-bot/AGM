@@ -1,7 +1,8 @@
-import { curveBundle, line, max, min } from "d3";
 import { C_12 } from "./colorUtils";
 import { getGridPolygon } from "./graphUtils";
 import { normalize } from "./numberUtils";
+import { curveBundle, line } from "./shapeUtils";
+import { max, min } from "./statUtils";
 import { round } from "./stringUtils";
 
 const getWindow = (): Window | undefined => {

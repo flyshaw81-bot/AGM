@@ -1,4 +1,6 @@
+import type { EngineRuntimeContext } from "../modules/engine-runtime-context";
 import { rn } from "../utils";
+import { createBrowserRendererContext } from "./renderer-runtime-context";
 
 interface Marker {
   i: number;
@@ -99,24 +101,25 @@ function markerRenderer(marker: Marker, rescale = 1): string {
     </svg>`;
 }
 
-const markersRenderer = (): void => {
-  TIME && console.time("drawMarkers");
+export const markersRenderer = (context: EngineRuntimeContext): void => {
+  context.timing.shouldTime && console.time("drawMarkers");
 
   const rescale = +markers.attr("rescale");
   const pinned = +markers.attr("pinned");
 
   const markersData: Marker[] = pinned
-    ? pack.markers.filter((m: Marker) => m.pinned)
-    : pack.markers;
+    ? context.pack.markers.filter((m: Marker) => m.pinned)
+    : context.pack.markers;
   const html = markersData.map((marker) => markerRenderer(marker, rescale));
   markers.html(html.join(""));
 
-  TIME && console.timeEnd("drawMarkers");
+  context.timing.shouldTime && console.timeEnd("drawMarkers");
 };
 
 const runtimeWindow = getWindow();
 if (runtimeWindow) {
-  runtimeWindow.drawMarkers = markersRenderer;
+  runtimeWindow.drawMarkers = () =>
+    markersRenderer(createBrowserRendererContext());
   runtimeWindow.drawMarker = markerRenderer;
   runtimeWindow.getPin = getPinForShape;
 }

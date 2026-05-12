@@ -9,6 +9,7 @@ import {
   openEngineEditor,
   resolveEngineFocusGeometry,
 } from "../bridge/engineActions";
+import { setEnginePendingCanvasSize } from "../bridge/engineProjectActions";
 import type {
   AgmDocumentDraft,
   WorldDocumentDraft,
@@ -86,6 +87,12 @@ export type StudioShellTargets = {
   ) => boolean;
   undoCanvasEditEntry: typeof undoCanvasEditEntry;
   applyProjectWorkspaceChange: typeof applyProjectWorkspaceChange;
+  setPendingViewportCanvasSize: (width: number, height: number) => void;
+  confirmViewportCanvasRegenerate: (
+    language: StudioState["language"],
+    width: number,
+    height: number,
+  ) => boolean;
   persistLanguage: typeof persistLanguage;
   persistTheme: typeof persistTheme;
   persistNavigationCollapsed: typeof persistNavigationCollapsed;
@@ -143,6 +150,15 @@ export type StudioShellCanvasAdapter = {
 
 export type StudioShellWorkspaceAdapter = {
   applyProjectWorkspaceChange: typeof applyProjectWorkspaceChange;
+};
+
+export type StudioShellViewportAdapter = {
+  setPendingViewportCanvasSize: (width: number, height: number) => void;
+  confirmViewportCanvasRegenerate: (
+    language: StudioState["language"],
+    width: number,
+    height: number,
+  ) => boolean;
 };
 
 export type StudioShellPreferenceAdapter = {
@@ -219,6 +235,22 @@ export function createGlobalStudioShellWorkspaceAdapter(): StudioShellWorkspaceA
   };
 }
 
+export function createGlobalStudioShellViewportAdapter(): StudioShellViewportAdapter {
+  return {
+    setPendingViewportCanvasSize: (width, height) => {
+      setEnginePendingCanvasSize("width", width);
+      setEnginePendingCanvasSize("height", height);
+    },
+    confirmViewportCanvasRegenerate: (language, width, height) => {
+      const message =
+        language === "zh-CN"
+          ? `更换画布尺寸会删除当前地图，并按 ${width} × ${height} 重新生成。是否继续？`
+          : `Changing canvas size will delete the current map and regenerate at ${width} x ${height}. Continue?`;
+      return globalThis.window?.confirm?.(message) ?? true;
+    },
+  };
+}
+
 export function createGlobalStudioShellPreferenceAdapter(
   preferenceTargets: StudioPreferenceTargets = createGlobalStudioPreferenceTargets(),
 ): StudioShellPreferenceAdapter {
@@ -237,6 +269,7 @@ export function createStudioShellTargets(
   autoFixAdapter: StudioShellAutoFixAdapter,
   canvasAdapter: StudioShellCanvasAdapter,
   workspaceAdapter: StudioShellWorkspaceAdapter,
+  viewportAdapter: StudioShellViewportAdapter,
   preferenceAdapter: StudioShellPreferenceAdapter,
 ): StudioShellTargets {
   return {
@@ -260,6 +293,9 @@ export function createStudioShellTargets(
     applyCanvasPaintPreview: canvasAdapter.applyCanvasPaintPreview,
     undoCanvasEditEntry: canvasAdapter.undoCanvasEditEntry,
     applyProjectWorkspaceChange: workspaceAdapter.applyProjectWorkspaceChange,
+    setPendingViewportCanvasSize: viewportAdapter.setPendingViewportCanvasSize,
+    confirmViewportCanvasRegenerate:
+      viewportAdapter.confirmViewportCanvasRegenerate,
     persistLanguage: preferenceAdapter.persistLanguage,
     persistTheme: preferenceAdapter.persistTheme,
     persistNavigationCollapsed: preferenceAdapter.persistNavigationCollapsed,
@@ -274,6 +310,7 @@ export function createGlobalStudioShellTargets(): StudioShellTargets {
     createGlobalStudioShellAutoFixAdapter(),
     createGlobalStudioShellCanvasAdapter(),
     createGlobalStudioShellWorkspaceAdapter(),
+    createGlobalStudioShellViewportAdapter(),
     createGlobalStudioShellPreferenceAdapter(),
   );
 }
@@ -288,6 +325,7 @@ export function createRuntimeStudioShellTargets(
     createGlobalStudioShellAutoFixAdapter(),
     createRuntimeStudioShellCanvasAdapter(context),
     createGlobalStudioShellWorkspaceAdapter(),
+    createGlobalStudioShellViewportAdapter(),
     createGlobalStudioShellPreferenceAdapter(),
   );
 }

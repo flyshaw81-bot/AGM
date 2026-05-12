@@ -1,5 +1,6 @@
 import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 import type { EngineAutoFixPreviewChange } from "./engineActionTypes";
+import { getBrowserPack } from "./engineBrowserPackAdapter";
 
 export type EngineSettlementWritebackPoint = {
   x: number;
@@ -64,7 +65,7 @@ function pointOrUndefined(
 export function createGlobalSettlementWritebackMapAdapter(): EngineSettlementWritebackMapAdapter {
   return {
     findStateBurg: (stateId) => {
-      const burg = getGlobalPack()?.burgs?.find(
+      const burg = getBrowserPack()?.burgs?.find(
         (item) =>
           item &&
           !item.removed &&
@@ -75,13 +76,13 @@ export function createGlobalSettlementWritebackMapAdapter(): EngineSettlementWri
       return burg ? { x: burg.x, y: burg.y } : undefined;
     },
     getStateCellIds: (stateId) =>
-      Array.from(getGlobalPack()?.cells?.i || []).filter(
-        (cellId) => getGlobalPack()?.cells?.state?.[cellId] === stateId,
+      Array.from(getBrowserPack()?.cells?.i || []).filter(
+        (cellId) => getBrowserPack()?.cells?.state?.[cellId] === stateId,
       ),
     getCellPoint: (cellId) =>
-      pointOrUndefined(getGlobalPack()?.cells?.p?.[cellId]),
+      pointOrUndefined(getBrowserPack()?.cells?.p?.[cellId]),
     getProvinceCenterCell: (provinceId) =>
-      getGlobalPack()?.provinces?.[provinceId]?.center,
+      getBrowserPack()?.provinces?.[provinceId]?.center,
   };
 }
 
@@ -132,12 +133,4 @@ export function createRuntimeSettlementWritebackTargets(
   return createSettlementWritebackTargets(
     createRuntimeSettlementWritebackMapAdapter(context),
   );
-}
-
-function getGlobalPack(): typeof pack | undefined {
-  try {
-    return globalThis.pack;
-  } catch {
-    return undefined;
-  }
 }

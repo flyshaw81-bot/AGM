@@ -18,14 +18,60 @@ import { normalizeWorkbenchQuery } from "./directWorkbenchFiltering";
 import {
   DIRECT_WORKBENCH_ROW_LIMITS,
   limitDirectWorkbenchRows,
+  renderDirectSelectOptions,
 } from "./directWorkbenchShared";
-import {
-  renderDirectWorkbenchEntityRow,
-  renderDirectWorkbenchHeader,
-  renderDirectWorkbenchSearchControls,
-  renderDirectWorkbenchStats,
-} from "./directWorkbenchViewParts";
-import { t } from "./shellShared";
+import { renderDirectWorkbenchEntityRow } from "./directWorkbenchViewParts";
+import { escapeHtml, studioIcon, t } from "./shellShared";
+
+type NativeStateOption = { value: string; label: string };
+type NativeStateSelectOptions = {
+  className?: string;
+  hidden?: boolean;
+  icon?: string;
+};
+
+function renderNativeStateStat(label: string, value: string | number) {
+  return `<div class="studio-native-states__stat"><strong>${escapeHtml(String(value))}</strong><span>${escapeHtml(label)}</span></div>`;
+}
+
+function renderNativeStateSelect(
+  id: string,
+  label: string,
+  options: NativeStateOption[],
+  value: string,
+  selectOptions: NativeStateSelectOptions = {},
+) {
+  const classes = ["studio-native-states__select", selectOptions.className]
+    .filter(Boolean)
+    .join(" ");
+  const displayLabel =
+    id === "studioStateFilterSelect" && label !== "Filter" ? "筛选" : label;
+
+  return `<label class="${escapeHtml(classes)}"${selectOptions.hidden ? ' aria-hidden="true"' : ""}>
+    ${selectOptions.icon ? studioIcon(selectOptions.icon, "studio-native-states__select-icon") : ""}
+    <span>${escapeHtml(displayLabel)}</span>
+    <select id="${escapeHtml(id)}"${selectOptions.hidden ? ' tabindex="-1"' : ""}>${renderDirectSelectOptions(options, value)}</select>
+  </label>`;
+}
+
+function renderNativeStateListHeader(
+  language: StudioLanguage,
+  activeCount: number,
+  visibleCount: number,
+) {
+  return `
+    <div class="studio-native-states__list-title">
+      <div>
+        <h3>${t(language, "国家列表", "State list")}</h3>
+      </div>
+      <strong>${visibleCount}/${activeCount}</strong>
+    </div>
+  `;
+}
+
+function renderNativeStateCreateStub(language: StudioLanguage) {
+  return `<button class="studio-native-states__new" type="button" disabled title="${t(language, "需要下一步接入创建国家写回 API", "Requires the next create-state writeback API pass")}">${studioIcon("plus", "studio-native-states__new-icon")}<span>${t(language, "新建国家", "New state")}</span></button>`;
+}
 
 export function renderDirectStatesWorkbench(
   entitySummary: EngineEntitySummary,
@@ -51,10 +97,10 @@ export function renderDirectStatesWorkbench(
   );
   const filterOptions: { value: DirectStateFilterMode; label: string }[] = [
     { value: "all", label: t(language, "全部国家", "All states") },
-    { value: "populated", label: t(language, "Populated", "Populated") },
+    { value: "populated", label: t(language, "有人口", "Populated") },
     {
       value: "neighbors",
-      label: t(language, "Has neighbors", "Has neighbors"),
+      label: t(language, "有邻国", "Has neighbors"),
     },
   ];
   const sortOptions: { value: DirectStateSortMode; label: string }[] = [
@@ -63,64 +109,48 @@ export function renderDirectStatesWorkbench(
     { value: "area", label: t(language, "面积", "Area") },
     { value: "id", label: "ID" },
   ];
+  const visibleStates = limitDirectWorkbenchRows(
+    filteredStates,
+    DIRECT_WORKBENCH_ROW_LIMITS.states,
+  );
 
   return `
-    <section id="studioDirectStatesWorkbench" class="studio-panel studio-direct-editor" data-direct-workbench="states">
-      ${renderDirectWorkbenchHeader({
-        eyebrow: t(language, "AGM editor", "AGM editor"),
-        title: t(language, "States Workbench", "States Workbench"),
-        badge: t(language, "直接编辑", "Direct edit"),
-      })}
-      <p class="studio-panel__text">${t(language, "Select a state, edit identity, form, color, population, and references in the inspector, then write back to the current map.", "Select a state, edit identity, form, color, population, and references in the inspector, then write back to the current map.")}</p>
-      ${renderDirectWorkbenchStats([
-        { label: t(language, "国家", "States"), value: activeStates.length },
-        {
-          label: t(language, "当前列表", "Current list"),
-          value: filteredStates.length,
-        },
-        {
-          label: t(language, "Total population", "Total population"),
-          value: formatStatePopulation(totalPopulation),
-        },
-        {
-          label: t(language, "排序", "Sort"),
-          value:
-            sortOptions.find(
-              (option) => option.value === directEditor.stateSortMode,
-            )?.label ?? "-",
-        },
-      ])}
-      ${renderDirectWorkbenchSearchControls({
-        searchId: "studioStateSearchInput",
-        searchLabel: t(language, "搜索国家", "Search states"),
-        searchPlaceholder: t(
-          language,
-          "输入名称、ID、文化或政体",
-          "Name, ID, culture or form",
-        ),
-        searchValue: directEditor.stateSearchQuery,
-        selects: [
-          {
-            id: "studioStateFilterSelect",
-            label: t(language, "Filter", "Filter"),
-            options: filterOptions,
-            value: directEditor.stateFilterMode,
-          },
-          {
-            id: "studioStateSortSelect",
-            label: t(language, "排序", "Sort"),
-            options: sortOptions,
-            value: directEditor.stateSortMode,
-          },
-        ],
-      })}
-      <div class="studio-direct-states">
-        <div class="studio-direct-states__list">
+    <section id="studioDirectStatesWorkbench" class="studio-native-states studio-direct-editor" data-native-states-drawer="true" data-direct-workbench="states">
+      <div class="studio-native-states__toolbar studio-native-identity__toolbar" data-native-states-toolbar="true" data-direct-workbench-toolbar="true">
+        <label class="studio-native-states__search studio-native-identity__search">
+          ${studioIcon("search", "studio-native-states__search-icon")}
+          <input id="studioStateSearchInput" type="search" value="${escapeHtml(directEditor.stateSearchQuery)}" placeholder="${t(language, "搜索国家、ID、文化或政体", "Search states...")}" autocomplete="off" />
+        </label>
+        <div class="studio-native-states__filters studio-native-identity__filters">
+          ${renderNativeStateSelect(
+            "studioStateFilterSelect",
+            t(language, "筛选", "Filter"),
+            filterOptions,
+            directEditor.stateFilterMode,
+            {
+              className:
+                "studio-native-states__select--filter studio-native-identity__select",
+              icon: "filter",
+            },
+          )}
+          ${renderNativeStateSelect(
+            "studioStateSortSelect",
+            t(language, "排序", "Sort"),
+            sortOptions,
+            directEditor.stateSortMode,
+            {
+              className: "studio-native-states__select--compat-sort",
+              hidden: true,
+            },
+          )}
+        </div>
+      </div>
+      <aside class="studio-native-states__list studio-direct-states__list">
+        ${renderNativeStateListHeader(language, activeStates.length, filteredStates.length)}
+        <div class="studio-native-states__list-section"><span>${t(language, "国家列表", "State list")}</span><strong>${visibleStates.length}</strong></div>
+        <div class="studio-native-states__rows">
           ${
-            limitDirectWorkbenchRows(
-              filteredStates,
-              DIRECT_WORKBENCH_ROW_LIMITS.states,
-            )
+            visibleStates
               .map((state) =>
                 renderDirectWorkbenchEntityRow({
                   action: "direct-state-select",
@@ -134,8 +164,17 @@ export function renderDirectStatesWorkbench(
                 }),
               )
               .join("") ||
-            `<div class="studio-panel__text">${t(language, "No matching states", "No matching states")}</div>`
+            `<div class="studio-native-states__empty">${t(language, "没有匹配的国家", "No matching states")}</div>`
           }
+        </div>
+        ${renderNativeStateCreateStub(language)}
+      </aside>
+      <div class="studio-native-states__divider"></div>
+      <article class="studio-native-states__detail-wrap">
+        <div class="studio-native-states__stats">
+          ${renderNativeStateStat(t(language, "国家", "States"), activeStates.length)}
+          ${renderNativeStateStat(t(language, "当前列表", "Current list"), filteredStates.length)}
+          ${renderNativeStateStat(t(language, "总人口", "Total population"), formatStatePopulation(totalPopulation))}
         </div>
         ${renderNativeStateDetail({
           cultureOptions,
@@ -145,7 +184,7 @@ export function renderDirectStatesWorkbench(
           selectedColor,
           selectedState,
         })}
-      </div>
+      </article>
     </section>
   `;
 }

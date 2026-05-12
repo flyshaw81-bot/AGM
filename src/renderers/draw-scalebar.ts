@@ -1,6 +1,6 @@
-import type { Selection } from "d3";
-import { range } from "d3";
 import { rn } from "../utils";
+import { range } from "../utils/statUtils";
+import type { Selection } from "../utils/svgSelection";
 
 declare global {
   var drawScaleBar: (
@@ -22,12 +22,7 @@ const getWindow = (): (Window & typeof globalThis) | undefined => {
   }
 };
 
-type ScaleBarSelection = d3.Selection<
-  SVGGElement,
-  unknown,
-  HTMLElement,
-  unknown
->;
+type ScaleBarSelection = Selection<SVGGElement, unknown, HTMLElement, unknown>;
 
 const scaleBarRenderer = (
   scaleBar: ScaleBarSelection,
@@ -35,7 +30,7 @@ const scaleBarRenderer = (
 ): void => {
   if (!scaleBar.size() || scaleBar.style("display") === "none") return;
 
-  const unit = distanceUnitInput.value;
+  const unit = distanceUnit;
   const size = +scaleBar.attr("data-bar-size");
 
   const length = getLength(scaleBar, scaleLevel);

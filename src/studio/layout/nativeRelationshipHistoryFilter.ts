@@ -70,7 +70,7 @@ export function applyDirectRelationshipHistoryFilter({
           `[data-studio-action='direct-relationship-history-filter'][data-history-filter='${filter}']`,
         )
         ?.childNodes[0]?.textContent?.trim() || filter;
-    summary.textContent = `${t(language, "????", "Current filter")}: ${filterLabel} \u00b7 ${t(language, "??", "Visible")}: ${visibleCount} / ${rows.length}`;
+    summary.textContent = `${t(language, "当前筛选", "Current filter")}: ${filterLabel} \u00b7 ${t(language, "可见", "Visible")}: ${visibleCount} / ${rows.length}`;
   }
   if (emptyState) emptyState.hidden = visibleCount > 0;
 }

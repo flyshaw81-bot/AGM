@@ -3,6 +3,7 @@ import {
   updateEngineBurg,
   updateEngineCulture,
   updateEngineDiplomacy,
+  updateEngineMarker,
   updateEngineRoute,
   updateEngineStateName,
 } from "./engineEntityMutations";
@@ -17,6 +18,7 @@ function createTargets(overrides: Partial<EngineEntityMutationTargets>) {
     getProvince: vi.fn(),
     getRoute: vi.fn(),
     getZone: vi.fn(),
+    getMarker: vi.fn(),
     redrawStates: vi.fn(),
     redrawStateLabels: vi.fn(),
     redrawCultures: vi.fn(),
@@ -26,6 +28,7 @@ function createTargets(overrides: Partial<EngineEntityMutationTargets>) {
     redrawProvinces: vi.fn(),
     redrawRoute: vi.fn(),
     redrawZones: vi.fn(),
+    redrawMarkers: vi.fn(),
     ...overrides,
   } as EngineEntityMutationTargets;
 }
@@ -129,6 +132,49 @@ describe("engine entity mutations", () => {
 
     expect(route.group).toBe("trails");
     expect(targets.redrawRoute).toHaveBeenCalledWith(route);
+  });
+
+  it("updates markers through injected targets and redraws marker layer", () => {
+    const marker = {
+      i: 8,
+      type: "ruins",
+      icon: "R",
+      size: 24,
+      pinned: false,
+    };
+    const targets = createTargets({
+      getMarker: vi.fn(() => marker),
+      redrawMarkers: vi.fn(),
+    });
+
+    expect(
+      updateEngineMarker(
+        8,
+        {
+          type: "dungeon",
+          icon: "D",
+          size: 32,
+          pin: "pin",
+          fill: "#ffffff",
+          stroke: "#111111",
+          pinned: true,
+          locked: true,
+        },
+        targets,
+      ),
+    ).toBe(true);
+
+    expect(marker).toMatchObject({
+      type: "dungeon",
+      icon: "D",
+      size: 32,
+      pin: "pin",
+      fill: "#ffffff",
+      stroke: "#111111",
+      pinned: true,
+      lock: true,
+    });
+    expect(targets.redrawMarkers).toHaveBeenCalledWith();
   });
 
   it("updates diplomacy on both states through injected targets", () => {

@@ -1,10 +1,9 @@
-import { quadtree } from "d3-quadtree";
-import { minmax, normalize, rn } from "../utils/numberUtils";
+﻿import { minmax, normalize, rn } from "../utils/numberUtils";
 import { each, gauss, P } from "../utils/probabilityUtils";
+import { quadtree } from "../utils/quadtree";
 import {
   type EngineRuntimeContext,
   getEngineWorldDimensions,
-  getGlobalEngineRuntimeContext,
 } from "./engine-runtime-context";
 
 declare global {
@@ -46,7 +45,7 @@ export interface Burg {
 }
 
 export class BurgModule {
-  shift(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+  shift(context: EngineRuntimeContext) {
     const { cells, features, burgs } = context.pack;
     const temp = context.grid.cells.temp;
 
@@ -115,7 +114,7 @@ export class BurgModule {
     }
   }
 
-  generate(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+  generate(context: EngineRuntimeContext) {
     context.timing.shouldTime && console.time("generateBurgs");
     const { cells } = context.pack;
     const { graphWidth, graphHeight } = getEngineWorldDimensions(context);
@@ -255,8 +254,8 @@ export class BurgModule {
 
   getType(
     cellId: number,
-    port?: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    port: number | undefined,
+    context: EngineRuntimeContext,
   ) {
     const { cells, features } = context.pack;
 
@@ -280,10 +279,7 @@ export class BurgModule {
     return "Generic";
   }
 
-  private definePopulation(
-    burg: Burg,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  private definePopulation(burg: Burg, context: EngineRuntimeContext) {
     const cellId = burg.cell;
     let population = context.pack.cells.s[cellId] / 5;
     if (burg.capital) population *= 1.5;
@@ -294,10 +290,7 @@ export class BurgModule {
     burg.population = rn(Math.max(population, 0.01), 3);
   }
 
-  private defineEmblem(
-    burg: Burg,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  private defineEmblem(burg: Burg, context: EngineRuntimeContext) {
     burg.type = this.getType(burg.cell, burg.port, context);
 
     const state = context.pack.states[burg.state as number];
@@ -318,10 +311,7 @@ export class BurgModule {
     burg.coa.shield = context.heraldry.getShield(burg.culture!, burg.state!);
   }
 
-  private defineFeatures(
-    burg: Burg,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  private defineFeatures(burg: Burg, context: EngineRuntimeContext) {
     const pop = burg.population as number;
     burg.citadel = Number(
       burg.capital || (pop > 50 && P(0.75)) || (pop > 15 && P(0.5)) || P(0.1),
@@ -429,7 +419,7 @@ export class BurgModule {
   defineGroup(
     burg: Burg,
     populations: number[],
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context: EngineRuntimeContext,
   ) {
     if (burg.lock && burg.group) {
       // locked burgs: don't change group if it still exists
@@ -489,7 +479,7 @@ export class BurgModule {
     }
   }
 
-  specify(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+  specify(context: EngineRuntimeContext) {
     context.timing.shouldTime && console.time("specifyBurgs");
 
     context.pack.burgs.forEach((burg) => {
@@ -512,10 +502,7 @@ export class BurgModule {
     context.timing.shouldTime && console.timeEnd("specifyBurgs");
   }
 
-  private createWatabouCityLinks(
-    burg: Burg,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  private createWatabouCityLinks(burg: Burg, context: EngineRuntimeContext) {
     const cells = context.pack.cells;
     const { i, name, population: burgPopulation, cell } = burg;
     const burgSeed =
@@ -586,10 +573,7 @@ export class BurgModule {
     return { link, preview: `${link}&preview=1` };
   }
 
-  private createWatabouVillageLinks(
-    burg: Burg,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  private createWatabouVillageLinks(burg: Burg, context: EngineRuntimeContext) {
     const { cells, features } = context.pack;
     const { i, population, cell } = burg;
 
@@ -668,7 +652,7 @@ export class BurgModule {
 
   private createWatabouDwellingLinks(
     burg: Burg,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context: EngineRuntimeContext,
   ) {
     const burgSeed = context.seed + String(burg.i).padStart(4, "0");
     const pop = rn(
@@ -699,7 +683,7 @@ export class BurgModule {
 
   getPreview(
     burg: Burg,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context: EngineRuntimeContext,
   ): { link: string | null; preview: string | null } {
     const previewGeneratorsMap: Record<
       string,
@@ -723,10 +707,7 @@ export class BurgModule {
     return previewGeneratorsMap[group.preview](burg);
   }
 
-  add(
-    [x, y]: [number, number],
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  add([x, y]: [number, number], context: EngineRuntimeContext) {
     const { pack } = context;
     const { cells } = pack;
 
@@ -775,11 +756,7 @@ export class BurgModule {
     return burgId;
   }
 
-  changeGroup(
-    burg: Burg,
-    group: string | null,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  changeGroup(burg: Burg, group: string | null, context: EngineRuntimeContext) {
     if (group) {
       burg.group = group;
     } else {
@@ -787,16 +764,13 @@ export class BurgModule {
       const populations = validBurgs
         .map((b) => b.population as number)
         .sort((a, b) => a - b);
-      this.defineGroup(burg, populations);
+      this.defineGroup(burg, populations, context);
     }
 
     context.rendering?.drawBurg(burg);
   }
 
-  remove(
-    burgId: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  remove(burgId: number, context: EngineRuntimeContext) {
     const burg = context.pack.burgs[burgId];
     if (!burg) {
       context.feedback?.showToast(`Burg ${burgId} not found`, false, "error");

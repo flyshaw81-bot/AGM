@@ -14,14 +14,14 @@ import type { EngineRuntimeContext } from "./engine-runtime-context";
 
 const originalDocument = globalThis.document;
 const originalPointsInput = globalThis.pointsInput;
-const originalHeightExponentInput = globalThis.heightExponentInput;
+const originalHeightExponent = globalThis.heightExponent;
 const originalPointsInputDescriptor = Object.getOwnPropertyDescriptor(
   globalThis,
   "pointsInput",
 );
-const originalHeightExponentInputDescriptor = Object.getOwnPropertyDescriptor(
+const originalHeightExponentDescriptor = Object.getOwnPropertyDescriptor(
   globalThis,
-  "heightExponentInput",
+  "heightExponent",
 );
 
 function installDocument(
@@ -38,13 +38,16 @@ function installDocument(
 
 function createTargets(
   controls: Record<string, Partial<HTMLInputElement | HTMLSelectElement>>,
-  globals: Record<string, Partial<HTMLInputElement>> = {},
+  globals: {
+    pointsInput?: Partial<HTMLInputElement>;
+    heightExponent?: number;
+  } = {},
 ): EngineGenerationSettingsTargets {
   return {
     getInput: (id) => controls[id] ?? null,
     getSelect: (id) => controls[id] ?? null,
     getPointsInput: () => globals.pointsInput,
-    getHeightExponentInput: () => globals.heightExponentInput,
+    getHeightExponent: () => globals.heightExponent ?? 1,
   };
 }
 
@@ -68,16 +71,16 @@ describe("createGlobalGenerationSettings", () => {
         writable: true,
       });
     }
-    if (originalHeightExponentInputDescriptor) {
+    if (originalHeightExponentDescriptor) {
       Object.defineProperty(
         globalThis,
-        "heightExponentInput",
-        originalHeightExponentInputDescriptor,
+        "heightExponent",
+        originalHeightExponentDescriptor,
       );
     } else {
-      Object.defineProperty(globalThis, "heightExponentInput", {
+      Object.defineProperty(globalThis, "heightExponent", {
         configurable: true,
-        value: originalHeightExponentInput,
+        value: originalHeightExponent,
         writable: true,
       });
     }
@@ -86,7 +89,7 @@ describe("createGlobalGenerationSettings", () => {
   it("uses stable defaults when optional generation controls are absent", () => {
     installDocument({});
     globalThis.pointsInput = undefined as unknown as HTMLInputElement;
-    globalThis.heightExponentInput = undefined as unknown as HTMLInputElement;
+    globalThis.heightExponent = undefined as unknown as number;
 
     expect(createGlobalGenerationSettings()).toEqual({
       heightmapTemplateId: undefined,
@@ -112,7 +115,7 @@ describe("createGlobalGenerationSettings", () => {
   it("keeps global generation DOM targets safe when document is absent", () => {
     globalThis.document = undefined as unknown as Document;
     globalThis.pointsInput = undefined as unknown as HTMLInputElement;
-    globalThis.heightExponentInput = undefined as unknown as HTMLInputElement;
+    globalThis.heightExponent = undefined as unknown as number;
 
     expect(createGlobalGenerationSettings()).toEqual({
       heightmapTemplateId: undefined,
@@ -143,7 +146,7 @@ describe("createGlobalGenerationSettings", () => {
       },
     });
     globalThis.pointsInput = undefined as unknown as HTMLInputElement;
-    globalThis.heightExponentInput = undefined as unknown as HTMLInputElement;
+    globalThis.heightExponent = undefined as unknown as number;
 
     expect(createGlobalGenerationSettings()).toEqual({
       heightmapTemplateId: undefined,
@@ -177,7 +180,7 @@ describe("createGlobalGenerationSettings", () => {
       writable: true,
     });
     globalThis.pointsInput = undefined as unknown as HTMLInputElement;
-    globalThis.heightExponentInput = undefined as unknown as HTMLInputElement;
+    globalThis.heightExponent = undefined as unknown as number;
 
     expect(createGlobalGenerationSettings()).toEqual({
       heightmapTemplateId: undefined,
@@ -207,7 +210,7 @@ describe("createGlobalGenerationSettings", () => {
         throw new Error("points blocked");
       },
     });
-    Object.defineProperty(globalThis, "heightExponentInput", {
+    Object.defineProperty(globalThis, "heightExponent", {
       configurable: true,
       get: () => {
         throw new Error("height exponent blocked");
@@ -217,7 +220,7 @@ describe("createGlobalGenerationSettings", () => {
     const targets = createGlobalGenerationControlTargets();
 
     expect(targets.getPointsInput()).toBeUndefined();
-    expect(targets.getHeightExponentInput()).toBeUndefined();
+    expect(targets.getHeightExponent()).toBe(1);
   });
 
   it("reads generation settings from global controls and DOM controls", () => {
@@ -243,9 +246,7 @@ describe("createGlobalGenerationSettings", () => {
     globalThis.pointsInput = {
       dataset: { cells: "12000" },
     } as unknown as HTMLInputElement;
-    globalThis.heightExponentInput = {
-      value: "1.8",
-    } as HTMLInputElement;
+    globalThis.heightExponent = 1.8;
 
     expect(createGlobalGenerationSettings()).toMatchObject({
       heightmapTemplateId: "continents",
@@ -293,7 +294,7 @@ describe("createGlobalGenerationSettings", () => {
           },
           {
             pointsInput: { dataset: { cells: "18000" } },
-            heightExponentInput: { value: "2.4" },
+            heightExponent: 2.4,
           },
         ),
       ),
@@ -331,7 +332,7 @@ describe("createGlobalGenerationSettings", () => {
     };
     const globalControlTargets: EngineGenerationGlobalControlTargets = {
       getPointsInput: () => ({ dataset: { cells: "4200" } }),
-      getHeightExponentInput: () => ({ value: "1.4" }),
+      getHeightExponent: () => 1.4,
     };
 
     expect(
@@ -373,7 +374,7 @@ describe("createGlobalGenerationSettings", () => {
         },
         {
           pointsInput: { dataset: { cells: "24000" } },
-          heightExponentInput: { value: "1.6" },
+          heightExponent: 1.6,
         },
       ),
     );

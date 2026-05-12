@@ -1,5 +1,5 @@
 export const panelsBaseStyles = `    .studio-panel {
-      background: color-mix(in srgb, var(--agm-surface-dark-2) 88%, #000000);
+      background: color-mix(in srgb, var(--agm-surface-dark-2) 88%, #08111a);
       border: 1px solid var(--studio-accent-22);
       border-radius: 14px;
       padding: 14px;
@@ -10,7 +10,7 @@ export const panelsBaseStyles = `    .studio-panel {
     .studio-panel__title {
       margin: 0 0 12px;
       font-size: 13px;
-      color: #fff8ec;
+      color: #e9eef1;
       letter-spacing: 0;
     }
 
@@ -27,7 +27,7 @@ export const panelsBaseStyles = `    .studio-panel {
       margin: 0 0 14px;
       font-size: 20px;
       line-height: 1.18;
-      color: #ffffff;
+      color: #f8fbfc;
       letter-spacing: -0.015em;
     }
 
@@ -35,7 +35,7 @@ export const panelsBaseStyles = `    .studio-panel {
       margin: 0;
       font-size: 12px;
       line-height: 1.5;
-      color: #b8ad99;
+      color: #7f909a;
     }
 
     .studio-panel__actions {
@@ -47,7 +47,7 @@ export const panelsBaseStyles = `    .studio-panel {
 
     .studio-slim-panel {
       border-color: var(--studio-accent-28);
-      background: linear-gradient(180deg, rgba(31, 27, 20, 0.94), rgba(18, 16, 13, 0.92));
+      background: linear-gradient(180deg, rgba(23, 32, 42, 0.94), rgba(13, 21, 29, 0.92));
     }
 
     .studio-advanced-section {
@@ -93,7 +93,7 @@ export const panelsBaseStyles = `    .studio-panel {
     }
 
     .studio-ghost--primary {
-      background: color-mix(in srgb, var(--studio-accent) 22%, rgba(14, 12, 9, 0.94));
+      background: color-mix(in srgb, var(--studio-accent) 22%, rgba(13, 21, 29, 0.94));
       border-color: color-mix(in srgb, var(--studio-accent) 48%, rgba(255, 255, 255, 0.1));
       color: white;
     }
@@ -133,7 +133,7 @@ export const panelsBaseStyles = `    .studio-panel {
     }
 
     .studio-canvas-summary strong {
-      color: #fff8ec;
+      color: #e9eef1;
       font-size: 14px;
       font-weight: 920;
       line-height: 1.05;

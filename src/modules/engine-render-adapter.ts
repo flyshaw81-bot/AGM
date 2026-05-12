@@ -1,4 +1,30 @@
+import { areaLayersRenderer } from "../renderers/draw-area-layers";
+import { bordersRenderer } from "../renderers/draw-borders";
+import {
+  burgIconsRenderer,
+  drawBurgIconRenderer,
+  removeBurgIconRenderer,
+} from "../renderers/draw-burg-icons";
+import {
+  burgLabelsRenderer,
+  drawBurgLabelRenderer,
+  removeBurgLabelRenderer,
+} from "../renderers/draw-burg-labels";
+import { emblemsRenderer } from "../renderers/draw-emblems";
+import { featuresRenderer } from "../renderers/draw-features";
+import { heightmapRenderer } from "../renderers/draw-heightmap";
+import {
+  iceRenderer,
+  redrawGlacierRenderer,
+  redrawIcebergRenderer,
+} from "../renderers/draw-ice";
+import { markersRenderer } from "../renderers/draw-markers";
+import { militaryRenderer } from "../renderers/draw-military";
+import { reliefIconsRenderer } from "../renderers/draw-relief-icons";
+import { stateLabelsRenderer } from "../renderers/draw-state-labels";
+import { temperatureRenderer } from "../renderers/draw-temperature";
 import type { PackedGraph } from "../types/PackedGraph";
+import type { EngineRuntimeContext } from "./engine-runtime-context";
 
 export type EngineRenderAdapter = {
   findCell: (
@@ -18,8 +44,26 @@ export type EngineRenderAdapter = {
   removeElementById: (id: string) => void;
   getElementTotalLengthById?: (id: string) => number | undefined;
   drawScaleBar: () => void;
+  drawFeatures?: () => void;
   drawHeightmap?: () => void;
+  drawTemperature?: () => void;
+  drawBorders?: () => void;
+  drawStateLabels?: (list?: number[]) => void;
+  drawReliefIcons?: () => void;
+  drawMilitary?: () => void;
+  drawMarkers?: () => void;
+  drawIce?: () => void;
+  drawBurgIcons?: () => void;
+  drawBurgLabels?: () => void;
+  drawEmblems?: () => void;
   drawBiomes?: () => void;
+  drawCultures?: () => void;
+  drawReligions?: () => void;
+  drawStates?: () => void;
+  drawProvinces?: () => void;
+  drawZones?: () => void;
+  drawRivers?: () => void;
+  drawRoutes?: () => void;
   drawCells?: () => void;
   invokeActiveZooming?: () => void;
 };
@@ -46,8 +90,58 @@ export type EngineRenderTargets = {
   selectScaleBar: () => unknown;
   getScale: () => number;
   drawScaleBar: (scaleBar: unknown, scale: number) => void;
+  drawFeatures?: () => void;
   drawHeightmap?: () => void;
+  drawTemperature?: () => void;
+  drawBorders?: () => void;
+  drawStateLabels?: (list?: number[]) => void;
+  drawReliefIcons?: () => void;
+  drawMilitary?: () => void;
+  drawMarkers?: () => void;
+  drawIce?: () => void;
+  drawBurgIcons?: () => void;
+  drawBurgLabels?: () => void;
+  drawEmblems?: () => void;
   drawBiomes?: () => void;
+  drawCultures?: () => void;
+  drawReligions?: () => void;
+  drawStates?: () => void;
+  drawProvinces?: () => void;
+  drawZones?: () => void;
+  drawRivers?: () => void;
+  drawRoutes?: () => void;
+  drawCells?: () => void;
+  invokeActiveZooming?: () => void;
+};
+
+export type EngineGlobalRenderFunctions = {
+  drawRoute?: (route: unknown) => void;
+  drawBurgIcon?: (burg: unknown) => void;
+  drawBurgLabel?: (burg: unknown) => void;
+  removeBurgIcon?: (burgId: number) => void;
+  removeBurgLabel?: (burgId: number) => void;
+  redrawIceberg?: (iceId: number) => void;
+  redrawGlacier?: (iceId: number) => void;
+  drawFeatures?: () => void;
+  drawHeightmap?: () => void;
+  drawTemperature?: () => void;
+  drawBorders?: () => void;
+  drawStateLabels?: (list?: number[]) => void;
+  drawReliefIcons?: () => void;
+  drawMilitary?: () => void;
+  drawMarkers?: () => void;
+  drawIce?: () => void;
+  drawBurgIcons?: () => void;
+  drawBurgLabels?: () => void;
+  drawEmblems?: () => void;
+  drawBiomes?: () => void;
+  drawCultures?: () => void;
+  drawReligions?: () => void;
+  drawStates?: () => void;
+  drawProvinces?: () => void;
+  drawZones?: () => void;
+  drawRivers?: () => void;
+  drawRoutes?: () => void;
   drawCells?: () => void;
   invokeActiveZooming?: () => void;
 };
@@ -112,11 +206,65 @@ export function createEngineRenderAdapter(
     drawScaleBar: () => {
       targets.drawScaleBar(targets.selectScaleBar(), targets.getScale());
     },
+    drawFeatures: () => {
+      targets.drawFeatures?.();
+    },
     drawHeightmap: () => {
       targets.drawHeightmap?.();
     },
+    drawTemperature: () => {
+      targets.drawTemperature?.();
+    },
+    drawBorders: () => {
+      targets.drawBorders?.();
+    },
+    drawStateLabels: (list) => {
+      targets.drawStateLabels?.(list);
+    },
+    drawReliefIcons: () => {
+      targets.drawReliefIcons?.();
+    },
+    drawMilitary: () => {
+      targets.drawMilitary?.();
+    },
+    drawMarkers: () => {
+      targets.drawMarkers?.();
+    },
+    drawIce: () => {
+      targets.drawIce?.();
+    },
+    drawBurgIcons: () => {
+      targets.drawBurgIcons?.();
+    },
+    drawBurgLabels: () => {
+      targets.drawBurgLabels?.();
+    },
+    drawEmblems: () => {
+      targets.drawEmblems?.();
+    },
     drawBiomes: () => {
       targets.drawBiomes?.();
+    },
+    drawCultures: () => {
+      targets.drawCultures?.();
+    },
+    drawReligions: () => {
+      targets.drawReligions?.();
+    },
+    drawStates: () => {
+      targets.drawStates?.();
+    },
+    drawProvinces: () => {
+      targets.drawProvinces?.();
+    },
+    drawZones: () => {
+      targets.drawZones?.();
+    },
+    drawRivers: () => {
+      targets.drawRivers?.();
+    },
+    drawRoutes: () => {
+      targets.drawRoutes?.();
     },
     drawCells: () => {
       targets.drawCells?.();
@@ -143,15 +291,62 @@ function getGlobalValue<T = unknown>(name: string): T | undefined {
   }
 }
 
-function callGlobal<T extends (...args: never[]) => unknown>(
-  name: string,
+function getGlobalFunction<K extends keyof EngineGlobalRenderFunctions>(
+  name: K,
+): EngineGlobalRenderFunctions[K] {
+  try {
+    const value = getGlobalValue(name);
+    return typeof value === "function"
+      ? (value as EngineGlobalRenderFunctions[K])
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function callOptionalGlobalRender<T extends (...args: any[]) => unknown>(
+  target: T | undefined,
   ...args: Parameters<T>
 ) {
   try {
-    getGlobalValue<T>(name)?.(...args);
+    target?.(...args);
   } catch {
     // Render compatibility helpers are best-effort behind injected targets.
   }
+}
+
+export function createGlobalEngineRenderFunctions(): EngineGlobalRenderFunctions {
+  return {
+    drawRoute: getGlobalFunction("drawRoute"),
+    drawBurgIcon: getGlobalFunction("drawBurgIcon"),
+    drawBurgLabel: getGlobalFunction("drawBurgLabel"),
+    removeBurgIcon: getGlobalFunction("removeBurgIcon"),
+    removeBurgLabel: getGlobalFunction("removeBurgLabel"),
+    redrawIceberg: getGlobalFunction("redrawIceberg"),
+    redrawGlacier: getGlobalFunction("redrawGlacier"),
+    drawFeatures: getGlobalFunction("drawFeatures"),
+    drawHeightmap: getGlobalFunction("drawHeightmap"),
+    drawTemperature: getGlobalFunction("drawTemperature"),
+    drawBorders: getGlobalFunction("drawBorders"),
+    drawStateLabels: getGlobalFunction("drawStateLabels"),
+    drawReliefIcons: getGlobalFunction("drawReliefIcons"),
+    drawMilitary: getGlobalFunction("drawMilitary"),
+    drawMarkers: getGlobalFunction("drawMarkers"),
+    drawIce: getGlobalFunction("drawIce"),
+    drawBurgIcons: getGlobalFunction("drawBurgIcons"),
+    drawBurgLabels: getGlobalFunction("drawBurgLabels"),
+    drawEmblems: getGlobalFunction("drawEmblems"),
+    drawBiomes: getGlobalFunction("drawBiomes"),
+    drawCultures: getGlobalFunction("drawCultures"),
+    drawReligions: getGlobalFunction("drawReligions"),
+    drawStates: getGlobalFunction("drawStates"),
+    drawProvinces: getGlobalFunction("drawProvinces"),
+    drawZones: getGlobalFunction("drawZones"),
+    drawRivers: getGlobalFunction("drawRivers"),
+    drawRoutes: getGlobalFunction("drawRoutes"),
+    drawCells: getGlobalFunction("drawCells"),
+    invokeActiveZooming: getGlobalFunction("invokeActiveZooming"),
+  };
 }
 
 export function createGlobalRenderDomTargets(): EngineRenderDomTargets {
@@ -168,6 +363,7 @@ export function createGlobalRenderDomTargets(): EngineRenderDomTargets {
 
 export function createGlobalRenderTargets(
   domTargets: EngineRenderDomTargets = createGlobalRenderDomTargets(),
+  renderFunctions: EngineGlobalRenderFunctions = createGlobalEngineRenderFunctions(),
 ): EngineRenderTargets {
   return {
     findCell: (x, y, radius, graph) => {
@@ -193,7 +389,7 @@ export function createGlobalRenderTargets(
       }
     },
     drawRoute: (route) => {
-      callGlobal<(route: unknown) => void>("drawRoute", route);
+      callOptionalGlobalRender(renderFunctions.drawRoute, route);
     },
     isLayerOn: (layer) => {
       try {
@@ -206,16 +402,16 @@ export function createGlobalRenderTargets(
       }
     },
     drawBurgIcon: (burg) => {
-      callGlobal<(burg: unknown) => void>("drawBurgIcon", burg);
+      callOptionalGlobalRender(renderFunctions.drawBurgIcon, burg);
     },
     drawBurgLabel: (burg) => {
-      callGlobal<(burg: unknown) => void>("drawBurgLabel", burg);
+      callOptionalGlobalRender(renderFunctions.drawBurgLabel, burg);
     },
     removeBurgIcon: (burgId) => {
-      callGlobal<(burgId: number) => void>("removeBurgIcon", burgId);
+      callOptionalGlobalRender(renderFunctions.removeBurgIcon, burgId);
     },
     removeBurgLabel: (burgId) => {
-      callGlobal<(burgId: number) => void>("removeBurgLabel", burgId);
+      callOptionalGlobalRender(renderFunctions.removeBurgLabel, burgId);
     },
     getElementById: domTargets.getElementById,
     removeBurgEmblemUse: (burgId) => {
@@ -230,10 +426,10 @@ export function createGlobalRenderTargets(
       }
     },
     redrawIceberg: (iceId) => {
-      callGlobal<(iceId: number) => void>("redrawIceberg", iceId);
+      callOptionalGlobalRender(renderFunctions.redrawIceberg, iceId);
     },
     redrawGlacier: (iceId) => {
-      callGlobal<(iceId: number) => void>("redrawGlacier", iceId);
+      callOptionalGlobalRender(renderFunctions.redrawGlacier, iceId);
     },
     selectScaleBar: () => {
       try {
@@ -254,17 +450,71 @@ export function createGlobalRenderTargets(
         // Optional compatibility renderer.
       }
     },
+    drawFeatures: () => {
+      callOptionalGlobalRender(renderFunctions.drawFeatures);
+    },
     drawHeightmap: () => {
-      callGlobal<() => void>("drawHeightmap");
+      callOptionalGlobalRender(renderFunctions.drawHeightmap);
+    },
+    drawTemperature: () => {
+      callOptionalGlobalRender(renderFunctions.drawTemperature);
+    },
+    drawBorders: () => {
+      callOptionalGlobalRender(renderFunctions.drawBorders);
+    },
+    drawStateLabels: (list) => {
+      callOptionalGlobalRender(renderFunctions.drawStateLabels, list);
+    },
+    drawReliefIcons: () => {
+      callOptionalGlobalRender(renderFunctions.drawReliefIcons);
+    },
+    drawMilitary: () => {
+      callOptionalGlobalRender(renderFunctions.drawMilitary);
+    },
+    drawMarkers: () => {
+      callOptionalGlobalRender(renderFunctions.drawMarkers);
+    },
+    drawIce: () => {
+      callOptionalGlobalRender(renderFunctions.drawIce);
+    },
+    drawBurgIcons: () => {
+      callOptionalGlobalRender(renderFunctions.drawBurgIcons);
+    },
+    drawBurgLabels: () => {
+      callOptionalGlobalRender(renderFunctions.drawBurgLabels);
+    },
+    drawEmblems: () => {
+      callOptionalGlobalRender(renderFunctions.drawEmblems);
     },
     drawBiomes: () => {
-      callGlobal<() => void>("drawBiomes");
+      callOptionalGlobalRender(renderFunctions.drawBiomes);
+    },
+    drawCultures: () => {
+      callOptionalGlobalRender(renderFunctions.drawCultures);
+    },
+    drawReligions: () => {
+      callOptionalGlobalRender(renderFunctions.drawReligions);
+    },
+    drawStates: () => {
+      callOptionalGlobalRender(renderFunctions.drawStates);
+    },
+    drawProvinces: () => {
+      callOptionalGlobalRender(renderFunctions.drawProvinces);
+    },
+    drawZones: () => {
+      callOptionalGlobalRender(renderFunctions.drawZones);
+    },
+    drawRivers: () => {
+      callOptionalGlobalRender(renderFunctions.drawRivers);
+    },
+    drawRoutes: () => {
+      callOptionalGlobalRender(renderFunctions.drawRoutes);
     },
     drawCells: () => {
-      callGlobal<() => void>("drawCells");
+      callOptionalGlobalRender(renderFunctions.drawCells);
     },
     invokeActiveZooming: () => {
-      callGlobal<() => void>("invokeActiveZooming");
+      callOptionalGlobalRender(renderFunctions.invokeActiveZooming);
     },
   };
 }
@@ -273,4 +523,44 @@ export function createGlobalRenderAdapter(
   targets: EngineRenderTargets = createGlobalRenderTargets(),
 ): EngineRenderAdapter {
   return createEngineRenderAdapter(targets);
+}
+
+export function createRuntimeRenderAdapter(
+  context: EngineRuntimeContext,
+  fallback: EngineRenderAdapter = createGlobalRenderAdapter(),
+): EngineRenderAdapter {
+  return {
+    ...fallback,
+    drawBurg: (burg) => {
+      drawBurgIconRenderer(context, burg as any);
+      drawBurgLabelRenderer(context, burg as any);
+    },
+    removeBurg: (burgId) => {
+      removeBurgIconRenderer(burgId);
+      removeBurgLabelRenderer(burgId);
+    },
+    drawRoute: (route) => areaLayersRenderer.drawRoute(route),
+    drawFeatures: () => featuresRenderer(context),
+    drawHeightmap: () => heightmapRenderer(context),
+    drawTemperature: () => temperatureRenderer(context),
+    drawBorders: () => bordersRenderer(context),
+    drawStateLabels: (list) => stateLabelsRenderer(context, list),
+    drawReliefIcons: () => reliefIconsRenderer(context),
+    drawMilitary: () => militaryRenderer(context),
+    drawMarkers: () => markersRenderer(context),
+    drawIce: () => iceRenderer(context),
+    drawBurgIcons: () => burgIconsRenderer(context),
+    drawBurgLabels: () => burgLabelsRenderer(context),
+    drawEmblems: () => emblemsRenderer(context),
+    redrawIceberg: (iceId) => redrawIcebergRenderer(context, iceId),
+    redrawGlacier: (iceId) => redrawGlacierRenderer(context, iceId),
+    drawBiomes: () => areaLayersRenderer.drawBiomes(context),
+    drawCultures: () => areaLayersRenderer.drawCultures(context),
+    drawReligions: () => areaLayersRenderer.drawReligions(context),
+    drawStates: () => areaLayersRenderer.drawStates(context),
+    drawProvinces: () => areaLayersRenderer.drawProvinces(context),
+    drawZones: () => areaLayersRenderer.drawZones(context),
+    drawRivers: () => areaLayersRenderer.drawRivers(context),
+    drawRoutes: () => areaLayersRenderer.drawRoutes(context),
+  };
 }

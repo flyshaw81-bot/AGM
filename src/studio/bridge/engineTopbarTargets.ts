@@ -3,7 +3,7 @@ import { getEngineDataActions, runEngineDataAction } from "./engineDataActions";
 
 export type EngineTopbarDataActionSummary = Pick<
   ReturnType<typeof getEngineDataActions>,
-  "canCreateNew" | "canOpenFile" | "canSaveToMachine"
+  "canCreateGeneratedWorld" | "canOpenFile" | "canDownloadProject"
 >;
 
 export type EngineTopbarTargets = {

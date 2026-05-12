@@ -1,4 +1,4 @@
-import type { TopbarAction } from "./engineActionTypes";
+﻿import type { TopbarAction } from "./engineActionTypes";
 import {
   createGlobalEngineTopbarTargets,
   type EngineTopbarTargets,
@@ -9,9 +9,9 @@ export function getEngineTopbarActions(
 ) {
   const dataActions = targets.getDataActions();
   return {
-    new: dataActions.canCreateNew,
+    new: dataActions.canCreateGeneratedWorld,
     open: dataActions.canOpenFile,
-    save: dataActions.canSaveToMachine,
+    save: dataActions.canDownloadProject,
     export: true,
   } satisfies Record<TopbarAction, boolean>;
 }
@@ -20,7 +20,7 @@ export async function runEngineTopbarAction(
   action: TopbarAction,
   targets: EngineTopbarTargets = createGlobalEngineTopbarTargets(),
 ) {
-  if (action === "new") return targets.runDataAction("new-map");
+  if (action === "new") return targets.runDataAction("create-generated-world");
   if (action === "open") return targets.runDataAction("open-file");
-  if (action === "save") return targets.runDataAction("save-machine");
+  if (action === "save") return targets.runDataAction("download-project");
 }

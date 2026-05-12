@@ -5,7 +5,10 @@ import {
 } from "./engineProjectControlTargets";
 
 type TestControlGlobals = typeof globalThis & {
-  convertTemperature?: (value: number, unit: string) => unknown;
+  precipitationPercent?: number;
+  mapSizePercent?: number;
+  latitudePercent?: number;
+  longitudePercent?: number;
   mapCoordinates?: {
     latN?: number;
     latS?: number;
@@ -19,7 +22,10 @@ const testGlobals = globalThis as TestControlGlobals;
 const originalDocument = globalThis.document;
 const originalOptions = globalThis.options;
 const originalLocalStorage = globalThis.localStorage;
-const originalConvertTemperature = testGlobals.convertTemperature;
+const originalPrecipitationPercent = testGlobals.precipitationPercent;
+const originalMapSizePercent = testGlobals.mapSizePercent;
+const originalLatitudePercent = testGlobals.latitudePercent;
+const originalLongitudePercent = testGlobals.longitudePercent;
 const originalMapCoordinates = testGlobals.mapCoordinates;
 const originalD3 = (globalThis as any).d3;
 const originalDocumentDescriptor = Object.getOwnPropertyDescriptor(
@@ -34,15 +40,27 @@ const originalWindowDescriptor = Object.getOwnPropertyDescriptor(
   globalThis,
   "window",
 );
-const originalConvertTemperatureDescriptor = Object.getOwnPropertyDescriptor(
-  globalThis,
-  "convertTemperature",
-);
 const originalMapCoordinatesDescriptor = Object.getOwnPropertyDescriptor(
   globalThis,
   "mapCoordinates",
 );
 const originalD3Descriptor = Object.getOwnPropertyDescriptor(globalThis, "d3");
+const originalPrecipitationPercentDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "precipitationPercent",
+);
+const originalMapSizePercentDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "mapSizePercent",
+);
+const originalLatitudePercentDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "latitudePercent",
+);
+const originalLongitudePercentDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "longitudePercent",
+);
 
 describe("createGlobalProjectControlTargets", () => {
   afterEach(() => {
@@ -73,19 +91,6 @@ describe("createGlobalProjectControlTargets", () => {
       configurable: true,
       value: originalLocalStorage,
     });
-    if (originalConvertTemperatureDescriptor) {
-      Object.defineProperty(
-        globalThis,
-        "convertTemperature",
-        originalConvertTemperatureDescriptor,
-      );
-    } else {
-      Object.defineProperty(globalThis, "convertTemperature", {
-        configurable: true,
-        writable: true,
-        value: originalConvertTemperature,
-      });
-    }
     if (originalMapCoordinatesDescriptor) {
       Object.defineProperty(
         globalThis,
@@ -108,41 +113,87 @@ describe("createGlobalProjectControlTargets", () => {
         value: originalD3,
       });
     }
+    if (originalPrecipitationPercentDescriptor) {
+      Object.defineProperty(
+        globalThis,
+        "precipitationPercent",
+        originalPrecipitationPercentDescriptor,
+      );
+    } else {
+      Object.defineProperty(globalThis, "precipitationPercent", {
+        configurable: true,
+        writable: true,
+        value: originalPrecipitationPercent,
+      });
+    }
+    if (originalMapSizePercentDescriptor) {
+      Object.defineProperty(
+        globalThis,
+        "mapSizePercent",
+        originalMapSizePercentDescriptor,
+      );
+    } else {
+      Object.defineProperty(globalThis, "mapSizePercent", {
+        configurable: true,
+        writable: true,
+        value: originalMapSizePercent,
+      });
+    }
+    if (originalLatitudePercentDescriptor) {
+      Object.defineProperty(
+        globalThis,
+        "latitudePercent",
+        originalLatitudePercentDescriptor,
+      );
+    } else {
+      Object.defineProperty(globalThis, "latitudePercent", {
+        configurable: true,
+        writable: true,
+        value: originalLatitudePercent,
+      });
+    }
+    if (originalLongitudePercentDescriptor) {
+      Object.defineProperty(
+        globalThis,
+        "longitudePercent",
+        originalLongitudePercentDescriptor,
+      );
+    } else {
+      Object.defineProperty(globalThis, "longitudePercent", {
+        configurable: true,
+        writable: true,
+        value: originalLongitudePercent,
+      });
+    }
   });
 
-  it("forwards temperature label, option writes, and temperature conversion", () => {
-    const label = { textContent: "" };
-    globalThis.document = {
-      getElementById: vi.fn(() => label),
-    } as unknown as Document;
+  it("forwards option writes to the runtime", () => {
     globalThis.options = {};
-    testGlobals.convertTemperature = vi.fn(() => "50°F");
 
     const targets = createGlobalProjectControlTargets();
 
-    expect(targets.getTemperatureLabel("temperatureEquatorF")).toBe(label);
     targets.setOptionNumber("temperatureEquator", 10);
     expect(globalThis.options.temperatureEquator).toBe(10);
-    expect(targets.convertTemperature(10, "°F")).toBe("50°F");
   });
 
-  it("reads and updates wind path transforms", () => {
-    const path = {
-      getAttribute: vi.fn(() => "rotate(45 210 30)"),
-      setAttribute: vi.fn(),
-    };
-    globalThis.document = {
-      querySelector: vi.fn(() => path),
-    } as unknown as Document;
-
+  it("writes precipitation to the runtime", () => {
     const targets = createGlobalProjectControlTargets();
 
-    expect(targets.getWindTransform(1)).toBe("rotate(45 210 30)");
-    targets.setWindTransform(1, "rotate(90 210 30)");
-    expect(path.setAttribute).toHaveBeenCalledWith(
-      "transform",
-      "rotate(90 210 30)",
-    );
+    targets.setPrecipitationPercent(120);
+
+    expect(testGlobals.precipitationPercent).toBe(120);
+  });
+
+  it("writes map placement percentages to the runtime", () => {
+    const targets = createGlobalProjectControlTargets();
+
+    targets.setMapPlacementPercent("mapSize", 78);
+    targets.setMapPlacementPercent("latitude", 27);
+    targets.setMapPlacementPercent("longitude", 40);
+
+    expect(testGlobals.mapSizePercent).toBe(78);
+    expect(testGlobals.latitudePercent).toBe(27);
+    expect(testGlobals.longitudePercent).toBe(40);
   });
 
   it("persists wind options and reports whether the tier affects the current map", () => {
@@ -157,9 +208,6 @@ describe("createGlobalProjectControlTargets", () => {
     testGlobals.mapCoordinates = {
       latN: 90,
       latS: -90,
-    };
-    (globalThis as any).d3 = {
-      range: vi.fn(() => [90, 60, 30, 0, -30, -60]),
     };
 
     const targets = createGlobalProjectControlTargets();
@@ -205,12 +253,6 @@ describe("createGlobalProjectControlTargets", () => {
         throw new Error("options blocked");
       },
     });
-    Object.defineProperty(globalThis, "convertTemperature", {
-      configurable: true,
-      get: () => {
-        throw new Error("convertTemperature blocked");
-      },
-    });
     Object.defineProperty(globalThis, "mapCoordinates", {
       configurable: true,
       get: () => {
@@ -234,47 +276,33 @@ describe("createGlobalProjectControlTargets", () => {
 
     const targets = createGlobalProjectControlTargets();
 
-    expect(targets.getTemperatureLabel("temperatureEquatorF")).toBeNull();
-    expect(targets.getWindTransform(1)).toBeNull();
-    expect(() =>
-      targets.setWindTransform(1, "rotate(90 210 30)"),
-    ).not.toThrow();
     expect(() =>
       targets.setOptionNumber("temperatureEquator", 10),
     ).not.toThrow();
-    expect(targets.convertTemperature(10, "\u00b0F")).toBeUndefined();
     expect(targets.applyWindTierToRuntime(1, 90)).toBe(false);
+    expect(() => targets.setPrecipitationPercent(120)).not.toThrow();
+    expect(() => targets.setMapPlacementPercent("mapSize", 80)).not.toThrow();
   });
 
   it("composes project control targets from injected DOM, runtime, and storage adapters", () => {
-    const label = { textContent: "" } as HTMLElement;
     const setOptionNumber = vi.fn();
-    const setWindTransform = vi.fn();
     const setWindOptions = vi.fn();
     const targets = createProjectControlTargets(
-      {
-        getTemperatureLabel: () => label,
-        getWindTransform: () => "rotate(45 210 30)",
-        setWindTransform,
-      },
+      {},
       {
         setOptionNumber,
-        convertTemperature: () => "68\u00b0F",
         setWindTierValue: () => [0, 90, 0],
         isWindTierInCurrentMap: () => true,
+        setPrecipitationPercent: vi.fn(),
+        setMapPlacementPercent: vi.fn(),
       },
       {
         setWindOptions,
       },
     );
 
-    expect(targets.getTemperatureLabel("temperatureEquatorF")).toBe(label);
     targets.setOptionNumber("temperatureEquator", 20);
     expect(setOptionNumber).toHaveBeenCalledWith("temperatureEquator", 20);
-    expect(targets.convertTemperature(20, "\u00b0F")).toBe("68\u00b0F");
-    expect(targets.getWindTransform(1)).toBe("rotate(45 210 30)");
-    targets.setWindTransform(1, "rotate(90 210 30)");
-    expect(setWindTransform).toHaveBeenCalledWith(1, "rotate(90 210 30)");
     expect(targets.applyWindTierToRuntime(1, 90)).toBe(true);
     expect(setWindOptions).toHaveBeenCalledWith([0, 90, 0]);
   });

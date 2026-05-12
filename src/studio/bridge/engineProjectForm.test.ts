@@ -27,12 +27,6 @@ function createTargets(
     ["provincesRatio", "40"],
     ["sizeVariety", "3"],
     ["growthRate", "1.2"],
-    ["temperatureEquatorInput", "28"],
-    ["temperatureNorthPoleInput", "-10"],
-    ["temperatureSouthPoleInput", "-20"],
-    ["mapSizeInput", "80"],
-    ["latitudeInput", "45"],
-    ["longitudeInput", "15"],
     ["precInput", "120"],
     ["culturesInput", "8"],
     ["manorsInput", "1000"],
@@ -48,15 +42,7 @@ function createTargets(
           ? "auto"
           : fallback,
     ),
-    getTextValue: vi.fn((id, fallback = "") =>
-      id === "temperatureEquatorF"
-        ? "82°F"
-        : id === "temperatureNorthPoleF"
-          ? "14°F"
-          : id === "temperatureSouthPoleF"
-            ? "-4°F"
-            : fallback,
-    ),
+    getTextValue: vi.fn((_id, fallback = "") => fallback),
     getSelect: vi.fn((id) => selectById.get(id) ?? null),
     getSelectValue: vi.fn((select, fallback = "") => select?.value || fallback),
     getSelectedOptionLabel: vi.fn((_select, fallback = "") => fallback),
@@ -68,9 +54,40 @@ function createTargets(
     getCultureSetOptions: vi.fn(() => [
       { value: "european", label: "European", max: "12" },
     ]),
+    getTemperatureValue: vi.fn(
+      (
+        key:
+          | "temperatureEquator"
+          | "temperatureNorthPole"
+          | "temperatureSouthPole",
+        fallback = "",
+      ) =>
+        ({
+          temperatureEquator: "28",
+          temperatureNorthPole: "-10",
+          temperatureSouthPole: "-20",
+        })[key] ?? fallback,
+    ),
+    getTemperatureFahrenheitLabel: vi.fn(
+      (
+        key:
+          | "temperatureEquator"
+          | "temperatureNorthPole"
+          | "temperatureSouthPole",
+        fallback = "",
+      ) =>
+        ({
+          temperatureEquator: "82°F",
+          temperatureNorthPole: "14°F",
+          temperatureSouthPole: "-4°F",
+        })[key] ?? fallback,
+    ),
+    getMapPlacementValue: vi.fn(
+      (key: "mapSize" | "latitude" | "longitude", fallback = "") =>
+        ({ mapSize: "80", latitude: "45", longitude: "15" })[key] ?? fallback,
+    ),
     hasVisibleInlineDisplay: vi.fn(() => true),
     getWindOption: vi.fn((tier) => (tier === 1 ? "45" : "")),
-    getWindTierRotation: vi.fn((tier) => (tier === 0 ? "225" : "")),
     ...overrides,
   };
 }
@@ -84,7 +101,6 @@ describe("engine project form", () => {
     expect(form.pendingPoints).toBe("10000");
     expect(form.pendingCellsLabel).toBe("10k");
     expect(form.pendingTemperatureEquatorF).toBe("82°F");
-    expect(form.pendingWindTier0).toBe("225");
     expect(form.pendingWindTier1).toBe("45");
     expect(form.pendingBurgsLabel).toBe("auto");
     expect(form.pendingCultureSetLabel).toBe("European");
@@ -100,8 +116,9 @@ describe("engine project form", () => {
       getSelectedOptionLabel: vi.fn((_select, fallback = "") => fallback),
       getSelectOptions: vi.fn(() => []),
       getCultureSetOptions: vi.fn(() => []),
+      getTemperatureValue: vi.fn((_key, fallback = "") => fallback),
+      getTemperatureFahrenheitLabel: vi.fn((_key, fallback = "") => fallback),
       getWindOption: vi.fn(() => ""),
-      getWindTierRotation: vi.fn(() => ""),
     });
 
     const cachedSummary = {

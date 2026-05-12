@@ -15,7 +15,7 @@ function syncCurrentViewport(
   state: StudioState,
   targets: StudioBootstrapTargets,
 ) {
-  targets.syncViewport(
+  const syncedSize = targets.syncViewport(
     state.viewport.presetId,
     state.viewport.orientation,
     state.viewport.fitMode,
@@ -23,6 +23,9 @@ function syncCurrentViewport(
     state.viewport.panX,
     state.viewport.panY,
   );
+  if (!syncedSize) return;
+  state.viewport.width = syncedSize.width;
+  state.viewport.height = syncedSize.height;
 }
 
 export async function bootstrapStudio(targets: StudioBootstrapTargets) {

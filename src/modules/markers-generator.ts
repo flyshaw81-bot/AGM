@@ -1,16 +1,13 @@
-﻿import { mean } from "d3";
-import type { PackedGraph } from "../types/PackedGraph";
+﻿import type { PackedGraph } from "../types/PackedGraph";
 import { last } from "../utils/arrayUtils";
 import { generateDate } from "../utils/commonUtils";
 import { getAdjective } from "../utils/languageUtils";
 import { rn } from "../utils/numberUtils";
 import { gauss, P, ra, rand, rw } from "../utils/probabilityUtils";
+import { mean } from "../utils/statUtils";
 import { capitalize } from "../utils/stringUtils";
 import { convertTemperature } from "../utils/unitUtils";
-import {
-  type EngineRuntimeContext,
-  getGlobalEngineRuntimeContext,
-} from "./engine-runtime-context";
+import type { EngineRuntimeContext } from "./engine-runtime-context";
 
 declare global {
   var Markers: MarkersModule;
@@ -90,16 +87,13 @@ export class MarkersModule {
     this.config = newConfig;
   }
 
-  generate(
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-    resetConfig = true,
-  ) {
+  generate(context: EngineRuntimeContext, resetConfig = true) {
     if (resetConfig) this.resetConfig();
     context.pack.markers = [];
     this.generateTypes(context);
   }
 
-  regenerate(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+  regenerate(context: EngineRuntimeContext) {
     context.pack.markers = context.pack.markers.filter(({ i, lock, cell }) => {
       if (lock) {
         this.occupied[cell] = true;
@@ -115,10 +109,7 @@ export class MarkersModule {
     this.generateTypes(context);
   }
 
-  add(
-    marker: Marker,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  add(marker: Marker, context: EngineRuntimeContext) {
     const base = this.config.find((c) => c.type === marker.type);
     if (base) {
       const { icon, type, dx, dy, px } = base;
@@ -133,10 +124,7 @@ export class MarkersModule {
     return { ...marker, i };
   }
 
-  deleteMarker(
-    markerId: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  deleteMarker(markerId: number, context: EngineRuntimeContext) {
     const noteId = `marker${markerId}`;
     context.notes.removeWhere((note) => note.id === noteId);
     context.pack.markers = context.pack.markers.filter((m) => m.i !== markerId);
@@ -559,16 +547,15 @@ export class MarkersModule {
 
   private addNote(
     note: { id: string; name: string; legend: string },
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context?: EngineRuntimeContext,
   ) {
-    (this.runtimeContext ?? context).notes.push(note);
+    const runtimeContext = this.runtimeContext ?? context;
+    if (!runtimeContext)
+      throw new Error("Markers.addNote requires an engine context");
+    runtimeContext.notes.push(note);
   }
 
-  private addMarker(
-    base: any,
-    marker: any,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  private addMarker(base: any, marker: any, context: EngineRuntimeContext) {
     if (marker.cell === undefined) return;
     const { pack } = context;
     const i = last(pack.markers)?.i + 1 || 0;
@@ -579,10 +566,7 @@ export class MarkersModule {
     return marker;
   }
 
-  private getMarkerCoordinates(
-    cell: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  private getMarkerCoordinates(cell: number, context: EngineRuntimeContext) {
     const { cells, burgs } = context.pack;
     const burgId = cells.burg[cell];
 
@@ -598,11 +582,7 @@ export class MarkersModule {
     return cells.i.filter((i) => !this.occupied[i] && cells.h[i] >= 70);
   }
 
-  private addVolcano(
-    id: string,
-    cell: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  private addVolcano(id: string, cell: number, context: EngineRuntimeContext) {
     const { cells } = context.pack;
 
     const proper = context.naming.getCulture(cells.culture[cell]);
@@ -628,7 +608,7 @@ export class MarkersModule {
   private addHotSpring(
     id: string,
     cell: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context: EngineRuntimeContext,
   ) {
     const { cells } = context.pack;
 
@@ -653,7 +633,7 @@ export class MarkersModule {
   private addWaterSource(
     id: string,
     cell: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context: EngineRuntimeContext,
   ) {
     const { cells } = context.pack;
 
@@ -683,11 +663,7 @@ export class MarkersModule {
     );
   }
 
-  private addMine(
-    id: string,
-    cell: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  private addMine(id: string, cell: number, context: EngineRuntimeContext) {
     const { pack, populationSettings } = context;
     const { cells } = pack;
 
@@ -725,11 +701,7 @@ export class MarkersModule {
     );
   }
 
-  private addBridge(
-    id: string,
-    cell: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  private addBridge(id: string, cell: number, context: EngineRuntimeContext) {
     const { cells, burgs, rivers } = context.pack;
 
     const burg = burgs[cells.burg[cell]];
@@ -1043,7 +1015,7 @@ export class MarkersModule {
   private addLighthouse(
     id: string,
     cell: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context: EngineRuntimeContext,
   ) {
     const { burgs, cells } = context.pack;
 
@@ -1070,7 +1042,7 @@ export class MarkersModule {
   private addWaterfall(
     id: string,
     cell: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context: EngineRuntimeContext,
   ) {
     const { burgs, cells } = context.pack;
 
@@ -1107,7 +1079,7 @@ export class MarkersModule {
   private addBattlefield(
     id: string,
     cell: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context: EngineRuntimeContext,
   ) {
     const { options, pack } = context;
     const { cells, states } = pack;
@@ -1129,11 +1101,7 @@ export class MarkersModule {
     );
   }
 
-  private addDungeon(
-    id: string,
-    cell: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  private addDungeon(id: string, cell: number, context: EngineRuntimeContext) {
     const dungeonSeed = `${context.seed}${cell}`;
     const name = "Dungeon";
     const legend = `<div>Undiscovered dungeon. See <a href="https://watabou.github.io/one-page-dungeon/?seed=${dungeonSeed}" target="_blank">One page dungeon</a></div><iframe style="pointer-events: none;" src="https://watabou.github.io/one-page-dungeon/?seed=${dungeonSeed}" sandbox="allow-scripts allow-same-origin"></iframe>`;
@@ -1154,7 +1122,7 @@ export class MarkersModule {
   private addLakeMonster(
     id: string,
     cell: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context: EngineRuntimeContext,
   ) {
     const { cells, features } = context.pack;
     const lake = features[cells.f[cell]];
@@ -1198,7 +1166,7 @@ export class MarkersModule {
   private addSeaMonster(
     id: string,
     _cell: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context: EngineRuntimeContext,
   ) {
     const name = `${context.naming.getCultureShort(0)} Monster`;
     const length = gauss(25, 10, 10, 100);
@@ -1215,7 +1183,7 @@ export class MarkersModule {
   private addHillMonster(
     id: string,
     cell: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context: EngineRuntimeContext,
   ) {
     const { cells } = context.pack;
 
@@ -1302,7 +1270,7 @@ export class MarkersModule {
   private addSacredMountain(
     id: string,
     cell: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context: EngineRuntimeContext,
   ) {
     const { cells, religions } = context.pack;
 
@@ -1328,7 +1296,7 @@ export class MarkersModule {
   private addSacredForest(
     id: string,
     cell: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context: EngineRuntimeContext,
   ) {
     const { cells, religions } = context.pack;
 
@@ -1353,7 +1321,7 @@ export class MarkersModule {
   private addSacredPinery(
     id: string,
     cell: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context: EngineRuntimeContext,
   ) {
     const { cells, religions } = context.pack;
 
@@ -1383,7 +1351,7 @@ export class MarkersModule {
   private addSacredPalmGrove(
     id: string,
     cell: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context: EngineRuntimeContext,
   ) {
     const { cells, religions } = context.pack;
 
@@ -1400,11 +1368,7 @@ export class MarkersModule {
     );
   }
 
-  private addBrigands(
-    id: string,
-    cell: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  private addBrigands(id: string, cell: number, context: EngineRuntimeContext) {
     const { cells } = context.pack;
 
     const animals = [
@@ -1479,11 +1443,7 @@ export class MarkersModule {
     );
   }
 
-  private addStatue(
-    id: string,
-    cell: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  private addStatue(id: string, cell: number, context: EngineRuntimeContext) {
     const { cells } = context.pack;
 
     const variants = [
@@ -1570,11 +1530,7 @@ export class MarkersModule {
     );
   }
 
-  private addLibrary(
-    id: string,
-    cell: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  private addLibrary(id: string, cell: number, context: EngineRuntimeContext) {
     const { cells } = context.pack;
 
     const type = rw({ Library: 3, Archive: 1, Collection: 1 });
@@ -1622,11 +1578,7 @@ export class MarkersModule {
     );
   }
 
-  private addJoust(
-    id: string,
-    cell: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  private addJoust(id: string, cell: number, context: EngineRuntimeContext) {
     const { cells, burgs } = context.pack;
     const types = ["Joust", "Competition", "Melee", "Tournament", "Contest"];
     const virtues = [
@@ -1658,11 +1610,7 @@ export class MarkersModule {
     );
   }
 
-  private addFair(
-    id: string,
-    cell: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  private addFair(id: string, cell: number, context: EngineRuntimeContext) {
     const { cells, burgs } = context.pack;
     if (!cells.burg[cell]) return;
 
@@ -1678,11 +1626,7 @@ export class MarkersModule {
     return cells.i.filter((i) => !this.occupied[i] && cells.r[i]);
   }
 
-  private addCanoe(
-    id: string,
-    cell: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  private addCanoe(id: string, cell: number, context: EngineRuntimeContext) {
     const { cells, rivers } = context.pack;
     const river = rivers.find((r) => r.i === cells.r[cell]);
 
@@ -1768,11 +1712,7 @@ export class MarkersModule {
     );
   }
 
-  private addDances(
-    id: string,
-    cell: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  private addDances(id: string, cell: number, context: EngineRuntimeContext) {
     const { cells, burgs } = context.pack;
     const burgName = burgs[cells.burg[cell]].name;
     const socialTypes = [
@@ -1832,11 +1772,7 @@ export class MarkersModule {
     );
   }
 
-  private addCave(
-    id: string,
-    cell: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  private addCave(id: string, cell: number, context: EngineRuntimeContext) {
     const { cells } = context.pack;
 
     const formations = {
@@ -1876,11 +1812,7 @@ export class MarkersModule {
       .map((burg) => burg.cell);
   }
 
-  private addPortal(
-    id: string,
-    cell: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  private addPortal(id: string, cell: number, context: EngineRuntimeContext) {
     const { cells, burgs } = context.pack;
 
     if (!cells.burg[cell]) return;
@@ -1947,7 +1879,7 @@ export class MarkersModule {
   private addNecropolis(
     id: string,
     cell: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context: EngineRuntimeContext,
   ) {
     const { cells } = context.pack;
 

@@ -66,6 +66,7 @@ describe("createInitialState", () => {
     expect(state.language).toBe("en");
     expect(state.theme).toBe("daylight");
     expect(state.shell.navigationCollapsed).toBe(true);
+    expect(state.shell.activeEditorModule).toBe("states");
     expect(state.document).toMatchObject({
       name: "Northwatch",
       seed: "42",
@@ -76,6 +77,8 @@ describe("createInitialState", () => {
       presetId: "desktop-landscape",
       width: 1440,
       height: 960,
+      fitMode: "cover",
+      canvasTool: "pan",
     });
     expect(state.projectCenter.recentProjects[0]?.id).toBe("recent-1");
     expect(targets.preferences.setDocumentLanguage).toHaveBeenCalledWith("en");

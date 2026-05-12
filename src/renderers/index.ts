@@ -1,3 +1,4 @@
+import "./draw-area-layers";
 import "./draw-borders";
 import "./draw-burg-icons";
 import "./draw-burg-labels";

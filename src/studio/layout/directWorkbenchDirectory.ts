@@ -3,6 +3,7 @@ import type {
   getEngineWorldResourceSummary,
 } from "../bridge/engineActions";
 import type { StudioLanguage, StudioState } from "../types";
+import { createRelationshipRepairHealth } from "./directRelationshipRepairHealth";
 import { createDirectWorkbenchQueueHistoryView } from "./directWorkbenchDirectoryHistoryView";
 import { createDirectWorkbenchRelationshipIssueView } from "./directWorkbenchDirectoryIssueView";
 import { createDirectWorkbenchDirectoryModel } from "./directWorkbenchDirectoryModel";
@@ -51,6 +52,10 @@ export function renderDirectWorkbenchDirectory(
     activeProvinces,
     language,
   });
+  const relationshipRepairHealth = createRelationshipRepairHealth(
+    relationshipIssues,
+    directEditor.relationshipQueueHistory?.id ?? null,
+  );
   const queueHistoryView = createDirectWorkbenchQueueHistoryView(
     directEditor,
     language,
@@ -91,6 +96,7 @@ export function renderDirectWorkbenchDirectory(
     hiddenRelationshipIssueCount,
     language,
     queueHistoryView,
+    relationshipRepairHealth,
     relationshipIssues,
     renderHiddenRelationshipIssues,
     renderRelationshipIssue,

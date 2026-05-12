@@ -1,4 +1,4 @@
-import { curveNatural, line, max, select } from "d3";
+import type { EngineRuntimeContext } from "../modules/engine-runtime-context";
 import type { TypedArray } from "../types/PackedGraph";
 import {
   drawPath,
@@ -9,6 +9,10 @@ import {
   round,
   splitInTwo,
 } from "../utils";
+import { curveNatural, line } from "../utils/shapeUtils";
+import { max } from "../utils/statUtils";
+import { select } from "../utils/svgSelection";
+import { createBrowserRendererContext } from "./renderer-runtime-context";
 
 declare global {
   var drawStateLabels: (list?: number[]) => void;
@@ -38,14 +42,17 @@ interface AngleData {
 type PathPoints = [number, number][];
 
 // list - an optional array of stateIds to regenerate
-const stateLabelsRenderer = (list?: number[]): void => {
-  TIME && console.time("drawStateLabels");
+export const stateLabelsRenderer = (
+  context: EngineRuntimeContext,
+  list?: number[],
+): void => {
+  context.timing.shouldTime && console.time("drawStateLabels");
 
   // temporary make the labels visible
   const layerDisplay = labels.style("display");
   labels.style("display", null);
 
-  const { cells, states, features } = pack;
+  const { cells, states, features } = context.pack;
   const stateIds = cells.state;
 
   // increase step to 15 or 30 to make it faster and more horyzontal
@@ -122,7 +129,7 @@ const stateLabelsRenderer = (list?: number[]): void => {
   }
 
   function drawLabelPath(letterLength: number): void {
-    const mode = options.stateLabelsMode || "auto";
+    const mode = context.options.stateLabelsMode || "auto";
     const lineGen = line<[number, number]>().curve(curveNatural);
 
     const textGroup = select<SVGGElement, unknown>("g#labels > g#states");
@@ -296,8 +303,14 @@ const stateLabelsRenderer = (list?: number[]): void => {
     return ray;
 
     function isInsideState(x: number, y: number): boolean {
-      if (x < 0 || x > graphWidth || y < 0 || y > graphHeight) return false;
-      const cellId = findClosestCell(x, y, undefined, pack) as number;
+      if (
+        x < 0 ||
+        x > (context.worldSettings.graphWidth ?? 0) ||
+        y < 0 ||
+        y > (context.worldSettings.graphHeight ?? 0)
+      )
+        return false;
+      const cellId = findClosestCell(x, y, undefined, context.pack) as number;
 
       const feature = features[cells.f[cellId]];
       if (feature.type === "lake")
@@ -434,7 +447,8 @@ const stateLabelsRenderer = (list?: number[]): void => {
     let pointsInside = 0;
     for (const [x, y] of rotatedPoints) {
       const isInside =
-        stateIds[findClosestCell(x, y, undefined, pack) as number] === stateId;
+        stateIds[findClosestCell(x, y, undefined, context.pack) as number] ===
+        stateId;
       if (isInside) pointsInside++;
       if (pointsInside > 4) return true;
     }
@@ -442,8 +456,10 @@ const stateLabelsRenderer = (list?: number[]): void => {
     return false;
   }
 
-  TIME && console.timeEnd("drawStateLabels");
+  context.timing.shouldTime && console.timeEnd("drawStateLabels");
 };
 
 const runtimeWindow = getWindow();
-if (runtimeWindow) runtimeWindow.drawStateLabels = stateLabelsRenderer;
+if (runtimeWindow)
+  runtimeWindow.drawStateLabels = (list) =>
+    stateLabelsRenderer(createBrowserRendererContext(), list);

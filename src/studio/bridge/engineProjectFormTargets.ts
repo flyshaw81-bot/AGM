@@ -1,7 +1,14 @@
 type EngineProjectFormWindow = typeof globalThis & {
   options?: {
     winds?: unknown[];
+    temperatureEquator?: unknown;
+    temperatureNorthPole?: unknown;
+    temperatureSouthPole?: unknown;
   };
+  precipitationPercent?: number;
+  mapSizePercent?: number;
+  latitudePercent?: number;
+  longitudePercent?: number;
 };
 
 export type EngineSelectOption = {
@@ -15,11 +22,18 @@ export type EngineCultureSetOption = EngineSelectOption & {
 
 export type EngineProjectFormDomAdapter = {
   getElementById: (id: string) => HTMLElement | null;
-  querySelector: (selector: string) => Element | null;
 };
 
 export type EngineProjectFormRuntimeAdapter = {
   getWinds: () => unknown[] | undefined;
+  getPrecipitationPercent: () => number | undefined;
+  getTemperatureOption: (
+    key: "temperatureEquator" | "temperatureNorthPole" | "temperatureSouthPole",
+  ) => number | undefined;
+  convertTemperature: (value: number, unit: string) => unknown;
+  getMapPlacementPercent: (
+    key: "mapSize" | "latitude" | "longitude",
+  ) => number | undefined;
 };
 
 export type EngineProjectFormTargets = {
@@ -39,9 +53,20 @@ export type EngineProjectFormTargets = {
   getCultureSetOptions: (
     select: HTMLSelectElement | null,
   ) => EngineCultureSetOption[];
+  getTemperatureValue: (
+    key: "temperatureEquator" | "temperatureNorthPole" | "temperatureSouthPole",
+    fallback?: string,
+  ) => string;
+  getTemperatureFahrenheitLabel: (
+    key: "temperatureEquator" | "temperatureNorthPole" | "temperatureSouthPole",
+    fallback?: string,
+  ) => string;
+  getMapPlacementValue: (
+    key: "mapSize" | "latitude" | "longitude",
+    fallback?: string,
+  ) => string;
   hasVisibleInlineDisplay: (id: string, fallback?: boolean) => boolean;
   getWindOption: (tier: number) => string;
-  getWindTierRotation: (tier: number) => string;
 };
 
 function getFormWindow(): EngineProjectFormWindow {
@@ -69,13 +94,6 @@ export function createGlobalProjectFormDomAdapter(): EngineProjectFormDomAdapter
         return null;
       }
     },
-    querySelector: (selector) => {
-      try {
-        return getDocument()?.querySelector(selector) ?? null;
-      } catch {
-        return null;
-      }
-    },
   };
 }
 
@@ -88,6 +106,48 @@ export function createGlobalProjectFormRuntimeAdapter(): EngineProjectFormRuntim
         return undefined;
       }
     },
+    getPrecipitationPercent: () => {
+      try {
+        const value = getFormWindow().precipitationPercent;
+        return typeof value === "number" ? value : undefined;
+      } catch {
+        return undefined;
+      }
+    },
+    getTemperatureOption: (key) => {
+      try {
+        const value = getFormWindow().options?.[key];
+        return typeof value === "number" ? value : undefined;
+      } catch {
+        return undefined;
+      }
+    },
+    convertTemperature: (value, unit) => {
+      try {
+        const converter = (
+          getFormWindow() as EngineProjectFormWindow & {
+            convertTemperature?: (value: number, unit: string) => unknown;
+          }
+        ).convertTemperature;
+        return converter?.(value, unit);
+      } catch {
+        return undefined;
+      }
+    },
+    getMapPlacementPercent: (key) => {
+      try {
+        const engineWindow = getFormWindow();
+        const value =
+          key === "mapSize"
+            ? engineWindow.mapSizePercent
+            : key === "latitude"
+              ? engineWindow.latitudePercent
+              : engineWindow.longitudePercent;
+        return typeof value === "number" ? value : undefined;
+      } catch {
+        return undefined;
+      }
+    },
   };
 }
 
@@ -96,9 +156,19 @@ export function createProjectFormTargets(
   runtimeAdapter: EngineProjectFormRuntimeAdapter,
 ): EngineProjectFormTargets {
   return {
-    getInputValue: (id, fallback = "") =>
-      (domAdapter.getElementById(id) as HTMLInputElement | null)?.value ||
-      fallback,
+    getInputValue: (id, fallback = "") => {
+      const inputValue = (
+        domAdapter.getElementById(id) as HTMLInputElement | null
+      )?.value;
+      if (inputValue) return inputValue;
+      if (id === "precInput") {
+        const runtimeValue = runtimeAdapter.getPrecipitationPercent();
+        return typeof runtimeValue === "number"
+          ? String(runtimeValue)
+          : fallback;
+      }
+      return fallback;
+    },
     getOutputValue: (id, fallback = "") => {
       const output = domAdapter.getElementById(id) as HTMLOutputElement | null;
       return output?.value || output?.textContent?.trim() || fallback;
@@ -121,6 +191,26 @@ export function createProjectFormTargets(
         label: option.textContent?.trim() || option.value,
         max: option.dataset.max || "",
       })),
+    getTemperatureValue: (key, fallback = "") => {
+      const runtimeValue = runtimeAdapter.getTemperatureOption(key);
+      return typeof runtimeValue === "number" ? String(runtimeValue) : fallback;
+    },
+    getTemperatureFahrenheitLabel: (key, fallback = "") => {
+      const runtimeValue = runtimeAdapter.getTemperatureOption(key);
+      if (typeof runtimeValue !== "number") return fallback;
+
+      const converted = runtimeAdapter.convertTemperature(
+        runtimeValue,
+        "\u00b0F",
+      );
+      return typeof converted === "string" || typeof converted === "number"
+        ? String(converted)
+        : fallback;
+    },
+    getMapPlacementValue: (key, fallback = "") => {
+      const runtimeValue = runtimeAdapter.getMapPlacementPercent(key);
+      return typeof runtimeValue === "number" ? String(runtimeValue) : fallback;
+    },
     hasVisibleInlineDisplay: (id, fallback = false) =>
       (domAdapter.getElementById(id)?.style.display ||
         (fallback ? "inline-block" : "none")) !== "none",
@@ -128,13 +218,6 @@ export function createProjectFormTargets(
       const winds = runtimeAdapter.getWinds();
       return Array.isArray(winds) ? String(winds[tier] ?? "") : "";
     },
-    getWindTierRotation: (tier) =>
-      (
-        domAdapter
-          .querySelector(`#globeWindArrows path[data-tier='${tier}']`)
-          ?.getAttribute("transform")
-          ?.match(/rotate\(([-\d.]+)/)?.[1] || ""
-      ).trim(),
   };
 }
 

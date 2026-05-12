@@ -3,6 +3,7 @@ import type {
   AgmWritableBiomeData,
   AgmWritableProvince,
 } from "./engineActionTypes";
+import { getBrowserPack } from "./engineBrowserPackAdapter";
 import { getEngineBiomeData } from "./engineResourceSummary";
 
 export type AgmWritableState = {
@@ -52,7 +53,7 @@ function writableBiomeDataOrUndefined(
 export function createGlobalAutoFixUndoProvinceAdapter(): EngineAutoFixUndoProvinceAdapter {
   return {
     getProvince: (provinceId) =>
-      getGlobalPack()?.provinces?.[provinceId] as unknown as
+      getBrowserPack()?.provinces?.[provinceId] as unknown as
         | AgmWritableProvince
         | undefined,
   };
@@ -72,7 +73,7 @@ export function createRuntimeAutoFixUndoProvinceAdapter(
 export function createGlobalAutoFixUndoStateAdapter(): EngineAutoFixUndoStateAdapter {
   return {
     getState: (stateId) =>
-      getGlobalPack()?.states?.[stateId] as unknown as
+      getBrowserPack()?.states?.[stateId] as unknown as
         | AgmWritableState
         | undefined,
   };
@@ -136,12 +137,4 @@ export function createRuntimeAutoFixUndoTargets(
     createRuntimeAutoFixUndoStateAdapter(context),
     createRuntimeAutoFixUndoBiomeAdapter(context),
   );
-}
-
-function getGlobalPack(): typeof pack | undefined {
-  try {
-    return globalThis.pack;
-  } catch {
-    return undefined;
-  }
 }

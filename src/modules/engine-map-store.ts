@@ -2,9 +2,10 @@ import type { PackedGraph } from "../types/PackedGraph";
 import { generateGrid } from "../utils/graphUtils";
 import type { EngineNote } from "./engine-note-service";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
+import type { EngineGrid } from "./engine-world-state";
 
 export type EngineMapSnapshot = {
-  grid: typeof grid;
+  grid: EngineGrid;
   pack: PackedGraph;
   notes: EngineNote[];
 };
@@ -17,30 +18,30 @@ export type EngineMapStore = {
 };
 
 export type EngineMapStoreRuntimeAdapter = {
-  getGrid: () => typeof grid;
+  getGrid: () => EngineGrid;
   getPack: () => PackedGraph;
   getNotes: () => EngineNote[];
   clone: <T>(value: T) => T;
-  setGrid: (nextGrid: typeof grid) => void;
+  setGrid: (nextGrid: EngineGrid) => void;
   setPack: (nextPack: PackedGraph) => void;
   setNotes: (nextNotes: EngineNote[]) => void;
-  createGrid: () => typeof grid;
+  createGrid: () => EngineGrid;
 };
 
 export type EngineMapStoreGlobalTargets = {
   clone: <T>(value: T) => T;
-  createGrid: () => typeof grid;
-  getGrid: () => typeof grid;
+  createGrid: () => EngineGrid;
+  getGrid: () => EngineGrid;
   getNotes: () => EngineNote[];
   getPack: () => PackedGraph;
-  setGrid: (nextGrid: typeof grid) => void;
+  setGrid: (nextGrid: EngineGrid) => void;
   setNotes: (nextNotes: EngineNote[]) => void;
   setPack: (nextPack: PackedGraph) => void;
 };
 
 export function createGlobalMapStoreTargets(): EngineMapStoreGlobalTargets {
   return {
-    getGrid: () => getGlobalValue<typeof grid>("grid", {} as typeof grid),
+    getGrid: () => getGlobalValue<EngineGrid>("grid", {} as EngineGrid),
     getPack: () => getGlobalValue<PackedGraph>("pack", {} as PackedGraph),
     getNotes: () => getGlobalValue<EngineNote[]>("notes", []),
     clone: (value) =>
@@ -79,7 +80,7 @@ export function createGlobalMapStoreRuntimeAdapter(
   };
 }
 
-export type RuntimeMapStoreGridFactory = () => typeof grid;
+export type RuntimeMapStoreGridFactory = () => EngineGrid;
 
 export function createRuntimeMapStoreRuntimeAdapter(
   context: EngineRuntimeContext,
@@ -92,9 +93,11 @@ export function createRuntimeMapStoreRuntimeAdapter(
     clone: (value) => structuredClone(value),
     setGrid: (nextGrid) => {
       context.grid = nextGrid;
+      if (context.worldState) context.worldState.grid = nextGrid;
     },
     setPack: (nextPack) => {
       context.pack = nextPack;
+      if (context.worldState) context.worldState.pack = nextPack;
     },
     setNotes: (nextNotes) => {
       const notes = context.notes.all();

@@ -1,5 +1,10 @@
 import { GAME_WORLD_PROFILE_LABELS } from "../state/worldDocumentConstants";
-import type { GameWorldProfile, StudioLanguage, StudioState } from "../types";
+import type {
+  GameWorldProfile,
+  ProjectDeliveryStatus,
+  StudioLanguage,
+  StudioState,
+} from "../types";
 import { GAME_WORLD_PROFILE_UI_LABELS } from "./shellConstants";
 import { t } from "./shellShared";
 
@@ -55,4 +60,16 @@ export function getProjectStatusLabel(
     "export-ready": t(language, "可交付", "Export ready"),
   };
   return labels[status];
+}
+
+export function getProjectDeliveryStatusLabel(
+  status: ProjectDeliveryStatus | undefined,
+  language: StudioLanguage,
+) {
+  const labels = {
+    unchecked: t(language, "未检查", "Not checked"),
+    "needs-repair": t(language, "需要修复", "Needs repair"),
+    ready: t(language, "可交付", "Ready to deliver"),
+  };
+  return labels[status || "unchecked"];
 }

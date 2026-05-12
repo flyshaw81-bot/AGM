@@ -19,6 +19,7 @@ describe("canvas interaction targets", () => {
       syncPaintPreview: vi.fn(),
       syncToolHud: vi.fn(),
       syncViewport: vi.fn(),
+      readViewportPatch: vi.fn(),
       isPaintTool: (
         _tool: CanvasToolMode,
       ): _tool is "terrain" | "water" | "brush" => false,
@@ -45,6 +46,7 @@ describe("canvas interaction targets", () => {
       expect(targets.syncPaintPreview).toEqual(expect.any(Function));
       expect(targets.syncToolHud).toEqual(expect.any(Function));
       expect(targets.syncViewport).toEqual(expect.any(Function));
+      expect(targets.readViewportPatch).toEqual(expect.any(Function));
       expect(targets.isPaintTool).toEqual(expect.any(Function));
     } finally {
       globalThis.document = originalDocument;

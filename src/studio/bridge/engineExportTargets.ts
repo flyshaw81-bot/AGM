@@ -29,10 +29,10 @@ export type EngineExportRuntimeAdapter = {
 };
 
 const EXPORT_SETTING_INPUT_IDS: Record<EngineExportSetting, string> = {
-  "png-resolution": "pngResolutionInput",
-  "tile-cols": "tileColsOutput",
-  "tile-rows": "tileRowsOutput",
-  "tile-scale": "tileScaleOutput",
+  "png-resolution": "studioPngResolutionInput",
+  "tile-cols": "studioTileColsInput",
+  "tile-rows": "studioTileRowsInput",
+  "tile-scale": "studioTileScaleInput",
 };
 
 const EXPORT_RUNTIME_KEYS: Record<

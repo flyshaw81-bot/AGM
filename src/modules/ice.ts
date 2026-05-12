@@ -1,14 +1,11 @@
-import Alea from "alea";
-import { min } from "d3";
+﻿import Alea from "../utils/alea";
 import { clipPoly } from "../utils/commonUtils";
 import { getGridPolygon } from "../utils/graphUtils";
 import { lerp, minmax, normalize, rn } from "../utils/numberUtils";
 import { getIsolines } from "../utils/pathUtils";
 import { P, ra, rand } from "../utils/probabilityUtils";
-import {
-  type EngineRuntimeContext,
-  getGlobalEngineRuntimeContext,
-} from "./engine-runtime-context";
+import { min } from "../utils/statUtils";
+import type { EngineRuntimeContext } from "./engine-runtime-context";
 import type { Point } from "./voronoi";
 
 declare global {
@@ -25,9 +22,7 @@ function getWindow(): (Window & typeof globalThis) | undefined {
 
 export class IceModule {
   // Find next available id for new ice element idealy filling gaps
-  private getNextId(
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  private getNextId(context: EngineRuntimeContext) {
     const { pack } = context;
     if (pack.ice.length === 0) return 0;
     // find gaps in existing ids
@@ -39,17 +34,13 @@ export class IceModule {
   }
 
   // Clear all ice
-  private clear(
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  private clear(context: EngineRuntimeContext) {
     const { pack } = context;
     pack.ice = [];
   }
 
   // Generate glaciers and icebergs based on temperature and height
-  public generate(
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  public generate(context: EngineRuntimeContext) {
     this.clear(context);
     const { grid, pack } = context;
     const { graphWidth = 0, graphHeight = 0 } = context.worldSettings;
@@ -115,11 +106,7 @@ export class IceModule {
     }
   }
 
-  addIceberg(
-    cellId: number,
-    size: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  addIceberg(cellId: number, size: number, context: EngineRuntimeContext) {
     const { grid, pack } = context;
     const [cx, cy] = grid.points[cellId];
     const points = getGridPolygon(cellId, grid).map(([x, y]: Point) => [
@@ -137,10 +124,7 @@ export class IceModule {
     context.rendering?.redrawIceberg(id);
   }
 
-  removeIce(
-    id: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  removeIce(id: number, context: EngineRuntimeContext) {
     const { pack } = context;
     const index = pack.ice.findIndex((element) => element.i === id);
     if (index !== -1) {
@@ -154,10 +138,7 @@ export class IceModule {
     }
   }
 
-  randomizeIcebergShape(
-    id: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  randomizeIcebergShape(id: number, context: EngineRuntimeContext) {
     const { grid, pack } = context;
     const iceberg = pack.ice.find((element) => element.i === id);
     if (!iceberg) return;
@@ -184,7 +165,7 @@ export class IceModule {
   changeIcebergSize(
     id: number,
     newSize: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context: EngineRuntimeContext,
   ) {
     const { grid, pack } = context;
     const iceberg = pack.ice.find((element) => element.i === id);

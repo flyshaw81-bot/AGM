@@ -1,9 +1,6 @@
-import { max, mean, median } from "d3";
-import { normalize } from "../utils/numberUtils";
-import {
-  type EngineRuntimeContext,
-  getGlobalEngineRuntimeContext,
-} from "./engine-runtime-context";
+﻿import { normalize } from "../utils/numberUtils";
+import { max, mean, median } from "../utils/statUtils";
+import type { EngineRuntimeContext } from "./engine-runtime-context";
 
 declare global {
   var CellRanking: CellRankingModule;
@@ -32,7 +29,7 @@ const scoreMap: CellScoreMap = {
 };
 
 export class CellRankingModule {
-  rank(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+  rank(context: EngineRuntimeContext) {
     if (context.timing.shouldTime) console.time("rankCells");
 
     const { cells, features } = context.pack;
@@ -81,4 +78,6 @@ export class CellRankingModule {
 }
 
 const runtimeWindow = getWindow();
-if (runtimeWindow) runtimeWindow.CellRanking = new CellRankingModule();
+if (runtimeWindow) {
+  runtimeWindow.CellRanking = new CellRankingModule();
+}

@@ -34,7 +34,7 @@ export type EngineGenerationSettingsTargets = {
   getInput: (id: string) => EngineGenerationControlInput | null;
   getSelect: (id: string) => EngineGenerationControlSelect | null;
   getPointsInput: () => EngineGenerationControlInput | undefined;
-  getHeightExponentInput: () => EngineGenerationControlInput | undefined;
+  getHeightExponent: () => number;
 };
 
 export type EngineGenerationDomTargets = {
@@ -43,7 +43,7 @@ export type EngineGenerationDomTargets = {
 
 export type EngineGenerationGlobalControlTargets = {
   getPointsInput: () => EngineGenerationControlInput | undefined;
-  getHeightExponentInput: () => EngineGenerationControlInput | undefined;
+  getHeightExponent: () => number;
 };
 
 export type EngineGenerationSettingsStore = {
@@ -71,13 +71,13 @@ function getGlobalPointsInput(): EngineGenerationControlInput | undefined {
   }
 }
 
-function getGlobalHeightExponentInput():
-  | EngineGenerationControlInput
-  | undefined {
+function getGlobalHeightExponent(): number {
   try {
-    return globalThis.heightExponentInput;
+    return typeof globalThis.heightExponent === "number"
+      ? globalThis.heightExponent
+      : 1;
   } catch {
-    return undefined;
+    return 1;
   }
 }
 
@@ -96,7 +96,7 @@ export function createGlobalGenerationDomTargets(): EngineGenerationDomTargets {
 export function createGlobalGenerationControlTargets(): EngineGenerationGlobalControlTargets {
   return {
     getPointsInput: getGlobalPointsInput,
-    getHeightExponentInput: getGlobalHeightExponentInput,
+    getHeightExponent: getGlobalHeightExponent,
   };
 }
 
@@ -110,7 +110,7 @@ export function createGenerationSettingsTargets(
     getSelect: (id) =>
       domTargets.getElementById(id) as EngineGenerationControlSelect | null,
     getPointsInput: globalControlTargets.getPointsInput,
-    getHeightExponentInput: globalControlTargets.getHeightExponentInput,
+    getHeightExponent: globalControlTargets.getHeightExponent,
   };
 }
 
@@ -145,7 +145,7 @@ export function createGenerationSettings(
   return {
     heightmapTemplateId: targets.getInput("templateInput")?.value,
     pointsCount: Number(targets.getPointsInput()?.dataset?.cells ?? 0),
-    heightExponent: Number(targets.getHeightExponentInput()?.value ?? 1),
+    heightExponent: targets.getHeightExponent(),
     lakeElevationLimit: getInputNumber(targets, "lakeElevationLimitOutput", 0),
     resolveDepressionsSteps: getInputNumber(
       targets,
@@ -208,6 +208,8 @@ export function createRuntimeGenerationSettingsStore(
     () => context.generationSettings,
     (nextSettings) => {
       context.generationSettings = nextSettings;
+      if (context.worldState)
+        context.worldState.generationSettings = nextSettings;
     },
   );
 }

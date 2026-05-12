@@ -35,7 +35,7 @@ export const foundationBrandThemeStyles = `    .studio-brand {
       gap: 2px;
       min-width: 0;
       width: 134px;
-      color: #fff8ec;
+      color: #e9eef1;
     }
 
     .studio-brand__title {
@@ -61,7 +61,7 @@ export const foundationBrandThemeStyles = `    .studio-brand {
       line-height: 1;
       font-weight: 760;
       letter-spacing: 0.11em;
-      color: color-mix(in srgb, var(--studio-accent) 36%, #f6efe5);
+      color: color-mix(in srgb, var(--studio-accent) 36%, #d8e1e5);
       white-space: nowrap;
     }
 
@@ -79,8 +79,8 @@ export const foundationBrandThemeStyles = `    .studio-brand {
       padding: 0 9px;
       border: 1px solid transparent;
       border-radius: 10px;
-      background: color-mix(in srgb, var(--agm-surface-dark) 86%, #000000);
-      color: color-mix(in srgb, var(--studio-accent) 48%, #cfc3ae);
+      background: color-mix(in srgb, var(--agm-surface-dark) 86%, #08111a);
+      color: color-mix(in srgb, var(--studio-accent) 48%, #cdd7dc);
       font-size: 11px;
       font-weight: 800;
       letter-spacing: 0.02em;

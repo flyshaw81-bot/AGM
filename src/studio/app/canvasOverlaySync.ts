@@ -98,6 +98,6 @@ export function syncOverlays(
       state.viewport.canvasTool === "grid" ? "block" : "none";
   if (measure)
     measure.style.display =
-      state.viewport.canvasTool === "measure" ? "grid" : "none";
+      state.viewport.canvasTool === "measure" ? "block" : "none";
   syncCanvasPaintPreview(state, targets);
 }

@@ -71,6 +71,10 @@ function createRankingContext(): EngineRuntimeContext {
 
 describe("CellRankingModule", () => {
   const originalWindow = globalThis.window;
+  const originalCellRankingDescriptor = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "CellRanking",
+  );
 
   afterEach(() => {
     vi.resetModules();
@@ -79,6 +83,16 @@ describe("CellRankingModule", () => {
       value: originalWindow,
       writable: true,
     });
+    if (originalCellRankingDescriptor) {
+      Object.defineProperty(
+        globalThis,
+        "CellRanking",
+        originalCellRankingDescriptor,
+      );
+    } else {
+      delete (globalThis as Record<string, unknown>).CellRanking;
+    }
+    delete (globalThis as Record<string, unknown>).rankCells;
   });
 
   it("ranks population suitability from an explicit runtime context", () => {
@@ -99,5 +113,18 @@ describe("CellRankingModule", () => {
     });
 
     await expect(import("./cell-ranking")).resolves.toBeDefined();
+  });
+
+  it("mounts only the AGM-owned CellRanking module from the browser adapter", async () => {
+    vi.resetModules();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: globalThis,
+      writable: true,
+    });
+    await import("./cell-ranking");
+
+    expect(typeof globalThis.CellRanking.rank).toBe("function");
+    expect((globalThis as Record<string, unknown>).rankCells).toBeUndefined();
   });
 });

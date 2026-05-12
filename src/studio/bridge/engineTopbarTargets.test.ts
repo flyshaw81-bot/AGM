@@ -1,13 +1,13 @@
-import { describe, expect, it, vi } from "vitest";
+﻿import { describe, expect, it, vi } from "vitest";
 import type { DataAction } from "./engineActionTypes";
 import { createEngineTopbarTargets } from "./engineTopbarTargets";
 
 describe("createEngineTopbarTargets", () => {
   it("composes topbar targets from an injected data-action adapter", async () => {
     const getActions = vi.fn(() => ({
-      canCreateNew: true,
+      canCreateGeneratedWorld: true,
       canOpenFile: false,
-      canSaveToMachine: true,
+      canDownloadProject: true,
     }));
     const runAction = vi.fn(async (_action: DataAction) => undefined);
 
@@ -17,13 +17,13 @@ describe("createEngineTopbarTargets", () => {
     });
 
     expect(targets.getDataActions()).toEqual({
-      canCreateNew: true,
+      canCreateGeneratedWorld: true,
       canOpenFile: false,
-      canSaveToMachine: true,
+      canDownloadProject: true,
     });
-    await targets.runDataAction("save-machine");
+    await targets.runDataAction("download-project");
 
     expect(getActions).toHaveBeenCalledTimes(1);
-    expect(runAction).toHaveBeenCalledWith("save-machine");
+    expect(runAction).toHaveBeenCalledWith("download-project");
   });
 });

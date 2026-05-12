@@ -1,17 +1,16 @@
-import type { EngineRenderAdapter } from "../../modules/engine-render-adapter";
+import {
+  createGlobalRenderAdapter,
+  type EngineRenderAdapter,
+} from "../../modules/engine-render-adapter";
+import { getActiveEngineRuntimeContext } from "../../modules/engine-runtime-active-context";
 import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 
 type EngineCanvasPack = { cells?: unknown; states?: unknown[] };
 
 type EngineCanvasWindow = typeof globalThis & {
-  drawBiomes?: () => void;
-  drawCells?: () => void;
-  drawHeightmap?: () => void;
   graphHeight?: number;
   graphWidth?: number;
   grid?: { cells?: unknown };
-  invokeActiveZooming?: () => void;
-  layerIsOn?: (layer: string) => boolean;
   mapHeightInput?: { value?: string };
   mapWidthInput?: { value?: string };
   pack?: EngineCanvasPack;
@@ -86,21 +85,20 @@ export function createRuntimeEngineCanvasMapDataAdapter(
 }
 
 export function createGlobalEngineCanvasRendererAdapter(): EngineCanvasRendererAdapter {
-  const engine = engineCanvasWindow();
+  const rendering = createGlobalRenderAdapter();
   return {
     drawHeightmap: () => {
-      if (typeof engine.drawHeightmap === "function") engine.drawHeightmap();
+      rendering.drawHeightmap?.();
     },
     drawBiomes: () => {
-      if (typeof engine.drawBiomes === "function") engine.drawBiomes();
+      rendering.drawBiomes?.();
     },
     drawCells: () => {
-      if (typeof engine.drawCells === "function") engine.drawCells();
+      rendering.drawCells?.();
     },
-    isLayerOn: (layer) => Boolean(engine.layerIsOn?.(layer)),
+    isLayerOn: rendering.isLayerOn,
     invokeActiveZooming: () => {
-      if (typeof engine.invokeActiveZooming === "function")
-        engine.invokeActiveZooming();
+      rendering.invokeActiveZooming?.();
     },
   };
 }
@@ -174,28 +172,44 @@ export function createRuntimeEngineCanvasAccessTargets(
 export function getEngineCanvasGraphSize(
   targets: EngineCanvasAccessTargets = createGlobalEngineCanvasAccessTargets(),
 ) {
-  return {
-    height: Number(targets.getGraphHeight() || 0),
-    width: Number(targets.getGraphWidth() || 0),
-  };
+  let height = Number(targets.getGraphHeight() || 0);
+  let width = Number(targets.getGraphWidth() || 0);
+  if ((!height || !width)) {
+    const ctx = getActiveEngineRuntimeContext();
+    if (ctx) {
+      height =
+        Number(ctx.worldSettings.graphHeight ?? height) || height;
+      width =
+        Number(ctx.worldSettings.graphWidth ?? width) || width;
+    }
+  }
+  return { height, width };
 }
 
 export function getEnginePackCells(
   targets: EngineCanvasAccessTargets = createGlobalEngineCanvasAccessTargets(),
 ) {
-  return targets.getPack()?.cells;
+  const cells = targets.getPack()?.cells;
+  if (cells) return cells;
+  return getActiveEngineRuntimeContext()?.pack?.cells as unknown;
 }
 
 export function getEnginePack(
   targets: EngineCanvasAccessTargets = createGlobalEngineCanvasAccessTargets(),
 ) {
-  return targets.getPack();
+  const pack = targets.getPack();
+  if (pack?.cells) return pack;
+  const ctxPack = getActiveEngineRuntimeContext()?.pack;
+  if (ctxPack?.cells) return ctxPack as EngineCanvasPack;
+  return pack;
 }
 
 export function getEngineGridCells(
   targets: EngineCanvasAccessTargets = createGlobalEngineCanvasAccessTargets(),
 ) {
-  return targets.getGridCells();
+  const cells = targets.getGridCells();
+  if (cells) return cells;
+  return getActiveEngineRuntimeContext()?.grid?.cells;
 }
 
 export function redrawEngineCanvasEditLayers(

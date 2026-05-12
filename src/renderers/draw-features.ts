@@ -1,14 +1,13 @@
-import { curveBasisClosed, line, select } from "d3";
+import type { EngineRuntimeContext } from "../modules/engine-runtime-context";
 import type { PackedGraphFeature } from "../modules/features";
 import { clipPoly, round } from "../utils";
+import { curveBasisClosed, line } from "../utils/shapeUtils";
+import { simplify } from "../utils/simplify";
+import { select } from "../utils/svgSelection";
+import { createBrowserRendererContext } from "./renderer-runtime-context";
 
 declare global {
   var drawFeatures: () => void;
-  var simplify: (
-    points: [number, number][],
-    tolerance: number,
-    highestQuality?: boolean,
-  ) => [number, number][];
   var getFeaturePath: (feature: PackedGraphFeature) => string;
 }
 
@@ -48,8 +47,12 @@ export function createGlobalFeatureRendererLogTargets(): FeatureRendererLogTarge
   };
 }
 
-const featuresRenderer = (): void => {
-  TIME && console.time("drawFeatures");
+function getBrowserContext(): EngineRuntimeContext {
+  return createBrowserRendererContext();
+}
+
+export const featuresRenderer = (context: EngineRuntimeContext): void => {
+  context.timing.shouldTime && console.time("drawFeatures");
 
   const html: FeaturesHtml = {
     paths: [],
@@ -59,11 +62,11 @@ const featuresRenderer = (): void => {
     lakes: {},
   };
 
-  for (const feature of pack.features) {
+  for (const feature of context.pack.features) {
     if (!feature || feature.type === "ocean") continue;
 
     html.paths.push(
-      `<path d="${renderFeaturePath(feature)}" id="feature_${feature.i}" data-f="${feature.i}"></path>`,
+      `<path d="${renderFeaturePath(feature, context)}" id="feature_${feature.i}" data-f="${feature.i}"></path>`,
     );
 
     if (feature.type === "lake") {
@@ -107,23 +110,34 @@ const featuresRenderer = (): void => {
     select(this).html(paths.join(""));
   });
 
-  TIME && console.timeEnd("drawFeatures");
+  context.timing.shouldTime && console.timeEnd("drawFeatures");
 };
 
 export function renderFeaturePath(
   feature: PackedGraphFeature,
+  contextOrLogTargets:
+    | EngineRuntimeContext
+    | FeatureRendererLogTargets = getBrowserContext(),
   logTargets: FeatureRendererLogTargets = createGlobalFeatureRendererLogTargets(),
 ): string {
+  const context =
+    "pack" in contextOrLogTargets ? contextOrLogTargets : getBrowserContext();
+  const logger =
+    "pack" in contextOrLogTargets ? logTargets : contextOrLogTargets;
   const points: [number, number][] = feature.vertices.map(
-    (vertex: number) => pack.vertices.p[vertex],
+    (vertex: number) => context.pack.vertices.p[vertex],
   );
   if (points.some((point) => point === undefined)) {
-    logTargets.error("Undefined point in getFeaturePath");
+    logger.error("Undefined point in getFeaturePath");
     return "";
   }
 
   const simplifiedPoints = simplify(points, 0.3);
-  const clippedPoints = clipPoly(simplifiedPoints, graphWidth, graphHeight);
+  const clippedPoints = clipPoly(
+    simplifiedPoints,
+    context.worldSettings.graphWidth ?? 0,
+    context.worldSettings.graphHeight ?? 0,
+  );
 
   const lineGen = line().curve(curveBasisClosed);
   const path = `${round(lineGen(clippedPoints) || "")}Z`;
@@ -133,6 +147,6 @@ export function renderFeaturePath(
 
 const runtimeWindow = getWindow();
 if (runtimeWindow) {
-  runtimeWindow.drawFeatures = featuresRenderer;
+  runtimeWindow.drawFeatures = () => featuresRenderer(getBrowserContext());
   runtimeWindow.getFeaturePath = renderFeaturePath;
 }

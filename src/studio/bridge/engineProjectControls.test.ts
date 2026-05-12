@@ -1,42 +1,66 @@
 import { describe, expect, it, vi } from "vitest";
-import { setEngineWindTier0 } from "./engineProjectControls";
+import {
+  setEngineLatitude,
+  setEngineLongitude,
+  setEngineMapSize,
+  setEnginePrecipitation,
+  setEngineTemperatureEquator,
+  setEngineWindTier0,
+} from "./engineProjectControls";
 import type { EngineProjectControlTargets } from "./engineProjectControlTargets";
 
 function createTargets(
   overrides: Partial<EngineProjectControlTargets> = {},
 ): EngineProjectControlTargets {
   return {
-    getTemperatureLabel: vi.fn(() => null),
     setOptionNumber: vi.fn(),
-    convertTemperature: vi.fn(),
-    getWindTransform: vi.fn(() => "rotate(225 210 6)"),
-    setWindTransform: vi.fn(),
     applyWindTierToRuntime: vi.fn(() => false),
+    setPrecipitationPercent: vi.fn(),
+    setMapPlacementPercent: vi.fn(),
     ...overrides,
   };
 }
 
 describe("engine project controls", () => {
-  it("rounds wind tier values and preserves the transform center", () => {
+  it("rounds wind tier values and writes runtime wind settings", () => {
     const targets = createTargets();
 
     setEngineWindTier0(88, targets);
 
-    expect(targets.setWindTransform).toHaveBeenCalledWith(
-      0,
-      "rotate(90 210 6)",
-    );
     expect(targets.applyWindTierToRuntime).toHaveBeenCalledWith(0, 90);
   });
 
-  it("does not update runtime wind settings when the wind path is missing", () => {
-    const targets = createTargets({
-      getWindTransform: vi.fn(() => null),
-    });
+  it("writes precipitation through the runtime target", () => {
+    const targets = createTargets();
 
-    setEngineWindTier0(88, targets);
+    setEnginePrecipitation(120.6, targets);
 
-    expect(targets.setWindTransform).not.toHaveBeenCalled();
-    expect(targets.applyWindTierToRuntime).not.toHaveBeenCalled();
+    expect(targets.setPrecipitationPercent).toHaveBeenCalledWith(121);
+  });
+
+  it("writes temperature values through runtime options", () => {
+    const targets = createTargets();
+
+    setEngineTemperatureEquator(64.2, targets);
+
+    expect(targets.setOptionNumber).toHaveBeenCalledWith(
+      "temperatureEquator",
+      50,
+    );
+  });
+
+  it("writes map placement values through the runtime target", () => {
+    const targets = createTargets();
+
+    setEngineMapSize(150, targets);
+    setEngineLatitude(-10, targets);
+    setEngineLongitude(62.26, targets);
+
+    expect(targets.setMapPlacementPercent).toHaveBeenCalledWith("mapSize", 100);
+    expect(targets.setMapPlacementPercent).toHaveBeenCalledWith("latitude", 0);
+    expect(targets.setMapPlacementPercent).toHaveBeenCalledWith(
+      "longitude",
+      62.3,
+    );
   });
 });

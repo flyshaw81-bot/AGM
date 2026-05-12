@@ -1,7 +1,7 @@
 export const panelsVisualPassStyles = `    /* AGMUI visual pass: flatter editor plates, quieter borders, stronger icon discipline. */
     .studio-topbar {
       background:
-        linear-gradient(180deg, color-mix(in srgb, var(--agm-surface-dark) 86%, #000000), color-mix(in srgb, var(--agm-surface-dark) 96%, #000000)),
+        linear-gradient(180deg, color-mix(in srgb, var(--agm-surface-dark) 86%, #08111a), color-mix(in srgb, var(--agm-surface-dark) 96%, #08111a)),
         var(--agm-surface-dark);
       border-bottom-color: rgba(255, 255, 255, 0.045);
       box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.72);
@@ -71,13 +71,13 @@ export const panelsVisualPassStyles = `    /* AGMUI visual pass: flatter editor 
 
     .studio-sidebar {
       background:
-        linear-gradient(180deg, color-mix(in srgb, var(--agm-surface-dark) 94%, #000000), color-mix(in srgb, var(--agm-surface-dark) 98%, #000000));
+        linear-gradient(180deg, color-mix(in srgb, var(--agm-surface-dark) 94%, #08111a), color-mix(in srgb, var(--agm-surface-dark) 98%, #08111a));
       border-right-color: rgba(255, 255, 255, 0.055);
     }
 
     .studio-sidebar--right {
       border-left-color: rgba(255, 255, 255, 0.055);
-      background: color-mix(in srgb, var(--agm-surface-dark) 96%, #000000);
+      background: color-mix(in srgb, var(--agm-surface-dark) 96%, #08111a);
     }
 
     .studio-nav {
@@ -176,13 +176,13 @@ export const panelsVisualPassStyles = `    /* AGMUI visual pass: flatter editor 
       border-color: var(--studio-accent-24);
       background:
         linear-gradient(90deg, var(--studio-accent-12), rgba(255, 255, 255, 0.018)),
-        color-mix(in srgb, var(--agm-surface-dark-2) 82%, #000000);
+        color-mix(in srgb, var(--agm-surface-dark-2) 82%, #08111a);
       color: var(--studio-text);
       box-shadow: inset 2px 0 0 var(--studio-accent);
     }
 
     .studio-stage__toolbar {
-      background: color-mix(in srgb, var(--agm-surface-dark-2) 72%, #000000);
+      background: color-mix(in srgb, var(--agm-surface-dark-2) 72%, #08111a);
       border-bottom-color: rgba(255, 255, 255, 0.055);
     }
 
@@ -209,7 +209,7 @@ export const panelsVisualPassStyles = `    /* AGMUI visual pass: flatter editor 
       border-color: rgba(255, 255, 255, 0.065);
       background:
         linear-gradient(180deg, rgba(255, 255, 255, 0.028), rgba(0, 0, 0, 0.14)),
-        color-mix(in srgb, var(--agm-surface-dark-2) 76%, #000000);
+        color-mix(in srgb, var(--agm-surface-dark-2) 76%, #08111a);
       box-shadow: 0 18px 38px rgba(0, 0, 0, 0.18);
     }
 

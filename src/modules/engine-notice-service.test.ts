@@ -1,15 +1,13 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  createBrowserNoticeDialogHost,
   createEngineNoticeService,
   createGlobalNoticeActionTargets,
   createGlobalNoticeService,
-  createJQueryNoticeDialogHost,
   type EngineNoticeActionTargets,
   type EngineNoticeDialogHost,
 } from "./engine-notice-service";
 
-const originalAlertMessage = globalThis.alertMessage;
-const originalDollar = globalThis.$;
 const originalParseError = globalThis.parseError;
 const originalClearMainTip = globalThis.clearMainTip;
 const originalCleanupData = globalThis.cleanupData;
@@ -43,8 +41,6 @@ function createActionTargets(): EngineNoticeActionTargets {
 
 describe("createGlobalNoticeService", () => {
   afterEach(() => {
-    globalThis.alertMessage = originalAlertMessage;
-    globalThis.$ = originalDollar;
     globalThis.parseError = originalParseError;
     globalThis.clearMainTip = originalClearMainTip;
     globalThis.cleanupData = originalCleanupData;
@@ -154,32 +150,8 @@ describe("createGlobalNoticeService", () => {
     expect(() => targets.regenerateMap("generation error")).not.toThrow();
   });
 
-  it("keeps jQuery UI access inside the default compatibility host", () => {
-    const dialog = vi.fn();
-    const close = vi.fn();
-    const dollar = vi.fn((selectorOrDialog: unknown) => {
-      if (selectorOrDialog === "#alert") return { dialog };
-      return { dialog: close };
-    });
-    globalThis.alertMessage = { innerHTML: "" } as HTMLElement;
-    globalThis.$ = dollar as unknown as typeof $;
-
-    const host = createJQueryNoticeDialogHost();
-    host.setHtml("<p>Body</p>");
-    host.open({ title: "Notice", resizable: false });
-    host.close("dialog-node");
-
-    expect(globalThis.alertMessage.innerHTML).toBe("<p>Body</p>");
-    expect(dollar).toHaveBeenCalledWith("#alert");
-    expect(dialog).toHaveBeenCalledWith({ title: "Notice", resizable: false });
-    expect(close).toHaveBeenCalledWith("close");
-  });
-
-  it("keeps the default compatibility host safe when dialog globals are absent", () => {
-    globalThis.alertMessage =
-      undefined as unknown as typeof globalThis.alertMessage;
-    globalThis.$ = undefined as unknown as typeof globalThis.$;
-    const host = createJQueryNoticeDialogHost();
+  it("keeps the default browser notice host safe when DOM globals are absent", () => {
+    const host = createBrowserNoticeDialogHost();
 
     expect(() => host.setHtml("<p>Body</p>")).not.toThrow();
     expect(() => host.open({ title: "Notice" })).not.toThrow();

@@ -5,7 +5,6 @@ import {
 } from "./engineProjectClimateTargets";
 
 type TestClimateGlobals = typeof globalThis & {
-  updateGlobePosition?: () => void;
   drawBiomes?: () => void;
   ThreeD?: {
     update?: () => void;
@@ -15,7 +14,6 @@ type TestClimateGlobals = typeof globalThis & {
 const testGlobals = globalThis as TestClimateGlobals;
 const originalDocument = globalThis.document;
 const originalPack = globalThis.pack;
-const originalUpdateGlobePosition = testGlobals.updateGlobePosition;
 const originalCalculateTemperatures = globalThis.calculateTemperatures;
 const originalGeneratePrecipitation = globalThis.generatePrecipitation;
 const originalRivers = globalThis.Rivers;
@@ -33,10 +31,6 @@ const originalDocumentDescriptor = Object.getOwnPropertyDescriptor(
 const originalPackDescriptor = Object.getOwnPropertyDescriptor(
   globalThis,
   "pack",
-);
-const originalUpdateGlobePositionDescriptor = Object.getOwnPropertyDescriptor(
-  globalThis,
-  "updateGlobePosition",
 );
 const originalCalculateTemperaturesDescriptor = Object.getOwnPropertyDescriptor(
   globalThis,
@@ -97,19 +91,6 @@ describe("createGlobalProjectClimateTargets", () => {
         configurable: true,
         writable: true,
         value: originalPack,
-      });
-    }
-    if (originalUpdateGlobePositionDescriptor) {
-      Object.defineProperty(
-        globalThis,
-        "updateGlobePosition",
-        originalUpdateGlobePositionDescriptor,
-      );
-    } else {
-      Object.defineProperty(globalThis, "updateGlobePosition", {
-        configurable: true,
-        writable: true,
-        value: originalUpdateGlobePosition,
       });
     }
     if (originalCalculateTemperaturesDescriptor) {
@@ -302,7 +283,6 @@ describe("createGlobalProjectClimateTargets", () => {
 
     expect(targets.shouldAutoApplyClimate()).toBe(true);
     expect(targets.hasCanvas3d()).toBe(false);
-    expect(targets.canUpdateGlobePosition()).toBe(false);
     expect(targets.canApplyClimatePipeline()).toBe(false);
     expect(targets.cloneHeights()).toBeUndefined();
     expect(() => targets.schedule(vi.fn(), 10)).not.toThrow();
@@ -388,7 +368,6 @@ describe("createGlobalProjectClimateTargets", () => {
 
     expect(targets.shouldAutoApplyClimate()).toBe(true);
     expect(targets.hasCanvas3d()).toBe(false);
-    expect(targets.canUpdateGlobePosition()).toBe(false);
     expect(targets.canApplyClimatePipeline()).toBe(false);
     expect(targets.cloneHeights()).toBeUndefined();
     expect(() => targets.calculateTemperatures()).not.toThrow();
@@ -416,10 +395,7 @@ describe("createGlobalProjectClimateTargets", () => {
         hasCanvas3d: () => true,
       },
       {
-        canUpdateGlobePosition: () => true,
         canApplyClimatePipeline: () => true,
-        updateGlobeTemperature: vi.fn(),
-        updateGlobePosition: vi.fn(),
         calculateTemperatures,
         generatePrecipitation: vi.fn(),
         cloneHeights: () => heights,

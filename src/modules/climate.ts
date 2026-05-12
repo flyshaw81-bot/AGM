@@ -1,7 +1,8 @@
-import { mean, range } from "d3";
 import { minmax, rn } from "../utils/numberUtils";
 import { rand } from "../utils/probabilityUtils";
+import { mean, range } from "../utils/statUtils";
 import { createGlobalClimateContext } from "./engine-climate-context";
+import type { EngineGrid, EngineOptions } from "./engine-world-state";
 
 declare global {
   var Climate: ClimateModule;
@@ -23,11 +24,11 @@ export type ClimateMapCoordinates = {
 };
 
 export type ClimateRuntimeContext = {
-  grid: typeof grid;
+  grid: EngineGrid;
   coordinates: ClimateMapCoordinates;
   graphWidth: number;
   graphHeight: number;
-  options: typeof options;
+  options: EngineOptions;
   heightExponent: number;
   pointsCount: number;
   precipitationPercent: number;
@@ -264,7 +265,7 @@ export class ClimateModule {
   }
 
   private getPrecipitation(
-    cells: typeof grid.cells,
+    cells: EngineGrid["cells"],
     humidity: number,
     cellId: number,
     next: number,

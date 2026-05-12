@@ -32,6 +32,9 @@ const originalDocument = globalThis.document;
 const originalMapCoordinates = globalThis.mapCoordinates;
 const originalGraphWidth = globalThis.graphWidth;
 const originalGraphHeight = globalThis.graphHeight;
+const originalMapSizePercent = globalThis.mapSizePercent;
+const originalLatitudePercent = globalThis.latitudePercent;
+const originalLongitudePercent = globalThis.longitudePercent;
 const originalPopulationRate = globalThis.populationRate;
 const originalUrbanDensity = globalThis.urbanDensity;
 const originalUrbanization = globalThis.urbanization;
@@ -60,6 +63,9 @@ describe("runtime setting adapters", () => {
     globalThis.mapCoordinates = originalMapCoordinates;
     globalThis.graphWidth = originalGraphWidth;
     globalThis.graphHeight = originalGraphHeight;
+    globalThis.mapSizePercent = originalMapSizePercent;
+    globalThis.latitudePercent = originalLatitudePercent;
+    globalThis.longitudePercent = originalLongitudePercent;
     globalThis.populationRate = originalPopulationRate;
     globalThis.urbanDensity = originalUrbanDensity;
     globalThis.urbanization = originalUrbanization;
@@ -67,15 +73,14 @@ describe("runtime setting adapters", () => {
     globalThis.TIME = originalTime;
   });
 
-  it("reads world settings from current map globals and DOM controls", () => {
-    installDocument({
-      mapSizeOutput: { value: "72" },
-      latitudeOutput: { value: "41" },
-      longitudeOutput: { value: "63" },
-    });
+  it("reads world settings from current map runtime globals", () => {
+    installDocument({});
     globalThis.mapCoordinates = { latN: 10 } as typeof mapCoordinates;
     globalThis.graphWidth = 200;
     globalThis.graphHeight = 120;
+    globalThis.mapSizePercent = 72;
+    globalThis.latitudePercent = 41;
+    globalThis.longitudePercent = 63;
 
     expect(createGlobalWorldSettings()).toEqual({
       mapCoordinates: { latN: 10 },
@@ -92,7 +97,7 @@ describe("runtime setting adapters", () => {
     globalThis.populationRate = 2;
     globalThis.urbanDensity = 3;
     globalThis.urbanization = 4;
-    globalThis.heightUnit = { value: "ft" } as HTMLSelectElement;
+    globalThis.heightUnit = "ft";
     globalThis.TIME = true;
 
     expect(createGlobalPopulationSettings()).toEqual({
@@ -142,25 +147,27 @@ describe("runtime setting adapters", () => {
     });
   });
 
-  it("reads world setting inputs through injected DOM targets", () => {
+  it("keeps DOM input readers isolated from runtime world settings", () => {
     const domTargets: EngineSettingsDomTargets = {
       getInput: (id) =>
         (({
-          mapSizeOutput: { value: "81" },
-          latitudeOutput: { value: "42" },
+          numericOutput: { value: "81" },
         })[id] as HTMLInputElement | undefined) ?? null,
     };
 
     expect(
-      createSettingsInputNumberReader(domTargets)("mapSizeOutput", 0),
+      createSettingsInputNumberReader(domTargets)("numericOutput", 0),
     ).toBe(81);
     expect(
-      createSettingsInputNumberReader(domTargets)("longitudeOutput", 12),
+      createSettingsInputNumberReader(domTargets)("missingOutput", 12),
     ).toBe(12);
 
     globalThis.mapCoordinates = { latN: 15 } as typeof mapCoordinates;
     globalThis.graphWidth = 320;
     globalThis.graphHeight = 180;
+    globalThis.mapSizePercent = 82;
+    globalThis.latitudePercent = 43;
+    globalThis.longitudePercent = 64;
 
     expect(
       createWorldSettings(createGlobalWorldSettingsTargets(domTargets)),
@@ -168,9 +175,9 @@ describe("runtime setting adapters", () => {
       mapCoordinates: { latN: 15 },
       graphWidth: 320,
       graphHeight: 180,
-      mapSizePercent: 81,
-      latitudePercent: 42,
-      longitudePercent: 0,
+      mapSizePercent: 82,
+      latitudePercent: 43,
+      longitudePercent: 64,
     });
   });
 
@@ -179,7 +186,7 @@ describe("runtime setting adapters", () => {
 
     expect(
       createSettingsInputNumberReader(createGlobalSettingsDomTargets())(
-        "mapSizeOutput",
+        "numericOutput",
         27,
       ),
     ).toBe(27);
@@ -195,7 +202,7 @@ describe("runtime setting adapters", () => {
 
     expect(
       createSettingsInputNumberReader(createGlobalSettingsDomTargets())(
-        "mapSizeOutput",
+        "numericOutput",
         31,
       ),
     ).toBe(31);
@@ -214,7 +221,7 @@ describe("runtime setting adapters", () => {
 
     expect(
       createSettingsInputNumberReader(createGlobalSettingsDomTargets())(
-        "mapSizeOutput",
+        "numericOutput",
         33,
       ),
     ).toBe(33);
@@ -222,17 +229,15 @@ describe("runtime setting adapters", () => {
 
   it("composes world settings from separate DOM and runtime targets", () => {
     const domTargets: EngineSettingsDomTargets = {
-      getInput: (id) =>
-        (({
-          mapSizeOutput: { value: "75" },
-          latitudeOutput: { value: "38" },
-          longitudeOutput: { value: "61" },
-        })[id] as HTMLInputElement | undefined) ?? null,
+      getInput: () => null,
     };
     const runtimeTargets: EngineWorldRuntimeTargets = {
       getMapCoordinates: () => ({ latN: 25 }) as typeof mapCoordinates,
       getGraphWidth: () => 640,
       getGraphHeight: () => 360,
+      getMapSizePercent: () => 75,
+      getLatitudePercent: () => 38,
+      getLongitudePercent: () => 61,
     };
 
     expect(
@@ -253,12 +258,18 @@ describe("runtime setting adapters", () => {
     globalThis.mapCoordinates = { latN: 12 } as typeof mapCoordinates;
     globalThis.graphWidth = 960;
     globalThis.graphHeight = 540;
+    globalThis.mapSizePercent = 68;
+    globalThis.latitudePercent = 44;
+    globalThis.longitudePercent = 52;
 
     const targets = createGlobalWorldRuntimeTargets();
 
     expect(targets.getMapCoordinates()).toEqual({ latN: 12 });
     expect(targets.getGraphWidth()).toBe(960);
     expect(targets.getGraphHeight()).toBe(540);
+    expect(targets.getMapSizePercent()).toBe(68);
+    expect(targets.getLatitudePercent()).toBe(44);
+    expect(targets.getLongitudePercent()).toBe(52);
   });
 
   it("composes population settings from explicit runtime targets", () => {
@@ -308,7 +319,7 @@ describe("runtime setting adapters", () => {
   });
 
   it("reads unit and timing values through explicit global runtime targets", () => {
-    globalThis.heightUnit = { value: "m" } as HTMLSelectElement;
+    globalThis.heightUnit = "m";
     globalThis.TIME = false;
 
     expect(createGlobalUnitRuntimeTargets().getHeightUnit()).toBe("m");
@@ -321,6 +332,9 @@ describe("runtime setting adapters", () => {
         "mapCoordinates",
         "graphWidth",
         "graphHeight",
+        "mapSizePercent",
+        "latitudePercent",
+        "longitudePercent",
         "populationRate",
         "urbanDensity",
         "urbanization",
@@ -348,6 +362,9 @@ describe("runtime setting adapters", () => {
       expect(worldTargets.getMapCoordinates()).toEqual({});
       expect(worldTargets.getGraphWidth()).toBe(0);
       expect(worldTargets.getGraphHeight()).toBe(0);
+      expect(worldTargets.getMapSizePercent()).toBe(0);
+      expect(worldTargets.getLatitudePercent()).toBe(0);
+      expect(worldTargets.getLongitudePercent()).toBe(0);
       expect(populationTargets.getPopulationRate()).toBe(0);
       expect(populationTargets.getUrbanDensity()).toBe(0);
       expect(populationTargets.getUrbanization()).toBe(0);

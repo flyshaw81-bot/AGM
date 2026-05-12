@@ -7,6 +7,10 @@ import type { DirectEditorActionTargets } from "./directEditorActionTargets";
 function createState(): StudioState {
   return {
     section: "canvas",
+    shell: {
+      activeEditorModule: "states",
+      navigationCollapsed: false,
+    },
     document: {
       source: "agm",
     },
@@ -45,6 +49,7 @@ function createTargets(
     updateProvince: vi.fn(),
     updateRoute: vi.fn(),
     updateZone: vi.fn(),
+    updateMarker: vi.fn(),
     updateBiome: vi.fn(),
     updateDiplomacy: vi.fn(),
     ...overrides,
@@ -113,6 +118,20 @@ describe("direct editor action handlers", () => {
     expect(state.directEditor.selectedDiplomacySubjectId).toBe(1);
     expect(state.directEditor.selectedDiplomacyObjectId).toBe(2);
     expect(state.directEditor.lastAppliedDiplomacyPair).toBe("1:2");
+    expect(state.document.source).toBe("core");
+  });
+
+  it("applies marker mutations without requiring focus geometry", () => {
+    const { handlers, state, targets } = createHandlers();
+
+    handlers.onDirectMarkerApply(8, { type: "ruins", icon: "R" });
+
+    expect(targets.updateMarker).toHaveBeenCalledWith(8, {
+      type: "ruins",
+      icon: "R",
+    });
+    expect(state.directEditor.selectedMarkerId).toBe(8);
+    expect(state.directEditor.lastAppliedMarkerId).toBe(8);
     expect(state.document.source).toBe("core");
   });
 

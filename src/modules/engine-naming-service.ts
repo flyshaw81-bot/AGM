@@ -1,3 +1,4 @@
+import type { EngineRuntimeContext } from "./engine-runtime-context";
 import type { NameBase } from "./names-generator";
 
 export type EngineNamingService = {
@@ -23,7 +24,7 @@ type EngineNamesModule = {
     dupl?: string,
   ) => string;
   getCultureShort: (culture: number) => string;
-  getState: (baseName: string, culture: number) => string;
+  getState: (baseName: string, culture: number, base?: number) => string;
   getBase: (base: number, min?: number, max?: number, dupl?: string) => string;
   getBaseShort: (base: number) => string;
   getNameBases: () => NameBase[];
@@ -65,6 +66,46 @@ export function createGlobalNamingServiceTargets(): EngineNamingServiceTargets {
 
 export function createGlobalNamingService(): EngineNamingService {
   return createEngineNamingService(createGlobalNamingServiceTargets());
+}
+
+function getCultureBase(context: EngineRuntimeContext, culture: number) {
+  return context.pack?.cultures?.[culture]?.base;
+}
+
+export function createRuntimeNamingService(
+  context: EngineRuntimeContext,
+  targets: EngineNamingServiceTargets = createGlobalNamingServiceTargets(),
+): EngineNamingService {
+  const getNamesModule = targets.getNamesModule;
+
+  return {
+    getCulture: (culture, min, max, dupl) => {
+      const base = getCultureBase(context, culture);
+      if (base === undefined) return `Culture ${culture}`;
+      return (
+        getNamesModule()?.getBase(base, min, max, dupl) ?? `Culture ${culture}`
+      );
+    },
+    getCultureShort: (culture) => {
+      const base = getCultureBase(context, culture);
+      if (base === undefined) return `C${culture}`;
+      return getNamesModule()?.getBaseShort(base) ?? `C${culture}`;
+    },
+    getState: (baseName, culture) => {
+      const base = getCultureBase(context, culture);
+      return (
+        getNamesModule()?.getState(baseName, culture, base) ??
+        `${baseName} State`
+      );
+    },
+    getBase: (base, min, max, dupl) =>
+      getNamesModule()?.getBase(base, min, max, dupl) ?? `Base ${base}`,
+    getBaseShort: (base) => getNamesModule()?.getBaseShort(base) ?? `B${base}`,
+    getNameBases: () => getNamesModule()?.getNameBases() ?? [],
+    getMapName: () => {
+      getNamesModule()?.getMapName(false);
+    },
+  };
 }
 
 function getGlobalValue<T>(name: string): T | undefined {

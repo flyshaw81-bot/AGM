@@ -1,4 +1,6 @@
 import type { Burg } from "../modules/burgs-generator";
+import type { EngineRuntimeContext } from "../modules/engine-runtime-context";
+import { createBrowserRendererContext } from "./renderer-runtime-context";
 
 declare global {
   var drawBurgLabels: () => void;
@@ -45,13 +47,14 @@ const getWindow = (): (Window & typeof globalThis) | undefined => {
 };
 
 export const burgLabelsRenderer = (
+  context: EngineRuntimeContext,
   targets: BurgLabelRendererTargets = defaultBurgLabelRendererTargets,
 ): void => {
-  TIME && console.time("drawBurgLabels");
-  createLabelGroups(targets);
+  context.timing.shouldTime && console.time("drawBurgLabels");
+  createLabelGroups(context, targets);
 
-  for (const { name } of options.burgs.groups as BurgGroup[]) {
-    const burgsInGroup = pack.burgs.filter(
+  for (const { name } of context.options.burgs.groups as BurgGroup[]) {
+    const burgsInGroup = context.pack.burgs.filter(
       (b) => b.group === name && !b.removed,
     );
     if (!burgsInGroup.length) continue;
@@ -77,16 +80,17 @@ export const burgLabelsRenderer = (
       .text((d) => d.name!);
   }
 
-  TIME && console.timeEnd("drawBurgLabels");
+  context.timing.shouldTime && console.timeEnd("drawBurgLabels");
 };
 
 export const drawBurgLabelRenderer = (
+  context: EngineRuntimeContext,
   burg: Burg,
   targets: BurgLabelRendererTargets = defaultBurgLabelRendererTargets,
 ): void => {
   const labelGroup = burgLabels.select<SVGGElement>(`#${burg.group}`);
   if (labelGroup.empty()) {
-    burgLabelsRenderer(targets);
+    burgLabelsRenderer(context, targets);
     return; // redraw all labels if group is missing
   }
 
@@ -114,7 +118,10 @@ export const removeBurgLabelRenderer = (
   if (existingLabel) existingLabel.remove();
 };
 
-function createLabelGroups(targets: BurgLabelRendererTargets): void {
+function createLabelGroups(
+  context: EngineRuntimeContext,
+  targets: BurgLabelRendererTargets,
+): void {
   const document = targets.getDocument();
   if (!document) return;
 
@@ -133,7 +140,7 @@ function createLabelGroups(targets: BurgLabelRendererTargets): void {
   // create groups for each burg group and apply stored or default style
   const defaultStyle =
     style.burgLabels.town || Object.values(style.burgLabels)[0] || {};
-  const sortedGroups = [...(options.burgs.groups as BurgGroup[])].sort(
+  const sortedGroups = [...(context.options.burgs.groups as BurgGroup[])].sort(
     (a, b) => a.order - b.order,
   );
   for (const { name } of sortedGroups) {
@@ -148,7 +155,9 @@ function createLabelGroups(targets: BurgLabelRendererTargets): void {
 
 const runtimeWindow = getWindow();
 if (runtimeWindow) {
-  runtimeWindow.drawBurgLabels = burgLabelsRenderer;
-  runtimeWindow.drawBurgLabel = drawBurgLabelRenderer;
+  runtimeWindow.drawBurgLabels = () =>
+    burgLabelsRenderer(createBrowserRendererContext());
+  runtimeWindow.drawBurgLabel = (burg) =>
+    drawBurgLabelRenderer(createBrowserRendererContext(), burg);
   runtimeWindow.removeBurgLabel = removeBurgLabelRenderer;
 }

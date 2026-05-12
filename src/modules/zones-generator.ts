@@ -1,11 +1,8 @@
-import { max, mean } from "d3";
-import { getAdjective } from "../utils/languageUtils";
+﻿import { getAdjective } from "../utils/languageUtils";
 import { PriorityQueue } from "../utils/priorityQueue";
 import { gauss, P, ra, rand, rw } from "../utils/probabilityUtils";
-import {
-  type EngineRuntimeContext,
-  getGlobalEngineRuntimeContext,
-} from "./engine-runtime-context";
+import { max, mean } from "../utils/statUtils";
+import type { EngineRuntimeContext } from "./engine-runtime-context";
 
 declare global {
   var Zones: ZonesModule;
@@ -59,12 +56,7 @@ export class ZonesModule {
     };
   }
 
-  generate(input: number | EngineRuntimeContext = 1, maybeGlobalModifier = 1) {
-    const context =
-      typeof input === "number" ? getGlobalEngineRuntimeContext() : input;
-    const globalModifier =
-      typeof input === "number" ? input : maybeGlobalModifier;
-
+  generate(context: EngineRuntimeContext, globalModifier = 1) {
     context.timing.shouldTime && console.time("generateZones");
 
     const { pack } = context;

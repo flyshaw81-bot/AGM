@@ -1,4 +1,4 @@
-export const LAYER_ACTIONS = [
+﻿export const LAYER_ACTIONS = [
   "toggleTexture",
   "toggleHeight",
   "toggleBiomes",
@@ -30,13 +30,13 @@ export const LAYER_ACTIONS = [
 ] as const;
 
 export const EDITOR_ACTIONS = [
-  "editStates",
-  "editCultures",
-  "editReligions",
-  "editBiomes",
-  "editProvinces",
-  "editZones",
-  "editDiplomacy",
+  "stateWorkbench",
+  "cultureWorkbench",
+  "religionWorkbench",
+  "biomeWorkbench",
+  "provinceWorkbench",
+  "zoneWorkbench",
+  "diplomacyWorkbench",
 ] as const;
 
 export type LayerAction = (typeof LAYER_ACTIONS)[number];
@@ -110,11 +110,46 @@ export type EngineZoneSummaryItem = {
   population?: number;
 };
 
+export type EngineMarkerSummaryItem = {
+  id: number;
+  type?: string;
+  icon?: string;
+  cell?: number;
+  x?: number;
+  y?: number;
+  dx?: number;
+  dy?: number;
+  px?: number;
+  size?: number;
+  pin?: string;
+  fill?: string;
+  stroke?: string;
+  hidden?: boolean;
+  pinned?: boolean;
+  locked?: boolean;
+};
+
+export type EngineMilitarySummaryItem = {
+  id: string;
+  regimentId: number;
+  stateId: number;
+  stateName: string;
+  name: string;
+  type?: string;
+  total?: number;
+  cell?: number;
+  x?: number;
+  y?: number;
+  naval?: boolean;
+};
+
 export type EngineWorldResourceSummary = {
   biomes: EngineBiomeSummaryItem[];
   provinces: EngineProvinceSummaryItem[];
   routes: EngineRouteSummaryItem[];
   zones: EngineZoneSummaryItem[];
+  markers: EngineMarkerSummaryItem[];
+  military: EngineMilitarySummaryItem[];
 };
 
 export type EngineFocusTarget = {
@@ -200,16 +235,12 @@ export type AgmWritableProvince = {
 } & Record<string, unknown>;
 
 export type DataAction =
-  | "quick-load"
-  | "save-storage"
-  | "save-machine"
-  | "save-dropbox"
-  | "connect-dropbox"
-  | "load-dropbox"
-  | "share-dropbox"
-  | "new-map"
+  | "load-browser-snapshot"
+  | "save-browser-snapshot"
+  | "download-project"
+  | "create-generated-world"
   | "open-file"
-  | "load-url";
+  | "open-url-source";
 
 export type ProjectAction =
   | "seed-history"

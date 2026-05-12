@@ -1,5 +1,8 @@
 import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
-import { syncEngineViewport } from "../bridge/engineMapHost";
+import {
+  readEngineViewportStatePatch,
+  syncEngineViewport,
+} from "../bridge/engineMapHost";
 import type { StudioState } from "../types";
 import {
   createRuntimeCanvasInteractionGeometryTargets,
@@ -18,6 +21,7 @@ export type CanvasInteractionTargets = {
   syncPaintPreview: (state: StudioState) => void;
   syncToolHud: (state: StudioState) => void;
   syncViewport: typeof syncEngineViewport;
+  readViewportPatch: typeof readEngineViewportStatePatch;
   isPaintTool: typeof isPaintCanvasTool;
 };
 
@@ -72,6 +76,7 @@ export function createGlobalCanvasInteractionTargets(): CanvasInteractionTargets
     syncPaintPreview: syncCanvasPaintPreview,
     syncToolHud: syncCanvasToolHud,
     syncViewport: syncEngineViewport,
+    readViewportPatch: readEngineViewportStatePatch,
     isPaintTool: isPaintCanvasTool,
   });
 }
@@ -91,6 +96,7 @@ export function createRuntimeCanvasInteractionTargets(
     syncPaintPreview: syncCanvasPaintPreview,
     syncToolHud: syncCanvasToolHud,
     syncViewport: syncEngineViewport,
+    readViewportPatch: readEngineViewportStatePatch,
     isPaintTool: isPaintCanvasTool,
   });
 }

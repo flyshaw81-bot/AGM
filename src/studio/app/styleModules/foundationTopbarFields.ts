@@ -17,7 +17,7 @@ export const foundationTopbarFieldsStyles = `    .studio-topbar__context {
       border-radius: 8px;
       border: 1px solid var(--studio-accent-14);
       background:
-        linear-gradient(180deg, color-mix(in srgb, var(--agm-surface-dark-2) 90%, var(--studio-accent) 5%), color-mix(in srgb, var(--agm-surface-dark) 94%, #000000)),
+        linear-gradient(180deg, color-mix(in srgb, var(--agm-surface-dark-2) 90%, var(--studio-accent) 5%), color-mix(in srgb, var(--agm-surface-dark) 94%, #08111a)),
         var(--agm-surface-dark-2);
       box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.035),
@@ -29,7 +29,7 @@ export const foundationTopbarFieldsStyles = `    .studio-topbar__context {
     .studio-topbar-field:focus-within {
       border-color: var(--studio-accent-34);
       background:
-        linear-gradient(180deg, color-mix(in srgb, var(--agm-surface-dark-2) 84%, var(--studio-accent) 10%), color-mix(in srgb, var(--agm-surface-dark) 92%, #000000));
+        linear-gradient(180deg, color-mix(in srgb, var(--agm-surface-dark-2) 84%, var(--studio-accent) 10%), color-mix(in srgb, var(--agm-surface-dark) 92%, #08111a));
     }
 
     .studio-topbar-field--profile {
@@ -53,7 +53,7 @@ export const foundationTopbarFieldsStyles = `    .studio-topbar__context {
       line-height: 1;
       font-weight: 900;
       letter-spacing: 0.02em;
-      color: color-mix(in srgb, var(--studio-accent) 66%, #b8ad99);
+      color: color-mix(in srgb, var(--studio-accent) 66%, #8fa0aa);
     }
 
     .studio-topbar-field select,
@@ -63,7 +63,7 @@ export const foundationTopbarFieldsStyles = `    .studio-topbar__context {
       height: 16px;
       border: 0;
       background: transparent;
-      color: #fff8ec;
+      color: #e9eef1;
       font: inherit;
       font-size: 12px;
       line-height: 1;

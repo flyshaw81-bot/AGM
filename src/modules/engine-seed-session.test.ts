@@ -83,6 +83,14 @@ function createRuntimeContext(): EngineRuntimeContext {
 describe("EngineSeedSessionModule", () => {
   const originalDocument = globalThis.document;
   const originalWindow = globalThis.window;
+  const originalEngineSeedSessionDescriptor = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "EngineSeedSession",
+  );
+  const originalSetSeedDescriptor = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "setSeed",
+  );
 
   afterEach(() => {
     vi.resetModules();
@@ -96,6 +104,20 @@ describe("EngineSeedSessionModule", () => {
       value: originalWindow,
       writable: true,
     });
+    if (originalEngineSeedSessionDescriptor) {
+      Object.defineProperty(
+        globalThis,
+        "EngineSeedSession",
+        originalEngineSeedSessionDescriptor,
+      );
+    } else {
+      delete (globalThis as Record<string, unknown>).EngineSeedSession;
+    }
+    if (originalSetSeedDescriptor) {
+      Object.defineProperty(globalThis, "setSeed", originalSetSeedDescriptor);
+    } else {
+      delete (globalThis as Record<string, unknown>).setSeed;
+    }
   });
 
   it("resolves seeds through injected targets", () => {
@@ -316,7 +338,7 @@ describe("EngineSeedSessionModule", () => {
     }
   });
 
-  it("writes resolved seeds into the runtime context before delegating", () => {
+  it("writes resolved seeds into the runtime context without global seed delegation", () => {
     const context = createRuntimeContext();
     const fallback = createTargets();
     const session = createRuntimeSeedSession(
@@ -329,7 +351,7 @@ describe("EngineSeedSessionModule", () => {
     expect(seed).toBe("123456789");
     expect(context.seed).toBe("123456789");
     expect(context.options.seed).toBe("123456789");
-    expect(fallback.setSeed).toHaveBeenCalledWith("123456789");
+    expect(fallback.setSeed).not.toHaveBeenCalled();
     expect(fallback.setOptionsSeed).toHaveBeenCalledWith("123456789");
     expect(fallback.setRandomGenerator).toHaveBeenCalledWith("123456789");
   });
@@ -343,5 +365,22 @@ describe("EngineSeedSessionModule", () => {
     });
 
     await expect(import("./engine-seed-session")).resolves.toBeDefined();
+  });
+
+  it("mounts the legacy setSeed compatibility entrypoint from the module", async () => {
+    vi.resetModules();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: globalThis,
+      writable: true,
+    });
+    await import("./engine-seed-session");
+    const apply = vi.fn(() => "fixed-seed");
+    globalThis.EngineSeedSession = {
+      apply,
+    } as unknown as typeof EngineSeedSession;
+
+    expect(globalThis.setSeed("fixed-seed")).toBe("fixed-seed");
+    expect(apply).toHaveBeenCalledWith("fixed-seed");
   });
 });

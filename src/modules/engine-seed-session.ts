@@ -1,4 +1,5 @@
 import { generateSeed } from "../utils/probabilityUtils";
+import { setBrowserRuntimeValue } from "./engine-browser-runtime-globals";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
 
 export type EngineSeedHistoryEntry = {
@@ -93,11 +94,7 @@ export function createGlobalSeedRuntimeTargets(): EngineSeedRuntimeTargets {
     getSearchParams: () =>
       new URL(getLocationHref(), "https://agm.local").searchParams,
     setSeed: (nextSeed) => {
-      try {
-        globalThis.seed = nextSeed;
-      } catch {
-        // Seed writes are best-effort for blocked compatibility globals.
-      }
+      setBrowserRuntimeValue("seed", nextSeed);
     },
     setRandomGenerator: (nextSeed) => {
       const createRandom = getAleaPrng();
@@ -109,6 +106,7 @@ export function createGlobalSeedRuntimeTargets(): EngineSeedRuntimeTargets {
 
 declare global {
   var EngineSeedSession: EngineSeedSessionModule;
+  var setSeed: (precreatedSeed?: string) => string;
 }
 
 export function resolveEngineSeed({
@@ -193,10 +191,11 @@ export function createRuntimeSeedSessionTargets(
     getSearchParams: fallback.getSearchParams,
     setSeed: (nextSeed) => {
       context.seed = nextSeed;
-      fallback.setSeed(nextSeed);
+      if (context.worldState) context.worldState.seed = nextSeed;
     },
     setOptionsSeed: (nextSeed) => {
       context.options.seed = nextSeed;
+      if (context.worldState) context.worldState.options = context.options;
       fallback.setOptionsSeed(nextSeed);
     },
     setRandomGenerator: fallback.setRandomGenerator,
@@ -212,5 +211,8 @@ export function createRuntimeSeedSession(
 }
 
 const runtimeWindow = getWindow();
-if (runtimeWindow)
+if (runtimeWindow) {
   runtimeWindow.EngineSeedSession = new EngineSeedSessionModule();
+  runtimeWindow.setSeed = (precreatedSeed?: string) =>
+    runtimeWindow.EngineSeedSession.apply(precreatedSeed);
+}

@@ -1,75 +1,75 @@
 export const themeSystemGuardrailStyles = `    /* Final dual-theme guardrails from the Pencil handoff.
-       Night keeps the deep graphite shell; daylight keeps the Carbon Frost shell. */
+       Night uses a mineral-blue graphite shell; daylight uses a cool frost shell. */
     #studioRoot[data-studio-theme="night"] {
-      --pencil-bg: #1b1b1b;
-      --pencil-canvas: #101010;
-      --pencil-sidebar: #151616;
-      --pencil-surface: #151616;
-      --pencil-surface-muted: #202124;
-      --pencil-hover: #242528;
-      --pencil-active: #2a2119;
-      --pencil-border: #2a2a2a;
-      --pencil-border-soft: #303030;
-      --pencil-text: #f8fafc;
-      --pencil-muted: #9aa3b5;
-      --pencil-faint: #6f7787;
-      --pencil-accent: #ff8a00;
-      --agm-surface-dark: #101010;
-      --agm-surface-dark-2: #151616;
-      --studio-panel: #151616;
-      --studio-panel-strong: #1b1b1b;
-      --studio-border: #2a2a2a;
-      --studio-border-strong: #3a3a3a;
-      --studio-text: #f8fafc;
-      --studio-muted: #9aa3b5;
-      --studio-dim: #6f7787;
-      --studio-accent: #ff8a00;
-      --studio-cyan: #8deeb9;
-      --studio-green: #8deeb9;
-      --studio-warning: #ffd166;
-      --studio-accent-text: #ffb45f;
-      --studio-accent-panel: #241832;
-      --cascade-ground: #101010;
-      --cascade-layer: #151616;
-      --cascade-layer-border: #2a2a2a;
-      --cascade-device-border: #303030;
-      --cascade-shadow-a: #00000028;
-      --cascade-shadow-b: #00000056;
+      --pencil-bg: #0f151c;
+      --pencil-canvas: #111820;
+      --pencil-sidebar: #17202a;
+      --pencil-surface: #17202a;
+      --pencil-surface-muted: #1d2833;
+      --pencil-hover: #243240;
+      --pencil-active: #213447;
+      --pencil-border: #2e3d49;
+      --pencil-border-soft: #273641;
+      --pencil-text: #e9eef1;
+      --pencil-muted: #92a4af;
+      --pencil-faint: #63717b;
+      --pencil-accent: #7fa8bf;
+      --agm-surface-dark: #111820;
+      --agm-surface-dark-2: #17202a;
+      --studio-panel: #17202a;
+      --studio-panel-strong: #111820;
+      --studio-border: #2e3d49;
+      --studio-border-strong: #435766;
+      --studio-text: #e9eef1;
+      --studio-muted: #92a4af;
+      --studio-dim: #63717b;
+      --studio-accent: #7fa8bf;
+      --studio-cyan: #a9bbc6;
+      --studio-green: #89b8a4;
+      --studio-warning: #c7ad74;
+      --studio-accent-text: #bdd2dc;
+      --studio-accent-panel: #1d3342;
+      --cascade-ground: #111820;
+      --cascade-layer: #17202a;
+      --cascade-layer-border: #2e3d49;
+      --cascade-device-border: #273641;
+      --cascade-shadow-a: #08111a28;
+      --cascade-shadow-b: #08111a56;
     }
 
     #studioRoot[data-studio-theme="daylight"] {
-      --pencil-bg: #f5f6f8;
-      --pencil-canvas: #f8fafc;
-      --pencil-sidebar: #f1f3f6;
+      --pencil-bg: #eef2f5;
+      --pencil-canvas: #f7f9fb;
+      --pencil-sidebar: #e7edf1;
       --pencil-surface: #ffffff;
-      --pencil-surface-muted: #eef1f5;
-      --pencil-hover: #e7ebf0;
-      --pencil-active: #dde3ea;
-      --pencil-border: #d8dee7;
-      --pencil-border-soft: #e6ebf1;
-      --pencil-text: #15181d;
-      --pencil-muted: #5f6b7a;
-      --pencil-faint: #8b96a6;
-      --pencil-accent: #1f2937;
-      --agm-surface-dark: #f5f6f8;
+      --pencil-surface-muted: #e8eef2;
+      --pencil-hover: #dce5eb;
+      --pencil-active: #d1dee6;
+      --pencil-border: #c9d5dd;
+      --pencil-border-soft: #dde6ec;
+      --pencil-text: #152430;
+      --pencil-muted: #62717c;
+      --pencil-faint: #8697a2;
+      --pencil-accent: #5d879d;
+      --agm-surface-dark: #eef2f5;
       --agm-surface-dark-2: #ffffff;
       --studio-panel: #ffffff;
       --studio-panel-strong: #ffffff;
-      --studio-border: #d8dee7;
-      --studio-border-strong: #aeb7c4;
-      --studio-text: #15181d;
-      --studio-muted: #5f6b7a;
-      --studio-dim: #8b96a6;
-      --studio-accent: #1f2937;
-      --studio-cyan: #475569;
-      --studio-green: #334155;
-      --studio-warning: #475569;
-      --studio-accent-text: #15181d;
-      --studio-accent-panel: #eef1f5;
-      --cascade-ground: #f8fafc;
+      --studio-border: #c9d5dd;
+      --studio-border-strong: #9dafba;
+      --studio-text: #152430;
+      --studio-muted: #62717c;
+      --studio-dim: #8697a2;
+      --studio-accent: #5d879d;
+      --studio-cyan: #5d879d;
+      --studio-green: #587f70;
+      --studio-warning: #8f7950;
+      --studio-accent-text: #24495c;
+      --studio-accent-panel: #e3edf2;
+      --cascade-ground: #f7f9fb;
       --cascade-layer: #ffffff;
-      --cascade-layer-border: #e6ebf1;
-      --cascade-device-border: #d8dee7;
+      --cascade-layer-border: #dde6ec;
+      --cascade-device-border: #c9d5dd;
       --cascade-shadow-a: #10182808;
       --cascade-shadow-b: #10182814;
     }
@@ -77,14 +77,14 @@ export const themeSystemGuardrailStyles = `    /* Final dual-theme guardrails fr
     html[data-studio-theme="night"] body.studio-enabled,
     #studioRoot[data-studio-theme="night"],
     #studioRoot[data-studio-theme="night"] .studio-app {
-      background: #1b1b1b;
+      background: #0f151c;
       color: var(--pencil-text);
     }
 
     html[data-studio-theme="daylight"] body.studio-enabled,
     #studioRoot[data-studio-theme="daylight"],
     #studioRoot[data-studio-theme="daylight"] .studio-app {
-      background: #f5f6f8;
+      background: #eef2f5;
       color: var(--pencil-text);
     }
 

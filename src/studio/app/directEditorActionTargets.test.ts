@@ -44,6 +44,7 @@ describe("createDirectEditorActionTargets", () => {
         updateProvince: vi.fn(),
         updateRoute: vi.fn(),
         updateZone: vi.fn(),
+        updateMarker: vi.fn(),
         updateBiome: vi.fn(),
         updateDiplomacy,
       },

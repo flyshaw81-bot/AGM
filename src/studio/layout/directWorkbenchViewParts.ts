@@ -113,10 +113,29 @@ export function renderDirectWorkbenchEntityRow({
   title,
 }: DirectWorkbenchRowOptions) {
   return `
-    <button class="studio-state-row${selected ? " is-active" : ""}" data-studio-action="${escapeHtml(action)}" data-${escapeHtml(idDataAttribute)}="${id}">
+    <button class="studio-native-entity-row studio-state-row${selected ? " is-active" : ""}" data-studio-action="${escapeHtml(action)}" data-${escapeHtml(idDataAttribute)}="${id}">
       <span class="studio-state-row__swatch${swatchClass ? ` ${escapeHtml(swatchClass)}` : ""}" style="background: ${escapeHtml(color)}"></span>
       <span class="studio-state-row__main"><strong>${escapeHtml(title)}</strong><small>${escapeHtml(meta)}</small></span>
       <span class="studio-state-row__metric">${escapeHtml(metric)}</span>
     </button>
   `;
+}
+
+type NativeIdentityDetailHeroOptions = {
+  colorControlHtml?: string;
+  color: string;
+  title: string;
+};
+
+export function renderNativeIdentityDetailHero({
+  color,
+  colorControlHtml,
+  title,
+}: NativeIdentityDetailHeroOptions) {
+  return `<div class="studio-native-identity-detail__hero" style="--identity-color: ${escapeHtml(color)}">
+    <div class="studio-native-identity-detail__title-line">
+      <h3>${escapeHtml(title)}</h3>
+      ${colorControlHtml ?? `<span class="studio-native-identity-detail__color-ring" aria-hidden="true"></span>`}
+    </div>
+  </div>`;
 }

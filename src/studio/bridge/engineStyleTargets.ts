@@ -1,10 +1,14 @@
+import {
+  createGlobalEngineRenderFunctions,
+  type EngineGlobalRenderFunctions,
+} from "../../modules/engine-render-adapter";
+
 type EngineStyleWindow = typeof globalThis & {
   stylePreset?: {
     value?: string;
   };
   requestStylePresetChange?: (preset: string) => void;
   changeStyle?: (preset: string) => void;
-  invokeActiveZooming?: () => void;
 };
 
 export type EngineStyleTargets = {
@@ -83,7 +87,12 @@ function dispatchChange(element: HTMLElement) {
   }
 }
 
-export function createGlobalStyleRuntimeAdapter(): EngineStyleRuntimeAdapter {
+export function createGlobalStyleRuntimeAdapter(
+  renderFunctions: Pick<
+    EngineGlobalRenderFunctions,
+    "invokeActiveZooming"
+  > = createGlobalEngineRenderFunctions(),
+): EngineStyleRuntimeAdapter {
   return {
     getCurrentPresetValue: () => {
       try {
@@ -114,7 +123,7 @@ export function createGlobalStyleRuntimeAdapter(): EngineStyleRuntimeAdapter {
     },
     invokeActiveZooming: () => {
       try {
-        getStyleWindow().invokeActiveZooming?.();
+        renderFunctions.invokeActiveZooming?.();
       } catch {
         // Compatibility zoom refresh is best-effort.
       }

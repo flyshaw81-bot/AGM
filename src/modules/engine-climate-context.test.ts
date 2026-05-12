@@ -11,20 +11,20 @@ const originalMapCoordinates = globalThis.mapCoordinates;
 const originalGraphWidth = globalThis.graphWidth;
 const originalGraphHeight = globalThis.graphHeight;
 const originalOptions = globalThis.options;
-const originalHeightExponentInput = globalThis.heightExponentInput;
+const originalHeightExponent = globalThis.heightExponent;
 const originalPointsInput = globalThis.pointsInput;
-const originalPrecInput = globalThis.precInput;
-const originalHeightExponentInputDescriptor = Object.getOwnPropertyDescriptor(
+const originalPrecipitationPercent = globalThis.precipitationPercent;
+const originalHeightExponentDescriptor = Object.getOwnPropertyDescriptor(
   globalThis,
-  "heightExponentInput",
+  "heightExponent",
 );
 const originalPointsInputDescriptor = Object.getOwnPropertyDescriptor(
   globalThis,
   "pointsInput",
 );
-const originalPrecInputDescriptor = Object.getOwnPropertyDescriptor(
+const originalPrecipitationPercentDescriptor = Object.getOwnPropertyDescriptor(
   globalThis,
-  "precInput",
+  "precipitationPercent",
 );
 const originalPrec = globalThis.prec;
 const originalDebug = globalThis.DEBUG;
@@ -37,16 +37,16 @@ describe("createGlobalClimateContext", () => {
     globalThis.graphWidth = originalGraphWidth;
     globalThis.graphHeight = originalGraphHeight;
     globalThis.options = originalOptions;
-    if (originalHeightExponentInputDescriptor) {
+    if (originalHeightExponentDescriptor) {
       Object.defineProperty(
         globalThis,
-        "heightExponentInput",
-        originalHeightExponentInputDescriptor,
+        "heightExponent",
+        originalHeightExponentDescriptor,
       );
     } else {
-      Object.defineProperty(globalThis, "heightExponentInput", {
+      Object.defineProperty(globalThis, "heightExponent", {
         configurable: true,
-        value: originalHeightExponentInput,
+        value: originalHeightExponent,
         writable: true,
       });
     }
@@ -63,16 +63,16 @@ describe("createGlobalClimateContext", () => {
         writable: true,
       });
     }
-    if (originalPrecInputDescriptor) {
+    if (originalPrecipitationPercentDescriptor) {
       Object.defineProperty(
         globalThis,
-        "precInput",
-        originalPrecInputDescriptor,
+        "precipitationPercent",
+        originalPrecipitationPercentDescriptor,
       );
     } else {
-      Object.defineProperty(globalThis, "precInput", {
+      Object.defineProperty(globalThis, "precipitationPercent", {
         configurable: true,
-        value: originalPrecInput,
+        value: originalPrecipitationPercent,
         writable: true,
       });
     }
@@ -87,11 +87,11 @@ describe("createGlobalClimateContext", () => {
     globalThis.graphWidth = 480;
     globalThis.graphHeight = 320;
     globalThis.options = { temperatureEquator: 28 } as typeof options;
-    globalThis.heightExponentInput = { value: "1.4" } as HTMLInputElement;
+    globalThis.heightExponent = 1.4;
     globalThis.pointsInput = {
       dataset: { cells: "9000" },
     } as unknown as HTMLInputElement;
-    globalThis.precInput = { value: "75" } as HTMLInputElement;
+    globalThis.precipitationPercent = 75;
     globalThis.prec = { selectAll: () => ({ remove: () => {} }) } as any;
     globalThis.DEBUG = { temperature: true };
     globalThis.TIME = true;
@@ -117,9 +117,9 @@ describe("createGlobalClimateContext", () => {
     globalThis.graphWidth = 0;
     globalThis.graphHeight = 0;
     globalThis.options = {} as typeof options;
-    globalThis.heightExponentInput = undefined as unknown as HTMLInputElement;
+    globalThis.heightExponent = undefined as unknown as number;
     globalThis.pointsInput = undefined as unknown as HTMLInputElement;
-    globalThis.precInput = undefined as unknown as HTMLInputElement;
+    globalThis.precipitationPercent = undefined as unknown as number;
     globalThis.prec = {} as typeof prec;
     globalThis.DEBUG = {};
     globalThis.TIME = false;
@@ -134,7 +134,7 @@ describe("createGlobalClimateContext", () => {
   });
 
   it("keeps global climate input targets safe when control access throws", () => {
-    Object.defineProperty(globalThis, "heightExponentInput", {
+    Object.defineProperty(globalThis, "heightExponent", {
       configurable: true,
       get: () => {
         throw new Error("height exponent blocked");
@@ -146,7 +146,7 @@ describe("createGlobalClimateContext", () => {
         throw new Error("points blocked");
       },
     });
-    Object.defineProperty(globalThis, "precInput", {
+    Object.defineProperty(globalThis, "precipitationPercent", {
       configurable: true,
       get: () => {
         throw new Error("precipitation blocked");
@@ -155,9 +155,9 @@ describe("createGlobalClimateContext", () => {
 
     const targets = createGlobalClimateInputTargets();
 
-    expect(targets.getHeightExponentInput()).toBeUndefined();
+    expect(targets.getHeightExponent()).toBe(1);
     expect(targets.getPointsInput()).toBeUndefined();
-    expect(targets.getPrecipitationInput()).toBeUndefined();
+    expect(targets.getPrecipitationPercent()).toBe(100);
   });
 
   it("routes climate input reads through injected input targets", () => {
@@ -172,10 +172,10 @@ describe("createGlobalClimateContext", () => {
 
     const context = createClimateContext(
       createGlobalClimateContextTargets({
-        getHeightExponentInput: () => ({ value: "2.1" }) as HTMLInputElement,
+        getHeightExponent: () => 2.1,
         getPointsInput: () =>
           ({ dataset: { cells: "16000" } }) as unknown as HTMLInputElement,
-        getPrecipitationInput: () => ({ value: "65" }) as HTMLInputElement,
+        getPrecipitationPercent: () => 65,
       }),
     );
 
@@ -199,7 +199,8 @@ describe("createGlobalClimateContext", () => {
         getHeightExponent: () => 1.6,
         getPointsCount: () => 5000,
         getPrecipitationPercent: () => 80,
-        getPrecipitationLayer: () => precipitationLayer as typeof prec,
+        getPrecipitationLayer: () =>
+          precipitationLayer as unknown as typeof prec,
         getDebugTemperature: () => true,
         getShouldTime: () => false,
       }),

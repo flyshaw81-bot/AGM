@@ -59,8 +59,8 @@ export function renderRelationshipIssue(
   language: StudioLanguage,
 ) {
   return `
-    <div class="studio-direct-workbench-directory__issue">
-      <button class="studio-direct-workbench-directory__issue-main" data-studio-action="direct-workbench-review-relationship" data-workbench-target="${issue.target}">
+    <div class="studio-native-repair__issue studio-direct-workbench-directory__issue">
+      <button class="studio-native-repair__issue-main studio-direct-workbench-directory__issue-main" data-studio-action="direct-workbench-review-relationship" data-workbench-target="${issue.target}">
         <span class="studio-direct-workbench-directory__issue-title">${escapeHtml(issue.label)}</span>
         <span class="studio-direct-workbench-directory__issue-meta">${escapeHtml(issue.source)} · ${escapeHtml(issue.reference)}</span>
         <span class="studio-direct-workbench-directory__issue-detail">${escapeHtml(issue.detail)}</span>

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+﻿import { describe, expect, it, vi } from "vitest";
 import type { StudioState } from "../types";
 import { createStudioEngineCommandHandlers } from "./studioEngineCommandHandlers";
 import type { StudioEngineCommandTargets } from "./studioEngineCommandTargets";
@@ -13,6 +13,10 @@ function createState(): StudioState {
       format: "png",
     },
     generationProfileImpact: null,
+    viewport: {
+      orientation: "landscape",
+      presetId: "desktop-landscape",
+    },
   } as StudioState;
 }
 
@@ -31,6 +35,7 @@ function createTargets(
     setExportSetting: vi.fn(),
     exportWithEngine: vi.fn(),
     runTopbarAction: vi.fn(async () => undefined),
+    setPendingCanvasSize: vi.fn(),
     toggleLayer: vi.fn(),
     runDataAction: vi.fn(async () => undefined),
     runLayersPresetAction: vi.fn(),
@@ -53,19 +58,42 @@ function createTargets(
   };
 }
 
-function createHandlers(state = createState(), targets = createTargets()) {
+function createHandlers({
+  exportReady = true,
+  state = createState(),
+  targets = createTargets(),
+}: {
+  exportReady?: boolean;
+  state?: StudioState;
+  targets?: StudioEngineCommandTargets;
+} = {}) {
   const root = {} as HTMLElement;
   const render = vi.fn();
   const syncProjectSummaryState = vi.fn(async () => undefined);
+  const getExportReadyOptions = vi.fn(() => ({
+    deliveryStatus: exportReady
+      ? ("ready" as const)
+      : ("needs-repair" as const),
+    exportReady,
+  }));
   const handlers = createStudioEngineCommandHandlers({
     render,
     root,
     state,
     syncProjectSummaryState,
+    getExportReadyOptions,
     targets,
   });
 
-  return { handlers, render, root, state, syncProjectSummaryState, targets };
+  return {
+    getExportReadyOptions,
+    handlers,
+    render,
+    root,
+    state,
+    syncProjectSummaryState,
+    targets,
+  };
 }
 
 describe("studio engine command handlers", () => {
@@ -113,6 +141,37 @@ describe("studio engine command handlers", () => {
     expect(targets.syncDocument).toHaveBeenCalledWith(state);
   });
 
+  it("syncs the selected canvas size before generating a new map", async () => {
+    const { handlers, targets } = createHandlers();
+
+    await handlers.onTopbarAction("new");
+
+    expect(targets.setPendingCanvasSize).toHaveBeenCalledWith(1440, 900);
+    expect(targets.applyGenerationProfileOverrides).toHaveBeenCalled();
+    expect(targets.runTopbarAction).toHaveBeenCalledWith("new");
+    expect(
+      vi.mocked(targets.setPendingCanvasSize).mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      vi.mocked(targets.runTopbarAction).mock.invocationCallOrder[0],
+    );
+  });
+
+  it("syncs the selected canvas size before project-center generation", async () => {
+    const { handlers, targets } = createHandlers();
+
+    await handlers.onDataAction("create-generated-world");
+
+    expect(targets.setPendingCanvasSize).toHaveBeenCalledWith(1440, 900);
+    expect(targets.runDataAction).toHaveBeenCalledWith(
+      "create-generated-world",
+    );
+    expect(
+      vi.mocked(targets.setPendingCanvasSize).mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      vi.mocked(targets.runDataAction).mock.invocationCallOrder[0],
+    );
+  });
+
   it("keeps export inside the command targets without invoking topbar bridge", async () => {
     const { handlers, state, targets } = createHandlers();
 
@@ -120,7 +179,23 @@ describe("studio engine command handlers", () => {
 
     expect(targets.exportWithEngine).toHaveBeenCalledWith("png");
     expect(targets.updateProjectCenter).toHaveBeenCalledWith(state, {
+      deliveryStatus: "ready",
       exportReady: true,
+    });
+    expect(targets.runTopbarAction).not.toHaveBeenCalled();
+  });
+
+  it("keeps topbar export running when the relationship gate blocks export-ready state", async () => {
+    const { handlers, state, targets } = createHandlers({
+      exportReady: false,
+    });
+
+    await handlers.onTopbarAction("export");
+
+    expect(targets.exportWithEngine).toHaveBeenCalledWith("png");
+    expect(targets.updateProjectCenter).toHaveBeenCalledWith(state, {
+      deliveryStatus: "needs-repair",
+      exportReady: false,
     });
     expect(targets.runTopbarAction).not.toHaveBeenCalled();
   });
@@ -128,11 +203,11 @@ describe("studio engine command handlers", () => {
   it("marks loaded data as an AGM core document", async () => {
     const state = createState();
     state.document.source = "agm";
-    const { handlers, targets } = createHandlers(state);
+    const { handlers, targets } = createHandlers({ state });
 
-    await handlers.onDataAction("quick-load");
+    await handlers.onDataAction("load-browser-snapshot");
 
-    expect(targets.runDataAction).toHaveBeenCalledWith("quick-load");
+    expect(targets.runDataAction).toHaveBeenCalledWith("load-browser-snapshot");
     expect(state.document.source).toBe("core");
   });
 });

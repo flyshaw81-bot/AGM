@@ -35,6 +35,7 @@ import { restoreAgmDocumentState, syncDocumentState } from "./documentState";
 import {
   createGlobalProjectCenterTargets,
   type ProjectCenterTargets,
+  type ProjectCenterUpdateOptions,
   updateProjectCenterState,
 } from "./projectCenter";
 
@@ -113,7 +114,7 @@ export type ProjectActionTargets = {
   runEngineProjectAction: (action: EngineProjectAction) => void;
   updateProjectCenter: (
     state: StudioState,
-    options?: { saved?: boolean; exportReady?: boolean },
+    options?: ProjectCenterUpdateOptions,
   ) => void;
   syncDocument: (state: StudioState) => void;
 };
@@ -201,7 +202,7 @@ export type ProjectEngineActionAdapter = {
 export type ProjectDocumentAdapter = {
   updateProjectCenter: (
     state: StudioState,
-    options?: { saved?: boolean; exportReady?: boolean },
+    options?: ProjectCenterUpdateOptions,
   ) => void;
   syncDocument: (state: StudioState) => void;
 };

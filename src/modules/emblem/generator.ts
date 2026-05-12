@@ -1,4 +1,7 @@
+import type { PackedGraph } from "../../types/PackedGraph";
 import { P, rw } from "../../utils";
+import { getBrowserRuntimePack } from "../engine-browser-runtime-globals";
+import type { EngineRuntimeContext } from "../engine-runtime-context";
 import { charges } from "./charges";
 import { divisions } from "./divisions";
 import { lineWeights } from "./lineWeights";
@@ -47,12 +50,8 @@ function getDocument(): Document | undefined {
   }
 }
 
-function getPack(): typeof pack | undefined {
-  try {
-    return globalThis.pack;
-  } catch {
-    return undefined;
-  }
+function getPack(): PackedGraph | undefined {
+  return getBrowserRuntimePack();
 }
 
 function getErrorFlag(): boolean {
@@ -110,6 +109,23 @@ export function createGlobalEmblemRuntimeTargets(): EmblemRuntimeTargets {
         getPack()?.cultures?.[culture],
       );
     },
+  };
+}
+
+export function createRuntimeEmblemRuntimeTargets(
+  context: EngineRuntimeContext,
+  globalTargets: Pick<
+    EmblemRuntimeTargets,
+    "reportMissingCultureShield"
+  > = createGlobalEmblemRuntimeTargets(),
+): EmblemRuntimeTargets {
+  return {
+    getStateShield: (state) => {
+      if (!state) return undefined;
+      return context.pack.states?.[state]?.coa?.shield;
+    },
+    getCultureShield: (culture) => context.pack.cultures?.[culture]?.shield,
+    reportMissingCultureShield: globalTargets.reportMissingCultureShield,
   };
 }
 

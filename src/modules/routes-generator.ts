@@ -1,17 +1,14 @@
-import { curveCatmullRom, line } from "d3";
-import Delaunator from "delaunator";
+﻿import Delaunator from "../utils/delaunator";
 import { distanceSquared } from "../utils/functionUtils";
 import { findClosestCell, isLand } from "../utils/graphUtils";
 import { getAdjective } from "../utils/languageUtils";
 import { rn } from "../utils/numberUtils";
 import { findPath } from "../utils/pathUtils";
 import { ra, rw } from "../utils/probabilityUtils";
+import { curveCatmullRom, line } from "../utils/shapeUtils";
 import { round } from "../utils/stringUtils";
 import type { Burg } from "./burgs-generator";
-import {
-  type EngineRuntimeContext,
-  getGlobalEngineRuntimeContext,
-} from "./engine-runtime-context";
+import type { EngineRuntimeContext } from "./engine-runtime-context";
 import type { Point } from "./voronoi";
 
 function getWindow(): (Window & typeof globalThis) | undefined {
@@ -632,12 +629,11 @@ export class RoutesModule {
   }
 
   generate(
-    input: EngineRuntimeContext | Route[] = getGlobalEngineRuntimeContext(),
+    input: EngineRuntimeContext | Route[],
     contextOverride?: EngineRuntimeContext,
   ) {
-    const context = Array.isArray(input)
-      ? (contextOverride ?? getGlobalEngineRuntimeContext())
-      : input;
+    const context = Array.isArray(input) ? contextOverride : input;
+    if (!context) throw new Error("Routes.generate requires an engine context");
     const lockedRoutes = Array.isArray(input) ? input : [];
     const connections = new Map();
     lockedRoutes.forEach((route: Route) => {
@@ -656,24 +652,18 @@ export class RoutesModule {
   }
 
   // utility functions
-  isConnected(
-    cellId: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ): boolean {
+  isConnected(cellId: number, context: EngineRuntimeContext): boolean {
     const routes = context.pack.cells.routes;
     return routes[cellId] && Object.keys(routes[cellId]).length > 0;
   }
 
-  getNextId(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+  getNextId(context: EngineRuntimeContext) {
     const routes = context.pack.routes;
     return routes.length ? Math.max(...routes.map((route) => route.i)) + 1 : 0;
   }
 
   // connect cell with routes system by land
-  connect(
-    cellId: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ): Route | undefined {
+  connect(cellId: number, context: EngineRuntimeContext): Route | undefined {
     const { pack } = context;
     const getCost = this.createCostEvaluator({
       isWater: false,
@@ -714,17 +704,13 @@ export class RoutesModule {
   areConnected(
     from: number,
     to: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context: EngineRuntimeContext,
   ): boolean {
     const routeId = context.pack.cells.routes[from]?.[to];
     return routeId !== undefined;
   }
 
-  getRoute(
-    from: number,
-    to: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  getRoute(from: number, to: number, context: EngineRuntimeContext) {
     const routeId = context.pack.cells.routes[from]?.[to];
     if (routeId === undefined) return null;
 
@@ -734,10 +720,7 @@ export class RoutesModule {
     return route;
   }
 
-  hasRoad(
-    cellId: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ): boolean {
+  hasRoad(cellId: number, context: EngineRuntimeContext): boolean {
     const connections = context.pack.cells.routes[cellId];
     if (!connections) return false;
 
@@ -748,10 +731,7 @@ export class RoutesModule {
     });
   }
 
-  isCrossroad(
-    cellId: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ): boolean {
+  isCrossroad(cellId: number, context: EngineRuntimeContext): boolean {
     const connections = context.pack.cells.routes[cellId];
     if (!connections) return false;
     if (Object.keys(connections).length > 3) return true;
@@ -762,10 +742,7 @@ export class RoutesModule {
     return roadConnections.length > 2;
   }
 
-  remove(
-    route: Route,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  remove(route: Route, context: EngineRuntimeContext) {
     const { pack } = context;
     const routes = pack.cells.routes;
 
@@ -787,10 +764,7 @@ export class RoutesModule {
     else viewbox.select(`#route${route.i}`).remove();
   }
 
-  getConnectivityRate(
-    cellId: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ): number {
+  getConnectivityRate(cellId: number, context: EngineRuntimeContext): number {
     const connections = context.pack.cells.routes[cellId];
     if (!connections) return 0;
 
@@ -815,11 +789,11 @@ export class RoutesModule {
   generateName({
     group,
     points,
-    context = getGlobalEngineRuntimeContext(),
+    context,
   }: {
     group: string;
     points: number[][];
-    context?: EngineRuntimeContext;
+    context: EngineRuntimeContext;
   }): string {
     if (points.length < 4) return "Unnamed route segment";
 
@@ -862,10 +836,7 @@ export class RoutesModule {
     return path;
   }
 
-  getLength(
-    routeId: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ): number {
+  getLength(routeId: number, context: EngineRuntimeContext): number {
     const renderedLength = context.rendering?.getElementTotalLengthById?.(
       `route${routeId}`,
     );

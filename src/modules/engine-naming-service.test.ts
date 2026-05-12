@@ -3,6 +3,7 @@ import {
   createEngineNamingService,
   createGlobalNamingService,
   createGlobalNamingServiceTargets,
+  createRuntimeNamingService,
 } from "./engine-naming-service";
 
 const originalNames = globalThis.Names;
@@ -129,5 +130,43 @@ describe("createGlobalNamingService", () => {
     expect(naming.getBaseShort?.(3)).toBe("B3");
     expect(naming.getNameBases?.()).toEqual([]);
     expect(() => naming.getMapName?.()).not.toThrow();
+  });
+
+  it("uses the runtime context culture base instead of global pack culture data", () => {
+    const namesModule = {
+      getCulture: vi.fn(() => "global culture should not be used"),
+      getCultureShort: vi.fn(() => "global short should not be used"),
+      getState: vi.fn(() => "Runtime State"),
+      getBase: vi.fn((base: number) => `Base ${base}`),
+      getBaseShort: vi.fn((base: number) => `B${base}`),
+      getNameBases: vi.fn(() => []),
+      getMapName: vi.fn(),
+    };
+    const context = {
+      pack: {
+        cultures: [undefined, { base: 4 }],
+      },
+    } as unknown as Parameters<typeof createRuntimeNamingService>[0];
+    globalThis.pack = {
+      cultures: [],
+    } as unknown as typeof pack;
+
+    const naming = createRuntimeNamingService(context, {
+      getNamesModule: () => namesModule,
+    });
+
+    expect(naming.getCulture(1)).toBe("Base 4");
+    expect(naming.getCultureShort(1)).toBe("B4");
+    expect(naming.getState("Root", 1)).toBe("Runtime State");
+    expect(namesModule.getBase).toHaveBeenCalledWith(
+      4,
+      undefined,
+      undefined,
+      undefined,
+    );
+    expect(namesModule.getBaseShort).toHaveBeenCalledWith(4);
+    expect(namesModule.getState).toHaveBeenCalledWith("Root", 1, 4);
+    expect(namesModule.getCulture).not.toHaveBeenCalled();
+    expect(namesModule.getCultureShort).not.toHaveBeenCalled();
   });
 });

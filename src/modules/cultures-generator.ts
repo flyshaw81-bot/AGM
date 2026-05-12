@@ -1,13 +1,13 @@
-import { max, quadtree, range } from "d3";
-import { getColors, getRandomColor } from "../utils/colorUtils";
+﻿import { getColors, getRandomColor } from "../utils/colorUtils";
 import { abbreviate } from "../utils/languageUtils";
 import { minmax, rn } from "../utils/numberUtils";
 import { PriorityQueue } from "../utils/priorityQueue";
 import { biased, P, rand } from "../utils/probabilityUtils";
+import { quadtree } from "../utils/quadtree";
+import { max, range } from "../utils/statUtils";
 import {
   type EngineRuntimeContext,
   getEngineWorldDimensions,
-  getGlobalEngineRuntimeContext,
 } from "./engine-runtime-context";
 import type { NameBase } from "./names-generator";
 
@@ -76,15 +76,13 @@ export class CulturesModule {
     context.logs?.warn(html.replace(/<[^>]+>/g, " "));
   }
 
-  getRandomShield(
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  getRandomShield(context: EngineRuntimeContext) {
     return context.heraldry.getRandomShield();
   }
 
   getDefault(
     count: number = 0,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context: EngineRuntimeContext,
   ): Omit<Culture, "i">[] {
     // generic sorting functions
     const { grid, pack } = context;
@@ -1074,7 +1072,7 @@ export class CulturesModule {
     ];
   }
 
-  generate(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+  generate(context: EngineRuntimeContext) {
     context.timing.shouldTime && console.time("generateCultures");
     const { pack } = context;
     this.cells = pack.cells;
@@ -1271,10 +1269,7 @@ export class CulturesModule {
     context.timing.shouldTime && console.timeEnd("generateCultures");
   }
 
-  add(
-    center: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  add(center: number, context: EngineRuntimeContext) {
     const { pack } = context;
     const defaultCultures = this.getDefault(undefined, context);
     let culture: number, base: number, name: string;
@@ -1315,7 +1310,7 @@ export class CulturesModule {
     });
   }
 
-  expand(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+  expand(context: EngineRuntimeContext) {
     context.timing.shouldTime && console.time("expandCultures");
     const { cells, cultures, features } = context.pack;
 

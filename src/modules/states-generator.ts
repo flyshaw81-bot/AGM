@@ -1,14 +1,11 @@
-import { mean, median, sum } from "d3";
-import { getMixedColor, getRandomColor } from "../utils/colorUtils";
+﻿import { getMixedColor, getRandomColor } from "../utils/colorUtils";
 import { getAdjective, trimVowels } from "../utils/languageUtils";
 import { minmax, rn } from "../utils/numberUtils";
 import { getPolesOfInaccessibility } from "../utils/pathUtils";
 import { PriorityQueue } from "../utils/priorityQueue";
 import { each, gauss, P, ra, rand, rw } from "../utils/probabilityUtils";
-import {
-  type EngineRuntimeContext,
-  getGlobalEngineRuntimeContext,
-} from "./engine-runtime-context";
+import { mean, median, sum } from "../utils/statUtils";
+import type { EngineRuntimeContext } from "./engine-runtime-context";
 
 declare global {
   var States: StatesModule;
@@ -92,12 +89,17 @@ export class StatesModule {
     return states;
   }
 
-  private getBiomeCost(b: number, biome: number, type: string) {
+  private getBiomeCost(
+    b: number,
+    biome: number,
+    type: string,
+    context: EngineRuntimeContext,
+  ) {
     if (b === biome) return 10; // tiny penalty for native biome
-    if (type === "Hunting") return biomesData.cost[biome] * 2; // non-native biome penalty for hunters
+    if (type === "Hunting") return context.biomesData.cost[biome] * 2; // non-native biome penalty for hunters
     if (type === "Nomadic" && biome > 4 && biome < 10)
-      return biomesData.cost[biome] * 3; // forest biome penalty for nomads
-    return biomesData.cost[biome]; // general non-native biome penalty
+      return context.biomesData.cost[biome] * 3; // forest biome penalty for nomads
+    return context.biomesData.cost[biome]; // general non-native biome penalty
   }
 
   private getHeightCost(f: any, h: number, type: string) {
@@ -135,7 +137,7 @@ export class StatesModule {
     return 0;
   }
 
-  generate(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+  generate(context: EngineRuntimeContext) {
     context.timing.shouldTime && console.time("generateStates");
     context.pack.states = this.createStates(context);
     this.expandStates(context);
@@ -149,9 +151,7 @@ export class StatesModule {
     context.timing.shouldTime && console.timeEnd("generateStates");
   }
 
-  expandStates(
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  expandStates(context: EngineRuntimeContext) {
     context.timing.shouldTime && console.time("expandStates");
     const { cells, states, cultures, burgs, features } = context.pack;
 
@@ -205,7 +205,7 @@ export class StatesModule {
             : cells.s[e]
               ? Math.max(20 - cells.s[e], 0)
               : 5000;
-        const biomeCost = this.getBiomeCost(b, cells.biome[e], type);
+        const biomeCost = this.getBiomeCost(b, cells.biome[e], type, context);
         const heightCost = this.getHeightCost(
           features[cells.f[e]],
           cells.h[e],
@@ -242,7 +242,7 @@ export class StatesModule {
     context.timing.shouldTime && console.timeEnd("expandStates");
   }
 
-  normalize(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+  normalize(context: EngineRuntimeContext) {
     context.timing.shouldTime && console.time("normalizeStates");
     const { cells, burgs, states } = context.pack;
 
@@ -268,7 +268,7 @@ export class StatesModule {
   }
 
   // calculate pole of inaccessibility for each state
-  getPoles(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+  getPoles(context: EngineRuntimeContext) {
     const { pack } = context;
     const getType = (cellId: number) => pack.cells.state[cellId];
     const poles = getPolesOfInaccessibility(pack, getType);
@@ -279,9 +279,7 @@ export class StatesModule {
     });
   }
 
-  findNeighbors(
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  findNeighbors(context: EngineRuntimeContext) {
     const { cells, states } = context.pack;
 
     const stateNeighbors: Set<number>[] = [];
@@ -310,9 +308,7 @@ export class StatesModule {
     });
   }
 
-  assignColors(
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  assignColors(context: EngineRuntimeContext) {
     context.timing.shouldTime && console.time("assignColors");
     const colors = [
       "#66c2a5",
@@ -321,7 +317,7 @@ export class StatesModule {
       "#e78ac3",
       "#a6d854",
       "#ffd92f",
-    ]; // d3.schemeSet2;
+    ]; // schemeSet2 palette
     const states = context.pack.states;
 
     // assign basic color using greedy coloring algorithm
@@ -351,9 +347,7 @@ export class StatesModule {
   }
 
   // calculate states data like area, population etc.
-  collectStatistics(
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  collectStatistics(context: EngineRuntimeContext) {
     context.timing.shouldTime && console.time("collectStatistics");
     const { cells, states, burgs } = context.pack;
 
@@ -379,10 +373,7 @@ export class StatesModule {
     context.timing.shouldTime && console.timeEnd("collectStatistics");
   }
 
-  generateCampaign(
-    state: State,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  generateCampaign(state: State, context: EngineRuntimeContext) {
     const { naming, options, pack } = context;
     const wars = {
       War: 6,
@@ -409,9 +400,7 @@ export class StatesModule {
       .sort((a, b) => a.start - b.start);
   }
 
-  generateCampaigns(
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  generateCampaigns(context: EngineRuntimeContext) {
     context.pack.states.forEach((s) => {
       if (!s.i || s.removed) return;
       s.campaigns = this.generateCampaign(s, context);
@@ -419,9 +408,7 @@ export class StatesModule {
   }
 
   // generate Diplomatic Relationships
-  generateDiplomacy(
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  generateDiplomacy(context: EngineRuntimeContext) {
     context.timing.shouldTime && console.time("generateDiplomacy");
     const { cells, states } = context.pack;
     const { options } = context;
@@ -660,13 +647,12 @@ export class StatesModule {
 
   // select a forms for listed or all valid states
   defineStateForms(
-    input: number[] | null | EngineRuntimeContext = null,
+    input: number[] | EngineRuntimeContext,
     context?: EngineRuntimeContext,
   ) {
-    const runtimeContext =
-      Array.isArray(input) || input === null
-        ? (context ?? getGlobalEngineRuntimeContext())
-        : input;
+    const runtimeContext = Array.isArray(input) ? context : input;
+    if (!runtimeContext)
+      throw new Error("States.defineStateForms requires an engine context");
     const list = Array.isArray(input) ? input : null;
     const { pack, timing } = runtimeContext;
 

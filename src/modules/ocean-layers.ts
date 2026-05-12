@@ -1,13 +1,10 @@
-import type { Selection } from "d3";
-import { curveBasisClosed, line } from "d3";
-import { clipPoly } from "../utils/commonUtils";
+﻿import { clipPoly } from "../utils/commonUtils";
 import { rn } from "../utils/numberUtils";
 import { P } from "../utils/probabilityUtils";
+import { curveBasisClosed, line } from "../utils/shapeUtils";
 import { round } from "../utils/stringUtils";
-import {
-  type EngineRuntimeContext,
-  getGlobalEngineRuntimeContext,
-} from "./engine-runtime-context";
+import type { Selection } from "../utils/svgSelection";
+import type { EngineRuntimeContext } from "./engine-runtime-context";
 
 declare global {
   var OceanLayers: typeof OceanModule.prototype.draw;
@@ -113,8 +110,8 @@ export class OceanModule {
     ];
   }
 
-  draw(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
-    const outline = this.oceanLayers.attr("layers");
+  draw(context: EngineRuntimeContext) {
+    const outline = this.oceanLayers.attr("layers") ?? "none";
     if (outline === "none") return;
     context.timing.shouldTime && console.time("drawOceanLayers");
     this.cells = context.grid.cells;

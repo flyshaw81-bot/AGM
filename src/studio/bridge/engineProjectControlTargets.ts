@@ -2,36 +2,37 @@ type EngineProjectControlWindow = typeof globalThis & {
   options?: Record<string, unknown> & {
     winds?: number[];
   };
-  convertTemperature?: (value: number, unit: string) => unknown;
+  precipitationPercent?: number;
+  mapSizePercent?: number;
+  latitudePercent?: number;
+  longitudePercent?: number;
   mapCoordinates?: {
     latN?: number;
     latS?: number;
   };
-  d3?: {
-    range?: (start: number, stop: number, step: number) => number[];
-  };
 };
 
 export type EngineProjectControlTargets = {
-  getTemperatureLabel: (id: string) => HTMLElement | null;
   setOptionNumber: (key: string, value: number) => void;
-  convertTemperature: (value: number, unit: string) => unknown;
-  getWindTransform: (tier: number) => string | null;
-  setWindTransform: (tier: number, transform: string) => void;
   applyWindTierToRuntime: (tier: number, value: number) => boolean;
+  setPrecipitationPercent: (value: number) => void;
+  setMapPlacementPercent: (
+    key: "mapSize" | "latitude" | "longitude",
+    value: number,
+  ) => void;
 };
 
-export type EngineProjectControlDomAdapter = {
-  getTemperatureLabel: (id: string) => HTMLElement | null;
-  getWindTransform: (tier: number) => string | null;
-  setWindTransform: (tier: number, transform: string) => void;
-};
+export type EngineProjectControlDomAdapter = Record<string, never>;
 
 export type EngineProjectControlRuntimeAdapter = {
   setOptionNumber: (key: string, value: number) => void;
-  convertTemperature: (value: number, unit: string) => unknown;
   setWindTierValue: (tier: number, value: number) => number[] | undefined;
   isWindTierInCurrentMap: (tier: number) => boolean;
+  setPrecipitationPercent: (value: number) => void;
+  setMapPlacementPercent: (
+    key: "mapSize" | "latitude" | "longitude",
+    value: number,
+  ) => void;
 };
 
 export type EngineProjectControlStorageAdapter = {
@@ -46,14 +47,6 @@ function getControlWindow(): EngineProjectControlWindow {
   }
 }
 
-function getDocument(): Document | undefined {
-  try {
-    return globalThis.document;
-  } catch {
-    return undefined;
-  }
-}
-
 function getLocalStorage(): Storage | undefined {
   try {
     return globalThis.localStorage;
@@ -62,46 +55,8 @@ function getLocalStorage(): Storage | undefined {
   }
 }
 
-function getWindPath(tier: number) {
-  try {
-    return getDocument()?.querySelector(
-      `#globeWindArrows path[data-tier='${tier}']`,
-    ) as SVGPathElement | null | undefined;
-  } catch {
-    return undefined;
-  }
-}
-
 export function createGlobalProjectControlDomAdapter(): EngineProjectControlDomAdapter {
-  return {
-    getTemperatureLabel: (id) => {
-      try {
-        return (
-          (getDocument()?.getElementById(id) as
-            | HTMLElement
-            | null
-            | undefined) ?? null
-        );
-      } catch {
-        return null;
-      }
-    },
-    getWindTransform: (tier) => {
-      try {
-        const windPath = getWindPath(tier);
-        return windPath ? (windPath.getAttribute("transform") ?? "") : null;
-      } catch {
-        return null;
-      }
-    },
-    setWindTransform: (tier, transform) => {
-      try {
-        getWindPath(tier)?.setAttribute("transform", transform);
-      } catch {
-        // Compatibility DOM writes are best-effort; injected adapters own strict UI state.
-      }
-    },
-  };
+  return {};
 }
 
 export function createGlobalProjectControlRuntimeAdapter(): EngineProjectControlRuntimeAdapter {
@@ -112,13 +67,6 @@ export function createGlobalProjectControlRuntimeAdapter(): EngineProjectControl
         if (optionsRef) optionsRef[key] = value;
       } catch {
         // Runtime compatibility options may be unavailable in isolated contexts.
-      }
-    },
-    convertTemperature: (value, unit) => {
-      try {
-        return getControlWindow().convertTemperature?.(value, unit);
-      } catch {
-        return undefined;
       }
     },
     setWindTierValue: (tier, value) => {
@@ -139,20 +87,35 @@ export function createGlobalProjectControlRuntimeAdapter(): EngineProjectControl
         const engineWindow = getControlWindow();
         const latN = engineWindow.mapCoordinates?.latN;
         const latS = engineWindow.mapCoordinates?.latS;
-        if (
-          !Number.isFinite(latN) ||
-          !Number.isFinite(latS) ||
-          typeof engineWindow.d3?.range !== "function"
-        ) {
+        if (!Number.isFinite(latN) || !Number.isFinite(latS)) {
           return false;
         }
 
-        const mapTiers = engineWindow.d3
-          .range(latN!, latS!, -30)
-          .map((coordinate) => ((90 - coordinate) / 30) | 0);
+        // Build range from latN to latS in steps of -30
+        const mapTiers: number[] = [];
+        for (let lat = latN!; lat > latS!; lat -= 30) {
+          mapTiers.push(((90 - lat) / 30) | 0);
+        }
         return mapTiers.includes(tier);
       } catch {
         return false;
+      }
+    },
+    setPrecipitationPercent: (value) => {
+      try {
+        getControlWindow().precipitationPercent = value;
+      } catch {
+        // Runtime compatibility options may be unavailable in isolated contexts.
+      }
+    },
+    setMapPlacementPercent: (key, value) => {
+      try {
+        const engineWindow = getControlWindow();
+        if (key === "mapSize") engineWindow.mapSizePercent = value;
+        else if (key === "latitude") engineWindow.latitudePercent = value;
+        else engineWindow.longitudePercent = value;
+      } catch {
+        // Runtime compatibility options may be unavailable in isolated contexts.
       }
     },
   };
@@ -171,21 +134,19 @@ export function createGlobalProjectControlStorageAdapter(): EngineProjectControl
 }
 
 export function createProjectControlTargets(
-  domAdapter: EngineProjectControlDomAdapter,
+  _domAdapter: EngineProjectControlDomAdapter,
   runtimeAdapter: EngineProjectControlRuntimeAdapter,
   storageAdapter: EngineProjectControlStorageAdapter,
 ): EngineProjectControlTargets {
   return {
-    getTemperatureLabel: domAdapter.getTemperatureLabel,
     setOptionNumber: runtimeAdapter.setOptionNumber,
-    convertTemperature: runtimeAdapter.convertTemperature,
-    getWindTransform: domAdapter.getWindTransform,
-    setWindTransform: domAdapter.setWindTransform,
     applyWindTierToRuntime: (tier, value) => {
       const winds = runtimeAdapter.setWindTierValue(tier, value);
       if (winds) storageAdapter.setWindOptions(winds);
       return runtimeAdapter.isWindTierInCurrentMap(tier);
     },
+    setPrecipitationPercent: runtimeAdapter.setPrecipitationPercent,
+    setMapPlacementPercent: runtimeAdapter.setMapPlacementPercent,
   };
 }
 

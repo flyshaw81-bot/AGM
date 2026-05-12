@@ -6,6 +6,7 @@ import {
   limitDirectWorkbenchRows,
   renderDirectSelectOptions,
   renderDirectWorkbenchEditStatus,
+  renderDirectWorkbenchFormActions,
 } from "./directWorkbenchShared";
 
 describe("directWorkbenchShared", () => {
@@ -30,8 +31,27 @@ describe("directWorkbenchShared", () => {
 
   it("renders status metadata used by dirty-state controls", () => {
     expect(renderDirectWorkbenchEditStatus("statusId", "en", "saved")).toBe(
-      '<div id="statusId" class="studio-state-edit-status" aria-live="polite" data-status="saved" data-clean-label="No changes" data-dirty-label="Unsaved changes" data-saved-label="Applied">Applied</div>',
+      '<span id="statusId" class="studio-state-edit-status" aria-live="polite" data-status="saved" data-clean-label="No changes" data-dirty-label="Unsaved changes" data-saved-label="Applied" hidden></span>',
     );
+  });
+
+  it("renders a shared native editor action bar with escaped data attributes", () => {
+    const html = renderDirectWorkbenchFormActions({
+      applyAction: "direct-route-apply",
+      attributes: { "route-id": 7, scope: "safe<value>" },
+      language: "en",
+      resetAction: "direct-route-reset",
+      status: "clean",
+      statusId: "routeStatus",
+    });
+
+    expect(html).toContain("studio-native-identity-detail__actions");
+    expect(html).toContain('id="routeStatus"');
+    expect(html).toContain('data-studio-action="direct-route-apply"');
+    expect(html).toContain('data-route-id="7"');
+    expect(html).toContain('data-scope="safe&lt;value&gt;"');
+    expect(html).toContain(">Apply changes</button>");
+    expect(html).toContain(">Reset</button>");
   });
 
   it("limits visible workbench rows from shared policy", () => {

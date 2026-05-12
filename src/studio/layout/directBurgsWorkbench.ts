@@ -15,12 +15,22 @@ import {
   DIRECT_WORKBENCH_ROW_LIMITS,
   limitDirectWorkbenchRows,
 } from "./directWorkbenchShared";
-import {
-  renderDirectWorkbenchEntityRow,
-  renderDirectWorkbenchHeader,
-  renderDirectWorkbenchSearchControls,
-} from "./directWorkbenchViewParts";
+import { renderDirectWorkbenchToolbar } from "./directWorkbenchToolbar";
+import { renderDirectWorkbenchEntityRow } from "./directWorkbenchViewParts";
 import { t } from "./shellShared";
+
+function renderNativeBurgListHeader(
+  language: StudioLanguage,
+  activeCount: number,
+  visibleCount: number,
+) {
+  return `<div class="studio-native-identity__list-title">
+    <div>
+      <h3>${t(language, "城镇列表", "Burg list")}</h3>
+    </div>
+    <strong>${visibleCount}/${activeCount}</strong>
+  </div>`;
+}
 
 export function renderDirectBurgsWorkbench(
   entitySummary: EngineEntitySummary,
@@ -59,50 +69,37 @@ export function renderDirectBurgsWorkbench(
       value: "selected-state",
       label: t(language, "当前国家", "Selected state"),
     },
-    { value: "populated", label: t(language, "Populated", "Populated") },
+    { value: "populated", label: t(language, "有人口", "Populated") },
   ];
+  const visibleBurgs = limitDirectWorkbenchRows(
+    filteredBurgs,
+    DIRECT_WORKBENCH_ROW_LIMITS.burgs,
+  );
 
   return `
-    <section id="studioDirectBurgsWorkbench" class="studio-panel studio-direct-editor studio-direct-burg-editor" data-direct-workbench="burgs">
-      ${renderDirectWorkbenchHeader({
-        eyebrow: t(language, "AGM editor", "AGM editor"),
-        title: t(language, "Burgs Workbench", "Burgs Workbench"),
-        badge: t(language, "直接编辑", "Direct edit"),
-      })}
-      <p class="studio-panel__text">${t(language, "Bring high-frequency burg editing into AGM: search burgs, filter by selected state, focus the map, and edit name, type, state, culture, and population directly.", "Bring high-frequency burg editing into AGM: search burgs, filter by selected state, focus the map, and edit name, type, state, culture, and population directly.")}</p>
-      ${renderDirectWorkbenchSearchControls({
+    <section id="studioDirectBurgsWorkbench" class="studio-native-identity studio-native-identity--burgs studio-direct-editor" data-native-place-drawer="burgs" data-direct-workbench="burgs">
+      ${renderDirectWorkbenchToolbar({
+        filterId: "studioBurgFilterSelect",
+        filterOptions,
+        filterValue: directEditor.burgFilterMode,
+        language,
         searchId: "studioBurgSearchInput",
-        searchLabel: t(language, "搜索城镇", "Search burgs"),
         searchPlaceholder: t(
           language,
-          "输入名称、ID、国家或文化",
-          "Name, ID, state or culture",
+          "搜索城镇、ID、国家或文化",
+          "Search burg, ID, state, or culture",
         ),
         searchValue: directEditor.burgSearchQuery,
-        selects: [
-          {
-            id: "studioBurgFilterSelect",
-            label: t(language, "Filter", "Filter"),
-            options: filterOptions,
-            value: directEditor.burgFilterMode,
-          },
-        ],
-        summary: {
-          label: t(language, "当前列表", "Current list"),
-          value: filteredBurgs.length,
-        },
       })}
-      <div class="studio-direct-states">
-        <div class="studio-direct-states__list">
+      <aside class="studio-native-identity__list">
+        ${renderNativeBurgListHeader(language, activeBurgs.length, filteredBurgs.length)}
+        <div class="studio-native-identity__rows">
           ${
-            limitDirectWorkbenchRows(
-              filteredBurgs,
-              DIRECT_WORKBENCH_ROW_LIMITS.burgs,
-            )
+            visibleBurgs
               .map((burg) =>
                 renderDirectWorkbenchEntityRow({
                   action: "direct-burg-select",
-                  color: "var(--studio-accent-muted)",
+                  color: "var(--studio-native-accent)",
                   id: burg.id,
                   idDataAttribute: "burg-id",
                   meta: `${getStateName(burg.state)} · ${burg.type || t(language, "城镇", "Burg")}`,
@@ -113,19 +110,20 @@ export function renderDirectBurgsWorkbench(
                 }),
               )
               .join("") ||
-            `<div class="studio-panel__text">${t(language, "No matching burgs", "No matching burgs")}</div>`
+            `<div class="studio-native-identity__empty">${t(language, "没有匹配的城镇", "No matching burgs")}</div>`
           }
         </div>
-        ${renderDirectBurgDetail({
-          cultureOptions,
-          getCultureName,
-          getStateName,
-          language,
-          directEditor,
-          selectedBurg,
-          stateOptions,
-        })}
-      </div>
+      </aside>
+      <div class="studio-native-identity__divider"></div>
+      ${renderDirectBurgDetail({
+        cultureOptions,
+        getCultureName,
+        getStateName,
+        language,
+        directEditor,
+        selectedBurg,
+        stateOptions,
+      })}
     </section>
   `;
 }

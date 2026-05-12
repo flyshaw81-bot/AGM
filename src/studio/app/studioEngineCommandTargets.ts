@@ -18,6 +18,7 @@ import type {
   EngineExportSetting,
 } from "../bridge/engineExportTargets";
 import { markEngineDocumentClean } from "../bridge/engineMapHost";
+import { setEnginePendingCanvasSize } from "../bridge/engineProjectActions";
 import {
   applyEngineStylePreset,
   getEngineStyleSettings,
@@ -35,6 +36,7 @@ import {
 import {
   createGlobalProjectCenterTargets,
   type ProjectCenterTargets,
+  type ProjectCenterUpdateOptions,
   updateProjectCenterState,
 } from "./projectCenter";
 
@@ -48,13 +50,14 @@ export type StudioEngineCommandTargets = {
   setExportSetting: (setting: EngineExportSetting, value: number) => void;
   exportWithEngine: (format: EngineExportFormat) => void;
   runTopbarAction: (action: TopbarAction) => Promise<void>;
+  setPendingCanvasSize: (width: number, height: number) => void;
   toggleLayer: (action: LayerAction) => void;
   runDataAction: (action: DataAction) => Promise<void>;
   runLayersPresetAction: (action: StudioLayersPresetAction) => void;
   markDocumentClean: () => void;
   updateProjectCenter: (
     state: StudioState,
-    options?: { saved?: boolean; exportReady?: boolean },
+    options?: ProjectCenterUpdateOptions,
   ) => void;
   syncDocument: (state: StudioState) => void;
   applyGenerationProfileOverrides: (state: StudioState) => void;
@@ -75,6 +78,7 @@ export type StudioExportCommandAdapter = {
 
 export type StudioBridgeActionCommandAdapter = {
   runTopbarAction: (action: TopbarAction) => Promise<void>;
+  setPendingCanvasSize: (width: number, height: number) => void;
   toggleLayer: (action: LayerAction) => void;
   runDataAction: (action: DataAction) => Promise<void>;
   runLayersPresetAction: (action: StudioLayersPresetAction) => void;
@@ -84,7 +88,7 @@ export type StudioDocumentCommandAdapter = {
   markDocumentClean: () => void;
   updateProjectCenter: (
     state: StudioState,
-    options?: { saved?: boolean; exportReady?: boolean },
+    options?: ProjectCenterUpdateOptions,
   ) => void;
   syncDocument: (state: StudioState) => void;
 };
@@ -111,8 +115,21 @@ export function createGlobalStudioExportCommandAdapter(): StudioExportCommandAda
 }
 
 export function createGlobalStudioBridgeActionCommandAdapter(): StudioBridgeActionCommandAdapter {
+  const applyPendingCanvasSize = () => {
+    try {
+      (globalThis.window ?? globalThis).EngineGraphSession?.applyGraphSize?.();
+    } catch {
+      // The legacy engine may not have booted yet.
+    }
+  };
+
   return {
     runTopbarAction: runEngineTopbarAction,
+    setPendingCanvasSize: (width, height) => {
+      setEnginePendingCanvasSize("width", width);
+      setEnginePendingCanvasSize("height", height);
+      applyPendingCanvasSize();
+    },
     toggleLayer: toggleEngineLayer,
     runDataAction: runEngineDataAction,
     runLayersPresetAction: runEngineLayersPresetAction,
@@ -162,6 +179,7 @@ export function createStudioEngineCommandTargets(
     setExportSetting: exportAdapter.setExportSetting,
     exportWithEngine: exportAdapter.exportWithEngine,
     runTopbarAction: actionAdapter.runTopbarAction,
+    setPendingCanvasSize: actionAdapter.setPendingCanvasSize,
     toggleLayer: actionAdapter.toggleLayer,
     runDataAction: actionAdapter.runDataAction,
     runLayersPresetAction: actionAdapter.runLayersPresetAction,

@@ -4,6 +4,10 @@ import {
   createGlobalProjectActionTargets,
   type ProjectActionTargets,
 } from "./projectActionTargets";
+import {
+  getRelationshipRepairExportReadyOptions,
+  type RelationshipRepairExportReadyOptions,
+} from "./relationshipRepairExportReadiness";
 
 type ProjectActionHandlerOptions = {
   root: HTMLElement;
@@ -11,6 +15,9 @@ type ProjectActionHandlerOptions = {
   render: (root: HTMLElement, state: StudioState) => void;
   syncProjectSummaryState: () => Promise<unknown>;
   updateViewportDimensions: (state: StudioState) => void;
+  getExportReadyOptions?: (
+    state: StudioState,
+  ) => RelationshipRepairExportReadyOptions;
   targets?: ProjectActionTargets;
 };
 
@@ -20,6 +27,7 @@ export function createProjectActionHandler({
   render,
   syncProjectSummaryState,
   updateViewportDimensions,
+  getExportReadyOptions = getRelationshipRepairExportReadyOptions,
   targets = createGlobalProjectActionTargets(),
 }: ProjectActionHandlerOptions): StudioShellEventHandlers["onProjectAction"] {
   return async (action) => {
@@ -66,7 +74,7 @@ export function createProjectActionHandler({
     } else if (action === "export-engine-package") {
       await syncProjectSummaryState();
       await targets.exportEnginePackage(state, targets.getProjectSummary());
-      targets.updateProjectCenter(state, { exportReady: true });
+      targets.updateProjectCenter(state, getExportReadyOptions(state));
     } else if (action === "export-rules-pack") {
       await syncProjectSummaryState();
       targets.exportRulesPack(state, targets.getProjectSummary());

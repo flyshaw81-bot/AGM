@@ -76,40 +76,6 @@ export function createGlobalEngineEditorDialogDomAdapter(): EngineEditorDialogDo
   };
 }
 
-export function createJQueryEngineEditorDialogAdapter(
-  domAdapter: EngineEditorDialogDomAdapter = createGlobalEngineEditorDialogDomAdapter(),
-): EngineEditorDialogAdapter {
-  return {
-    isOpen: (dialogId) => {
-      const dialog = domAdapter.getElementById(dialogId);
-      if (!dialog) return false;
-      return isElementVisible(dialog, domAdapter);
-    },
-    close: (dialogId) => {
-      try {
-        const dialog = domAdapter.getElementById(dialogId);
-        if (!dialog) return;
-
-        const wrapper = dialog.closest(".ui-dialog");
-        if (!wrapper) return;
-
-        const closeButton = wrapper.querySelector<HTMLButtonElement>(
-          ".ui-dialog-titlebar-close",
-        );
-        if (closeButton) {
-          closeButton.click();
-          return;
-        }
-
-        wrapper.setAttribute("aria-hidden", "true");
-        (wrapper as HTMLElement).style.display = "none";
-      } catch {
-        // Dialog fallback closing is best-effort for compatibility wrappers.
-      }
-    },
-  };
-}
-
 export function createStudioEngineEditorDialogAdapter(
   domAdapter: EngineEditorDialogDomAdapter = createGlobalEngineEditorDialogDomAdapter(),
 ): EngineEditorDialogAdapter {
@@ -181,10 +147,7 @@ export function createEngineEditorTargets(
 export function createGlobalEngineEditorTargets(
   handlerRuntime: EngineEditorHandlerRuntime = createGlobalEngineEditorHandlerRuntime(),
   dialogAdapter: EngineEditorDialogAdapter = createCompositeEngineEditorDialogAdapter(
-    [
-      createStudioEngineEditorDialogAdapter(),
-      createJQueryEngineEditorDialogAdapter(),
-    ],
+    [createStudioEngineEditorDialogAdapter()],
   ),
 ): EngineEditorTargets {
   return createEngineEditorTargets(handlerRuntime, dialogAdapter);

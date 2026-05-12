@@ -32,7 +32,7 @@ describe("temperature renderer compatibility mount", () => {
     await expect(import("./draw-temperature")).resolves.toBeTruthy();
   });
 
-  it("keeps temperature control lookup safe when document access throws", async () => {
+  it("uses an AGM-owned temperature range without hidden controls", async () => {
     Object.defineProperty(globalThis, "document", {
       configurable: true,
       get: () => {
@@ -45,7 +45,10 @@ describe("temperature renderer compatibility mount", () => {
     );
 
     expect(
-      createGlobalTemperatureRendererTargets().getTemperatureEquatorOutput(),
-    ).toBeUndefined();
+      createGlobalTemperatureRendererTargets().getTemperatureRange(),
+    ).toEqual({
+      min: -50,
+      max: 50,
+    });
   });
 });

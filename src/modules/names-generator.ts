@@ -2,6 +2,7 @@ import { last } from "../utils/arrayUtils";
 import { isVowel } from "../utils/languageUtils";
 import { P, ra, rand } from "../utils/probabilityUtils";
 import { capitalize } from "../utils/stringUtils";
+import { getBrowserRuntimePack } from "./engine-browser-runtime-globals";
 import type { EngineRandomService } from "./engine-random-service";
 
 declare global {
@@ -254,7 +255,11 @@ export class NamesGenerator {
       this.error("Please define a culture");
       return "ERROR";
     }
-    const base = pack.cultures[culture].base;
+    const base = getBrowserRuntimePack()?.cultures?.[culture]?.base;
+    if (base === undefined) {
+      this.error("Please define a culture base");
+      return "ERROR";
+    }
     return this.getBase(base, min, max, dupl);
   }
 
@@ -264,7 +269,12 @@ export class NamesGenerator {
       this.error("Please define a culture");
       return "ERROR";
     }
-    return this.getBaseShort(pack.cultures[culture].base);
+    const base = getBrowserRuntimePack()?.cultures?.[culture]?.base;
+    if (base === undefined) {
+      this.error("Please define a culture base");
+      return "ERROR";
+    }
+    return this.getBaseShort(base);
   }
 
   // generate short name for base
@@ -306,7 +316,12 @@ export class NamesGenerator {
       this.error("Please define a culture");
       return "ERROR";
     }
-    if (base === undefined) base = pack.cultures[culture].base;
+    if (base === undefined)
+      base = getBrowserRuntimePack()?.cultures?.[culture]?.base;
+    if (base === undefined) {
+      this.error("Please define a culture base");
+      return "ERROR";
+    }
 
     // exclude endings inappropriate for states name
     if (name.includes(" "))

@@ -1,12 +1,12 @@
-import Alea from "alea";
-import { curveBasis, curveCatmullRom, line, mean, min, sum } from "d3";
+﻿import Alea from "../utils/alea";
 import { rn } from "../utils/numberUtils";
 import { each, rw } from "../utils/probabilityUtils";
+import { curveBasis, curveCatmullRom, line } from "../utils/shapeUtils";
+import { mean, min, sum } from "../utils/statUtils";
 import { round } from "../utils/stringUtils";
 import {
   type EngineRuntimeContext,
   getEngineWorldDimensions,
-  getGlobalEngineRuntimeContext,
 } from "./engine-runtime-context";
 import type { Point } from "./voronoi";
 
@@ -62,15 +62,7 @@ export class RiverModule {
 
   smallLength: number | null = null;
 
-  generate(
-    input: EngineRuntimeContext | boolean = getGlobalEngineRuntimeContext(),
-    allowErosionOverride = true,
-  ) {
-    const context =
-      typeof input === "boolean" ? getGlobalEngineRuntimeContext() : input;
-    const allowErosion =
-      typeof input === "boolean" ? input : allowErosionOverride;
-
+  generate(context: EngineRuntimeContext, allowErosion = true) {
     const shouldTime = context.timing.shouldTime;
     shouldTime && console.time("generateRivers");
     const previousRandom = Math.random;
@@ -361,9 +353,7 @@ export class RiverModule {
     }
   }
 
-  alterHeights(
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ): number[] {
+  alterHeights(context: EngineRuntimeContext): number[] {
     const { h, c, t } = context.pack.cells as {
       h: Uint8Array;
       c: number[][];
@@ -376,10 +366,7 @@ export class RiverModule {
   }
 
   // depression filling algorithm (for a correct water flux modeling)
-  resolveDepressions(
-    h: number[],
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  resolveDepressions(h: number[], context: EngineRuntimeContext) {
     const { cells, features } = context.pack;
     const maxIterations = context.generationSettings.resolveDepressionsSteps;
     const checkLakeMaxIteration = maxIterations * 0.85;
@@ -454,8 +441,10 @@ export class RiverModule {
     riverCells: number[],
     riverPoints: Point[] | null = null,
     meandering = 0.5,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context?: EngineRuntimeContext,
   ): [number, number, number][] {
+    if (!context)
+      throw new Error("Rivers.addMeandering requires an engine context");
     const { fl, h } = context.pack.cells;
     const meandered = [];
     const points = this.getRiverPoints(riverCells, riverPoints, context);
@@ -509,7 +498,7 @@ export class RiverModule {
   getRiverPoints(
     riverCells: number[],
     riverPoints: [number, number][] | null,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context: EngineRuntimeContext,
   ) {
     if (riverPoints) return riverPoints;
 
@@ -520,10 +509,7 @@ export class RiverModule {
     });
   }
 
-  getBorderPoint(
-    i: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  getBorderPoint(i: number, context: EngineRuntimeContext) {
     const [x, y] = context.pack.cells.p[i];
     const { graphWidth, graphHeight } = getEngineWorldDimensions(context);
     const min = Math.min(y, graphHeight - y, x, graphWidth - x);
@@ -599,7 +585,7 @@ export class RiverModule {
     return round(right + left, 1);
   }
 
-  specify(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+  specify(context: EngineRuntimeContext) {
     const rivers = context.pack.rivers;
     if (!rivers.length) return;
 
@@ -610,17 +596,11 @@ export class RiverModule {
     }
   }
 
-  getName(
-    cell: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  getName(cell: number, context: EngineRuntimeContext) {
     return context.naming.getCulture(context.pack.cells.culture[cell]);
   }
 
-  getType(
-    { i, length, parent }: River,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  getType({ i, length, parent }: River, context: EngineRuntimeContext) {
     if (this.smallLength === null) {
       const threshold = Math.ceil(context.pack.rivers.length * 0.15);
       this.smallLength = context.pack.rivers
@@ -651,10 +631,7 @@ export class RiverModule {
   }
 
   // remove river and all its tributaries
-  remove(
-    id: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  remove(id: number, context: EngineRuntimeContext) {
     const { grid, pack } = context;
     const cells = pack.cells;
     const riversToRemove = pack.rivers
@@ -673,10 +650,7 @@ export class RiverModule {
     pack.rivers = pack.rivers.filter((r) => !riversToRemove.includes(r.i));
   }
 
-  getBasin(
-    r: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ): number {
+  getBasin(r: number, context: EngineRuntimeContext): number {
     const parent = context.pack.rivers.find((river) => river.i === r)?.parent;
     if (!parent || r === parent) return r;
     return this.getBasin(parent, context);

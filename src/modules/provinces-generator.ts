@@ -1,13 +1,10 @@
-import Alea from "alea";
-import { max } from "d3";
+﻿import Alea from "../utils/alea";
 import { getMixedColor } from "../utils/colorUtils";
 import { getPolesOfInaccessibility } from "../utils/pathUtils";
 import { PriorityQueue } from "../utils/priorityQueue";
 import { gauss, generateSeed, P, rand, rw } from "../utils/probabilityUtils";
-import {
-  type EngineRuntimeContext,
-  getGlobalEngineRuntimeContext,
-} from "./engine-runtime-context";
+import { max } from "../utils/statUtils";
+import type { EngineRuntimeContext } from "./engine-runtime-context";
 
 declare global {
   var Provinces: ProvinceModule;
@@ -78,12 +75,10 @@ export class ProvinceModule {
   };
 
   generate(
-    input: boolean | EngineRuntimeContext = false,
+    context: EngineRuntimeContext,
+    regenerate = false,
     regenerateLockedStates = false,
   ) {
-    const context =
-      typeof input === "boolean" ? getGlobalEngineRuntimeContext() : input;
-    const regenerate = typeof input === "boolean" ? input : false;
     const { pack, seed, timing } = context;
 
     timing.shouldTime && console.time("generateProvinces");
@@ -422,7 +417,7 @@ export class ProvinceModule {
   }
 
   // calculate pole of inaccessibility for each province
-  getPoles(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+  getPoles(context: EngineRuntimeContext) {
     const { pack } = context;
     const getType = (cellId: number) => pack.cells.province[cellId];
     const poles = getPolesOfInaccessibility(pack, getType);

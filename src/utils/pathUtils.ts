@@ -1,5 +1,5 @@
-import polylabel from "polylabel";
 import { rn } from "./numberUtils";
+import polylabel from "./polylabel";
 import { PriorityQueue } from "./priorityQueue";
 
 export type PathLogTargets = {
@@ -121,7 +121,7 @@ export const getIsolines = (
   const isChecked = (cellId: number) => checkedCells[cellId] === 1;
 
   for (const cellId of cells.i) {
-    if (isChecked(cellId) || !getType(cellId)) continue;
+    if (isChecked(cellId) || getType(cellId) == null) continue;
     addToChecked(cellId);
 
     const type = getType(cellId);

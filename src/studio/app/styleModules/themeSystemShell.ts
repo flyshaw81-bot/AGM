@@ -290,8 +290,8 @@ export const themeSystemShellStyles = `    /* AGMUI v2: topbar as a quiet comman
       --cascade-layer: #f0f2f5;
       --cascade-layer-border: #dfe3ea;
       --cascade-device-border: #eef0f3;
-      --cascade-shadow-a: #00000008;
-      --cascade-shadow-b: #00000012;
+      --cascade-shadow-a: #08111a08;
+      --cascade-shadow-b: #08111a12;
     }
 
     #studioRoot[data-studio-theme="night"] {
@@ -299,8 +299,8 @@ export const themeSystemShellStyles = `    /* AGMUI v2: topbar as a quiet comman
       --cascade-layer: #2b2b2b;
       --cascade-layer-border: #383838;
       --cascade-device-border: #303030;
-      --cascade-shadow-a: #00000024;
-      --cascade-shadow-b: #00000044;
+      --cascade-shadow-a: #08111a24;
+      --cascade-shadow-b: #08111a44;
     }
 
     #studioRoot[data-studio-theme="daylight"] .studio-body,

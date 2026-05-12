@@ -1,7 +1,8 @@
-import { randomNormal } from "d3";
 import { rn } from "../utils/numberUtils";
 import { gauss, P, rand, rw } from "../utils/probabilityUtils";
+import { randomNormal } from "../utils/randomUtils";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
+import type { EngineOptions } from "./engine-world-state";
 
 function getWindow(): (Window & typeof globalThis) | undefined {
   try {
@@ -36,8 +37,8 @@ function setControlValue(name: string, value: string | number) {
   if (control) control.value = value;
 }
 
-function setOptionsValue(name: keyof typeof options, value: string | number) {
-  const runtimeOptions = getGlobalValue<typeof options>("options");
+function setOptionsValue(name: keyof EngineOptions, value: string | number) {
+  const runtimeOptions = getGlobalValue<EngineOptions>("options");
   if (runtimeOptions) runtimeOptions[name] = value as never;
 }
 
@@ -153,21 +154,19 @@ export function createGlobalOptionsBrowserControlTargets(): EngineOptionsBrowser
       setOptionsValue("temperatureSouthPole", value);
     },
     setPrecipitation: (value) => {
-      setControlValue("precInput", String(value));
-      setControlValue("precOutput", String(value));
+      setGlobalValue("precipitationPercent", value);
     },
     setDistanceScale: (value) => {
       setGlobalValue("distanceScale", value);
-      setControlValue("distanceScaleInput", value);
     },
     setDistanceUnit: (value) => {
-      setControlValue("distanceUnitInput", value);
+      setGlobalValue("distanceUnit", value);
     },
     setHeightUnit: (value) => {
-      setControlValue("heightUnit", value);
+      setGlobalValue("heightUnit", value);
     },
     setTemperatureScale: (value) => {
-      setControlValue("temperatureScale", value);
+      setGlobalValue("temperatureScale", value);
     },
     setYear: (value) => {
       setControlValue("yearInput", value);
@@ -178,7 +177,7 @@ export function createGlobalOptionsBrowserControlTargets(): EngineOptionsBrowser
     syncEraOptions: () => {
       const yearInput = getGlobalValue<{ value: string | number }>("yearInput");
       const eraInput = getGlobalValue<{ value: string }>("eraInput");
-      const runtimeOptions = getGlobalValue<typeof options>("options");
+      const runtimeOptions = getGlobalValue<EngineOptions>("options");
       if (!runtimeOptions || !yearInput || !eraInput) return;
 
       runtimeOptions.year = +yearInput.value;
@@ -407,7 +406,10 @@ export function createRuntimeOptionsWriterAdapter(
 
   return {
     setCellsDensity: fallback.setCellsDensity,
-    applyHeightmapTemplate: fallback.applyHeightmapTemplate,
+    applyHeightmapTemplate: (template, name) => {
+      patchGenerationSettings({ heightmapTemplateId: template });
+      fallback.applyHeightmapTemplate(template, name);
+    },
     setStatesCount: (value) => {
       patchGenerationSettings({ statesCount: value });
       fallback.setStatesCount(value);

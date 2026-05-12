@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+﻿import { describe, expect, it, vi } from "vitest";
 import type { DataAction } from "./engineActionTypes";
 import {
   getEngineTopbarActions,
@@ -7,16 +7,16 @@ import {
 import type { EngineTopbarTargets } from "./engineTopbarTargets";
 
 function createTargets(overrides?: {
-  canCreateNew?: boolean;
+  canCreateGeneratedWorld?: boolean;
   canOpenFile?: boolean;
-  canSaveToMachine?: boolean;
+  canDownloadProject?: boolean;
 }) {
   const runDataAction = vi.fn(async (_action: DataAction) => undefined);
   const targets: EngineTopbarTargets = {
     getDataActions: () => ({
-      canCreateNew: overrides?.canCreateNew ?? true,
+      canCreateGeneratedWorld: overrides?.canCreateGeneratedWorld ?? true,
       canOpenFile: overrides?.canOpenFile ?? true,
-      canSaveToMachine: overrides?.canSaveToMachine ?? true,
+      canDownloadProject: overrides?.canDownloadProject ?? true,
     }),
     runDataAction,
   };
@@ -26,9 +26,9 @@ function createTargets(overrides?: {
 describe("engine topbar actions", () => {
   it("builds topbar availability from injected data action targets", () => {
     const { targets } = createTargets({
-      canCreateNew: true,
+      canCreateGeneratedWorld: true,
       canOpenFile: false,
-      canSaveToMachine: true,
+      canDownloadProject: true,
     });
 
     expect(getEngineTopbarActions(targets)).toEqual({
@@ -48,8 +48,8 @@ describe("engine topbar actions", () => {
     await runEngineTopbarAction("export", targets);
 
     expect(runDataAction).toHaveBeenCalledTimes(3);
-    expect(runDataAction).toHaveBeenNthCalledWith(1, "new-map");
+    expect(runDataAction).toHaveBeenNthCalledWith(1, "create-generated-world");
     expect(runDataAction).toHaveBeenNthCalledWith(2, "open-file");
-    expect(runDataAction).toHaveBeenNthCalledWith(3, "save-machine");
+    expect(runDataAction).toHaveBeenNthCalledWith(3, "download-project");
   });
 });

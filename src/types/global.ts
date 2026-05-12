@@ -1,18 +1,25 @@
-import type { Selection } from "d3";
+import type { EngineGenerationSessionRequest } from "../modules/engine-generation-session-services";
+import type { EngineRuntimeContext } from "../modules/engine-runtime-context";
 import type { NameBase } from "../modules/names-generator";
+import type { Selection } from "../utils/svgSelection";
 import type { PackedGraph } from "./PackedGraph";
 
 declare global {
+  /**
+   * Test and fixture compile aliases for historical engine containers.
+   * Product code must use EngineRuntimeContext or engine-browser-runtime-globals.
+   */
   var seed: string;
   var pack: PackedGraph;
   var grid: any;
+  var options: any;
+
   var graphHeight: number;
   var graphWidth: number;
   var TIME: boolean;
   var WARN: boolean;
   var ERROR: boolean;
   var DEBUG: { stateLabels?: boolean; [key: string]: boolean | undefined };
-  var options: any;
   var mapHistory: Array<{ seed?: string; [key: string]: unknown }>;
   var aleaPRNG: (seed: string) => () => number;
 
@@ -22,18 +29,21 @@ declare global {
   var urbanDensity: number;
   var urbanization: number;
   var distanceScale: number;
+  var heightExponent: number;
+  var temperatureScale: string;
+  var heightUnit: string;
+  var distanceUnit: string;
+  var precipitationPercent: number;
+  var mapSizePercent: number;
+  var latitudePercent: number;
+  var longitudePercent: number;
   var nameBases: NameBase[];
 
   var pointsInput: HTMLInputElement;
   var culturesInput: HTMLInputElement;
   var culturesSet: HTMLSelectElement;
-  var heightExponentInput: HTMLInputElement;
-  var alertMessage: HTMLElement;
   var mapName: HTMLInputElement;
   var religionsNumber: HTMLInputElement;
-  var distanceUnitInput: HTMLInputElement;
-  var heightUnit: HTMLSelectElement;
-  var precInput: HTMLInputElement;
 
   var rivers: Selection<SVGElement, unknown, null, undefined>;
   var prec: Selection<SVGGElement, unknown, null, undefined>;
@@ -79,13 +89,16 @@ declare global {
   var layerIsOn: (layerId: string) => boolean;
   var drawRoute: (route: any) => void;
   var invokeActiveZooming: () => void;
-  var setSeed: (precreatedSeed?: string) => void;
+  var setSeed: (precreatedSeed?: string) => string;
+  var generate: (
+    options?: EngineGenerationSessionRequest,
+  ) => Promise<EngineRuntimeContext | undefined>;
   var applyGraphSize: () => void;
   var randomizeOptions: () => void;
   var parseError: (error: Error) => string;
   var clearMainTip: () => void;
   var cleanupData: () => void;
-  var regenerateMap: (reason?: string) => void;
+  var regenerateMap: (options?: unknown) => void;
   var tip: (
     message: string,
     autoHide?: boolean,
@@ -94,7 +107,6 @@ declare global {
   ) => void;
   var locked: (settingId: string) => boolean;
   var unlock: (settingId: string) => void;
-  var $: (selector: any) => any;
   var scale: number;
   var changeFont: () => void;
   var getFriendlyHeight: (coords: [number, number]) => string;
@@ -119,27 +131,4 @@ declare global {
     orientation: "landscape" | "portrait",
     fitMode: "contain" | "cover" | "actual-size",
   ) => void;
-  var saveMap: (method: "storage" | "machine" | "dropbox") => Promise<void>;
-  var quickLoad: () => Promise<void>;
-  var generateMapOnLoad: () => Promise<void>;
-  var loadURL: () => void;
-  var loadMapFromURL: (maplink: string, random?: number) => void;
-  var uploadMap: (file: Blob | File, callback?: () => void) => void;
-  var connectToDropbox: () => Promise<void>;
-  var loadFromDropbox: () => Promise<void>;
-  var createSharableDropboxLink: () => Promise<void>;
-  var toggleStates: (event?: Event) => void;
-  var toggleBorders: (event?: Event) => void;
-  var toggleRoutes: (event?: Event) => void;
-  var toggleRivers: (event?: Event) => void;
-  var toggleBurgIcons: (event?: Event) => void;
-  var toggleLabels: (event?: Event) => void;
-  var toggleScaleBar: (event?: Event) => void;
-  var editStates: () => Promise<void>;
-  var editCultures: () => Promise<void>;
-  var editReligions: () => Promise<void>;
-  var editBiomes: () => void;
-  var editProvinces: () => void;
-  var editZones: () => void;
-  var editDiplomacy: () => void;
 }

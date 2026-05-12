@@ -3,6 +3,7 @@ import type {
   AgmWritableProvince,
   EngineAutoFixPreviewChange,
 } from "./engineActionTypes";
+import { getBrowserPack } from "./engineBrowserPackAdapter";
 
 export type EngineRouteWritebackTargets = {
   resolveRouteCell: (change: EngineAutoFixPreviewChange) => number | undefined;
@@ -104,13 +105,13 @@ function writableProvinceOrUndefined(
 
 export function createGlobalRouteWritebackMapAdapter(): EngineRouteWritebackMapAdapter {
   return {
-    getCellIds: () => Array.from(getGlobalPack()?.cells?.i || []),
-    getCellHeight: (cellId) => getGlobalPack()?.cells?.h?.[cellId],
-    getCellProvince: (cellId) => getGlobalPack()?.cells?.province?.[cellId],
-    getCellState: (cellId) => getGlobalPack()?.cells?.state?.[cellId],
-    getCellRoutes: (cellId) => getGlobalPack()?.cells?.routes?.[cellId],
+    getCellIds: () => Array.from(getBrowserPack()?.cells?.i || []),
+    getCellHeight: (cellId) => getBrowserPack()?.cells?.h?.[cellId],
+    getCellProvince: (cellId) => getBrowserPack()?.cells?.province?.[cellId],
+    getCellState: (cellId) => getBrowserPack()?.cells?.state?.[cellId],
+    getCellRoutes: (cellId) => getBrowserPack()?.cells?.routes?.[cellId],
     getProvince: (provinceId) =>
-      getGlobalPack()?.provinces?.[provinceId] as unknown as
+      getBrowserPack()?.provinces?.[provinceId] as unknown as
         | AgmWritableProvince
         | undefined,
   };
@@ -153,12 +154,4 @@ export function createRuntimeRouteWritebackTargets(
   return createRouteWritebackTargets(
     createRuntimeRouteWritebackMapAdapter(context),
   );
-}
-
-function getGlobalPack(): typeof pack | undefined {
-  try {
-    return globalThis.pack;
-  } catch {
-    return undefined;
-  }
 }

@@ -33,6 +33,10 @@ function createSelection(calls: Call[], selector: string) {
 
 describe("EngineGraphSessionModule", () => {
   const originalWindow = globalThis.window;
+  const originalDocumentDescriptor = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "document",
+  );
   const originalMapWidthInputDescriptor = Object.getOwnPropertyDescriptor(
     globalThis,
     "mapWidthInput",
@@ -53,6 +57,22 @@ describe("EngineGraphSessionModule", () => {
     globalThis,
     "landmass",
   );
+  const originalOceanPatternDescriptor = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "oceanPattern",
+  );
+  const originalOceanLayersDescriptor = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "oceanLayers",
+  );
+  const originalFoggingDescriptor = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "fogging",
+  );
+  const originalDefsDescriptor = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "defs",
+  );
 
   afterEach(() => {
     vi.resetModules();
@@ -66,7 +86,12 @@ describe("EngineGraphSessionModule", () => {
       ["mapHeightInput", originalMapHeightInputDescriptor],
       ["graphWidth", originalGraphWidthDescriptor],
       ["graphHeight", originalGraphHeightDescriptor],
+      ["document", originalDocumentDescriptor],
       ["landmass", originalLandmassDescriptor],
+      ["oceanPattern", originalOceanPatternDescriptor],
+      ["oceanLayers", originalOceanLayersDescriptor],
+      ["fogging", originalFoggingDescriptor],
+      ["defs", originalDefsDescriptor],
     ] as const) {
       if (descriptor) {
         Object.defineProperty(globalThis, name, descriptor);
@@ -262,6 +287,74 @@ describe("EngineGraphSessionModule", () => {
       targets.getFogMaskRect().attr("width", 1200);
       targets.getWaterMaskRect().attr("height", 800);
     }).not.toThrow();
+  });
+
+  it("falls back to DOM SVG elements when d3 compatibility globals are absent", () => {
+    const calls: Call[] = [];
+    const createElement = (selector: string) =>
+      ({
+        setAttribute: (name: string, value: string) => {
+          calls.push({ selector, name, value });
+        },
+      }) as unknown as Element;
+    const createRoot = (selector: string) => {
+      const rect = createElement(`${selector} rect`);
+      return {
+        querySelector: (query: string) => (query === "rect" ? rect : null),
+        querySelectorAll: (query: string) => (query === "rect" ? [rect] : []),
+      } as unknown as Element;
+    };
+    const roots: Record<string, Element> = {
+      fogging: createRoot("fogging"),
+      landmass: createRoot("landmass"),
+      oceanLayers: createRoot("oceanLayers"),
+      oceanPattern: createRoot("oceanPattern"),
+    };
+    const fogMask = createElement("mask#fog > rect");
+    const waterMask = createElement("mask#water > rect");
+    const defs = {
+      querySelector: (query: string) =>
+        query === "mask#fog > rect"
+          ? fogMask
+          : query === "mask#water > rect"
+            ? waterMask
+            : null,
+      querySelectorAll: () => [],
+    } as unknown as Element;
+
+    Object.assign(globalThis, {
+      document: {
+        getElementById: (id: string) => roots[id] ?? null,
+        querySelector: (query: string) => (query === "defs" ? defs : null),
+      },
+      graphHeight: 1,
+      graphWidth: 1,
+      mapHeightInput: { value: "900" },
+      mapWidthInput: { value: "1440" },
+    });
+    delete (globalThis as Record<string, unknown>).landmass;
+    delete (globalThis as Record<string, unknown>).oceanPattern;
+    delete (globalThis as Record<string, unknown>).oceanLayers;
+    delete (globalThis as Record<string, unknown>).fogging;
+    delete (globalThis as Record<string, unknown>).defs;
+
+    new EngineGraphSessionModule().applyGraphSize();
+
+    expect(calls).toContainEqual({
+      selector: "oceanLayers rect",
+      name: "width",
+      value: "1440",
+    });
+    expect(calls).toContainEqual({
+      selector: "landmass rect",
+      name: "height",
+      value: "900",
+    });
+    expect(calls).toContainEqual({
+      selector: "mask#water > rect",
+      name: "height",
+      value: "900",
+    });
   });
 
   it("keeps global graph session targets safe when compatibility globals are absent", () => {

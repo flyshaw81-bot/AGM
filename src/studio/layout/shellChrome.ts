@@ -19,7 +19,12 @@ import {
   TOPBAR_ACTION_ZH_LABELS,
   VIEWPORT_PRESET_LABELS,
 } from "./shellConstants";
-import { escapeHtml, studioIcon, t } from "./shellShared";
+import {
+  escapeHtml,
+  studioIcon,
+  studioMaterialSymbolIcon,
+  t,
+} from "./shellShared";
 
 export function sectionNavButton(
   section: StudioSection,
@@ -116,6 +121,7 @@ export function renderThemeSelect(
 
 export function renderTopbarUtilityControls(state: StudioState) {
   const nextTheme: StudioTheme = state.theme === "night" ? "daylight" : "night";
+  const themeIcon = state.theme === "night" ? "sun" : "moon";
   const nextLanguage: StudioLanguage =
     state.language === "zh-CN" ? "en" : "zh-CN";
   const themeLabel =
@@ -126,14 +132,22 @@ export function renderTopbarUtilityControls(state: StudioState) {
     nextLanguage === "en"
       ? t(state.language, "切换英文", "Switch to English")
       : t(state.language, "切换中文", "Switch to Chinese");
+  const projectCenterLabel = t(state.language, "项目中心", "Project center");
+  const projectCenterButton =
+    state.section === "project"
+      ? ""
+      : `<button class="studio-ghost studio-ghost--icon studio-topbar__project-center" data-studio-action="section" data-value="project" aria-label="${projectCenterLabel}" title="${projectCenterLabel}">
+        ${studioMaterialSymbolIcon("work", "studio-topbar__utility-icon studio-project-center-icon studio-material-symbol-icon")}
+      </button>`;
 
   return `
     <div class="studio-topbar__utility-group" aria-label="${t(state.language, "外观与语言", "Appearance and language")}">
+      ${projectCenterButton}
       <button class="studio-ghost studio-ghost--icon" data-studio-action="theme-toggle" data-value="${nextTheme}" aria-label="${themeLabel}" title="${themeLabel}">
-        ${studioIcon(state.theme === "night" ? "sun" : "moon", "studio-ghost__icon")}
+        ${studioIcon(themeIcon, "studio-topbar__utility-icon studio-theme-toggle-icon")}
       </button>
       <button class="studio-ghost studio-ghost--language" data-studio-action="language-toggle" data-value="${nextLanguage}" aria-label="${languageLabel}" title="${languageLabel}">
-        <span class="studio-language-glyph" aria-hidden="true">文/A</span>
+        ${studioMaterialSymbolIcon("translate", "studio-topbar__utility-icon studio-language-icon studio-material-symbol-icon")}
       </button>
     </div>
   `;
@@ -144,10 +158,10 @@ export function renderTopbarContextControls(state: StudioState) {
   const seedValue = projectSummary.pendingSeed || state.document.seed || "";
 
   return `
-    <div class="studio-topbar__context" aria-label="${t(state.language, "当前生成上下文", "Current generation context")}">
+    <div class="studio-topbar__context" aria-label="${t(state.language, "Current generation context", "Current generation context")}">
       <label class="studio-topbar-field studio-topbar-field--profile" for="studioTopbarGameProfileSelect">
-        <span>${t(state.language, "游戏类型", "Game type")}</span>
-        <select id="studioTopbarGameProfileSelect" aria-label="${t(state.language, "游戏类型", "Game type")}">
+        <span>${t(state.language, "Game type", "Game type")}</span>
+        <select id="studioTopbarGameProfileSelect" aria-label="${t(state.language, "Game type", "Game type")}">
           ${Object.keys(GAME_WORLD_PROFILE_LABELS)
             .map((value) =>
               gameProfileOption(
@@ -160,15 +174,15 @@ export function renderTopbarContextControls(state: StudioState) {
         </select>
       </label>
       <label class="studio-topbar-field studio-topbar-field--preset" for="studioTopbarPresetSelect">
-        <span>${t(state.language, "生成方案", "Generation preset")}</span>
-        <select id="studioTopbarPresetSelect" aria-label="${t(state.language, "生成方案", "Generation preset")}">
+        <span>${t(state.language, "Generation preset", "Generation preset")}</span>
+        <select id="studioTopbarPresetSelect" aria-label="${t(state.language, "Generation preset", "Generation preset")}">
           ${Object.keys(VIEWPORT_PRESET_LABELS[state.language])
             .map((value) => viewportPresetOption(value, state.language))
             .join("")}
         </select>
       </label>
       <label class="studio-topbar-field studio-topbar-field--seed" for="studioTopbarSeedInput">
-        <span>${t(state.language, "种子", "Seed")}</span>
+        <span>${t(state.language, "Seed", "Seed")}</span>
         <input id="studioTopbarSeedInput" type="number" min="1" max="999999999" step="1" value="${escapeHtml(String(seedValue))}" ${projectSummary.canSetSeed ? "" : "disabled"} />
       </label>
     </div>

@@ -5,6 +5,30 @@ const originalWindowDescriptor = Object.getOwnPropertyDescriptor(
   globalThis,
   "window",
 );
+const originalClimateDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "Climate",
+);
+const originalCalculateTemperaturesDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "calculateTemperatures",
+);
+const originalGeneratePrecipitationDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "generatePrecipitation",
+);
+
+function restoreGlobalDescriptor(
+  name: string,
+  descriptor?: PropertyDescriptor,
+) {
+  if (descriptor) {
+    Object.defineProperty(globalThis, name, descriptor);
+    return;
+  }
+
+  delete (globalThis as Record<string, unknown>)[name];
+}
 
 function createPrecipitationLayer() {
   const events: string[] = [];
@@ -79,7 +103,18 @@ describe("ClimateModule", () => {
     vi.restoreAllMocks();
     if (originalWindowDescriptor) {
       Object.defineProperty(globalThis, "window", originalWindowDescriptor);
+    } else {
+      delete (globalThis as Record<string, unknown>).window;
     }
+    restoreGlobalDescriptor("Climate", originalClimateDescriptor);
+    restoreGlobalDescriptor(
+      "calculateTemperatures",
+      originalCalculateTemperaturesDescriptor,
+    );
+    restoreGlobalDescriptor(
+      "generatePrecipitation",
+      originalGeneratePrecipitationDescriptor,
+    );
   });
 
   it("can be imported when window access throws", async () => {
@@ -122,5 +157,30 @@ describe("ClimateModule", () => {
       context.grid.cells.prec as Uint8Array,
     );
     expect(precipitationValues.some((value) => value > 0)).toBe(true);
+  });
+
+  it("mounts legacy climate compatibility entrypoints from the module", async () => {
+    vi.resetModules();
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: globalThis,
+    });
+    restoreGlobalDescriptor("Climate", undefined);
+    restoreGlobalDescriptor("calculateTemperatures", undefined);
+    restoreGlobalDescriptor("generatePrecipitation", undefined);
+
+    await import("./climate");
+    const temperaturesSpy = vi
+      .spyOn(globalThis.Climate, "calculateTemperatures")
+      .mockReturnValue(undefined);
+    const precipitationSpy = vi
+      .spyOn(globalThis.Climate, "generatePrecipitation")
+      .mockReturnValue(undefined);
+
+    globalThis.calculateTemperatures();
+    globalThis.generatePrecipitation();
+
+    expect(temperaturesSpy).toHaveBeenCalledOnce();
+    expect(precipitationSpy).toHaveBeenCalledOnce();
   });
 });

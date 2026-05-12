@@ -31,9 +31,13 @@ type EngineMapHostRuntime = {
     ) => { attr: (name: string, value: number) => unknown };
   };
   zoom?: {
-    translateExtent: (extent: [[number, number], [number, number]]) => {
+    translateExtent: (
+      extent: [[number, number], [number, number]],
+    ) => {
       scaleExtent: (extent: [number, number]) => unknown;
     };
+    syncInternalTransform?: (k: number, x: number, y: number) => void;
+    getTransform?: () => { k: number; x: number; y: number };
   };
   rn?: (value: number, digits: number) => number;
   zoomExtentMax?: { value?: string };
@@ -286,6 +290,10 @@ export function createGlobalEngineMapHostRuntimeAdapter(): EngineMapHostRuntimeA
             )
           : Math.max(width / runtime.graphWidth, height / runtime.graphHeight);
         const zoomMax = Number(runtime.zoomExtentMax?.value || 20);
+
+        // Update zoom scale extent now that the viewport size is known.
+        // (The zoom behavior reads the current DOM transform in _onWheel,
+        // so there's no need to explicitly sync internal state here.)
         runtime.zoom
           .translateExtent([
             [0, 0],

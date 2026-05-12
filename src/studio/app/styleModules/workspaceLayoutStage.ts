@@ -4,7 +4,7 @@ export const workspaceLayoutStageStyles = `    .studio-stage {
       grid-template-rows: 50px minmax(0, 1fr);
       min-width: 0;
       min-height: 0;
-      background: color-mix(in srgb, var(--agm-surface-dark) 92%, #000000);
+      background: color-mix(in srgb, var(--agm-surface-dark) 92%, #08111a);
     }
 
     .studio-stage__toolbar {
@@ -15,7 +15,7 @@ export const workspaceLayoutStageStyles = `    .studio-stage {
       gap: 8px;
       padding: 7px 16px;
       border-bottom: 1px solid var(--studio-accent-16);
-      background: color-mix(in srgb, var(--agm-surface-dark-2) 88%, #000000);
+      background: color-mix(in srgb, var(--agm-surface-dark-2) 88%, #08111a);
       backdrop-filter: none;
     }
 
@@ -26,7 +26,7 @@ export const workspaceLayoutStageStyles = `    .studio-stage {
       min-width: 0;
       padding: 6px;
       border-radius: 7px;
-      background: color-mix(in srgb, var(--agm-surface-dark) 90%, #000000);
+      background: color-mix(in srgb, var(--agm-surface-dark) 90%, #08111a);
       border: 1px solid var(--studio-accent-22);
       overflow-x: auto;
       scrollbar-width: thin;
@@ -40,7 +40,7 @@ export const workspaceLayoutStageStyles = `    .studio-stage {
     .studio-stage__meta {
       margin-left: auto;
       font-size: 12px;
-      color: #b8ad99;
+      color: #7f909a;
     }
 
     .studio-stage__viewport {
@@ -91,7 +91,7 @@ export const workspaceLayoutStageStyles = `    .studio-stage {
       place-items: center;
       background:
         radial-gradient(circle at 45% 40%, var(--studio-accent-12), transparent 48%),
-        color-mix(in srgb, var(--agm-surface-dark) 92%, #000000);
+        color-mix(in srgb, var(--agm-surface-dark) 92%, #08111a);
       border-radius: 12px;
       box-shadow: inset 0 0 120px rgba(0,0,0,0.38), 0 28px 80px rgba(0,0,0,0.34);
       border: 1px solid var(--studio-accent-18);
@@ -108,7 +108,7 @@ export const workspaceLayoutStageStyles = `    .studio-stage {
     }
 
     .studio-map-host[data-canvas-tool='select'] {
-      cursor: crosshair;
+      cursor: pointer;
     }
 
     .studio-map-host[data-canvas-tool='pan'] {
@@ -159,78 +159,14 @@ export const workspaceLayoutStageStyles = `    .studio-stage {
       inset: 0;
       z-index: 30;
       pointer-events: none;
-      background: transparent !important;
-    }
-
-    body.studio-enabled > #dialogs .ui-dialog,
-    body.studio-enabled > #dialogs .ui-dialog * {
-      pointer-events: auto;
-    }
-
-    body.studio-enabled > #dialogs .ui-dialog {
-      overflow: hidden;
-      border: 1px solid var(--studio-border);
-      border-radius: 12px;
-      background: var(--studio-panel-strong);
-      color: var(--studio-text);
-      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
-      font-family: var(--agm-font-latin);
-    }
-
-    body.studio-enabled > #dialogs .ui-dialog-titlebar {
-      display: flex;
-      align-items: center;
-      min-height: 44px;
-      border: 0;
-      border-bottom: 1px solid var(--studio-border);
-      background: var(--studio-panel);
-      color: var(--studio-text);
-      padding: 0 12px 0 16px;
-    }
-
-    body.studio-enabled > #dialogs .ui-dialog-title {
-      flex: 1;
-      min-width: 0;
-      overflow: hidden;
-      color: var(--studio-text);
-      font-size: 13px;
-      font-weight: 760;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    body.studio-enabled > #dialogs .ui-dialog-titlebar-close {
-      display: inline-grid;
-      place-items: center;
-      width: 30px;
-      height: 30px;
-      border: 1px solid var(--studio-border);
-      border-radius: 8px;
-      background: color-mix(in srgb, var(--studio-panel-strong) 82%, transparent);
-      color: var(--studio-muted);
-      cursor: pointer;
-    }
-
-    body.studio-enabled > #dialogs .ui-dialog-titlebar-close:hover {
-      border-color: var(--studio-border-strong);
-      color: var(--studio-text);
-    }
-
-    body.studio-enabled > #dialogs .ui-dialog-content {
-      background: var(--studio-panel-strong);
-      color: var(--studio-text);
-    }
-
-    #studioRoot[data-studio-theme="daylight"] ~ #dialogs .ui-dialog,
-    html[data-studio-theme="daylight"] body.studio-enabled > #dialogs .ui-dialog {
-      box-shadow: 0 22px 56px rgba(15, 23, 42, 0.18);
+      background: transparent;
     }
 
     body.studio-enabled .studio-input-dialog {
       position: fixed;
       inset: 0;
       z-index: 48;
-      font-family: var(--agm-font-latin);
+      font-family: var(--agm-font-ui);
       pointer-events: none;
     }
 
@@ -269,7 +205,7 @@ export const workspaceLayoutStageStyles = `    .studio-stage {
     }
 
     body.studio-enabled .studio-input-dialog__input {
-      width: 100% !important;
+      width: 100%;
       min-height: 40px;
       box-sizing: border-box;
       border: 1px solid var(--studio-border);
@@ -412,12 +348,10 @@ export const workspaceLayoutStageStyles = `    .studio-stage {
     }
 
     #statesBody .is-studio-selected-state {
-      fill: #ffd166 !important;
-      fill-opacity: 0.38 !important;
-      stroke: #fff2a8 !important;
-      stroke-width: 11px !important;
+      stroke: #fff2a8;
+      stroke-width: 11px;
       stroke-linejoin: round;
-      stroke-opacity: 1 !important;
+      stroke-opacity: 1;
       vector-effect: non-scaling-stroke;
       filter: drop-shadow(0 0 10px rgba(255, 242, 168, 1)) drop-shadow(0 0 26px rgba(255, 180, 64, 0.96)) drop-shadow(0 0 44px rgba(90, 170, 255, 0.82));
       paint-order: stroke fill markers;
@@ -425,9 +359,9 @@ export const workspaceLayoutStageStyles = `    .studio-stage {
     }
 
     #statesHalo .is-studio-selected-state-border {
-      stroke: #ffffff !important;
-      stroke-width: 18px !important;
-      stroke-opacity: 1 !important;
+      stroke: #ffffff;
+      stroke-width: 18px;
+      stroke-opacity: 1;
       vector-effect: non-scaling-stroke;
       filter: drop-shadow(0 0 14px rgba(255, 255, 255, 1)) drop-shadow(0 0 34px color-mix(in srgb, var(--studio-accent) 92%, transparent)) drop-shadow(0 0 52px rgba(255, 190, 92, 0.72));
       pointer-events: none;

@@ -46,6 +46,8 @@ describe("createStudioShellTargets", () => {
     const applyRulesPack = vi.fn();
     const applyCanvasPaintPreview = vi.fn(() => true);
     const persistTheme = vi.fn();
+    const setPendingViewportCanvasSize = vi.fn();
+    const confirmViewportCanvasRegenerate = vi.fn(() => true);
     const isPaintCanvasTool = (
       tool: CanvasToolMode,
     ): tool is Extract<CanvasToolMode, "brush" | "water" | "terrain"> =>
@@ -84,19 +86,33 @@ describe("createStudioShellTargets", () => {
         applyProjectWorkspaceChange: vi.fn(),
       },
       {
+        setPendingViewportCanvasSize,
+        confirmViewportCanvasRegenerate,
+      },
+      {
         persistLanguage: vi.fn(),
         persistTheme,
         persistNavigationCollapsed: vi.fn(),
       },
     );
 
-    await targets.openEditor("editStates");
-    expect(openEditor).toHaveBeenCalledWith("editStates");
+    await targets.openEditor("stateWorkbench");
+    expect(openEditor).toHaveBeenCalledWith("stateWorkbench");
     expect(targets.resolveFocusGeometry(focus)).toBe(focusGeometry);
     targets.applyRulesPack(state, rules);
     expect(applyRulesPack).toHaveBeenCalledWith(state, rules);
     expect(targets.applyCanvasPaintPreview(state, preview)).toBe(true);
     expect(applyCanvasPaintPreview).toHaveBeenCalledWith(state, preview);
+    targets.setPendingViewportCanvasSize(1440, 900);
+    expect(setPendingViewportCanvasSize).toHaveBeenCalledWith(1440, 900);
+    expect(targets.confirmViewportCanvasRegenerate("zh-CN", 1440, 900)).toBe(
+      true,
+    );
+    expect(confirmViewportCanvasRegenerate).toHaveBeenCalledWith(
+      "zh-CN",
+      1440,
+      900,
+    );
     targets.persistTheme("night");
     expect(persistTheme).toHaveBeenCalledWith("night");
   });

@@ -1,7 +1,13 @@
-import { forceCollide, forceSimulation, timeout } from "d3";
 import type { Burg } from "../modules/burgs-generator";
+import type { EngineRuntimeContext } from "../modules/engine-runtime-context";
 import type { State } from "../modules/states-generator";
 import { minmax, rn } from "../utils";
+import {
+  forceCollide,
+  forceSimulation,
+  timeout,
+} from "../utils/forceSimulation";
+import { createBrowserRendererContext } from "./renderer-runtime-context";
 
 declare global {
   var drawEmblems: () => void;
@@ -33,9 +39,11 @@ const getWindow = (): (Window & typeof globalThis) | undefined => {
   }
 };
 
-const emblemsRenderer = (): void => {
-  TIME && console.time("drawEmblems");
-  const { states, provinces, burgs } = pack;
+export const emblemsRenderer = (context: EngineRuntimeContext): void => {
+  context.timing.shouldTime && console.time("drawEmblems");
+  const { states, provinces, burgs } = context.pack;
+  const graphWidth = context.worldSettings.graphWidth ?? 0;
+  const graphHeight = context.worldSettings.graphHeight ?? 0;
 
   const validStates = states.filter(
     (s) => s.i && !s.removed && s.coa && s.coa.size !== 0,
@@ -88,7 +96,7 @@ const emblemsRenderer = (): void => {
 
   const sizeProvinces = getProvinceEmblemsSize();
   const provinceCOAs: EmblemNode[] = validProvinces.map((province) => {
-    const [x, y] = province.pole || pack.cells.p[province.center];
+    const [x, y] = province.pole || context.pack.cells.p[province.center];
     const size = province.coa!.size || 1;
     const shift = (sizeProvinces * size) / 2;
     return {
@@ -103,7 +111,7 @@ const emblemsRenderer = (): void => {
 
   const sizeStates = getStateEmblemsSize();
   const stateCOAs: EmblemNode[] = validStates.map((state) => {
-    const [x, y] = state.pole || pack.cells.p[state.center!];
+    const [x, y] = state.pole || context.pack.cells.p[state.center!];
     const size = state.coa!.size || 1;
     const shift = (sizeStates * size) / 2;
     return {
@@ -180,21 +188,25 @@ const emblemsRenderer = (): void => {
     invokeActiveZooming();
   });
 
-  TIME && console.timeEnd("drawEmblems");
+  context.timing.shouldTime && console.timeEnd("drawEmblems");
 };
 
 const getDataAndType = (
+  context: EngineRuntimeContext,
   id: string,
 ): [Burg[] | Province[] | State[], string] => {
-  if (id === "burgEmblems") return [pack.burgs, "burg"];
+  if (id === "burgEmblems") return [context.pack.burgs, "burg"];
   if (id === "provinceEmblems")
-    return [pack.provinces as Province[], "province"];
-  if (id === "stateEmblems") return [pack.states, "state"];
+    return [context.pack.provinces as Province[], "province"];
+  if (id === "stateEmblems") return [context.pack.states, "state"];
   throw new Error(`Unknown emblem type: ${id}`);
 };
 
-const renderGroupCOAsRenderer = async (g: SVGGElement): Promise<void> => {
-  const [data, type] = getDataAndType(g.id);
+const renderGroupCOAsRenderer = async (
+  context: EngineRuntimeContext,
+  g: SVGGElement,
+): Promise<void> => {
+  const [data, type] = getDataAndType(context, g.id);
 
   for (const use of g.children) {
     const i = +(use as SVGUseElement).dataset.i!;
@@ -206,6 +218,8 @@ const renderGroupCOAsRenderer = async (g: SVGGElement): Promise<void> => {
 
 const runtimeWindow = getWindow();
 if (runtimeWindow) {
-  runtimeWindow.drawEmblems = emblemsRenderer;
-  runtimeWindow.renderGroupCOAs = renderGroupCOAsRenderer;
+  runtimeWindow.drawEmblems = () =>
+    emblemsRenderer(createBrowserRendererContext());
+  runtimeWindow.renderGroupCOAs = (g) =>
+    renderGroupCOAsRenderer(createBrowserRendererContext(), g);
 }

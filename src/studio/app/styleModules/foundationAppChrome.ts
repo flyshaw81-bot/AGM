@@ -37,7 +37,7 @@ export const foundationAppChromeStyles = `    .studio-app {
       gap: 12px;
       padding: 8px 10px;
       background:
-        linear-gradient(180deg, color-mix(in srgb, var(--agm-surface-dark-2) 94%, var(--studio-accent) 4%), color-mix(in srgb, var(--agm-surface-dark) 98%, #000000)),
+        linear-gradient(180deg, color-mix(in srgb, var(--agm-surface-dark-2) 94%, var(--studio-accent) 4%), color-mix(in srgb, var(--agm-surface-dark) 98%, #08111a)),
         var(--agm-surface-dark-2);
       border-bottom-color: var(--studio-accent-18);
       box-shadow:
@@ -63,7 +63,7 @@ export const foundationAppChromeStyles = `    .studio-app {
       border-top: 1px solid var(--studio-accent-14);
       border-bottom: 0;
       font-size: 12px;
-      color: #b8ad99;
+      color: #7f909a;
     }
 
     .studio-statusbar__meta,
@@ -91,7 +91,7 @@ export const foundationAppChromeStyles = `    .studio-app {
       height: 26px;
       padding: 0 7px;
       border-radius: 8px;
-      background: rgba(8, 8, 7, 0.64);
+      background: rgba(8, 17, 26, 0.64);
     }
 
     .studio-statusbar .studio-theme-select__label {
@@ -109,7 +109,7 @@ export const foundationAppChromeStyles = `    .studio-app {
       height: 26px;
       padding: 2px;
       border-radius: 8px;
-      background: rgba(8, 8, 7, 0.64);
+      background: rgba(8, 17, 26, 0.64);
     }
 
     .studio-statusbar .studio-language-switch .studio-segment__button {
@@ -143,7 +143,7 @@ export const foundationAppChromeStyles = `    .studio-app {
       border-radius: 6px;
       border: 1px solid var(--studio-accent-14);
       background:
-        linear-gradient(180deg, color-mix(in srgb, var(--agm-surface-dark-2) 90%, var(--studio-accent) 6%), color-mix(in srgb, var(--agm-surface-dark) 96%, #000000)),
+        linear-gradient(180deg, color-mix(in srgb, var(--agm-surface-dark-2) 90%, var(--studio-accent) 6%), color-mix(in srgb, var(--agm-surface-dark) 96%, #08111a)),
         var(--agm-surface-dark-2);
       box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.035),

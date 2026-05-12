@@ -1,3 +1,7 @@
+import {
+  createGlobalRenderAdapter,
+  type EngineRenderAdapter,
+} from "../../modules/engine-render-adapter";
 import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 import type { AgmWritableBiomeData } from "./engineActionTypes";
 import { getEngineBiomeData } from "./engineResourceSummary";
@@ -38,11 +42,15 @@ export function createRuntimeBiomeDataLookupAdapter(
   };
 }
 
-export function createGlobalBiomeRedrawAdapter(): EngineBiomeRedrawAdapter {
+export function createGlobalBiomeRedrawAdapter(
+  rendering: Pick<
+    EngineRenderAdapter,
+    "drawBiomes"
+  > = createGlobalRenderAdapter(),
+): EngineBiomeRedrawAdapter {
   return {
     redrawBiomes: () => {
-      if (typeof (globalThis as any).drawBiomes === "function")
-        (globalThis as any).drawBiomes();
+      rendering.drawBiomes?.();
     },
   };
 }

@@ -13,6 +13,50 @@ export const STUDIO_LANGUAGE_STORAGE_KEY = "agm-studio-language";
 export const STUDIO_THEME_STORAGE_KEY = "agm-studio-theme";
 export const STUDIO_NAVIGATION_COLLAPSED_STORAGE_KEY =
   "agm-studio-navigation-collapsed";
+export const STUDIO_LAYER_CARDS_STORAGE_KEY = "agm-studio-layer-cards";
+
+const DEFAULT_LAYER_CARDS = [
+  "toggleCells",
+  "toggleBiomes",
+  "toggleRivers",
+  "toggleRelief",
+  "toggleBorders",
+  "toggleRoutes",
+  "toggleReligions",
+  "toggleMarkers",
+  "toggleStates",
+  "toggleLabels",
+] as const;
+
+export type LayerCardKey = string;
+
+export function getInitialLayerCards(
+  targets: Pick<
+    StudioPreferenceTargets,
+    "getStorageItem"
+  > = createGlobalStudioPreferenceTargets(),
+): LayerCardKey[] {
+  try {
+    const raw = targets.getStorageItem(STUDIO_LAYER_CARDS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length === 10) return parsed as LayerCardKey[];
+    }
+  } catch {
+    // invalid storage → fall back to default
+  }
+  return [...DEFAULT_LAYER_CARDS];
+}
+
+export function persistLayerCards(
+  cards: LayerCardKey[],
+  targets: Pick<
+    StudioPreferenceTargets,
+    "setStorageItem"
+  > = createGlobalStudioPreferenceTargets(),
+) {
+  targets.setStorageItem(STUDIO_LAYER_CARDS_STORAGE_KEY, JSON.stringify(cards.slice(0, 10)));
+}
 
 export function getInitialLanguage(
   targets: Pick<

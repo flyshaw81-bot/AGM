@@ -12,6 +12,14 @@ function getWindow(): (Window & typeof globalThis) | undefined {
   }
 }
 
+function getDocument(): Document | undefined {
+  try {
+    return globalThis.document;
+  } catch {
+    return undefined;
+  }
+}
+
 type AttributeTarget = {
   attr: (name: string, value: unknown) => AttributeTarget;
   select?: (selector: string) => AttributeTarget;
@@ -45,11 +53,55 @@ function getInputNumber(name: string): number {
   return Number(input?.value ?? 0);
 }
 
+function createDomAttributeTarget(elements: Element[]): AttributeTarget {
+  const target: AttributeTarget = {
+    attr: (name, value) => {
+      for (const element of elements) element.setAttribute(name, String(value));
+      return target;
+    },
+    select: (selector) =>
+      createDomAttributeTarget(
+        elements.flatMap((element) =>
+          Array.from(element.querySelectorAll(selector)).slice(0, 1),
+        ),
+      ),
+    selectAll: (selector) =>
+      createDomAttributeTarget(
+        elements.flatMap((element) =>
+          Array.from(element.querySelectorAll(selector)),
+        ),
+      ),
+  };
+
+  return target;
+}
+
+function getDomRoot(name: string): Element | null {
+  const document = getDocument();
+  if (!document) return null;
+  if (name === "defs") return document.querySelector("defs");
+  return document.getElementById(name);
+}
+
+function selectFromDom(name: string, selector: string): AttributeTarget {
+  const root = getDomRoot(name);
+  const element = root?.querySelector(selector);
+  return element ? createDomAttributeTarget([element]) : inertAttributeTarget;
+}
+
+function selectAllFromDom(name: string, selector: string): AttributeTarget {
+  const root = getDomRoot(name);
+  const elements = root ? Array.from(root.querySelectorAll(selector)) : [];
+  return elements.length
+    ? createDomAttributeTarget(elements)
+    : inertAttributeTarget;
+}
+
 function selectFromGlobal(name: string, selector: string): AttributeTarget {
   return (
     getGlobalValue<{ select?: (selector: string) => AttributeTarget }>(
       name,
-    )?.select?.(selector) ?? inertAttributeTarget
+    )?.select?.(selector) ?? selectFromDom(name, selector)
   );
 }
 
@@ -57,7 +109,7 @@ function selectAllFromGlobal(name: string, selector: string): AttributeTarget {
   return (
     getGlobalValue<{ selectAll?: (selector: string) => AttributeTarget }>(
       name,
-    )?.selectAll?.(selector) ?? inertAttributeTarget
+    )?.selectAll?.(selector) ?? selectAllFromDom(name, selector)
   );
 }
 

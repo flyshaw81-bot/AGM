@@ -5,16 +5,6 @@ import {
   type EngineEditorTargets,
 } from "./engineEditorTargets";
 
-const EDITOR_DIALOG_IDS = {
-  editStates: "statesEditor",
-  editCultures: "culturesEditor",
-  editReligions: "religionsEditor",
-  editBiomes: "biomesEditor",
-  editProvinces: "provincesEditor",
-  editZones: "zonesEditor",
-  editDiplomacy: "diplomacyEditor",
-} satisfies Record<EditorAction, string>;
-
 export function getEngineEditorAvailability(
   targets = createGlobalEngineEditorTargets(),
 ) {
@@ -23,16 +13,11 @@ export function getEngineEditorAvailability(
   ) as Record<EditorAction, boolean>;
 }
 
-export function getEngineEditorDialogId(action: EditorAction) {
-  return EDITOR_DIALOG_IDS[action];
-}
-
 export function isEngineEditorOpen(
-  action: EditorAction,
-  targets = createGlobalEngineEditorTargets(),
+  _action: EditorAction,
+  _targets = createGlobalEngineEditorTargets(),
 ) {
-  const dialogId = getEngineEditorDialogId(action);
-  return targets.isDialogOpen(dialogId);
+  return false;
 }
 
 export function getOpenEngineEditor(
@@ -54,22 +39,16 @@ export function syncEngineEditorState(
 }
 
 export function closeEngineEditor(
-  action: EditorAction,
+  _action: EditorAction,
   targets = createGlobalEngineEditorTargets(),
 ) {
-  const dialogId = getEngineEditorDialogId(action);
-  targets.closeDialog(dialogId);
+  targets.closeDialog("studioEngineEditor");
 }
 
 export async function openEngineEditor(
   action: EditorAction,
   targets: EngineEditorTargets = createGlobalEngineEditorTargets(),
 ) {
-  EDITOR_ACTIONS.filter((editorAction) => editorAction !== action).forEach(
-    (editorAction) => {
-      closeEngineEditor(editorAction, targets);
-    },
-  );
-
+  closeEngineEditor(action, targets);
   await targets.runEditorHandler(action);
 }

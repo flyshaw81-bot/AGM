@@ -15,6 +15,7 @@ describe("directWorkbenchDefaults", () => {
       province: { provinceSearchQuery: "", provinceFilterMode: "all" },
       route: { routeSearchQuery: "", routeFilterMode: "all" },
       zone: { zoneSearchQuery: "", zoneFilterMode: "all" },
+      marker: { markerSearchQuery: "", markerFilterMode: "all" },
       diplomacy: { diplomacySearchQuery: "", diplomacyFilterMode: "all" },
       biome: { biomeSearchQuery: "", biomeFilterMode: "all" },
     });

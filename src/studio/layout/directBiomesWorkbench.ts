@@ -4,6 +4,7 @@ import type {
   StudioLanguage,
   StudioState,
 } from "../types";
+import { renderBiomeDistributionInsights } from "./biomeInsightsPanel";
 import {
   filterAndSortDirectBiomes,
   getActiveDirectBiomes,
@@ -15,10 +16,63 @@ import {
   getDirectWorkbenchEditStatus,
   limitDirectWorkbenchRows,
   renderDirectSelectOptions,
-  renderDirectWorkbenchEditStatus,
+  renderDirectWorkbenchFormActions,
 } from "./directWorkbenchShared";
-import { renderFocusButton } from "./focusControls";
-import { escapeHtml, t } from "./shellShared";
+import { renderDirectWorkbenchEntityRow } from "./directWorkbenchViewParts";
+import { getDirectEditorFieldsByScope } from "./editorResponsibilityModel";
+import { escapeHtml, studioIcon, t } from "./shellShared";
+
+function renderNativeBiomeListHeader(
+  language: StudioLanguage,
+  activeCount: number,
+  visibleCount: number,
+) {
+  return `<div class="studio-native-identity__list-title">
+    <div>
+      <h3>${t(language, "生物群系列表", "Biome list")}</h3>
+    </div>
+    <strong>${visibleCount}/${activeCount}</strong>
+  </div>`;
+}
+
+function renderBiomeSectionLabel(label: string, icon: string) {
+  return `<div class="studio-native-identity-detail__section-label">${studioIcon(icon, "studio-native-identity-detail__section-icon")}<span>${escapeHtml(label)}</span></div>`;
+}
+
+function renderBiomeFieldsAttribute(scope: "owned" | "readonly") {
+  const labels = getDirectEditorFieldsByScope("biomes", scope).map(
+    (field) => field.label,
+  );
+  return `data-editor-fields="${escapeHtml(labels.join(","))}"`;
+}
+
+function renderNativeBiomeReadonlyGrid(
+  selectedBiome: EngineBiomeSummaryItem,
+  language: StudioLanguage,
+) {
+  const rows = [
+    {
+      label: t(language, "生物群系 ID", "Biome ID"),
+      value: selectedBiome.id,
+    },
+    {
+      label: t(language, "移动成本", "Movement cost"),
+      value: selectedBiome.movementCost ?? "-",
+    },
+    {
+      label: t(language, "图标密度", "Icon density"),
+      value: selectedBiome.iconDensity ?? "-",
+    },
+  ];
+
+  return `<div class="studio-native-identity__readonly">
+    ${rows.map((row) => `<div class="studio-native-identity__kv"><span>${escapeHtml(row.label)}</span><strong>${escapeHtml(String(row.value))}</strong></div>`).join("")}
+  </div>`;
+}
+
+function getBiomeMeta(biome: EngineBiomeSummaryItem, language: StudioLanguage) {
+  return `${t(language, "适居", "habitability")} ${biome.habitability ?? "-"} / ${escapeHtml(biome.agmResourceTag || t(language, "未标记", "untagged"))}`;
+}
 
 export function renderDirectBiomesWorkbench(
   biomes: EngineBiomeSummaryItem[],
@@ -37,7 +91,6 @@ export function renderDirectBiomesWorkbench(
     activeBiomes,
     directEditor.selectedBiomeId,
   );
-  const selectedColor = getDirectBiomeColor(selectedBiome);
   const biomeStatus = getDirectWorkbenchEditStatus(
     Boolean(
       selectedBiome && directEditor.lastAppliedBiomeId === selectedBiome.id,
@@ -62,97 +115,101 @@ export function renderDirectBiomesWorkbench(
     "sacred",
     "trade",
   ];
-  const renderBiomeRow = (biome: EngineBiomeSummaryItem, selected: boolean) => `
-    <button class="studio-state-row${selected ? " is-active" : ""}" data-studio-action="direct-biome-select" data-biome-id="${biome.id}">
-      <span class="studio-state-row__swatch" style="background: ${escapeHtml(getDirectBiomeColor(biome))}"></span>
-      <span class="studio-state-row__main"><strong>${escapeHtml(biome.name)}</strong><small>${t(language, "适居", "habitability")} ${biome.habitability ?? "-"} · ${escapeHtml(biome.agmResourceTag || t(language, "untagged", "untagged"))}</small></span>
-      <span class="studio-state-row__metric">#${biome.id}</span>
-    </button>
-  `;
+  const visibleBiomes = limitDirectWorkbenchRows(filteredBiomes);
 
   return `
-    <section id="studioDirectBiomesWorkbench" class="studio-panel studio-direct-editor studio-direct-biome-editor" data-direct-workbench="biomes">
-      <div class="studio-direct-editor__header">
-        <div>
-          <div class="studio-panel__eyebrow">${t(language, "AGM editor", "AGM editor")}</div>
-          <h2 class="studio-panel__hero">${t(language, "Biomes / Resources Workbench", "Biomes / Resources Workbench")}</h2>
+    <section id="studioDirectBiomesWorkbench" class="studio-native-identity studio-native-identity--biomes studio-direct-editor studio-direct-biome-editor" data-native-biome-drawer="true" data-direct-workbench="biomes">
+      <aside class="studio-native-identity__list">
+        ${renderNativeBiomeListHeader(language, activeBiomes.length, filteredBiomes.length)}
+        <label class="studio-native-identity__search">
+          ${studioIcon("search", "studio-native-identity__search-icon")}
+          <input id="studioBiomeSearchInput" type="search" value="${escapeHtml(directEditor.biomeSearchQuery)}" placeholder="${t(language, "Name, ID or resource tag", "Name, ID or resource tag")}" autocomplete="off" />
+        </label>
+        <div class="studio-native-identity__filters">
+          <label class="studio-native-identity__select">
+            <span>${t(language, "筛选", "Filter")}</span>
+            <select id="studioBiomeFilterSelect">
+              ${renderDirectSelectOptions(filterOptions, directEditor.biomeFilterMode)}
+            </select>
+          </label>
+          <div class="studio-native-identity__count"><span>${t(language, "当前列表", "Current list")}</span><strong>${filteredBiomes.length}</strong></div>
         </div>
-        <div class="studio-direct-editor__badge">${t(language, "直接编辑", "Direct edit")}</div>
-      </div>
-      <p class="studio-panel__text">${t(language, "Bring biome resource rules into AGM: search biomes, focus the map, and maintain habitability, rule weight, and resource tags directly.", "Bring biome resource rules into AGM: search biomes, focus the map, and maintain habitability, rule weight, and resource tags directly.")}</p>
-      <div class="studio-direct-state-controls">
-        <label class="studio-stack-field studio-state-search-field">
-          <span>${t(language, "搜索生物群系", "Search biomes")}</span>
-          <input id="studioBiomeSearchInput" class="studio-input" type="search" value="${escapeHtml(directEditor.biomeSearchQuery)}" placeholder="${t(language, "Name, ID or resource tag", "Name, ID or resource tag")}" autocomplete="off" />
-        </label>
-        <label class="studio-stack-field">
-          <span>${t(language, "Filter", "Filter")}</span>
-          <select id="studioBiomeFilterSelect">
-            ${renderDirectSelectOptions(filterOptions, directEditor.biomeFilterMode)}
-          </select>
-        </label>
-        <div class="studio-kv"><span>${t(language, "当前列表", "Current list")}</span><strong>${filteredBiomes.length}</strong></div>
-      </div>
-      <div class="studio-direct-states">
-        <div class="studio-direct-states__list">
+        <div class="studio-native-identity__rows">
           ${
-            limitDirectWorkbenchRows(filteredBiomes)
+            visibleBiomes
               .map((biome) =>
-                renderBiomeRow(biome, biome.id === selectedBiome?.id),
+                renderDirectWorkbenchEntityRow({
+                  action: "direct-biome-select",
+                  color: getDirectBiomeColor(biome),
+                  id: biome.id,
+                  idDataAttribute: "biome-id",
+                  meta: getBiomeMeta(biome, language),
+                  metric: `#${biome.id}`,
+                  selected: biome.id === selectedBiome?.id,
+                  title: biome.name,
+                }),
               )
               .join("") ||
-            `<div class="studio-panel__text">${t(language, "No matching biomes", "No matching biomes")}</div>`
+            `<div class="studio-native-identity__empty">${t(language, "没有匹配的生物群系", "No matching biomes")}</div>`
           }
         </div>
-        <div class="studio-direct-states__detail">
-          <div class="studio-state-inspector__hero" style="--state-color: ${escapeHtml(selectedColor)}">
-            <span class="studio-state-inspector__color-ring"></span>
-            <div>
-              <div class="studio-panel__eyebrow">${t(language, "当前选中", "Selected")}</div>
-              <h3 class="studio-panel__title">${selectedBiome ? escapeHtml(selectedBiome.name) : "-"}</h3>
-            </div>
-          </div>
+      </aside>
+      <div class="studio-native-identity__divider"></div>
+      <article class="studio-native-identity__detail-wrap">
+        <div class="studio-native-identity-detail" data-native-biome-detail="true">
+          ${renderBiomeDistributionInsights(language, selectedBiome?.id ?? null, { palette: "atlas" })}
           ${
             selectedBiome
               ? `
-            <div class="studio-state-editor-grid">
-              <label class="studio-stack-field studio-state-field">
-                <span>${t(language, "Habitability", "Habitability")}</span>
-                <input id="studioBiomeHabitabilityInput" type="number" min="0" max="100" step="1" value="${selectedBiome.habitability ?? 0}" />
-              </label>
-              <label class="studio-stack-field studio-state-field">
-                <span>${t(language, "规则权重", "Rule weight")}</span>
-                <input id="studioBiomeRuleWeightInput" type="number" min="0" max="5" step="0.1" value="${selectedBiome.agmRuleWeight ?? 1}" />
-              </label>
-              <label class="studio-stack-field studio-state-field">
-                <span>${t(language, "资源标签", "Resource tag")}</span>
-                <select id="studioBiomeResourceTagSelect">
-                  ${renderDirectSelectOptions(
-                    resourceTagOptions.map((option) => ({
-                      value: option,
-                      label: option,
-                    })),
-                    selectedBiome.agmResourceTag || "starter-biome",
-                  )}
-                </select>
-              </label>
-            </div>
-            <div class="studio-state-readonly-grid">
-              <div class="studio-kv"><span>${t(language, "生物群系 ID", "Biome ID")}</span><strong>${selectedBiome.id}</strong></div>
-              <div class="studio-kv"><span>${t(language, "移动成本", "Movement cost")}</span><strong>${selectedBiome.movementCost ?? "-"}</strong></div>
-              <div class="studio-kv"><span>${t(language, "图标密度", "Icon density")}</span><strong>${selectedBiome.iconDensity ?? "-"}</strong></div>
-            </div>
+            <section class="studio-native-identity-detail__section" data-editor-scope="owned" ${renderBiomeFieldsAttribute("owned")}>
+              ${renderBiomeSectionLabel(t(language, "AGM 资源规则", "AGM resource rules"), "leaf")}
+              <div class="studio-native-identity-detail__form">
+                <label class="studio-native-identity-field">
+                  <span>${t(language, "Habitability", "Habitability")}</span>
+                  <input id="studioBiomeHabitabilityInput" class="studio-input" type="number" min="0" max="100" step="1" value="${selectedBiome.habitability ?? 0}" />
+                </label>
+                <label class="studio-native-identity-field">
+                  <span>${t(language, "规则权重", "Rule weight")}</span>
+                  <input id="studioBiomeRuleWeightInput" class="studio-input" type="number" min="0" max="5" step="0.1" value="${selectedBiome.agmRuleWeight ?? 1}" />
+                </label>
+                <label class="studio-native-identity-field">
+                  <span>${t(language, "资源标签", "Resource tag")}</span>
+                  <select id="studioBiomeResourceTagSelect" class="studio-input">
+                    ${renderDirectSelectOptions(
+                      resourceTagOptions.map((option) => ({
+                        value: option,
+                        label: option,
+                      })),
+                      selectedBiome.agmResourceTag || "starter-biome",
+                    )}
+                  </select>
+                </label>
+              </div>
+            </section>
+            <section class="studio-native-identity-detail__advanced" data-editor-scope="readonly" ${renderBiomeFieldsAttribute("readonly")}>
+              <div class="studio-native-identity-detail__advanced-title">
+                ${studioIcon("book-open", "studio-native-identity-detail__section-icon")}
+                <span>${t(language, "技术信息", "Technical info")}</span>
+              </div>
+              ${renderNativeBiomeReadonlyGrid(selectedBiome, language)}
+            </section>
           `
+              : `<div class="studio-native-identity__empty">${t(language, "没有选中的生物群系", "No biome selected")}</div>`
+          }
+          ${
+            selectedBiome
+              ? renderDirectWorkbenchFormActions({
+                  applyAction: "direct-biome-apply",
+                  attributes: { "biome-id": selectedBiome.id },
+                  language,
+                  resetAction: "direct-biome-reset",
+                  status: biomeStatus,
+                  statusId: "studioBiomeEditStatus",
+                })
               : ""
           }
-          <div class="studio-panel__actions studio-state-inspector__actions">
-            ${selectedBiome ? renderDirectWorkbenchEditStatus("studioBiomeEditStatus", language, biomeStatus) : ""}
-            ${selectedBiome ? `<button class="studio-primary-action" data-studio-action="direct-biome-apply" data-biome-id="${selectedBiome.id}">${t(language, "应用修改", "Apply changes")}</button>` : ""}
-            ${selectedBiome ? `<button class="studio-ghost" data-studio-action="direct-biome-reset" data-biome-id="${selectedBiome.id}">${t(language, "重置", "Reset")}</button>` : ""}
-            ${selectedBiome ? renderFocusButton("biome", selectedBiome.id, selectedBiome.name, "focus", language) : ""}
-          </div>
         </div>
-      </div>
+      </article>
     </section>
   `;
 }

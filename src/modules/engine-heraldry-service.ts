@@ -1,4 +1,9 @@
 import { rw } from "../utils/probabilityUtils";
+import EmblemGeneratorModule, {
+  createGlobalEmblemShapeTargets,
+  createRuntimeEmblemRuntimeTargets,
+} from "./emblem/generator";
+import type { EngineRuntimeContext } from "./engine-runtime-context";
 
 export type EngineHeraldryService = {
   generate: (
@@ -58,6 +63,28 @@ export function createGlobalHeraldryServiceTargets(): EngineHeraldryServiceTarge
 
 export function createGlobalHeraldryService(): EngineHeraldryService {
   return createEngineHeraldryService(createGlobalHeraldryServiceTargets());
+}
+
+export function createRuntimeHeraldryServiceTargets(
+  context: EngineRuntimeContext,
+): EngineHeraldryServiceTargets {
+  const module = new EmblemGeneratorModule(
+    createGlobalEmblemShapeTargets(),
+    createRuntimeEmblemRuntimeTargets(context),
+  ) as EngineHeraldryModule;
+
+  return {
+    getHeraldryModule: () => module,
+    pickWeighted: rw,
+  };
+}
+
+export function createRuntimeHeraldryService(
+  context: EngineRuntimeContext,
+): EngineHeraldryService {
+  return createEngineHeraldryService(
+    createRuntimeHeraldryServiceTargets(context),
+  );
 }
 
 function getGlobalValue<T>(name: string): T | undefined {

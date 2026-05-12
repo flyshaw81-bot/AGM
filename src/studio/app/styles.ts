@@ -1,5 +1,7 @@
 import { directWorkbenchStyles } from "./styleModules/directWorkbench";
+import { experimentalV8Styles } from "./styleModules/experimentalV8";
 import { foundationStyles } from "./styleModules/foundation";
+import { nativeShellStyles } from "./styleModules/nativeShell";
 import { panelsAndEditorsStyles } from "./styleModules/panelsAndEditors";
 import { themeSystemStyles } from "./styleModules/themeSystem";
 import { workspaceLayoutStyles } from "./styleModules/workspaceLayout";
@@ -20,6 +22,8 @@ const STUDIO_STYLE_SHEETS = [
   workspaceLayoutStyles,
   panelsAndEditorsStyles,
   themeSystemStyles,
+  nativeShellStyles,
+  experimentalV8Styles,
 ];
 
 export function injectStudioStyles(

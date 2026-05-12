@@ -1,16 +1,67 @@
-import type { StudioSection } from "../types";
+import type { StudioEditorModule, StudioSection } from "../types";
+import { getDirectWorkbenchModuleForTarget } from "./directWorkbenchTargets";
 import { bindActionClick } from "./studioEventBinding";
 
 type DirectWorkbenchNavigationOptions = {
+  onEditorModuleChange: (module: StudioEditorModule) => void;
   onSectionChange: (section: StudioSection) => void;
 };
 
+const ENTITY_PARENT_MODULES: readonly StudioEditorModule[] = [
+  "states",
+  "cultures",
+  "religions",
+  "provinces",
+  "burgs",
+  "diplomacy",
+];
+
+const MAP_FEATURE_PARENT_MODULES: readonly StudioEditorModule[] = [
+  "routes",
+  "markers",
+  "zones",
+];
+
+function isV8IconbarParentActive(
+  item: HTMLElement,
+  module: StudioEditorModule | null,
+) {
+  if (!item.closest(".studio-native-iconbar")) return false;
+  if (item.dataset.value === "states") {
+    return Boolean(module && ENTITY_PARENT_MODULES.includes(module));
+  }
+  if (item.dataset.value === "mapFeatures") {
+    return Boolean(module && MAP_FEATURE_PARENT_MODULES.includes(module));
+  }
+  return item.dataset.value === module;
+}
+
 export function bindDirectWorkbenchNavigationEvents({
+  onEditorModuleChange,
   onSectionChange,
 }: DirectWorkbenchNavigationOptions) {
+  const markActiveDirectWorkbenchButton = (targetId: string) => {
+    const module = getDirectWorkbenchModuleForTarget(targetId);
+    document
+      .querySelectorAll<HTMLElement>(
+        "[data-studio-action='direct-workbench-jump']",
+      )
+      .forEach((item) => {
+        const active =
+          item.dataset.workbenchTarget === targetId ||
+          isV8IconbarParentActive(item, module);
+        item.classList.toggle("is-active", active);
+        item.setAttribute("aria-pressed", active ? "true" : "false");
+      });
+  };
+
   const jumpToDirectWorkbench = (targetId: string) => {
     const target = document.getElementById(targetId);
     if (!target) return;
+    const compatibilityDrawer = target.closest<HTMLDetailsElement>(
+      "details[data-native-editor-compat='true']",
+    );
+    if (compatibilityDrawer) compatibilityDrawer.open = true;
     document
       .querySelectorAll<HTMLElement>(".studio-direct-editor.is-jump-highlight")
       .forEach((panel) => {
@@ -23,25 +74,29 @@ export function bindDirectWorkbenchNavigationEvents({
 
   const openDirectWorkbench = (targetId: string) => {
     if (!targetId) return;
+    const module = getDirectWorkbenchModuleForTarget(targetId);
+    if (module) {
+      onEditorModuleChange(module);
+      window.setTimeout(() => {
+        markActiveDirectWorkbenchButton(targetId);
+        jumpToDirectWorkbench(targetId);
+      }, 0);
+      return;
+    }
     if (document.getElementById(targetId)) {
       jumpToDirectWorkbench(targetId);
       return;
     }
     onSectionChange("editors");
-    window.setTimeout(() => jumpToDirectWorkbench(targetId), 0);
+    window.setTimeout(() => {
+      markActiveDirectWorkbenchButton(targetId);
+      jumpToDirectWorkbench(targetId);
+    }, 0);
   };
 
   bindActionClick("direct-workbench-jump", (button) => {
     const targetId = button.dataset.workbenchTarget || "";
-    if (!document.getElementById(targetId)) return;
-    document
-      .querySelectorAll<HTMLElement>(
-        "[data-studio-action='direct-workbench-jump'].is-active",
-      )
-      .forEach((item) => {
-        item.classList.remove("is-active");
-      });
-    button.classList.add("is-active");
+    markActiveDirectWorkbenchButton(targetId);
     openDirectWorkbench(targetId);
   });
 

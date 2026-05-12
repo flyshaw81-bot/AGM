@@ -4,6 +4,7 @@ import type {
   getEngineTopbarActions,
 } from "../bridge/engineActions";
 import type { StudioState } from "../types";
+import type { RelationshipRepairHealth } from "./directRelationshipRepairHealth";
 import { renderProjectCenterOverviewSection } from "./projectCenterOverviewSection";
 import { renderProjectDeliveryStatusSection } from "./projectDeliveryStatusSection";
 import { renderProjectDocumentSection } from "./projectDocumentSection";
@@ -14,6 +15,7 @@ export function renderProjectCenter(
   projectSummary: ReturnType<typeof getEngineProjectSummary>,
   dataActions: ReturnType<typeof getEngineDataActions>,
   topbarActions: ReturnType<typeof getEngineTopbarActions>,
+  relationshipRepairHealth?: RelationshipRepairHealth,
 ) {
   const activeProject = state.projectCenter.recentProjects.find(
     (project) => project.id === state.projectCenter.activeProjectId,
@@ -23,6 +25,10 @@ export function renderProjectCenter(
     ${renderProjectCenterOverviewSection(state, topbarActions)}
     ${renderProjectDocumentSection(state, projectSummary, dataActions)}
     ${renderProjectRecentProjectsSection(state)}
-    ${renderProjectDeliveryStatusSection(state, activeProject)}
+    ${renderProjectDeliveryStatusSection(
+      state,
+      activeProject,
+      relationshipRepairHealth,
+    )}
   `;
 }

@@ -1,18 +1,16 @@
-import { mean, quadtree } from "d3";
-import { clipPolyline } from "lineclip";
-import type { PackedGraph } from "../types/PackedGraph";
+﻿import type { PackedGraph } from "../types/PackedGraph";
 import { unique } from "../utils/arrayUtils";
 import {
   findAllCellsInRadius,
   findClosestCell,
   isWater,
 } from "../utils/graphUtils";
+import { clipPolyline } from "../utils/lineclip";
 import { rn } from "../utils/numberUtils";
 import { getPolesOfInaccessibility } from "../utils/pathUtils";
-import {
-  type EngineRuntimeContext,
-  getGlobalEngineRuntimeContext,
-} from "./engine-runtime-context";
+import { quadtree } from "../utils/quadtree";
+import { mean } from "../utils/statUtils";
+import type { EngineRuntimeContext } from "./engine-runtime-context";
 import type { River } from "./river-generator";
 import type { Point } from "./voronoi";
 
@@ -57,25 +55,48 @@ export type ResamplerTargets = {
   markupPack: (context: EngineRuntimeContext) => void;
 };
 
-export function createGlobalResamplerTargets(): ResamplerTargets {
+export type GlobalResamplerCompatibilityTargets = {
+  getEngineGenerationPipeline: () => typeof EngineGenerationPipeline;
+  getMarkers: () => typeof Markers;
+  getProvinces: () => typeof Provinces;
+  getRivers: () => typeof Rivers;
+};
+
+export function createGlobalResamplerCompatibilityTargets(): GlobalResamplerCompatibilityTargets {
+  return {
+    getEngineGenerationPipeline: () => globalThis.EngineGenerationPipeline,
+    getMarkers: () => globalThis.Markers,
+    getProvinces: () => globalThis.Provinces,
+    getRivers: () => globalThis.Rivers,
+  };
+}
+
+export function createGlobalResamplerTargets(
+  compatibilityTargets: GlobalResamplerCompatibilityTargets = createGlobalResamplerCompatibilityTargets(),
+): ResamplerTargets {
   return {
     addRiverMeandering: (cells, points, meandering, context) =>
-      globalThis.Rivers.addMeandering(cells, points, meandering, context),
+      compatibilityTargets
+        .getRivers()
+        .addMeandering(cells, points, meandering, context),
     calculateClimate: (context) =>
-      globalThis.EngineGenerationPipeline.calculateClimate(context),
+      compatibilityTargets
+        .getEngineGenerationPipeline()
+        .calculateClimate(context),
     deleteMarker: (markerId, context) =>
-      globalThis.Markers.deleteMarker(markerId, context),
+      compatibilityTargets.getMarkers().deleteMarker(markerId, context),
     generateIce: (context) =>
-      globalThis.EngineGenerationPipeline.generateIce(context),
-    getProvincePoles: (context) => globalThis.Provinces.getPoles(context),
+      compatibilityTargets.getEngineGenerationPipeline().generateIce(context),
+    getProvincePoles: (context) =>
+      compatibilityTargets.getProvinces().getPoles(context),
     getRiverApproximateLength: (points) =>
-      globalThis.Rivers.getApproximateLength(points),
+      compatibilityTargets.getRivers().getApproximateLength(points),
     getRiverBasin: (riverId, context) =>
-      globalThis.Rivers.getBasin(riverId, context),
+      compatibilityTargets.getRivers().getBasin(riverId, context),
     markupGrid: (context) =>
-      globalThis.EngineGenerationPipeline.markupGrid(context),
+      compatibilityTargets.getEngineGenerationPipeline().markupGrid(context),
     markupPack: (context) =>
-      globalThis.EngineGenerationPipeline.markupPack(context),
+      compatibilityTargets.getEngineGenerationPipeline().markupPack(context),
   };
 }
 
@@ -152,11 +173,7 @@ export class Resampler {
     );
   }
 
-  private isInMap(
-    x: number,
-    y: number,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  private isInMap(x: number, y: number, context: EngineRuntimeContext) {
     const { graphWidth = 0, graphHeight = 0 } = context.worldSettings;
     return x >= 0 && x <= graphWidth && y >= 0 && y <= graphHeight;
   }
@@ -230,7 +247,7 @@ export class Resampler {
 
         river.meanderedPoints?.forEach(([parentX, parentY]) => {
           const [x, y] = projection(parentX, parentY);
-          const inMap = this.isInMap(x, y);
+          const inMap = this.isInMap(x, y, context);
           if (inMap || wasInMap) points.push([rn(x, 2), rn(y, 2)]);
           wasInMap = inMap;
         });
@@ -464,7 +481,7 @@ export class Resampler {
           graphWidth,
           graphHeight,
         ];
-        // @types/lineclip is incorrect - lineclip returns Point[][] (array of line segments), not Point[]
+        // clipPolyline returns Point[][] (array of line segments), not Point[]
         const clippedSegments = clipPolyline(
           points,
           bbox,
@@ -607,7 +624,7 @@ export class Resampler {
 
   process(
     options: ResamplerProcessOptions,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context: EngineRuntimeContext,
   ): void {
     const { projection, inverse, scale } = options;
     const parentMap = context.mapStore.createSnapshot();

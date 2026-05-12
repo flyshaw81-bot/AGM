@@ -18,6 +18,38 @@ const originalCalculateMapCoordinates = globalThis.calculateMapCoordinates;
 const originalReGraph = globalThis.reGraph;
 const originalCreateDefaultRuler = globalThis.createDefaultRuler;
 const originalShowStatistics = globalThis.showStatistics;
+const originalGridDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "grid",
+);
+const originalPackDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "pack",
+);
+const originalOptionsDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "options",
+);
+const originalBiomesDataDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "biomesData",
+);
+const originalSeedDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "seed",
+);
+const originalGraphWidthDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "graphWidth",
+);
+const originalGraphHeightDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "graphHeight",
+);
+const originalMapCoordinatesDescriptor = Object.getOwnPropertyDescriptor(
+  globalThis,
+  "mapCoordinates",
+);
 
 function createContext(): EngineRuntimeContext {
   return {
@@ -80,6 +112,22 @@ describe("createGlobalLifecycleAdapter", () => {
     globalThis.reGraph = originalReGraph;
     globalThis.createDefaultRuler = originalCreateDefaultRuler;
     globalThis.showStatistics = originalShowStatistics;
+    for (const [name, descriptor] of [
+      ["grid", originalGridDescriptor],
+      ["pack", originalPackDescriptor],
+      ["options", originalOptionsDescriptor],
+      ["biomesData", originalBiomesDataDescriptor],
+      ["seed", originalSeedDescriptor],
+      ["graphWidth", originalGraphWidthDescriptor],
+      ["graphHeight", originalGraphHeightDescriptor],
+      ["mapCoordinates", originalMapCoordinatesDescriptor],
+    ] as const) {
+      if (descriptor) {
+        Object.defineProperty(globalThis, name, descriptor);
+      } else {
+        delete (globalThis as Record<string, unknown>)[name];
+      }
+    }
   });
 
   it("passes explicit runtime context values into public lifecycle helpers", () => {
@@ -96,16 +144,102 @@ describe("createGlobalLifecycleAdapter", () => {
     adapter.calculateMapCoordinates(context);
     adapter.showStatistics(context);
 
-    expect(calls.addLakesInDeepDepressions).toHaveBeenCalledWith(22);
-    expect(calls.openNearSeaLakes).toHaveBeenCalledWith("archipelago");
+    expect(calls.addLakesInDeepDepressions).not.toHaveBeenCalled();
+    expect(calls.openNearSeaLakes).not.toHaveBeenCalled();
     expect(calls.OceanLayers).toHaveBeenCalledWith(context);
-    expect(calls.defineMapSize).toHaveBeenCalledWith("archipelago");
-    expect(calls.calculateMapCoordinates).toHaveBeenCalledWith({
-      mapSizePercent: 80,
-      latitudePercent: 45,
-      longitudePercent: 55,
+    expect(calls.defineMapSize).not.toHaveBeenCalled();
+    expect(calls.calculateMapCoordinates).not.toHaveBeenCalled();
+    expect(calls.showStatistics).not.toHaveBeenCalled();
+  });
+
+  it("keeps default map placement out of public helper calls", () => {
+    const originalGrid = { features: [] } as typeof grid;
+    const runtimeGrid = {
+      features: [0, { land: true, border: false }],
+    } as typeof grid;
+    const context = {
+      ...createContext(),
+      grid: runtimeGrid,
+      pack: {},
+      options: {},
+      seed: "runtime-seed",
+      biomesData: {},
+    } as unknown as EngineRuntimeContext;
+    globalThis.grid = originalGrid;
+    globalThis.defineMapSize = vi.fn();
+    const adapter = createGlobalLifecycleAdapter(() => {
+      throw new Error("explicit context should be used");
     });
-    expect(calls.showStatistics).toHaveBeenCalledWith("archipelago");
+
+    adapter.defineMapSize(context);
+
+    expect(globalThis.defineMapSize).not.toHaveBeenCalled();
+    expect(globalThis.grid).toBe(originalGrid);
+  });
+
+  it("prefers runtime graph lifecycle service over public graph helper", () => {
+    const mapGraphLifecycle = {
+      rebuildGraph: vi.fn(),
+      createDefaultRuler: vi.fn(),
+    };
+    const context = {
+      ...createContext(),
+      grid: { cells: {}, features: [] },
+      pack: {},
+      options: {},
+      seed: "runtime-seed",
+      biomesData: {},
+      mapGraphLifecycle,
+      worldSettings: {
+        ...createContext().worldSettings,
+        graphWidth: 100,
+        graphHeight: 100,
+      },
+    } as unknown as EngineRuntimeContext;
+    globalThis.reGraph = vi.fn();
+    const adapter = createGlobalLifecycleAdapter(() => {
+      throw new Error("explicit context should be used");
+    });
+
+    adapter.rebuildGraph(context);
+
+    expect(mapGraphLifecycle.rebuildGraph).toHaveBeenCalledWith();
+    expect(globalThis.reGraph).not.toHaveBeenCalled();
+  });
+
+  it("copies public map-coordinate mutations back to runtime settings", () => {
+    const context = {
+      ...createContext(),
+      grid: { cells: {}, features: [] },
+      pack: {},
+      options: {},
+      seed: "runtime-seed",
+      biomesData: {},
+      worldSettings: {
+        ...createContext().worldSettings,
+        graphWidth: 100,
+        graphHeight: 100,
+      },
+    } as EngineRuntimeContext;
+    const nextCoordinates = { latT: 90, latN: 45, latS: -45 };
+    globalThis.calculateMapCoordinates = vi.fn(() => {
+      globalThis.mapCoordinates = nextCoordinates as typeof mapCoordinates;
+    });
+    const adapter = createGlobalLifecycleAdapter(() => {
+      throw new Error("explicit context should be used");
+    });
+
+    adapter.calculateMapCoordinates(context);
+
+    expect(globalThis.calculateMapCoordinates).not.toHaveBeenCalled();
+    expect(context.worldSettings.mapCoordinates).toEqual({
+      latT: 144,
+      latN: 73.8,
+      latS: -70.2,
+      lonT: 144,
+      lonE: 61.2,
+      lonW: -82.8,
+    });
   });
 
   it("maps lifecycle context values into injected lifecycle targets", () => {
@@ -124,8 +258,11 @@ describe("createGlobalLifecycleAdapter", () => {
     adapter.createDefaultRuler(context);
     adapter.showStatistics(context);
 
-    expect(targets.addLakesInDeepDepressions).toHaveBeenCalledWith(22);
-    expect(targets.openNearSeaLakes).toHaveBeenCalledWith("archipelago");
+    expect(targets.addLakesInDeepDepressions).toHaveBeenCalledWith(context, 22);
+    expect(targets.openNearSeaLakes).toHaveBeenCalledWith(
+      context,
+      "archipelago",
+    );
     expect(targets.drawOceanLayers).toHaveBeenCalledWith(context);
     expect(targets.defineMapSize).toHaveBeenCalledWith("archipelago");
     expect(targets.calculateMapCoordinates).toHaveBeenCalledWith({
@@ -171,7 +308,7 @@ describe("createGlobalLifecycleAdapter", () => {
     adapter.defineMapSize(context);
     adapter.calculateMapCoordinates(context);
 
-    expect(targets.addLakesInDeepDepressions).toHaveBeenCalledWith(31);
+    expect(targets.addLakesInDeepDepressions).toHaveBeenCalledWith(context, 31);
     expect(targets.defineMapSize).toHaveBeenCalledWith("volcano");
     expect(targets.calculateMapCoordinates).toHaveBeenCalledWith({
       mapSizePercent: 60,
@@ -201,24 +338,32 @@ describe("createGlobalLifecycleAdapter", () => {
     adapter.openNearSeaLakes();
     adapter.calculateMapCoordinates();
 
-    expect(calls.addLakesInDeepDepressions).toHaveBeenCalledWith(22);
-    expect(calls.openNearSeaLakes).toHaveBeenCalledWith("archipelago");
-    expect(calls.calculateMapCoordinates).toHaveBeenCalledWith({
-      mapSizePercent: 80,
-      latitudePercent: 45,
-      longitudePercent: 55,
-    });
+    expect(calls.addLakesInDeepDepressions).not.toHaveBeenCalled();
+    expect(calls.openNearSeaLakes).not.toHaveBeenCalled();
+    expect(calls.calculateMapCoordinates).not.toHaveBeenCalled();
   });
 
   it("keeps graph and ruler helpers as no-argument public lifecycle calls", () => {
     const calls = installLifecycleGlobals();
-    const adapter = createGlobalLifecycleAdapter(createContext);
+    const mapGraphLifecycle = {
+      rebuildGraph: vi.fn(),
+      createDefaultRuler: vi.fn(),
+    };
+    const adapter = createGlobalLifecycleAdapter(
+      () =>
+        ({
+          ...createContext(),
+          mapGraphLifecycle,
+        }) as EngineRuntimeContext,
+    );
 
     adapter.rebuildGraph();
     adapter.createDefaultRuler();
 
-    expect(calls.reGraph).toHaveBeenCalledWith();
-    expect(calls.createDefaultRuler).toHaveBeenCalledWith();
+    expect(mapGraphLifecycle.rebuildGraph).toHaveBeenCalledWith();
+    expect(mapGraphLifecycle.createDefaultRuler).toHaveBeenCalledWith();
+    expect(calls.reGraph).not.toHaveBeenCalled();
+    expect(calls.createDefaultRuler).not.toHaveBeenCalled();
   });
 
   it("keeps public helper calls inside the default lifecycle targets", () => {
@@ -226,8 +371,8 @@ describe("createGlobalLifecycleAdapter", () => {
     const targets = createGlobalLifecycleTargets();
     const context = createContext();
 
-    targets.addLakesInDeepDepressions(22);
-    targets.openNearSeaLakes("archipelago");
+    targets.addLakesInDeepDepressions(context, 22);
+    targets.openNearSeaLakes(context, "archipelago");
     targets.drawOceanLayers(context);
     targets.defineMapSize("archipelago");
     targets.calculateMapCoordinates({
@@ -235,22 +380,17 @@ describe("createGlobalLifecycleAdapter", () => {
       latitudePercent: 45,
       longitudePercent: 55,
     });
-    targets.rebuildGraph();
     targets.createDefaultRuler();
     targets.showStatistics("archipelago");
 
-    expect(calls.addLakesInDeepDepressions).toHaveBeenCalledWith(22);
-    expect(calls.openNearSeaLakes).toHaveBeenCalledWith("archipelago");
+    expect(calls.addLakesInDeepDepressions).not.toHaveBeenCalled();
+    expect(calls.openNearSeaLakes).not.toHaveBeenCalled();
     expect(calls.OceanLayers).toHaveBeenCalledWith(context);
-    expect(calls.defineMapSize).toHaveBeenCalledWith("archipelago");
-    expect(calls.calculateMapCoordinates).toHaveBeenCalledWith({
-      mapSizePercent: 80,
-      latitudePercent: 45,
-      longitudePercent: 55,
-    });
-    expect(calls.reGraph).toHaveBeenCalledWith();
+    expect(calls.defineMapSize).not.toHaveBeenCalled();
+    expect(calls.calculateMapCoordinates).not.toHaveBeenCalled();
+    expect(calls.reGraph).not.toHaveBeenCalled();
     expect(calls.createDefaultRuler).toHaveBeenCalledWith();
-    expect(calls.showStatistics).toHaveBeenCalledWith("archipelago");
+    expect(calls.showStatistics).not.toHaveBeenCalled();
   });
 
   it("can compose lifecycle targets from runtime services", () => {
@@ -269,6 +409,7 @@ describe("createGlobalLifecycleAdapter", () => {
       addLakesInDeepDepressions: vi.fn(),
       openNearSeaLakes: vi.fn(),
       drawOceanLayers: vi.fn(),
+      isWetLand: vi.fn(() => true),
     };
     const targets = createLifecycleTargets({
       generationStatistics,
@@ -277,9 +418,11 @@ describe("createGlobalLifecycleAdapter", () => {
       waterFeatures,
     });
 
-    targets.addLakesInDeepDepressions(25);
-    targets.openNearSeaLakes("volcano");
-    targets.drawOceanLayers(createContext());
+    const waterContext = createContext();
+
+    targets.addLakesInDeepDepressions(waterContext, 25);
+    targets.openNearSeaLakes(waterContext, "volcano");
+    targets.drawOceanLayers(waterContext);
     targets.defineMapSize("peninsula");
     targets.calculateMapCoordinates({
       mapSizePercent: 50,
@@ -290,9 +433,15 @@ describe("createGlobalLifecycleAdapter", () => {
     targets.createDefaultRuler();
     targets.showStatistics("volcano");
 
-    expect(waterFeatures.addLakesInDeepDepressions).toHaveBeenCalledWith(25);
-    expect(waterFeatures.openNearSeaLakes).toHaveBeenCalledWith("volcano");
-    expect(waterFeatures.drawOceanLayers).toHaveBeenCalledWith(createContext());
+    expect(waterFeatures.addLakesInDeepDepressions).toHaveBeenCalledWith(
+      waterContext,
+      25,
+    );
+    expect(waterFeatures.openNearSeaLakes).toHaveBeenCalledWith(
+      waterContext,
+      "volcano",
+    );
+    expect(waterFeatures.drawOceanLayers).toHaveBeenCalledWith(waterContext);
     expect(mapPlacement.defineMapSize).toHaveBeenCalledWith("peninsula");
     expect(mapPlacement.calculateMapCoordinates).toHaveBeenCalledWith({
       mapSizePercent: 50,
@@ -337,6 +486,7 @@ describe("createGlobalLifecycleAdapter", () => {
       addLakesInDeepDepressions: vi.fn(),
       openNearSeaLakes: vi.fn(),
       drawOceanLayers: vi.fn(),
+      isWetLand: vi.fn(() => true),
     };
     const context = {
       ...createContext(),
@@ -350,8 +500,14 @@ describe("createGlobalLifecycleAdapter", () => {
     adapter.openNearSeaLakes(context);
     adapter.drawOceanLayers(context);
 
-    expect(waterFeatures.addLakesInDeepDepressions).toHaveBeenCalledWith(22);
-    expect(waterFeatures.openNearSeaLakes).toHaveBeenCalledWith("archipelago");
+    expect(waterFeatures.addLakesInDeepDepressions).toHaveBeenCalledWith(
+      context,
+      22,
+    );
+    expect(waterFeatures.openNearSeaLakes).toHaveBeenCalledWith(
+      context,
+      "archipelago",
+    );
     expect(waterFeatures.drawOceanLayers).toHaveBeenCalledWith(context);
     expect(targets.addLakesInDeepDepressions).not.toHaveBeenCalled();
     expect(targets.openNearSeaLakes).not.toHaveBeenCalled();

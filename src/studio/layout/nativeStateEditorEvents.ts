@@ -4,7 +4,6 @@ import {
   readNativeEntityPickerId,
   readNativeIdList,
   readNativeInputValue,
-  readNativeLineList,
   readNativeNumberValue,
 } from "./directEditorDom";
 import type { DirectEditorEventsOptions } from "./directEditorEventTypes";
@@ -61,7 +60,6 @@ export function bindNativeStateEditorEvents({
       "studioStateRuralInput",
       "studioStateUrbanInput",
       "studioStateNeighborsInput",
-      "studioStateDiplomacyInput",
     ],
   );
 
@@ -84,7 +82,6 @@ export function bindNativeStateEditorEvents({
       rural: readNativeNumberValue("studioStateRuralInput"),
       urban: readNativeNumberValue("studioStateUrbanInput"),
       neighbors: readNativeIdList("studioStateNeighborsInput"),
-      diplomacy: readNativeLineList("studioStateDiplomacyInput"),
     });
     nativeStateDirtyTracker.markSaved();
   });

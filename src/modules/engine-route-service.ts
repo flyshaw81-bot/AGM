@@ -1,4 +1,6 @@
 import type { PackedGraph } from "../types/PackedGraph";
+import { getBrowserRuntimePack } from "./engine-browser-runtime-globals";
+import { getActiveEngineRuntimeContext } from "./engine-runtime-active-context";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
 
 type EngineRouteModule = {
@@ -85,7 +87,8 @@ export function createEngineRouteService(
 export function createGlobalRouteServiceTargets(): EngineRouteServiceTargets {
   return {
     getRoutesModule: () => globalThis.Routes,
-    getPackedRoutes: () => globalThis.pack?.routes,
+    getPackedRoutes: () => getBrowserRuntimePack()?.routes,
+    getRouteContext: () => getActiveEngineRuntimeContext(),
   };
 }
 

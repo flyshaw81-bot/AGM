@@ -171,6 +171,8 @@ describe("createGlobalEngineMapHostTargets", () => {
     const runtimeWindow = {
       svgWidth: 0,
       svgHeight: 0,
+      mapWidthInput: { value: "1200" },
+      mapHeightInput: { value: "800" },
       graphWidth: 1440,
       graphHeight: 900,
       setStudioViewportSize,
@@ -241,6 +243,10 @@ describe("createGlobalEngineMapHostTargets", () => {
 
     expect(runtimeWindow.svgWidth).toBe(1440);
     expect(runtimeWindow.svgHeight).toBe(900);
+    expect(runtimeWindow.mapWidthInput.value).toBe("1200");
+    expect(runtimeWindow.mapHeightInput.value).toBe("800");
+    expect(runtimeWindow.graphWidth).toBe(1440);
+    expect(runtimeWindow.graphHeight).toBe(900);
     expect(setStudioViewportSize).toHaveBeenCalledWith(1440, 900);
     expect(frame.style).toMatchObject({
       width: "1440px",

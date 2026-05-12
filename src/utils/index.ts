@@ -96,7 +96,7 @@ import { convertTemperature, getIntegerFromSI, si } from "./unitUtils";
 
 window.convertTemperature = (
   temp: number,
-  scale: any = (window as any).temperatureScale.value || "°C",
+  scale: any = (window as any).temperatureScale || "°C",
 ) => convertTemperature(temp, scale);
 window.si = si;
 window.getInteger = getIntegerFromSI;

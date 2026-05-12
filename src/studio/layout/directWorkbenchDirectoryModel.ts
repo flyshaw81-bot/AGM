@@ -52,6 +52,9 @@ export function createDirectWorkbenchDirectoryModel(
   const activeZones = worldResources.zones.filter(
     (zone) => zone.id >= 0 && zone.name,
   );
+  const activeMarkers = worldResources.markers.filter(
+    (marker) => marker.id >= 0,
+  );
   const activeBiomes = worldResources.biomes.filter(
     (biome) => biome.id >= 0 && biome.name,
   );
@@ -179,6 +182,21 @@ export function createDirectWorkbenchDirectoryModel(
       filters: countActiveFilters(
         Boolean(directEditor.zoneSearchQuery.trim()),
         directEditor.zoneFilterMode !== "all",
+      ),
+    },
+    {
+      key: "markers",
+      target: DIRECT_WORKBENCH_TARGETS.markers,
+      zh: "标记",
+      en: "Markers",
+      count: activeMarkers.length,
+      selected: selectedValue(
+        directEditor.selectedMarkerId ?? activeMarkers[0]?.id,
+      ),
+      applied: selectedValue(directEditor.lastAppliedMarkerId),
+      filters: countActiveFilters(
+        Boolean(directEditor.markerSearchQuery.trim()),
+        directEditor.markerFilterMode !== "all",
       ),
     },
     {

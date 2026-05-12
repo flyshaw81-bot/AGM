@@ -1,4 +1,4 @@
-import type Delaunator from "delaunator";
+import type Delaunator from "../utils/delaunator";
 export type Vertices = { p: Point[]; v: number[][]; c: number[][] };
 export type Cells = {
   v: number[][];

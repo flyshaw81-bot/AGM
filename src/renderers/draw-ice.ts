@@ -1,3 +1,6 @@
+import type { EngineRuntimeContext } from "../modules/engine-runtime-context";
+import { createBrowserRendererContext } from "./renderer-runtime-context";
+
 declare global {
   var drawIce: () => void;
   var redrawIceberg: (id: number) => void;
@@ -19,8 +22,8 @@ const getWindow = (): (Window & typeof globalThis) | undefined => {
   }
 };
 
-const iceRenderer = (): void => {
-  TIME && console.time("drawIce");
+export const iceRenderer = (context: EngineRuntimeContext): void => {
+  context.timing.shouldTime && console.time("drawIce");
 
   // Clear existing ice SVG
   ice.selectAll("*").remove();
@@ -28,7 +31,7 @@ const iceRenderer = (): void => {
   let html = "";
 
   // Draw all ice elements
-  pack.ice.forEach((iceElement: IceElement) => {
+  context.pack.ice.forEach((iceElement: IceElement) => {
     if (iceElement.type === "glacier") {
       html += getGlacierHtml(iceElement);
     } else if (iceElement.type === "iceberg") {
@@ -38,12 +41,17 @@ const iceRenderer = (): void => {
 
   ice.html(html);
 
-  TIME && console.timeEnd("drawIce");
+  context.timing.shouldTime && console.timeEnd("drawIce");
 };
 
-const redrawIcebergRenderer = (id: number): void => {
-  TIME && console.time("redrawIceberg");
-  const iceberg = pack.ice.find((element: IceElement) => element.i === id);
+export const redrawIcebergRenderer = (
+  context: EngineRuntimeContext,
+  id: number,
+): void => {
+  context.timing.shouldTime && console.time("redrawIceberg");
+  const iceberg = context.pack.ice.find(
+    (element: IceElement) => element.i === id,
+  );
   let el = ice.selectAll<SVGPolygonElement, unknown>(
     `polygon[data-id="${id}"]:not([type="glacier"])`,
   );
@@ -66,12 +74,17 @@ const redrawIcebergRenderer = (id: number): void => {
         : null,
     );
   }
-  TIME && console.timeEnd("redrawIceberg");
+  context.timing.shouldTime && console.timeEnd("redrawIceberg");
 };
 
-const redrawGlacierRenderer = (id: number): void => {
-  TIME && console.time("redrawGlacier");
-  const glacier = pack.ice.find((element: IceElement) => element.i === id);
+export const redrawGlacierRenderer = (
+  context: EngineRuntimeContext,
+  id: number,
+): void => {
+  context.timing.shouldTime && console.time("redrawGlacier");
+  const glacier = context.pack.ice.find(
+    (element: IceElement) => element.i === id,
+  );
   let el = ice.selectAll<SVGPolygonElement, unknown>(
     `polygon[data-id="${id}"][type="glacier"]`,
   );
@@ -94,7 +107,7 @@ const redrawGlacierRenderer = (id: number): void => {
         : null,
     );
   }
-  TIME && console.timeEnd("redrawGlacier");
+  context.timing.shouldTime && console.timeEnd("redrawGlacier");
 };
 
 function getGlacierHtml(glacier: IceElement): string {
@@ -107,7 +120,9 @@ function getIcebergHtml(iceberg: IceElement): string {
 
 const runtimeWindow = getWindow();
 if (runtimeWindow) {
-  runtimeWindow.drawIce = iceRenderer;
-  runtimeWindow.redrawIceberg = redrawIcebergRenderer;
-  runtimeWindow.redrawGlacier = redrawGlacierRenderer;
+  runtimeWindow.drawIce = () => iceRenderer(createBrowserRendererContext());
+  runtimeWindow.redrawIceberg = (id) =>
+    redrawIcebergRenderer(createBrowserRendererContext(), id);
+  runtimeWindow.redrawGlacier = (id) =>
+    redrawGlacierRenderer(createBrowserRendererContext(), id);
 }

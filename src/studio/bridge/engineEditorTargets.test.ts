@@ -5,7 +5,6 @@ import {
   createGlobalEngineEditorDialogDomAdapter,
   createGlobalEngineEditorHandlerRuntime,
   createGlobalEngineEditorTargets,
-  createJQueryEngineEditorDialogAdapter,
   createStudioEngineEditorDialogAdapter,
   type EngineEditorDialogAdapter,
   type EngineEditorDialogDomAdapter,
@@ -45,7 +44,7 @@ describe("createEngineEditorTargets", () => {
   });
 
   it("detects and runs editor handlers from the active runtime", async () => {
-    const editStates = vi.fn(async () => undefined);
+    const stateWorkbench = vi.fn(async () => undefined);
     const dialogAdapter: EngineEditorDialogAdapter = {
       isOpen: vi.fn(),
       close: vi.fn(),
@@ -54,17 +53,17 @@ describe("createEngineEditorTargets", () => {
     const targets = createEngineEditorTargets(
       {
         getHandler: (action) =>
-          action === "editStates" ? editStates : undefined,
+          action === "stateWorkbench" ? stateWorkbench : undefined,
       },
       dialogAdapter,
     );
 
-    expect(targets.hasEditorHandler("editStates")).toBe(true);
-    expect(targets.hasEditorHandler("editBiomes")).toBe(false);
-    await targets.runEditorHandler("editStates");
-    await targets.runEditorHandler("editBiomes");
+    expect(targets.hasEditorHandler("stateWorkbench")).toBe(true);
+    expect(targets.hasEditorHandler("biomeWorkbench")).toBe(false);
+    await targets.runEditorHandler("stateWorkbench");
+    await targets.runEditorHandler("biomeWorkbench");
 
-    expect(editStates).toHaveBeenCalledTimes(1);
+    expect(stateWorkbench).toHaveBeenCalledTimes(1);
   });
 
   it("delegates dialog visibility and closing to the injected dialog adapter", () => {
@@ -77,14 +76,14 @@ describe("createEngineEditorTargets", () => {
       dialogAdapter,
     );
 
-    expect(targets.isDialogOpen("statesEditor")).toBe(true);
-    targets.closeDialog("statesEditor");
+    expect(targets.isDialogOpen("studioEngineEditor")).toBe(true);
+    targets.closeDialog("studioEngineEditor");
 
-    expect(dialogAdapter.close).toHaveBeenCalledWith("statesEditor");
+    expect(dialogAdapter.close).toHaveBeenCalledWith("studioEngineEditor");
   });
 
   it("keeps the global factory as compatibility wiring over injected adapters", async () => {
-    const editStates = vi.fn(async () => undefined);
+    const stateWorkbench = vi.fn(async () => undefined);
     const dialogAdapter: EngineEditorDialogAdapter = {
       isOpen: vi.fn(() => true),
       close: vi.fn(),
@@ -93,18 +92,18 @@ describe("createEngineEditorTargets", () => {
     const targets = createGlobalEngineEditorTargets(
       {
         getHandler: (action) =>
-          action === "editStates" ? editStates : undefined,
+          action === "stateWorkbench" ? stateWorkbench : undefined,
       },
       dialogAdapter,
     );
 
-    expect(targets.hasEditorHandler("editStates")).toBe(true);
-    await targets.runEditorHandler("editStates");
-    expect(targets.isDialogOpen("statesEditor")).toBe(true);
-    targets.closeDialog("statesEditor");
+    expect(targets.hasEditorHandler("stateWorkbench")).toBe(true);
+    await targets.runEditorHandler("stateWorkbench");
+    expect(targets.isDialogOpen("studioEngineEditor")).toBe(true);
+    targets.closeDialog("studioEngineEditor");
 
-    expect(editStates).toHaveBeenCalledTimes(1);
-    expect(dialogAdapter.close).toHaveBeenCalledWith("statesEditor");
+    expect(stateWorkbench).toHaveBeenCalledTimes(1);
+    expect(dialogAdapter.close).toHaveBeenCalledWith("studioEngineEditor");
   });
 
   it("keeps global editor handlers safe when window is absent", () => {
@@ -112,7 +111,7 @@ describe("createEngineEditorTargets", () => {
 
     const runtime = createGlobalEngineEditorHandlerRuntime();
 
-    expect(runtime.getHandler("editStates")).toBeUndefined();
+    expect(runtime.getHandler("stateWorkbench")).toBeUndefined();
   });
 
   it("keeps global editor handlers safe when window access throws", () => {
@@ -125,60 +124,10 @@ describe("createEngineEditorTargets", () => {
 
     const runtime = createGlobalEngineEditorHandlerRuntime();
 
-    expect(runtime.getHandler("editStates")).toBeUndefined();
+    expect(runtime.getHandler("stateWorkbench")).toBeUndefined();
   });
 
-  it("reads dialog visibility and closes via jQuery UI wrapper controls", () => {
-    const closeButton = { click: vi.fn() };
-    const wrapper = {
-      querySelector: vi.fn(() => closeButton),
-      setAttribute: vi.fn(),
-      style: { display: "block" },
-    };
-    const dialog = {
-      hidden: false,
-      offsetParent: {},
-      closest: vi.fn(() => wrapper),
-    };
-    const domAdapter: EngineEditorDialogDomAdapter = {
-      getElementById: vi.fn(() => dialog as unknown as HTMLElement),
-      getComputedStyle: vi.fn(() => ({
-        display: "block",
-        visibility: "visible",
-      })),
-    };
-
-    const adapter = createJQueryEngineEditorDialogAdapter(domAdapter);
-
-    expect(adapter.isOpen("statesEditor")).toBe(true);
-    adapter.close("statesEditor");
-
-    expect(domAdapter.getElementById).toHaveBeenCalledWith("statesEditor");
-    expect(domAdapter.getComputedStyle).toHaveBeenCalledWith(dialog);
-    expect(closeButton.click).toHaveBeenCalledWith();
-    expect(wrapper.setAttribute).not.toHaveBeenCalled();
-  });
-
-  it("falls back to hiding the wrapper when no close button exists", () => {
-    const wrapper = {
-      querySelector: vi.fn(() => null),
-      setAttribute: vi.fn(),
-      style: { display: "block" },
-    };
-    const dialog = {
-      closest: vi.fn(() => wrapper),
-    };
-    const adapter = createJQueryEngineEditorDialogAdapter({
-      getElementById: vi.fn(() => dialog as unknown as HTMLElement),
-      getComputedStyle: vi.fn(() => null),
-    });
-    adapter.close("statesEditor");
-
-    expect(wrapper.setAttribute).toHaveBeenCalledWith("aria-hidden", "true");
-    expect(wrapper.style.display).toBe("none");
-  });
-
-  it("closes Studio-owned dialogs without jQuery UI wrappers", () => {
+  it("closes Studio-owned dialogs without legacy wrappers", () => {
     const closeButton = { click: vi.fn() };
     const dialog = {
       hidden: false,
@@ -194,8 +143,8 @@ describe("createEngineEditorTargets", () => {
       })),
     });
 
-    expect(adapter.isOpen("statesEditor")).toBe(true);
-    adapter.close("statesEditor");
+    expect(adapter.isOpen("studioEngineEditor")).toBe(true);
+    adapter.close("studioEngineEditor");
 
     expect(dialog.querySelector).toHaveBeenCalledWith(
       "[data-agm-dialog-close], [data-studio-dialog-close], [data-dialog-close]",
@@ -217,15 +166,17 @@ describe("createEngineEditorTargets", () => {
       compatibilityAdapter,
     ]);
 
-    expect(adapter.isOpen("statesEditor")).toBe(true);
-    adapter.close("statesEditor");
+    expect(adapter.isOpen("studioEngineEditor")).toBe(true);
+    adapter.close("studioEngineEditor");
 
     expect(studioAdapter.close).not.toHaveBeenCalled();
-    expect(compatibilityAdapter.close).toHaveBeenCalledWith("statesEditor");
+    expect(compatibilityAdapter.close).toHaveBeenCalledWith(
+      "studioEngineEditor",
+    );
   });
 
   it("keeps document and computed-style reads inside the default DOM adapter", () => {
-    const dialog = { id: "statesEditor" };
+    const dialog = { id: "studioEngineEditor" };
     const getElementById = vi.fn(() => dialog);
     const getComputedStyle = vi.fn(() => ({
       display: "block",
@@ -248,12 +199,12 @@ describe("createEngineEditorTargets", () => {
 
     const adapter = createGlobalEngineEditorDialogDomAdapter();
 
-    expect(adapter.getElementById("statesEditor")).toBe(dialog);
+    expect(adapter.getElementById("studioEngineEditor")).toBe(dialog);
     expect(adapter.getComputedStyle(dialog as unknown as HTMLElement)).toEqual({
       display: "block",
       visibility: "visible",
     });
-    expect(getElementById).toHaveBeenCalledWith("statesEditor");
+    expect(getElementById).toHaveBeenCalledWith("studioEngineEditor");
     expect(getComputedStyle).toHaveBeenCalledWith(dialog);
   });
 
@@ -270,12 +221,9 @@ describe("createEngineEditorTargets", () => {
     });
     const domAdapter = createGlobalEngineEditorDialogDomAdapter();
     const studioAdapter = createStudioEngineEditorDialogAdapter(domAdapter);
-    const jqueryAdapter = createJQueryEngineEditorDialogAdapter(domAdapter);
 
-    expect(studioAdapter.isOpen("statesEditor")).toBe(false);
-    expect(jqueryAdapter.isOpen("statesEditor")).toBe(false);
-    expect(() => studioAdapter.close("statesEditor")).not.toThrow();
-    expect(() => jqueryAdapter.close("statesEditor")).not.toThrow();
+    expect(studioAdapter.isOpen("studioEngineEditor")).toBe(false);
+    expect(() => studioAdapter.close("studioEngineEditor")).not.toThrow();
   });
 
   it("keeps the default dialog DOM adapter safe when DOM reads throw", () => {
@@ -293,7 +241,7 @@ describe("createEngineEditorTargets", () => {
     });
     const domAdapter = createGlobalEngineEditorDialogDomAdapter();
 
-    expect(domAdapter.getElementById("statesEditor")).toBeNull();
+    expect(domAdapter.getElementById("studioEngineEditor")).toBeNull();
     expect(domAdapter.getComputedStyle({} as HTMLElement)).toBeNull();
   });
 
@@ -319,12 +267,9 @@ describe("createEngineEditorTargets", () => {
       }),
     };
     const studioAdapter = createStudioEngineEditorDialogAdapter(domAdapter);
-    const jqueryAdapter = createJQueryEngineEditorDialogAdapter(domAdapter);
 
-    expect(studioAdapter.isOpen("statesEditor")).toBe(false);
-    expect(jqueryAdapter.isOpen("statesEditor")).toBe(false);
-    expect(() => studioAdapter.close("statesEditor")).not.toThrow();
-    expect(() => jqueryAdapter.close("statesEditor")).not.toThrow();
+    expect(studioAdapter.isOpen("studioEngineEditor")).toBe(false);
+    expect(() => studioAdapter.close("studioEngineEditor")).not.toThrow();
   });
 
   it("keeps composite dialog close safe when one adapter throws", () => {
@@ -343,7 +288,7 @@ describe("createEngineEditorTargets", () => {
       workingAdapter,
     ]);
 
-    expect(() => adapter.close("statesEditor")).not.toThrow();
-    expect(workingAdapter.close).toHaveBeenCalledWith("statesEditor");
+    expect(() => adapter.close("studioEngineEditor")).not.toThrow();
+    expect(workingAdapter.close).toHaveBeenCalledWith("studioEngineEditor");
   });
 });

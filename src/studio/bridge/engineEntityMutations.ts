@@ -36,6 +36,16 @@ const PROVINCE_MUTATION_FIELDS = [
 ];
 const ROUTE_MUTATION_FIELDS = ["group", "feature"];
 const ZONE_MUTATION_FIELDS = ["name", "type", "color", "hidden"];
+const MARKER_MUTATION_FIELDS = [
+  "type",
+  "icon",
+  "size",
+  "pin",
+  "fill",
+  "stroke",
+  "pinned",
+  "lock",
+];
 
 function createEngineEntitySnapshot(
   entity: Record<string, unknown>,
@@ -298,6 +308,55 @@ export function updateEngineZone(
   const changed =
     previous !== createEngineEntitySnapshot(engineZone, ZONE_MUTATION_FIELDS);
   if (changed) targets.redrawZones();
+
+  return changed;
+}
+
+export function updateEngineMarker(
+  markerId: number,
+  next: {
+    type?: string;
+    icon?: string;
+    size?: number;
+    pin?: string;
+    fill?: string;
+    stroke?: string;
+    pinned?: boolean;
+    locked?: boolean;
+  },
+  targets: EngineEntityMutationTargets = createGlobalEntityMutationTargets(),
+) {
+  const engineMarker = targets.getMarker(markerId);
+  if (!engineMarker) return false;
+
+  const previous = createEngineEntitySnapshot(
+    engineMarker,
+    MARKER_MUTATION_FIELDS,
+  );
+  const nextType = next.type?.trim();
+  const nextIcon = next.icon?.trim();
+  const nextPin = next.pin?.trim();
+  const nextFill = next.fill?.trim();
+  const nextStroke = next.stroke?.trim();
+
+  if (nextType) engineMarker.type = nextType;
+  if (nextIcon) engineMarker.icon = nextIcon;
+  if (Number.isFinite(next.size)) engineMarker.size = next.size;
+  if (nextPin) engineMarker.pin = nextPin;
+  else delete engineMarker.pin;
+  if (nextFill) engineMarker.fill = nextFill;
+  else delete engineMarker.fill;
+  if (nextStroke) engineMarker.stroke = nextStroke;
+  else delete engineMarker.stroke;
+  if (next.pinned) engineMarker.pinned = true;
+  else delete engineMarker.pinned;
+  if (next.locked) engineMarker.lock = true;
+  else delete engineMarker.lock;
+
+  const changed =
+    previous !==
+    createEngineEntitySnapshot(engineMarker, MARKER_MUTATION_FIELDS);
+  if (changed) targets.redrawMarkers();
 
   return changed;
 }

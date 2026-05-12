@@ -1,5 +1,9 @@
-import { extent, polygonContains } from "d3";
+import type { EngineRuntimeContext } from "../modules/engine-runtime-context";
 import { minmax, poissonDiscSampler, rand, rn } from "../utils";
+import { polygonContains } from "../utils/polygonUtils";
+import { extent } from "../utils/statUtils";
+import type { Selection } from "../utils/svgSelection";
+import { createBrowserRendererContext } from "./renderer-runtime-context";
 
 interface ReliefIcon {
   i: string;
@@ -10,7 +14,7 @@ interface ReliefIcon {
 
 declare global {
   var drawReliefIcons: () => void;
-  var terrain: import("d3").Selection<SVGGElement, unknown, null, undefined>;
+  var terrain: Selection<SVGGElement>;
   var getPackPolygon: (i: number) => [number, number][];
 }
 
@@ -22,11 +26,11 @@ const getWindow = (): (Window & typeof globalThis) | undefined => {
   }
 };
 
-const reliefIconsRenderer = (): void => {
-  TIME && console.time("drawRelief");
+export const reliefIconsRenderer = (context: EngineRuntimeContext): void => {
+  context.timing.shouldTime && console.time("drawRelief");
   terrain.selectAll("*").remove();
 
-  const cells = pack.cells;
+  const cells = context.pack.cells;
   const density = Number(terrain.attr("density")) || 0.4;
   const size = 2 * (Number(terrain.attr("size")) || 1);
   const mod = 0.2 * size; // size modifier
@@ -37,7 +41,7 @@ const reliefIconsRenderer = (): void => {
     if (height < 20) continue; // no icons on water
     if (cells.r[i]) continue; // no icons on rivers
     const biome = cells.biome[i];
-    if (height < 50 && biomesData.iconsDensity[biome] === 0) continue; // no icons for this biome
+    if (height < 50 && context.biomesData.iconsDensity[biome] === 0) continue; // no icons for this biome
 
     const polygon = getPackPolygon(i);
     const [minX, maxX] = extent(polygon, (p) => p[0]) as [number, number];
@@ -47,7 +51,7 @@ const reliefIconsRenderer = (): void => {
     else placeReliefIcons();
 
     function placeBiomeIcons(): void {
-      const iconsDensity = biomesData.iconsDensity[biome] / 100;
+      const iconsDensity = context.biomesData.iconsDensity[biome] / 100;
       const radius = 2 / iconsDensity / density;
       if (Math.random() > iconsDensity * 10) return;
 
@@ -60,7 +64,7 @@ const reliefIconsRenderer = (): void => {
       )) {
         if (!polygonContains(polygon, [cx, cy])) continue;
         let h = (4 + Math.random()) * size;
-        const icon = getBiomeIcon(i, biomesData.icons[biome]);
+        const icon = getBiomeIcon(i, context.biomesData.icons[biome]);
         if (icon === "#relief-grass-1") h *= 1.2;
         relief.push({
           i: icon,
@@ -93,7 +97,7 @@ const reliefIconsRenderer = (): void => {
     }
 
     function getReliefIcon(cellIndex: number, h: number): [string, number] {
-      const temp = grid.cells.temp[pack.cells.g[cellIndex]];
+      const temp = context.grid.cells.temp[context.pack.cells.g[cellIndex]];
       const type = h > 70 && temp < 0 ? "mountSnow" : h > 70 ? "mount" : "hill";
       const iconSize = h > 70 ? (h - 45) * mod : minmax((h - 40) * mod, 3, 6);
       return [getIcon(type), iconSize];
@@ -111,11 +115,11 @@ const reliefIconsRenderer = (): void => {
   }
   terrain.html(reliefHTML.join(""));
 
-  TIME && console.timeEnd("drawRelief");
+  context.timing.shouldTime && console.timeEnd("drawRelief");
 
   function getBiomeIcon(cellIndex: number, b: string[]): string {
     let type = b[Math.floor(Math.random() * b.length)];
-    const temp = grid.cells.temp[pack.cells.g[cellIndex]];
+    const temp = context.grid.cells.temp[context.pack.cells.g[cellIndex]];
     if (type === "conifer" && temp < 0) type = "coniferSnow";
     return getIcon(type);
   }
@@ -170,4 +174,6 @@ const reliefIconsRenderer = (): void => {
 };
 
 const runtimeWindow = getWindow();
-if (runtimeWindow) runtimeWindow.drawReliefIcons = reliefIconsRenderer;
+if (runtimeWindow)
+  runtimeWindow.drawReliefIcons = () =>
+    reliefIconsRenderer(createBrowserRendererContext());

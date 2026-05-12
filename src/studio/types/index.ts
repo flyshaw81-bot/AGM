@@ -78,6 +78,7 @@ export interface DocumentState {
 }
 
 export type ProjectStatus = "draft" | "dirty" | "validated" | "export-ready";
+export type ProjectDeliveryStatus = "unchecked" | "needs-repair" | "ready";
 
 export interface RecentProjectEntry {
   id: string;
@@ -92,6 +93,7 @@ export interface RecentProjectEntry {
   updatedAt: number;
   hasLocalSnapshot: boolean;
   exportReady: boolean;
+  deliveryStatus?: ProjectDeliveryStatus;
 }
 
 export interface ProjectCenterState {
@@ -100,8 +102,27 @@ export interface ProjectCenterState {
   lastSavedAt: number | null;
 }
 
+export type StudioEditorModule =
+  | "states"
+  | "cultures"
+  | "provinces"
+  | "religions"
+  | "burgs"
+  | "routes"
+  | "military"
+  | "markers"
+  | "diplomacy"
+  | "zones"
+  | "biomes";
+
 export interface ShellState {
   navigationCollapsed: boolean;
+  activeEditorModule: StudioEditorModule;
+  generationBusy?: {
+    title: string;
+    detail: string;
+  } | null;
+  visibleLayerCards: string[];
 }
 
 export type CanvasToolMode =
@@ -266,6 +287,8 @@ export type DirectCultureFilterMode = "all" | "populated" | "has-center";
 export type DirectReligionFilterMode = "all" | "populated" | "has-center";
 export type DirectZoneFilterMode = "all" | "populated" | "hidden";
 export type DirectDiplomacyFilterMode = "all" | "conflict" | "positive";
+export type DirectMarkerFilterMode = "all" | "pinned" | "locked";
+export type DirectMilitaryFilterMode = "all" | "land" | "naval";
 
 export interface DirectRelationshipQueueUndoChangeState {
   entity: "state" | "burg" | "province";
@@ -321,11 +344,17 @@ export interface DirectEditorState {
   zoneSearchQuery: string;
   zoneFilterMode: DirectZoneFilterMode;
   lastAppliedZoneId: number | null;
+  selectedMarkerId: number | null;
+  markerSearchQuery: string;
+  markerFilterMode: DirectMarkerFilterMode;
+  lastAppliedMarkerId: number | null;
   selectedDiplomacySubjectId: number | null;
   selectedDiplomacyObjectId: number | null;
   diplomacySearchQuery: string;
   diplomacyFilterMode: DirectDiplomacyFilterMode;
   lastAppliedDiplomacyPair: string | null;
+  militarySearchQuery: string;
+  militaryFilterMode: DirectMilitaryFilterMode;
   relationshipQueueHistory: DirectRelationshipQueueHistoryState | null;
   relationshipQueueHistoryLog: DirectRelationshipQueueHistoryState[];
 }

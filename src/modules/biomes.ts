@@ -1,9 +1,8 @@
-import { mean, range } from "d3";
-import { rn } from "../utils/numberUtils";
-import {
-  type EngineBiomeData,
-  type EngineRuntimeContext,
-  getGlobalEngineRuntimeContext,
+﻿import { rn } from "../utils/numberUtils";
+import { mean, range } from "../utils/statUtils";
+import type {
+  EngineBiomeData,
+  EngineRuntimeContext,
 } from "./engine-runtime-context";
 
 declare global {
@@ -78,7 +77,7 @@ export class BiomesModule {
       10, 200, 150, 60, 50, 70, 70, 80, 90, 200, 1000, 5000, 150,
     ]; // biome movement cost
     const biomesMatrix: Uint8Array[] = [
-      // hot ↔ cold [>19°C; <-4°C]; dry ↕ wet
+      // hot 鈫?cold [>19掳C; <-4掳C]; dry 鈫?wet
       new Uint8Array([
         1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
         2, 10,
@@ -125,7 +124,7 @@ export class BiomesModule {
     };
   }
 
-  define(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+  define(context: EngineRuntimeContext) {
     context.timing.shouldTime && console.time("defineBiomes");
 
     const {
@@ -174,7 +173,8 @@ export class BiomesModule {
     temperature: number,
     height: number,
     hasRiver: boolean,
-    biomesMatrix: EngineBiomeData["biomesMatrix"] = biomesData.biomesMatrix,
+    biomesMatrix: EngineBiomeData["biomesMatrix"] = this.getDefault()
+      .biomesMatrix,
   ) {
     if (height < 20) return 0; // all water cells: marine biome
     if (temperature < -5) return 11; // too cold: permafrost biome

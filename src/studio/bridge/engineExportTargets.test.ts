@@ -94,11 +94,11 @@ describe("createGlobalEngineExportTargets", () => {
       string,
       { value: string; dispatchEvent: (event: Event) => void }
     > = {
-      pngResolutionInput: {
+      studioPngResolutionInput: {
         value: "2",
         dispatchEvent: (event) => inputEvents.push(event.type),
       },
-      tileColsOutput: {
+      studioTileColsInput: {
         value: "6",
         dispatchEvent: (event) => inputEvents.push(event.type),
       },
@@ -113,7 +113,7 @@ describe("createGlobalEngineExportTargets", () => {
     expect(targets.readSetting("tile-rows", 8)).toBe(8);
     targets.writeSetting("tile-cols", 12);
 
-    expect(inputs.tileColsOutput.value).toBe("12");
+    expect(inputs.studioTileColsInput.value).toBe("12");
     expect(inputEvents).toEqual(["input", "change"]);
   });
 
@@ -124,7 +124,9 @@ describe("createGlobalEngineExportTargets", () => {
     };
     globalThis.Event = undefined as unknown as typeof Event;
     globalThis.document = {
-      getElementById: vi.fn((id) => (id === "tileColsOutput" ? input : null)),
+      getElementById: vi.fn((id) =>
+        id === "studioTileColsInput" ? input : null,
+      ),
     } as unknown as Document;
 
     createGlobalEngineExportTargets().writeSetting("tile-cols", 12);

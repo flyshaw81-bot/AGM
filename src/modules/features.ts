@@ -1,5 +1,4 @@
-import Alea from "alea";
-import { polygonArea } from "d3";
+﻿import Alea from "../utils/alea";
 import {
   createTypedArray,
   TYPED_ARRAY_MAX_VALUES,
@@ -10,10 +9,8 @@ import { distanceSquared } from "../utils/functionUtils";
 import { isLand, isWater } from "../utils/graphUtils";
 import { rn } from "../utils/numberUtils";
 import { connectVertices } from "../utils/pathUtils";
-import {
-  type EngineRuntimeContext,
-  getGlobalEngineRuntimeContext,
-} from "./engine-runtime-context";
+import { polygonArea } from "../utils/polygonUtils";
+import type { EngineRuntimeContext } from "./engine-runtime-context";
 
 declare global {
   var Features: FeatureModule;
@@ -108,7 +105,7 @@ export class FeatureModule {
   /**
    * mark Grid features (ocean, lakes, islands) and calculate distance field
    */
-  markupGrid(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+  markupGrid(context: EngineRuntimeContext) {
     const shouldTime = context.timing.shouldTime;
     shouldTime && console.time("markupGrid");
     const previousRandom = Math.random;
@@ -181,10 +178,10 @@ export class FeatureModule {
   /**
    * mark PackedGraph features (oceans, lakes, islands) and calculate distance field
    */
-  markupPack(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+  markupPack(context: EngineRuntimeContext) {
     const {
-      graphWidth: runtimeGraphWidth = graphWidth,
-      graphHeight: runtimeGraphHeight = graphHeight,
+      graphWidth: runtimeGraphWidth = 0,
+      graphHeight: runtimeGraphHeight = 0,
     } = context.worldSettings;
 
     const defineHaven = (cellId: number) => {
@@ -392,9 +389,7 @@ export class FeatureModule {
   /**
    * define feature groups (ocean, sea, gulf, continent, island, isle, freshwater lake, salt lake, etc.)
    */
-  defineGroups(
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  defineGroups(context: EngineRuntimeContext) {
     const gridCellsNumber = context.grid.cells.i.length;
     const OCEAN_MIN_SIZE = gridCellsNumber / 25;
     const SEA_MIN_SIZE = gridCellsNumber / 1000;

@@ -1,9 +1,12 @@
 import type {
   DirectBiomeFilterMode,
   DirectDiplomacyFilterMode,
+  DirectMarkerFilterMode,
+  DirectMilitaryFilterMode,
 } from "../types";
 import {
   createNativeDirtyTrackerByIds,
+  readNativeInputValue,
   readNativeNumberValue,
   readNativeSelectValue,
 } from "./directEditorDom";
@@ -27,6 +30,11 @@ type NativeSystemsEditorEventsOptions = Pick<
   | "onDirectDiplomacyObjectSelect"
   | "onDirectDiplomacyReset"
   | "onDirectDiplomacySubjectSelect"
+  | "onDirectMilitaryListChange"
+  | "onDirectMarkerApply"
+  | "onDirectMarkerListChange"
+  | "onDirectMarkerReset"
+  | "onDirectMarkerSelect"
 >;
 
 export function bindNativeSystemsEditorEvents({
@@ -40,6 +48,11 @@ export function bindNativeSystemsEditorEvents({
   onDirectDiplomacyObjectSelect,
   onDirectDiplomacyReset,
   onDirectDiplomacySubjectSelect,
+  onDirectMilitaryListChange,
+  onDirectMarkerApply,
+  onDirectMarkerListChange,
+  onDirectMarkerReset,
+  onDirectMarkerSelect,
 }: NativeSystemsEditorEventsOptions) {
   bindActionClick("direct-diplomacy-open-state", (button) => {
     onDirectDiplomacySubjectSelect(Number(button.dataset.stateId));
@@ -61,6 +74,14 @@ export function bindNativeSystemsEditorEvents({
     "studioDiplomacyFilterSelect",
     (diplomacyFilterMode) =>
       onDirectDiplomacyListChange({ diplomacyFilterMode }),
+  );
+
+  bindInputValue("studioMilitarySearchInput", (militarySearchQuery) =>
+    onDirectMilitaryListChange({ militarySearchQuery }),
+  );
+  bindSelectValue<DirectMilitaryFilterMode>(
+    "studioMilitaryFilterSelect",
+    (militaryFilterMode) => onDirectMilitaryListChange({ militaryFilterMode }),
   );
 
   const nativeDiplomacyDirtyTracker = createNativeDirtyTrackerByIds(
@@ -124,5 +145,49 @@ export function bindNativeSystemsEditorEvents({
 
   bindActionClick("direct-biome-reset", (button) =>
     onDirectBiomeReset(Number(button.dataset.biomeId)),
+  );
+
+  bindActionClick("direct-marker-select", (button) =>
+    onDirectMarkerSelect(Number(button.dataset.markerId)),
+  );
+
+  bindInputValue("studioMarkerSearchInput", (markerSearchQuery) =>
+    onDirectMarkerListChange({ markerSearchQuery }),
+  );
+  bindSelectValue<DirectMarkerFilterMode>(
+    "studioMarkerFilterSelect",
+    (markerFilterMode) => onDirectMarkerListChange({ markerFilterMode }),
+  );
+
+  const nativeMarkerDirtyTracker = createNativeDirtyTrackerByIds(
+    "studioMarkerEditStatus",
+    [
+      "studioMarkerTypeInput",
+      "studioMarkerIconInput",
+      "studioMarkerSizeInput",
+      "studioMarkerPinInput",
+      "studioMarkerFillInput",
+      "studioMarkerStrokeInput",
+      "studioMarkerPinnedSelect",
+      "studioMarkerLockedSelect",
+    ],
+  );
+
+  bindActionClick("direct-marker-apply", (button) => {
+    nativeMarkerDirtyTracker.markSaved();
+    onDirectMarkerApply(Number(button.dataset.markerId), {
+      type: readNativeInputValue("studioMarkerTypeInput"),
+      icon: readNativeInputValue("studioMarkerIconInput"),
+      size: readNativeNumberValue("studioMarkerSizeInput"),
+      pin: readNativeInputValue("studioMarkerPinInput"),
+      fill: readNativeInputValue("studioMarkerFillInput"),
+      stroke: readNativeInputValue("studioMarkerStrokeInput"),
+      pinned: readNativeSelectValue("studioMarkerPinnedSelect") === "true",
+      locked: readNativeSelectValue("studioMarkerLockedSelect") === "true",
+    });
+  });
+
+  bindActionClick("direct-marker-reset", (button) =>
+    onDirectMarkerReset(Number(button.dataset.markerId)),
   );
 }

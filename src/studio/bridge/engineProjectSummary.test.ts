@@ -25,12 +25,6 @@ function createFormTargets(
         provincesRatio: "40",
         sizeVariety: "3",
         growthRate: "1.2",
-        temperatureEquatorInput: "28",
-        temperatureNorthPoleInput: "-10",
-        temperatureSouthPoleInput: "-20",
-        mapSizeInput: "80",
-        latitudeInput: "45",
-        longitudeInput: "15",
         precInput: "120",
         culturesInput: "8",
         manorsInput: "1000",
@@ -48,11 +42,7 @@ function createFormTargets(
           : fallback,
     ),
     getTextValue: vi.fn((id, fallback = "") => {
-      const values: Record<string, string> = {
-        temperatureEquatorF: "82°F",
-        temperatureNorthPoleF: "14°F",
-        temperatureSouthPoleF: "-4°F",
-      };
+      const values: Record<string, string> = {};
       return values[id] || fallback;
     }),
     getSelect: vi.fn((id) =>
@@ -76,9 +66,40 @@ function createFormTargets(
     getCultureSetOptions: vi.fn(() => [
       { value: "european", label: "European", max: "12" },
     ]),
+    getTemperatureValue: vi.fn(
+      (
+        key:
+          | "temperatureEquator"
+          | "temperatureNorthPole"
+          | "temperatureSouthPole",
+        fallback = "",
+      ) =>
+        ({
+          temperatureEquator: "28",
+          temperatureNorthPole: "-10",
+          temperatureSouthPole: "-20",
+        })[key] ?? fallback,
+    ),
+    getTemperatureFahrenheitLabel: vi.fn(
+      (
+        key:
+          | "temperatureEquator"
+          | "temperatureNorthPole"
+          | "temperatureSouthPole",
+        fallback = "",
+      ) =>
+        ({
+          temperatureEquator: "82°F",
+          temperatureNorthPole: "14°F",
+          temperatureSouthPole: "-4°F",
+        })[key] ?? fallback,
+    ),
+    getMapPlacementValue: vi.fn(
+      (key: "mapSize" | "latitude" | "longitude", fallback = "") =>
+        ({ mapSize: "80", latitude: "45", longitude: "15" })[key] ?? fallback,
+    ),
     hasVisibleInlineDisplay: vi.fn(() => true),
     getWindOption: vi.fn(() => ""),
-    getWindTierRotation: vi.fn(() => ""),
     ...overrides,
   };
 }

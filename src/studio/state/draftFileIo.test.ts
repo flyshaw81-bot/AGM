@@ -6,7 +6,7 @@ import {
   type DraftFileIoTargets,
   downloadBlobDraft,
   downloadJsonDraft,
-  loadJsZip,
+  loadZipConstructor,
   stringifyPackageFile,
 } from "./draftFileIo";
 
@@ -22,8 +22,6 @@ function createTargets(overrides: Partial<DraftFileIoTargets> = {}) {
     revokeObjectUrl: vi.fn(),
     createDownloadLink: vi.fn(() => link),
     appendToBody: vi.fn(),
-    getJsZip: vi.fn(),
-    loadJsZipScript: vi.fn(async () => undefined),
     ...overrides,
   };
 
@@ -90,41 +88,15 @@ describe("draft file IO helpers", () => {
     expect(targets.revokeObjectUrl).toHaveBeenCalledWith("blob:agm");
   });
 
-  it("loads JSZip through injected script targets when absent", async () => {
-    class FakeZip {
-      file() {}
-      async generateAsync() {
-        return new Blob(["zip"]);
-      }
-    }
-    const getJsZip = vi
-      .fn()
-      .mockReturnValueOnce(undefined)
-      .mockReturnValueOnce(FakeZip);
-    const loadJsZipScript = vi.fn(async () => undefined);
-    const { targets } = createTargets({ getJsZip, loadJsZipScript });
-
-    await expect(loadJsZip(targets)).resolves.toBe(FakeZip);
-    expect(loadJsZipScript).toHaveBeenCalledWith();
+  it("returns ZipArchive constructor from loadZipConstructor", () => {
+    const ZipCtor = loadZipConstructor();
+    expect(ZipCtor).toBeDefined();
+    const instance = new ZipCtor();
+    expect(typeof instance.file).toBe("function");
+    expect(typeof instance.generateAsync).toBe("function");
   });
 
-  it("returns existing JSZip without loading the browser script", async () => {
-    class FakeZip {
-      file() {}
-      async generateAsync() {
-        return new Blob(["zip"]);
-      }
-    }
-    const { targets } = createTargets({
-      getJsZip: vi.fn(() => FakeZip),
-      loadJsZipScript: vi.fn(async () => undefined),
-    });
-
-    await expect(loadJsZip(targets)).resolves.toBe(FakeZip);
-    expect(targets.loadJsZipScript).not.toHaveBeenCalled();
-  });
-
-  it("keeps global file targets safe when document and window access throw", async () => {
+  it("keeps global file targets safe when document and window access throw", () => {
     Object.defineProperty(globalThis, "document", {
       configurable: true,
       get: () => {
@@ -141,8 +113,6 @@ describe("draft file IO helpers", () => {
 
     const link = targets.createDownloadLink();
     expect(() => targets.appendToBody(link)).not.toThrow();
-    expect(targets.getJsZip()).toBeUndefined();
-    await expect(targets.loadJsZipScript()).resolves.toBeUndefined();
   });
 
   it("keeps global download targets safe when element creation and append throw", () => {
@@ -165,22 +135,5 @@ describe("draft file IO helpers", () => {
     const link = targets.createDownloadLink();
     expect(link.href).toBe("");
     expect(() => targets.appendToBody(link)).not.toThrow();
-  });
-
-  it("reports JSZip script load failure when script DOM access is blocked", async () => {
-    Object.defineProperty(globalThis, "document", {
-      configurable: true,
-      value: {
-        querySelector: () => {
-          throw new Error("query blocked");
-        },
-      },
-      writable: true,
-    });
-    const targets = createGlobalDraftFileIoTargets();
-
-    await expect(targets.loadJsZipScript()).rejects.toThrow(
-      "JSZip failed to load",
-    );
   });
 });

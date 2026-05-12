@@ -1,23 +1,25 @@
+import {
+  type AgmRuntimeDataFacade,
+  getAgmRuntimeDataFacade,
+} from "../../modules/agm-runtime-data-facade";
 import type {
   EngineDocumentSourceSummary,
   EngineSaveTargetSummary,
 } from "./engineActionTypes";
 
-type EngineSaveMethod = "storage" | "machine" | "dropbox";
-type EngineQuickLoad = () => Promise<void>;
-type EngineLoadFromDropbox = () => Promise<void>;
-type EngineLoadMapFromUrl = (maplink: string, random?: number) => void;
-type EngineUploadMap = (file: Blob | File, callback?: () => void) => void;
-type EngineGenerateMapOnLoad = () => Promise<void>;
-type EngineSaveMap = (method: EngineSaveMethod) => Promise<void>;
+type EngineSaveMethod = "storage" | "machine";
+type AgmBrowserSnapshotLoader = () => Promise<void>;
+type AgmUrlSourceLoader = (maplink?: string, random?: number) => void;
+type AgmFileUploader = (file: Blob | File, callback?: () => void) => void;
+type AgmGeneratedWorldCreator = () => Promise<void>;
+type AgmProjectSaver = (method: EngineSaveMethod) => Promise<void>;
 
 type EngineDocumentSourceTracker = {
-  quickLoadWrapped?: EngineQuickLoad;
-  loadFromDropboxWrapped?: EngineLoadFromDropbox;
-  loadMapFromURLWrapped?: EngineLoadMapFromUrl;
-  uploadMapWrapped?: EngineUploadMap;
-  generateMapOnLoadWrapped?: EngineGenerateMapOnLoad;
-  saveMapWrapped?: EngineSaveMap;
+  browserSnapshotLoaderWrapped?: AgmBrowserSnapshotLoader;
+  urlSourceLoaderWrapped?: AgmUrlSourceLoader;
+  fileUploaderWrapped?: AgmFileUploader;
+  generatedWorldCreatorWrapped?: AgmGeneratedWorldCreator;
+  projectSaverWrapped?: AgmProjectSaver;
 };
 
 type EngineDocumentSourceStore = {
@@ -28,26 +30,23 @@ type EngineDocumentSourceStore = {
 };
 
 type EngineDocumentSourceRuntime = {
-  quickLoad?: EngineQuickLoad;
-  loadFromDropbox?: EngineLoadFromDropbox;
-  loadMapFromURL?: EngineLoadMapFromUrl;
-  uploadMap?: EngineUploadMap;
-  generateMapOnLoad?: EngineGenerateMapOnLoad;
-  saveMap?: EngineSaveMap;
+  AgmRuntimeData?: AgmRuntimeDataFacade;
   mapName?: { value?: string };
 };
 
 export type EngineDocumentSourceTargets = {
   getStore: () => EngineDocumentSourceStore;
   getMapFileName: () => string;
-  getDropboxSourceDetail: () => string;
-  getRuntimeFunction: <T extends keyof EngineDocumentSourceRuntime>(
-    key: T,
-  ) => EngineDocumentSourceRuntime[T];
-  setRuntimeFunction: <T extends keyof EngineDocumentSourceRuntime>(
-    key: T,
-    value: NonNullable<EngineDocumentSourceRuntime[T]>,
-  ) => void;
+  getBrowserSnapshotLoader: () => AgmBrowserSnapshotLoader | undefined;
+  setBrowserSnapshotLoader: (loader: AgmBrowserSnapshotLoader) => void;
+  getUrlSourceLoader: () => AgmUrlSourceLoader | undefined;
+  setUrlSourceLoader: (loader: AgmUrlSourceLoader) => void;
+  getFileUploader: () => AgmFileUploader | undefined;
+  setFileUploader: (uploader: AgmFileUploader) => void;
+  getGeneratedWorldCreator: () => AgmGeneratedWorldCreator | undefined;
+  setGeneratedWorldCreator: (creator: AgmGeneratedWorldCreator) => void;
+  getProjectSaver: () => AgmProjectSaver | undefined;
+  setProjectSaver: (saver: AgmProjectSaver) => void;
 };
 
 function getGlobalEngineRuntime(): EngineDocumentSourceRuntime {
@@ -71,31 +70,79 @@ export function createGlobalEngineDocumentSourceTargets(): EngineDocumentSourceT
         return "Current map";
       }
     },
-    getDropboxSourceDetail: () => {
+    getBrowserSnapshotLoader: () => {
       try {
-        const dropboxSelect = globalThis.document?.getElementById(
-          "loadFromDropboxSelect",
-        ) as HTMLSelectElement | null;
-        const selectedOption = dropboxSelect?.selectedOptions?.[0] ?? null;
-        return (
-          selectedOption?.textContent?.trim() ||
-          dropboxSelect?.value ||
-          "Selected file"
-        );
-      } catch {
-        return "Selected file";
-      }
-    },
-    getRuntimeFunction: (key) => {
-      try {
-        return getGlobalEngineRuntime()[key];
+        return getAgmRuntimeDataFacade(getGlobalEngineRuntime())
+          .loadBrowserSnapshot;
       } catch {
         return undefined;
       }
     },
-    setRuntimeFunction: (key, value) => {
+    setBrowserSnapshotLoader: (loader) => {
       try {
-        getGlobalEngineRuntime()[key] = value;
+        getAgmRuntimeDataFacade(getGlobalEngineRuntime()).loadBrowserSnapshot =
+          loader;
+      } catch {
+        // Document-source tracking is optional for blocked compatibility runtimes.
+      }
+    },
+    getUrlSourceLoader: () => {
+      try {
+        return getAgmRuntimeDataFacade(getGlobalEngineRuntime()).openUrlSource;
+      } catch {
+        return undefined;
+      }
+    },
+    setUrlSourceLoader: (loader) => {
+      try {
+        getAgmRuntimeDataFacade(getGlobalEngineRuntime()).openUrlSource =
+          loader;
+      } catch {
+        // Document-source tracking is optional for blocked compatibility runtimes.
+      }
+    },
+    getFileUploader: () => {
+      try {
+        return getAgmRuntimeDataFacade(getGlobalEngineRuntime())
+          .importProjectFile;
+      } catch {
+        return undefined;
+      }
+    },
+    setFileUploader: (uploader) => {
+      try {
+        getAgmRuntimeDataFacade(getGlobalEngineRuntime()).importProjectFile =
+          uploader;
+      } catch {
+        // Document-source tracking is optional for blocked compatibility runtimes.
+      }
+    },
+    getGeneratedWorldCreator: () => {
+      try {
+        return getAgmRuntimeDataFacade(getGlobalEngineRuntime())
+          .createGeneratedWorld;
+      } catch {
+        return undefined;
+      }
+    },
+    setGeneratedWorldCreator: (creator) => {
+      try {
+        getAgmRuntimeDataFacade(getGlobalEngineRuntime()).createGeneratedWorld =
+          creator;
+      } catch {
+        // Document-source tracking is optional for blocked compatibility runtimes.
+      }
+    },
+    getProjectSaver: () => {
+      try {
+        return getAgmRuntimeDataFacade(getGlobalEngineRuntime()).saveProject;
+      } catch {
+        return undefined;
+      }
+    },
+    setProjectSaver: (saver) => {
+      try {
+        getAgmRuntimeDataFacade(getGlobalEngineRuntime()).saveProject = saver;
       } catch {
         // Document-source tracking is optional for blocked compatibility runtimes.
       }
@@ -160,12 +207,12 @@ function getEngineSaveTargetSummaryForMethod(
     } satisfies EngineSaveTargetSummary;
   }
   return {
-    saveLabel: "Dropbox",
+    saveLabel: "Not saved yet",
     saveDetail: filename,
   } satisfies EngineSaveTargetSummary;
 }
 
-function formatEngineSourceUrl(maplink: string) {
+function formatEngineSourceUrl(maplink = "") {
   try {
     const url = new URL(decodeURIComponent(maplink));
     return `${url.host}${url.pathname}`;
@@ -226,58 +273,35 @@ export function ensureEngineDocumentSourceTracking(
   }
   const tracker = store.__studioEngineDocumentSourceTracker;
 
-  const quickLoad = targets.getRuntimeFunction("quickLoad");
+  const browserSnapshotLoader = targets.getBrowserSnapshotLoader();
   if (
-    typeof quickLoad === "function" &&
-    tracker.quickLoadWrapped !== quickLoad
+    typeof browserSnapshotLoader === "function" &&
+    tracker.browserSnapshotLoaderWrapped !== browserSnapshotLoader
   ) {
-    const wrappedQuickLoad: EngineQuickLoad = async () => {
+    const wrappedBrowserSnapshotLoader: AgmBrowserSnapshotLoader = async () => {
       queueEngineDocumentSource(
         {
           sourceLabel: "Browser snapshot",
-          sourceDetail: "Quick load",
+          sourceDetail: "Browser snapshot",
         },
         targets,
       );
       try {
-        return await quickLoad();
+        return await browserSnapshotLoader();
       } finally {
         commitPendingDocumentSource(targets);
       }
     };
-    tracker.quickLoadWrapped = wrappedQuickLoad;
-    targets.setRuntimeFunction("quickLoad", wrappedQuickLoad);
+    tracker.browserSnapshotLoaderWrapped = wrappedBrowserSnapshotLoader;
+    targets.setBrowserSnapshotLoader(wrappedBrowserSnapshotLoader);
   }
 
-  const loadFromDropbox = targets.getRuntimeFunction("loadFromDropbox");
+  const urlSourceLoader = targets.getUrlSourceLoader();
   if (
-    typeof loadFromDropbox === "function" &&
-    tracker.loadFromDropboxWrapped !== loadFromDropbox
+    typeof urlSourceLoader === "function" &&
+    tracker.urlSourceLoaderWrapped !== urlSourceLoader
   ) {
-    const wrappedLoadFromDropbox: EngineLoadFromDropbox = async () => {
-      queueEngineDocumentSource(
-        {
-          sourceLabel: "Dropbox",
-          sourceDetail: targets.getDropboxSourceDetail(),
-        },
-        targets,
-      );
-      try {
-        return await loadFromDropbox();
-      } finally {
-        commitPendingDocumentSource(targets);
-      }
-    };
-    tracker.loadFromDropboxWrapped = wrappedLoadFromDropbox;
-    targets.setRuntimeFunction("loadFromDropbox", wrappedLoadFromDropbox);
-  }
-
-  const loadMapFromURL = targets.getRuntimeFunction("loadMapFromURL");
-  if (
-    typeof loadMapFromURL === "function" &&
-    tracker.loadMapFromURLWrapped !== loadMapFromURL
-  ) {
-    const wrappedLoadMapFromURL: EngineLoadMapFromUrl = (maplink, random) => {
+    const wrappedUrlSourceLoader: AgmUrlSourceLoader = (maplink, random) => {
       queueEngineDocumentSource(
         {
           sourceLabel: "URL",
@@ -286,38 +310,38 @@ export function ensureEngineDocumentSourceTracking(
         targets,
       );
       try {
-        return loadMapFromURL(maplink, random);
+        return urlSourceLoader(maplink, random);
       } finally {
         commitPendingDocumentSource(targets);
       }
     };
-    tracker.loadMapFromURLWrapped = wrappedLoadMapFromURL;
-    targets.setRuntimeFunction("loadMapFromURL", wrappedLoadMapFromURL);
+    tracker.urlSourceLoaderWrapped = wrappedUrlSourceLoader;
+    targets.setUrlSourceLoader(wrappedUrlSourceLoader);
   }
 
-  const uploadMap = targets.getRuntimeFunction("uploadMap");
+  const fileUploader = targets.getFileUploader();
   if (
-    typeof uploadMap === "function" &&
-    tracker.uploadMapWrapped !== uploadMap
+    typeof fileUploader === "function" &&
+    tracker.fileUploaderWrapped !== fileUploader
   ) {
-    const wrappedUploadMap: EngineUploadMap = (file, callback) => {
+    const wrappedFileUploader: AgmFileUploader = (file, callback) => {
       const inferredSource = inferEngineDocumentSourceFromUpload(file);
       const pendingSource = store.__studioEnginePendingDocumentSource;
       const nextSource = inferredSource || pendingSource;
       if (nextSource) setEngineDocumentSourceSummary(nextSource, targets);
-      return uploadMap(file, callback);
+      return fileUploader(file, callback);
     };
-    tracker.uploadMapWrapped = wrappedUploadMap;
-    targets.setRuntimeFunction("uploadMap", wrappedUploadMap);
+    tracker.fileUploaderWrapped = wrappedFileUploader;
+    targets.setFileUploader(wrappedFileUploader);
   }
 
-  const generateMapOnLoad = targets.getRuntimeFunction("generateMapOnLoad");
+  const generatedWorldCreator = targets.getGeneratedWorldCreator();
   if (
-    typeof generateMapOnLoad === "function" &&
-    tracker.generateMapOnLoadWrapped !== generateMapOnLoad
+    typeof generatedWorldCreator === "function" &&
+    tracker.generatedWorldCreatorWrapped !== generatedWorldCreator
   ) {
-    const wrappedGenerateMapOnLoad: EngineGenerateMapOnLoad = async () => {
-      const result = await generateMapOnLoad();
+    const wrappedGeneratedWorldCreator: AgmGeneratedWorldCreator = async () => {
+      const result = await generatedWorldCreator();
       setEngineDocumentSourceSummary(
         {
           sourceLabel: "Generated",
@@ -327,21 +351,24 @@ export function ensureEngineDocumentSourceTracking(
       );
       return result;
     };
-    tracker.generateMapOnLoadWrapped = wrappedGenerateMapOnLoad;
-    targets.setRuntimeFunction("generateMapOnLoad", wrappedGenerateMapOnLoad);
+    tracker.generatedWorldCreatorWrapped = wrappedGeneratedWorldCreator;
+    targets.setGeneratedWorldCreator(wrappedGeneratedWorldCreator);
   }
 
-  const saveMap = targets.getRuntimeFunction("saveMap");
-  if (typeof saveMap === "function" && tracker.saveMapWrapped !== saveMap) {
-    const wrappedSaveMap: EngineSaveMap = async (method) => {
-      const result = await saveMap(method);
+  const projectSaver = targets.getProjectSaver();
+  if (
+    typeof projectSaver === "function" &&
+    tracker.projectSaverWrapped !== projectSaver
+  ) {
+    const wrappedProjectSaver: AgmProjectSaver = async (method) => {
+      const result = await projectSaver(method);
       setEngineSaveTargetSummary(
         getEngineSaveTargetSummaryForMethod(method, targets),
         targets,
       );
       return result;
     };
-    tracker.saveMapWrapped = wrappedSaveMap;
-    targets.setRuntimeFunction("saveMap", wrappedSaveMap);
+    tracker.projectSaverWrapped = wrappedProjectSaver;
+    targets.setProjectSaver(wrappedProjectSaver);
   }
 }

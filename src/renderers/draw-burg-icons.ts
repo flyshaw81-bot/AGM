@@ -1,4 +1,6 @@
 import type { Burg } from "../modules/burgs-generator";
+import type { EngineRuntimeContext } from "../modules/engine-runtime-context";
+import { createBrowserRendererContext } from "./renderer-runtime-context";
 
 declare global {
   var drawBurgIcons: () => void;
@@ -47,15 +49,16 @@ const getWindow = (): (Window & typeof globalThis) | undefined => {
 };
 
 export const burgIconsRenderer = (
+  context: EngineRuntimeContext,
   targets: BurgIconRendererTargets = defaultBurgIconRendererTargets,
 ): void => {
-  TIME && console.time("drawBurgIcons");
-  createIconGroups(targets);
+  context.timing.shouldTime && console.time("drawBurgIcons");
+  createIconGroups(context, targets);
   const document = targets.getDocument();
   if (!document) return;
 
-  for (const { name } of options.burgs.groups as BurgGroup[]) {
-    const burgsInGroup = pack.burgs.filter(
+  for (const { name } of context.options.burgs.groups as BurgGroup[]) {
+    const burgsInGroup = context.pack.burgs.filter(
       (b) => b.group === name && !b.removed,
     );
     if (!burgsInGroup.length) continue;
@@ -89,16 +92,17 @@ export const burgIconsRenderer = (
       .join("");
   }
 
-  TIME && console.timeEnd("drawBurgIcons");
+  context.timing.shouldTime && console.timeEnd("drawBurgIcons");
 };
 
 export const drawBurgIconRenderer = (
+  context: EngineRuntimeContext,
   burg: Burg,
   targets: BurgIconRendererTargets = defaultBurgIconRendererTargets,
 ): void => {
   const iconGroup = burgIcons.select<SVGGElement>(`#${burg.group}`);
   if (iconGroup.empty()) {
-    burgIconsRenderer(targets);
+    burgIconsRenderer(context, targets);
     return; // redraw all icons if group is missing
   }
 
@@ -136,7 +140,10 @@ export const removeBurgIconRenderer = (
   if (existingAnchor) existingAnchor.remove();
 };
 
-function createIconGroups(targets: BurgIconRendererTargets): void {
+function createIconGroups(
+  context: EngineRuntimeContext,
+  targets: BurgIconRendererTargets,
+): void {
   const document = targets.getDocument();
   if (!document) return;
 
@@ -168,7 +175,7 @@ function createIconGroups(targets: BurgIconRendererTargets): void {
     style.burgIcons.town || Object.values(style.burgIcons)[0] || {};
   const defaultAnchorStyle =
     style.anchors.town || Object.values(style.anchors)[0] || {};
-  const sortedGroups = [...(options.burgs.groups as BurgGroup[])].sort(
+  const sortedGroups = [...(context.options.burgs.groups as BurgGroup[])].sort(
     (a, b) => a.order - b.order,
   );
   for (const { name } of sortedGroups) {
@@ -190,7 +197,9 @@ function createIconGroups(targets: BurgIconRendererTargets): void {
 
 const runtimeWindow = getWindow();
 if (runtimeWindow) {
-  runtimeWindow.drawBurgIcons = burgIconsRenderer;
-  runtimeWindow.drawBurgIcon = drawBurgIconRenderer;
+  runtimeWindow.drawBurgIcons = () =>
+    burgIconsRenderer(createBrowserRendererContext());
+  runtimeWindow.drawBurgIcon = (burg) =>
+    drawBurgIconRenderer(createBrowserRendererContext(), burg);
   runtimeWindow.removeBurgIcon = removeBurgIconRenderer;
 }

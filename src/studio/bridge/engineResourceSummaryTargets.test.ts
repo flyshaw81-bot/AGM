@@ -1,4 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  clearActiveEngineRuntimeContext,
+  setActiveEngineRuntimeContext,
+} from "../../modules/engine-runtime-active-context";
 import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 import {
   createGlobalResourceSummaryTargets,
@@ -24,6 +28,8 @@ const originalBiomesDescriptor = Object.getOwnPropertyDescriptor(
 
 describe("createGlobalResourceSummaryTargets", () => {
   afterEach(() => {
+    clearActiveEngineRuntimeContext();
+
     for (const [name, descriptor, value] of [
       ["pack", originalPackDescriptor, originalPack],
       ["biomesData", originalBiomesDataDescriptor, originalBiomesData],
@@ -74,6 +80,34 @@ describe("createGlobalResourceSummaryTargets", () => {
     expect(globalThis.biomesData).toBe(biomeData);
   });
 
+  it("prefers active engine context resources over stale global data", () => {
+    const activeBiomeData = { i: [7] };
+    const nextBiomeData = { i: [8] };
+    const activeStates = [{ i: 1, name: "Context State" }];
+    globalThis.biomesData = { i: [1] } as unknown as typeof biomesData;
+    globalThis.pack = {
+      states: [{ i: 1, name: "Global State" }],
+      cells: { area: { 4: 1 }, pop: { 4: 2 } },
+    } as unknown as typeof pack;
+    const activeContext = {
+      biomesData: activeBiomeData,
+      pack: {
+        states: activeStates,
+        cells: { area: { 4: 12 }, pop: { 4: 3 } },
+      },
+    } as unknown as EngineRuntimeContext;
+    setActiveEngineRuntimeContext(activeContext);
+
+    const targets = createGlobalResourceSummaryTargets();
+
+    expect(targets.getBiomeData()).toBe(activeBiomeData);
+    expect(targets.getStates()).toBe(activeStates);
+    expect(targets.getCellArea(4)).toBe(12);
+    expect(targets.getCellPopulation(4)).toBe(3);
+    targets.setBiomeData(nextBiomeData);
+    expect(activeContext.biomesData).toBe(nextBiomeData);
+  });
+
   it("keeps global resource targets safe when global access throws", () => {
     for (const name of ["pack", "biomesData", "Biomes"]) {
       Object.defineProperty(globalThis, name, {
@@ -97,6 +131,7 @@ describe("createGlobalResourceSummaryTargets", () => {
     expect(targets.getProvinces()).toBeUndefined();
     expect(targets.getRoutes()).toBeUndefined();
     expect(targets.getZones()).toBeUndefined();
+    expect(targets.getMarkers()).toBeUndefined();
     expect(targets.getCellArea(7)).toBeUndefined();
     expect(targets.getCellPopulation(7)).toBeUndefined();
   });
@@ -118,6 +153,7 @@ describe("createGlobalResourceSummaryTargets", () => {
         getProvinces: () => [],
         getRoutes: () => [],
         getZones: () => [],
+        getMarkers: () => [],
         getCellArea: (cellId) => (cellId === 7 ? 12 : undefined),
         getCellPopulation: (cellId) => (cellId === 7 ? 3 : undefined),
       },

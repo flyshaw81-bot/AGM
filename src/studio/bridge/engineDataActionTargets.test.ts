@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { AgmRuntimeDataFacade } from "../../modules/agm-runtime-data-facade";
 import type {
   EngineDocumentSourceSummary,
   EngineSaveTargetSummary,
@@ -9,16 +10,18 @@ import {
 } from "./engineDataActionTargets";
 
 type TestDataGlobals = typeof globalThis & {
-  quickLoad?: () => Promise<void>;
-  saveMap?: (method: "storage" | "machine" | "dropbox") => Promise<void>;
-  loadURL?: () => void;
+  AgmRuntimeData?: AgmRuntimeDataFacade;
+  requestStudioInput?: (
+    promptText: string,
+    options: { default: string; required?: boolean },
+    callback: (value: string | number) => void,
+  ) => void;
 };
 
 const testGlobals = globalThis as TestDataGlobals;
 const originalDocument = globalThis.document;
-const originalQuickLoad = testGlobals.quickLoad;
-const originalSaveMap = testGlobals.saveMap;
-const originalLoadUrl = testGlobals.loadURL;
+const originalAgmRuntimeData = testGlobals.AgmRuntimeData;
+const originalRequestStudioInput = testGlobals.requestStudioInput;
 const originalWindow = globalThis.window;
 const originalDocumentDescriptor = Object.getOwnPropertyDescriptor(
   globalThis,
@@ -28,17 +31,13 @@ const originalWindowDescriptor = Object.getOwnPropertyDescriptor(
   globalThis,
   "window",
 );
-const originalQuickLoadDescriptor = Object.getOwnPropertyDescriptor(
+const originalAgmRuntimeDataDescriptor = Object.getOwnPropertyDescriptor(
   globalThis,
-  "quickLoad",
+  "AgmRuntimeData",
 );
-const originalSaveMapDescriptor = Object.getOwnPropertyDescriptor(
+const originalRequestStudioInputDescriptor = Object.getOwnPropertyDescriptor(
   globalThis,
-  "saveMap",
-);
-const originalLoadUrlDescriptor = Object.getOwnPropertyDescriptor(
-  globalThis,
-  "loadURL",
+  "requestStudioInput",
 );
 
 describe("createGlobalDataActionTargets", () => {
@@ -52,35 +51,30 @@ describe("createGlobalDataActionTargets", () => {
         value: originalDocument,
       });
     }
-    if (originalQuickLoadDescriptor) {
+    if (originalAgmRuntimeDataDescriptor) {
       Object.defineProperty(
         globalThis,
-        "quickLoad",
-        originalQuickLoadDescriptor,
+        "AgmRuntimeData",
+        originalAgmRuntimeDataDescriptor,
       );
     } else {
-      Object.defineProperty(globalThis, "quickLoad", {
+      Object.defineProperty(globalThis, "AgmRuntimeData", {
         configurable: true,
         writable: true,
-        value: originalQuickLoad,
+        value: originalAgmRuntimeData,
       });
     }
-    if (originalSaveMapDescriptor) {
-      Object.defineProperty(globalThis, "saveMap", originalSaveMapDescriptor);
+    if (originalRequestStudioInputDescriptor) {
+      Object.defineProperty(
+        globalThis,
+        "requestStudioInput",
+        originalRequestStudioInputDescriptor,
+      );
     } else {
-      Object.defineProperty(globalThis, "saveMap", {
+      Object.defineProperty(globalThis, "requestStudioInput", {
         configurable: true,
         writable: true,
-        value: originalSaveMap,
-      });
-    }
-    if (originalLoadUrlDescriptor) {
-      Object.defineProperty(globalThis, "loadURL", originalLoadUrlDescriptor);
-    } else {
-      Object.defineProperty(globalThis, "loadURL", {
-        configurable: true,
-        writable: true,
-        value: originalLoadUrl,
+        value: originalRequestStudioInput,
       });
     }
     if (originalWindowDescriptor) {
@@ -94,32 +88,10 @@ describe("createGlobalDataActionTargets", () => {
     }
   });
 
-  it("reads Dropbox state and file input availability from the active document", () => {
+  it("reads file input availability from the active document", () => {
     const fileInput = { click: vi.fn() };
-    const dropboxSelect = {
-      value: "world.map",
-      selectedOptions: [{ textContent: " World Map " }],
-      style: { display: "block" },
-    };
-    const dropboxButtons = { style: { display: "block" } };
-    const shareContainer = { style: { display: "block" } };
-    const shareLink = { href: "https://example.test/world.map" };
     globalThis.document = {
-      getElementById: vi.fn((id) =>
-        id === "mapToLoad"
-          ? fileInput
-          : id === "dropboxConnectButton"
-            ? {}
-            : id === "loadFromDropboxSelect"
-              ? dropboxSelect
-              : id === "loadFromDropboxButtons"
-                ? dropboxButtons
-                : id === "sharableLinkContainer"
-                  ? shareContainer
-                  : id === "sharableLink"
-                    ? shareLink
-                    : null,
-      ),
+      getElementById: vi.fn((id) => (id === "mapToLoad" ? fileInput : null)),
     } as unknown as Document;
 
     const targets = createGlobalDataActionTargets();
@@ -127,35 +99,61 @@ describe("createGlobalDataActionTargets", () => {
     expect(targets.hasFileInput()).toBe(true);
     targets.clickFileInput();
     expect(fileInput.click).toHaveBeenCalledWith();
-    expect(targets.getDropboxState()).toEqual({
-      connectButtonAvailable: true,
-      connected: true,
-      buttonsVisible: true,
-      selectedFile: "world.map",
-      selectedLabel: "World Map",
-      hasShareLink: true,
-      shareUrl: "https://example.test/world.map",
-    });
   });
 
   it("forwards runtime data operations when available", async () => {
-    const quickLoad = vi.fn(async () => undefined);
-    const saveMap = vi.fn(async () => undefined);
-    const loadURL = vi.fn();
-    testGlobals.quickLoad = quickLoad;
-    testGlobals.saveMap = saveMap;
-    testGlobals.loadURL = loadURL;
+    const loadBrowserSnapshot = vi.fn(async () => undefined);
+    const saveProject = vi.fn(async () => undefined);
+    const createGeneratedWorld = vi.fn(async () => undefined);
+    const openUrlSource = vi.fn();
+    testGlobals.AgmRuntimeData = {
+      loadBrowserSnapshot,
+      saveProject,
+      createGeneratedWorld,
+      openUrlSource,
+    };
 
     const targets = createGlobalDataActionTargets();
 
-    expect(targets.canQuickLoad()).toBe(true);
-    await targets.quickLoad();
-    await targets.saveMap("storage");
-    targets.loadUrl();
+    expect(targets.canLoadBrowserSnapshot()).toBe(true);
+    await targets.loadBrowserSnapshot();
+    await targets.saveProject("storage");
+    await targets.createGeneratedWorld();
+    targets.openUrlSource();
 
-    expect(quickLoad).toHaveBeenCalledWith();
-    expect(saveMap).toHaveBeenCalledWith("storage");
-    expect(loadURL).toHaveBeenCalledWith();
+    expect(loadBrowserSnapshot).toHaveBeenCalledWith();
+    expect(saveProject).toHaveBeenCalledWith("storage");
+    expect(createGeneratedWorld).toHaveBeenCalledWith();
+    expect(openUrlSource).toHaveBeenCalledWith();
+  });
+
+  it("uses Studio input for URL loading through the AGM runtime facade", () => {
+    const openUrlSource = vi.fn();
+    const requestStudioInput = vi.fn(
+      (
+        _prompt: string,
+        _options: { default: string; required?: boolean },
+        callback: (value: string | number) => void,
+      ) => {
+        callback("https://example.test/world.map");
+      },
+    );
+    testGlobals.AgmRuntimeData = { openUrlSource };
+    testGlobals.requestStudioInput = requestStudioInput;
+
+    const targets = createGlobalDataActionTargets();
+
+    expect(targets.canOpenUrlSource()).toBe(true);
+    targets.openUrlSource();
+
+    expect(requestStudioInput).toHaveBeenCalledWith(
+      "Provide URL to map file",
+      { default: "", required: true },
+      expect.any(Function),
+    );
+    expect(openUrlSource).toHaveBeenCalledWith(
+      "https://example.test/world.map",
+    );
   });
 
   it("keeps default DOM and runtime actions safe when browser helpers are absent", async () => {
@@ -166,29 +164,14 @@ describe("createGlobalDataActionTargets", () => {
 
     expect(targets.hasFileInput()).toBe(false);
     expect(() => targets.clickFileInput()).not.toThrow();
-    expect(targets.getDropboxState()).toEqual({
-      connectButtonAvailable: false,
-      connected: false,
-      buttonsVisible: false,
-      selectedFile: "",
-      selectedLabel: "",
-      hasShareLink: false,
-      shareUrl: "",
-    });
-    expect(targets.canQuickLoad()).toBe(false);
-    expect(targets.canSaveMap()).toBe(false);
-    expect(targets.canConnectDropbox()).toBe(false);
-    expect(targets.canLoadFromDropbox()).toBe(false);
-    expect(targets.canShareDropbox()).toBe(false);
-    expect(targets.canGenerateMapOnLoad()).toBe(false);
-    expect(targets.canLoadUrl()).toBe(false);
-    await expect(targets.quickLoad()).resolves.toBeUndefined();
-    await expect(targets.saveMap("machine")).resolves.toBeUndefined();
-    await expect(targets.connectDropbox()).resolves.toBeUndefined();
-    await expect(targets.loadFromDropbox()).resolves.toBeUndefined();
-    await expect(targets.createSharableDropboxLink()).resolves.toBeUndefined();
-    await expect(targets.generateMapOnLoad()).resolves.toBeUndefined();
-    expect(() => targets.loadUrl()).not.toThrow();
+    expect(targets.canLoadBrowserSnapshot()).toBe(false);
+    expect(targets.canSaveProject()).toBe(false);
+    expect(targets.canCreateGeneratedWorld()).toBe(false);
+    expect(targets.canOpenUrlSource()).toBe(false);
+    await expect(targets.loadBrowserSnapshot()).resolves.toBeUndefined();
+    await expect(targets.saveProject("machine")).resolves.toBeUndefined();
+    await expect(targets.createGeneratedWorld()).resolves.toBeUndefined();
+    expect(() => targets.openUrlSource()).not.toThrow();
   });
 
   it("keeps default DOM and runtime actions safe when browser helpers throw", async () => {
@@ -204,22 +187,10 @@ describe("createGlobalDataActionTargets", () => {
         throw new Error("document blocked");
       },
     });
-    Object.defineProperty(globalThis, "quickLoad", {
+    Object.defineProperty(globalThis, "AgmRuntimeData", {
       configurable: true,
       get: () => {
-        throw new Error("quickLoad blocked");
-      },
-    });
-    Object.defineProperty(globalThis, "saveMap", {
-      configurable: true,
-      value: () => {
-        throw new Error("saveMap blocked");
-      },
-    });
-    Object.defineProperty(globalThis, "loadURL", {
-      configurable: true,
-      value: () => {
-        throw new Error("loadURL blocked");
+        throw new Error("AGM data runtime blocked");
       },
     });
 
@@ -227,20 +198,11 @@ describe("createGlobalDataActionTargets", () => {
 
     expect(targets.hasFileInput()).toBe(false);
     expect(() => targets.clickFileInput()).not.toThrow();
-    expect(targets.getDropboxState()).toEqual({
-      connectButtonAvailable: false,
-      connected: false,
-      buttonsVisible: false,
-      selectedFile: "",
-      selectedLabel: "",
-      hasShareLink: false,
-      shareUrl: "",
-    });
-    expect(targets.canQuickLoad()).toBe(false);
-    expect(targets.canSaveMap()).toBe(true);
-    await expect(targets.quickLoad()).resolves.toBeUndefined();
-    await expect(targets.saveMap("machine")).resolves.toBeUndefined();
-    expect(() => targets.loadUrl()).not.toThrow();
+    expect(targets.canLoadBrowserSnapshot()).toBe(false);
+    expect(targets.canSaveProject()).toBe(false);
+    await expect(targets.loadBrowserSnapshot()).resolves.toBeUndefined();
+    await expect(targets.saveProject("machine")).resolves.toBeUndefined();
+    expect(() => targets.openUrlSource()).not.toThrow();
   });
 
   it("composes data action targets from injected document, DOM, and runtime adapters", async () => {
@@ -255,8 +217,8 @@ describe("createGlobalDataActionTargets", () => {
     const ensureDocumentSourceTracking = vi.fn();
     const setDocumentSourceSummary = vi.fn();
     const clickFileInput = vi.fn();
-    const quickLoad = vi.fn(async () => undefined);
-    const saveMap = vi.fn(async () => undefined);
+    const loadSnapshot = vi.fn(async () => undefined);
+    const storeProject = vi.fn(async () => undefined);
     const targets = createDataActionTargets(
       {
         ensureDocumentSourceTracking,
@@ -265,33 +227,18 @@ describe("createGlobalDataActionTargets", () => {
         setDocumentSourceSummary,
       },
       {
-        getDropboxState: () => ({
-          connectButtonAvailable: true,
-          connected: false,
-          buttonsVisible: false,
-          selectedFile: "",
-          selectedLabel: "",
-          hasShareLink: false,
-          shareUrl: "",
-        }),
         hasFileInput: () => true,
         clickFileInput,
       },
       {
-        canQuickLoad: () => true,
-        quickLoad,
-        canSaveMap: () => true,
-        saveMap,
-        canConnectDropbox: () => false,
-        connectDropbox: async () => undefined,
-        canLoadFromDropbox: () => false,
-        loadFromDropbox: async () => undefined,
-        canShareDropbox: () => false,
-        createSharableDropboxLink: async () => undefined,
-        canGenerateMapOnLoad: () => false,
-        generateMapOnLoad: async () => undefined,
-        canLoadUrl: () => false,
-        loadUrl: vi.fn(),
+        canLoadBrowserSnapshot: () => true,
+        loadBrowserSnapshot: loadSnapshot,
+        canSaveProject: () => true,
+        saveProject: storeProject,
+        canCreateGeneratedWorld: () => false,
+        createGeneratedWorld: async () => undefined,
+        canOpenUrlSource: () => false,
+        openUrlSource: vi.fn(),
       },
     );
 
@@ -304,10 +251,10 @@ describe("createGlobalDataActionTargets", () => {
     expect(targets.hasFileInput()).toBe(true);
     targets.clickFileInput();
     expect(clickFileInput).toHaveBeenCalledWith();
-    expect(targets.canQuickLoad()).toBe(true);
-    await targets.quickLoad();
-    await targets.saveMap("dropbox");
-    expect(quickLoad).toHaveBeenCalledWith();
-    expect(saveMap).toHaveBeenCalledWith("dropbox");
+    expect(targets.canLoadBrowserSnapshot()).toBe(true);
+    await targets.loadBrowserSnapshot();
+    await targets.saveProject("machine");
+    expect(loadSnapshot).toHaveBeenCalledWith();
+    expect(storeProject).toHaveBeenCalledWith("machine");
   });
 });

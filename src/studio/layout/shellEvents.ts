@@ -14,6 +14,7 @@ export function bindStudioShellEvents(
   handlers: StudioShellEventHandlers,
 ) {
   const {
+    onEditorModuleChange,
     onSectionChange,
     onViewportChange,
     onExportFormatChange,
@@ -45,11 +46,16 @@ export function bindStudioShellEvents(
     onDirectZoneApply,
     onDirectZoneReset,
     onDirectZoneListChange,
+    onDirectMarkerSelect,
+    onDirectMarkerApply,
+    onDirectMarkerReset,
+    onDirectMarkerListChange,
     onDirectDiplomacySubjectSelect,
     onDirectDiplomacyObjectSelect,
     onDirectDiplomacyApply,
     onDirectDiplomacyReset,
     onDirectDiplomacyListChange,
+    onDirectMilitaryListChange,
     onDirectBiomeSelect,
     onDirectBiomeApply,
     onDirectBiomeReset,
@@ -69,8 +75,10 @@ export function bindStudioShellEvents(
 
   bindShellPreferenceEvents(state, handlers);
   bindShellCoreEvents(state, handlers);
-  const { jumpToDirectWorkbench, openDirectWorkbench } =
-    bindDirectWorkbenchNavigationEvents({ onSectionChange });
+  const { openDirectWorkbench } = bindDirectWorkbenchNavigationEvents({
+    onEditorModuleChange,
+    onSectionChange,
+  });
 
   bindNativeRelationshipEvents({
     state,
@@ -95,7 +103,7 @@ export function bindStudioShellEvents(
   });
 
   bindDirectEditorEvents({
-    jumpToDirectWorkbench,
+    jumpToDirectWorkbench: openDirectWorkbench,
     onDirectBiomeApply,
     onDirectBiomeListChange,
     onDirectBiomeReset,
@@ -113,6 +121,7 @@ export function bindStudioShellEvents(
     onDirectDiplomacyObjectSelect,
     onDirectDiplomacyReset,
     onDirectDiplomacySubjectSelect,
+    onDirectMilitaryListChange,
     onDirectProvinceApply,
     onDirectProvinceListChange,
     onDirectProvinceReset,
@@ -133,6 +142,10 @@ export function bindStudioShellEvents(
     onDirectZoneListChange,
     onDirectZoneReset,
     onDirectZoneSelect,
+    onDirectMarkerApply,
+    onDirectMarkerListChange,
+    onDirectMarkerReset,
+    onDirectMarkerSelect,
   });
 
   bindShellActionEvents({

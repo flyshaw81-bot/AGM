@@ -1,14 +1,14 @@
 export const foundationEnvironmentStyles = `    body.studio-enabled {
-      background: #12110f;
+      background: #111820;
       overflow: hidden;
     }
 
     html[data-studio-theme="daylight"] body.studio-enabled {
-      background: #f1eee7;
+      background: #eef2f5;
     }
 
     html[data-studio-theme="night"] body.studio-enabled {
-      background: #0d0d0c;
+      background: #0f151c;
     }
 
     body.studio-enabled #optionsContainer,
@@ -25,26 +25,27 @@ export const foundationEnvironmentStyles = `    body.studio-enabled {
     }
 
     #studioRoot {
-      --agm-black: #12110f;
+      --agm-black: #111820;
       --agm-white: #ffffff;
-      --agm-surface-dark: #1f1f1f;
-      --agm-surface-dark-2: #242424;
-      --agm-surface-panel: #242424;
-      --agm-core-accent: #a78bfa;
-      --agm-generation-mid: #d4d4d8;
-      --agm-matrix-violet: #a78bfa;
-      --agm-text-secondary-dark: #a1a1aa;
-      --agm-gradient-generation: linear-gradient(90deg, var(--agm-core-accent) 0%, var(--agm-generation-mid) 54%, var(--agm-matrix-violet) 100%);
-      --agm-font-latin: "Inter Display", Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      --agm-font-zh: "Noto Sans CJK SC", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      --agm-surface-dark: #17202a;
+      --agm-surface-dark-2: #1d2833;
+      --agm-surface-panel: #1d2833;
+      --agm-core-accent: #7fa8bf;
+      --agm-generation-mid: #a9bbc6;
+      --agm-matrix-violet: #7fa8bf;
+      --agm-text-secondary-dark: #92a4af;
+      --agm-gradient-generation: linear-gradient(90deg, var(--agm-core-accent) 0%, var(--agm-generation-mid) 54%, #d2dde2 100%);
+      --agm-font-latin: "Satoshi", "Geist Sans", "SF Pro Display", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+      --agm-font-zh: "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans CJK SC", "Noto Sans SC", system-ui, sans-serif;
+      --agm-font-ui: "Satoshi", "Geist Sans", "SF Pro Display", "Segoe UI Variable", "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC", "Segoe UI", system-ui, sans-serif;
       --studio-bg: var(--agm-surface-dark);
-      --studio-panel: rgba(36, 36, 36, 0.92);
-      --studio-panel-strong: rgba(42, 42, 42, 0.96);
+      --studio-panel: rgba(29, 40, 51, 0.92);
+      --studio-panel-strong: rgba(35, 48, 60, 0.96);
       --studio-border: var(--studio-accent-18);
       --studio-border-strong: var(--studio-accent-58);
-      --studio-text: #f4f4f5;
+      --studio-text: #e9eef1;
       --studio-muted: var(--agm-text-secondary-dark);
-      --studio-dim: #71717a;
+      --studio-dim: #63717b;
       --studio-accent: var(--agm-core-accent);
       --studio-cyan: var(--agm-generation-mid);
       --studio-green: var(--studio-accent);
@@ -63,13 +64,13 @@ export const foundationEnvironmentStyles = `    body.studio-enabled {
       --studio-accent-72: color-mix(in srgb, var(--studio-accent) 72%, transparent);
       --studio-accent-78: color-mix(in srgb, var(--studio-accent) 78%, transparent);
       --studio-accent-86: color-mix(in srgb, var(--studio-accent) 86%, transparent);
-      --studio-accent-text: color-mix(in srgb, var(--studio-accent) 72%, #fff8ec);
-      --studio-accent-panel: linear-gradient(180deg, color-mix(in srgb, var(--studio-accent) 10%, rgba(36, 36, 36, 0.92)), rgba(31, 31, 31, 0.96));
+      --studio-accent-text: color-mix(in srgb, var(--studio-accent) 72%, #e9eef1);
+      --studio-accent-panel: linear-gradient(180deg, color-mix(in srgb, var(--studio-accent) 10%, rgba(29, 40, 51, 0.92)), rgba(23, 32, 42, 0.96));
       position: fixed;
       inset: 0;
       z-index: 20;
       pointer-events: none;
-      font-family: var(--agm-font-latin);
+      font-family: var(--agm-font-ui);
       color: var(--studio-text);
       -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
@@ -80,42 +81,41 @@ export const foundationEnvironmentStyles = `    body.studio-enabled {
     }
 
     #studioRoot[data-studio-theme="daylight"] {
-      --agm-surface-dark: #eef0f3;
+      --agm-surface-dark: #eef2f5;
       --agm-surface-dark-2: #ffffff;
       --studio-panel: rgba(255, 255, 255, 0.96);
       --studio-panel-strong: #ffffff;
-      --studio-border: rgba(17, 24, 39, 0.1);
-      --studio-border-strong: rgba(17, 24, 39, 0.2);
-      --studio-text: #111827;
-      --studio-muted: #6b7280;
-      --studio-dim: #9ca3af;
-      --studio-accent: #6d5dfc;
-      --studio-cyan: #6d5dfc;
-      --studio-green: #111827;
-      --studio-warning: #4b5563;
-      --studio-accent-text: #111827;
-      --studio-accent-panel: #f3f4f6;
-      --agm-text-secondary-dark: #6b7280;
-      --agm-gradient-generation: linear-gradient(90deg, #111827 0%, #374151 100%);
+      --studio-border: rgba(21, 36, 48, 0.1);
+      --studio-border-strong: rgba(21, 36, 48, 0.2);
+      --studio-text: #152430;
+      --studio-muted: #62717c;
+      --studio-dim: #9aa6ae;
+      --studio-accent: #5d879d;
+      --studio-cyan: #5d879d;
+      --studio-green: #152430;
+      --studio-warning: #52616c;
+      --studio-accent-text: #152430;
+      --studio-accent-panel: #f1f4f6;
+      --agm-text-secondary-dark: #62717c;
+      --agm-gradient-generation: linear-gradient(90deg, #152430 0%, #52616c 100%);
     }
 
     #studioRoot[data-studio-theme="night"] {
-      --agm-surface-dark: #0f1014;
-      --agm-surface-dark-2: #15161b;
-      --studio-panel: rgba(20, 21, 26, 0.96);
-      --studio-panel-strong: #18191f;
-      --studio-border: rgba(255, 255, 255, 0.08);
-      --studio-border-strong: rgba(255, 255, 255, 0.18);
-      --studio-text: #f4f4f5;
-      --studio-muted: #a1a1aa;
-      --studio-dim: #71717a;
-      --studio-accent: #e5e7eb;
-      --studio-cyan: #a5b4fc;
-      --studio-green: #e5e7eb;
-      --studio-warning: #d4d4d8;
-      --studio-accent-text: #f4f4f5;
-      --studio-accent-panel: #22232a;
-      --agm-gradient-generation: linear-gradient(90deg, #f4f4f5 0%, #a1a1aa 100%);
+      --agm-surface-dark: #111820;
+      --agm-surface-dark-2: #17202a;
+      --studio-panel: rgba(29, 40, 51, 0.92);
+      --studio-panel-strong: rgba(35, 48, 60, 0.96);
+      --studio-border: var(--studio-accent-18);
+      --studio-border-strong: var(--studio-accent-58);
+      --studio-text: #e9eef1;
+      --studio-muted: #92a4af;
+      --studio-dim: #63717b;
+      --studio-accent: #7fa8bf;
+      --studio-cyan: #a9bbc6;
+      --studio-green: var(--studio-accent);
+      --studio-warning: var(--studio-cyan);
+      --studio-accent-text: color-mix(in srgb, var(--studio-accent) 72%, #e9eef1);
+      --studio-accent-panel: linear-gradient(180deg, color-mix(in srgb, var(--studio-accent) 10%, rgba(29, 40, 51, 0.92)), rgba(23, 32, 42, 0.96));
     }
 
     #studioRoot * {

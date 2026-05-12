@@ -1,5 +1,6 @@
 import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 import type { AgmWritableState } from "./engineAutoFixUndoTargets";
+import { getBrowserPack } from "./engineBrowserPackAdapter";
 
 export type EngineStateWritebackTargets = {
   getWritableState: (stateId: number) => AgmWritableState | undefined;
@@ -17,7 +18,7 @@ function writableStateOrUndefined(state: AgmWritableState | undefined) {
 export function createGlobalStateLookupAdapter(): EngineStateLookupAdapter {
   return {
     getState: (stateId) =>
-      getGlobalPack()?.states?.[stateId] as unknown as
+      getBrowserPack()?.states?.[stateId] as unknown as
         | AgmWritableState
         | undefined,
   };
@@ -51,12 +52,4 @@ export function createRuntimeStateWritebackTargets(
   context: EngineRuntimeContext,
 ): EngineStateWritebackTargets {
   return createStateWritebackTargets(createRuntimeStateLookupAdapter(context));
-}
-
-function getGlobalPack(): typeof pack | undefined {
-  try {
-    return globalThis.pack;
-  } catch {
-    return undefined;
-  }
 }

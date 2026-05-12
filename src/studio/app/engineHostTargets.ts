@@ -65,14 +65,6 @@ export function createGlobalEngineHostDialogDomAdapter(): EngineHostDialogDomAda
   };
 }
 
-export function createJQueryEngineHostDialogAdapter(
-  domAdapter: EngineHostDialogDomAdapter = createGlobalEngineHostDialogDomAdapter(),
-): EngineHostDialogAdapter {
-  return {
-    queryDialogs: () => domAdapter.querySelectorAll("#dialogs > .ui-dialog"),
-  };
-}
-
 export function createStudioEngineHostDialogAdapter(
   domAdapter: EngineHostDialogDomAdapter = createGlobalEngineHostDialogDomAdapter(),
 ): EngineHostDialogAdapter {
@@ -111,10 +103,7 @@ export function createEngineHostTargets(
 export function createGlobalEngineHostTargets(
   domAdapter: EngineHostDomAdapter = createGlobalEngineHostDomAdapter(),
   dialogAdapter: EngineHostDialogAdapter = createCompositeEngineHostDialogAdapter(
-    [
-      createStudioEngineHostDialogAdapter(),
-      createJQueryEngineHostDialogAdapter(),
-    ],
+    [createStudioEngineHostDialogAdapter()],
   ),
 ): EngineHostTargets {
   return createEngineHostTargets(domAdapter, dialogAdapter);

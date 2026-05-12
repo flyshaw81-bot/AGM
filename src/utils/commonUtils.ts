@@ -1,6 +1,6 @@
-import { clipPolygon } from "lineclip";
 import { last } from "./arrayUtils";
 import { distanceSquared } from "./functionUtils";
+import { clipPolygon } from "./lineclip";
 import { rn } from "./numberUtils";
 import { rand } from "./probabilityUtils";
 

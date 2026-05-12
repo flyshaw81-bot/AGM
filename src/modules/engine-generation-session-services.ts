@@ -4,12 +4,17 @@ import {
   EngineOptionsSession,
   type EngineOptionsSessionModule,
 } from "./engine-options-session";
+import {
+  createGlobalEngineRenderFunctions,
+  type EngineGlobalRenderFunctions,
+} from "./engine-render-adapter";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
 import type { EngineSeedSessionModule as EngineSeedSessionService } from "./engine-seed-session";
+import type { EngineGrid } from "./engine-world-state";
 
 export type EngineGenerationSessionRequest = {
   seed?: string;
-  graph?: typeof grid;
+  graph?: EngineGrid;
 };
 
 export type EngineGridSessionService = {
@@ -17,8 +22,8 @@ export type EngineGridSessionService = {
 };
 
 export type EngineGridSessionTargets = {
-  getGrid: () => typeof grid;
-  setGrid: (nextGrid: typeof grid) => void;
+  getGrid: () => EngineGrid;
+  setGrid: (nextGrid: EngineGrid) => void;
   getSeed: () => string;
   getGraphWidth: () => number;
   getGraphHeight: () => number;
@@ -26,9 +31,9 @@ export type EngineGridSessionTargets = {
     seed: string,
     graphWidth: number,
     graphHeight: number,
-  ) => typeof grid;
+  ) => EngineGrid;
   shouldRegenerateGrid: (
-    currentGrid: typeof grid,
+    currentGrid: EngineGrid,
     seed: number,
     graphWidth: number,
     graphHeight: number,
@@ -92,10 +97,6 @@ function getGlobalNumber(name: string): number {
   return typeof value === "number" ? value : 0;
 }
 
-function callGlobal(name: string) {
-  getGlobalValue<() => void>(name)?.();
-}
-
 export function createGridSessionService(
   targets: EngineGridSessionTargets,
 ): EngineGridSessionService {
@@ -143,7 +144,7 @@ export function createGlobalGridSessionTargets(
 
 export function createBrowserGlobalGridSessionTargets(): EngineGlobalGridSessionTargets {
   return {
-    getGrid: () => getGlobalValue<typeof grid>("grid") ?? ({} as typeof grid),
+    getGrid: () => getGlobalValue<EngineGrid>("grid") ?? ({} as EngineGrid),
     setGrid: (nextGrid) => {
       setGlobalValue("grid", nextGrid);
     },
@@ -170,6 +171,7 @@ export function createRuntimeGridSessionService(
     getGrid: () => context.grid,
     setGrid: (nextGrid) => {
       context.grid = nextGrid;
+      if (context.worldState) context.worldState.grid = nextGrid;
     },
     getSeed: () => context.seed,
     getGraphWidth: () => Number(getWorldSettings().graphWidth) || 0,
@@ -179,10 +181,19 @@ export function createRuntimeGridSessionService(
   });
 }
 
-export function createGlobalGenerationSessionLifecycleTargets(): EngineGenerationSessionLifecycleTargets {
+export function createGlobalGenerationSessionLifecycleTargets(
+  renderFunctions: Pick<
+    EngineGlobalRenderFunctions,
+    "invokeActiveZooming"
+  > = createGlobalEngineRenderFunctions(),
+): EngineGenerationSessionLifecycleTargets {
   return {
     invokeActiveZooming: () => {
-      callGlobal("invokeActiveZooming");
+      try {
+        renderFunctions.invokeActiveZooming?.();
+      } catch {
+        // Resetting the current zoom is best-effort during generation setup.
+      }
     },
   };
 }

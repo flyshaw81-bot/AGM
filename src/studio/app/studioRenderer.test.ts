@@ -95,6 +95,10 @@ describe("studio renderer", () => {
     const state = createState();
     const targets = createTargets();
     const render = vi.fn();
+    vi.mocked(targets.syncViewport).mockReturnValue({
+      width: 1260,
+      height: 788,
+    });
 
     renderStudioApp(root, state, render, targets);
 
@@ -117,6 +121,8 @@ describe("studio renderer", () => {
       0,
       0,
     );
+    expect(state.viewport.width).toBe(1260);
+    expect(state.viewport.height).toBe(788);
     expect(targets.bindCanvasToolInteractions).toHaveBeenCalled();
     expect(targets.bindShellEvents).toHaveBeenCalled();
   });

@@ -3,6 +3,8 @@ import type {
   EngineBiomeSummaryItem,
   EngineEntitySummary,
   EngineEntitySummaryItem,
+  EngineMarkerSummaryItem,
+  EngineMilitarySummaryItem,
   EngineProvinceSummaryItem,
   EngineRouteSummaryItem,
   EngineWorldResourceSummary,
@@ -217,14 +219,102 @@ function summarizeZones(
     .slice(0, limit);
 }
 
+function compactMarker(
+  item: Record<string, unknown>,
+): EngineMarkerSummaryItem | null {
+  const id = finiteNumberOrUndefined(item.i);
+  if (id === undefined) return null;
+
+  return {
+    id,
+    type: stringOrUndefined(item.type),
+    icon: stringOrUndefined(item.icon),
+    cell: finiteNumberOrUndefined(item.cell),
+    x: finiteNumberOrUndefined(item.x),
+    y: finiteNumberOrUndefined(item.y),
+    dx: finiteNumberOrUndefined(item.dx),
+    dy: finiteNumberOrUndefined(item.dy),
+    px: finiteNumberOrUndefined(item.px),
+    size: finiteNumberOrUndefined(item.size),
+    pin: stringOrUndefined(item.pin),
+    fill: stringOrUndefined(item.fill),
+    stroke: stringOrUndefined(item.stroke),
+    hidden: item.hidden === true,
+    pinned: item.pinned === true,
+    locked: item.lock === true || item.locked === true,
+  };
+}
+
+function summarizeMarkers(value: unknown, limit = 160) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) =>
+      item && typeof item === "object" && !Array.isArray(item)
+        ? compactMarker(item as Record<string, unknown>)
+        : null,
+    )
+    .filter((item) => item !== null)
+    .slice(0, limit);
+}
+
+function summarizeMilitary(
+  states: unknown,
+  limit = 160,
+): EngineMilitarySummaryItem[] {
+  if (!Array.isArray(states)) return [];
+  const regiments: EngineMilitarySummaryItem[] = [];
+
+  for (const state of states) {
+    if (!state || typeof state !== "object" || Array.isArray(state)) continue;
+    const stateRecord = state as Record<string, unknown>;
+    const stateId = finiteNumberOrUndefined(stateRecord.i);
+    const stateName = stringOrUndefined(stateRecord.name);
+    const military = stateRecord.military;
+    if (!stateId || !stateName || !Array.isArray(military)) continue;
+
+    for (const regiment of military) {
+      if (
+        !regiment ||
+        typeof regiment !== "object" ||
+        Array.isArray(regiment)
+      ) {
+        continue;
+      }
+      const regimentRecord = regiment as Record<string, unknown>;
+      const regimentId = finiteNumberOrUndefined(regimentRecord.i);
+      const name = stringOrUndefined(regimentRecord.name);
+      if (regimentId === undefined || !name) continue;
+      regiments.push({
+        id: `${stateId}:${regimentId}`,
+        regimentId,
+        stateId,
+        stateName,
+        name,
+        type: stringOrUndefined(regimentRecord.type),
+        total: finiteNumberOrUndefined(regimentRecord.t),
+        cell: finiteNumberOrUndefined(regimentRecord.cell),
+        x: finiteNumberOrUndefined(regimentRecord.x),
+        y: finiteNumberOrUndefined(regimentRecord.y),
+        naval: regimentRecord.n === 1,
+      });
+      if (regiments.length >= limit) return regiments;
+    }
+  }
+
+  return regiments;
+}
+
 export function getEngineWorldResourceSummary(
   targets: EngineResourceSummaryTargets = createGlobalResourceSummaryTargets(),
 ): EngineWorldResourceSummary {
+  const states = targets.getStates();
   return {
     biomes: summarizeBiomes(targets),
     provinces: summarizeProvinces(targets.getProvinces()),
     routes: summarizeRoutes(targets.getRoutes()),
     zones: summarizeZones(targets.getZones(), targets),
+    markers: summarizeMarkers(targets.getMarkers()),
+    military: summarizeMilitary(states),
   };
 }
 

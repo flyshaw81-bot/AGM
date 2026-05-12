@@ -1,13 +1,11 @@
-import { quadtree, sum } from "d3";
-import { findAllInQuadtree } from "../utils/graphUtils";
+﻿import { findAllInQuadtree } from "../utils/graphUtils";
 import { nth } from "../utils/languageUtils";
 import { minmax, rn } from "../utils/numberUtils";
 import { gauss, ra, rand } from "../utils/probabilityUtils";
+import { quadtree } from "../utils/quadtree";
+import { sum } from "../utils/statUtils";
 import { si } from "../utils/unitUtils";
-import {
-  type EngineRuntimeContext,
-  getGlobalEngineRuntimeContext,
-} from "./engine-runtime-context";
+import type { EngineRuntimeContext } from "./engine-runtime-context";
 import type { State } from "./states-generator";
 
 declare global {
@@ -56,7 +54,7 @@ interface Platoon {
 }
 
 export class MilitaryModule {
-  generate(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+  generate(context: EngineRuntimeContext) {
     context.timing.shouldTime && console.time("generateMilitary");
     const { options, pack, populationSettings } = context;
     const { cells, states } = pack;
@@ -506,7 +504,7 @@ export class MilitaryModule {
   getDefaultOptions() {
     return [
       {
-        icon: "⚔️",
+        icon: "鈿旓笍",
         name: "infantry",
         rural: 0.25,
         urban: 0.2,
@@ -516,7 +514,7 @@ export class MilitaryModule {
         separate: 0,
       },
       {
-        icon: "🏹",
+        icon: "馃徆",
         name: "archers",
         rural: 0.12,
         urban: 0.2,
@@ -526,7 +524,7 @@ export class MilitaryModule {
         separate: 0,
       },
       {
-        icon: "🐴",
+        icon: "馃惔",
         name: "cavalry",
         rural: 0.12,
         urban: 0.03,
@@ -536,7 +534,7 @@ export class MilitaryModule {
         separate: 0,
       },
       {
-        icon: "💣",
+        icon: "馃挘",
         name: "artillery",
         rural: 0,
         urban: 0.03,
@@ -546,7 +544,7 @@ export class MilitaryModule {
         separate: 0,
       },
       {
-        icon: "🌊",
+        icon: "馃寠",
         name: "fleet",
         rural: 0,
         urban: 0.015,
@@ -561,7 +559,7 @@ export class MilitaryModule {
   getName(
     r: MilitaryRegiment,
     regiments: MilitaryRegiment[],
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context: EngineRuntimeContext,
   ) {
     const { pack } = context;
     const cells = pack.cells;
@@ -584,11 +582,7 @@ export class MilitaryModule {
     return reg.a > (reg.n ? 999 : 99999) ? si(reg.a) : reg.a;
   }
 
-  generateNote(
-    r: MilitaryRegiment,
-    s: State,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  generateNote(r: MilitaryRegiment, s: State, context: EngineRuntimeContext) {
     const { options, pack } = context;
     const cells = pack.cells;
     const base =
@@ -603,7 +597,7 @@ export class MilitaryModule {
 
     const composition = r.a
       ? Object.keys(r.u)
-          .map((t) => `— ${t}: ${r.u[t as keyof typeof r.u]}`)
+          .map((t) => `鈥?${t}: ${r.u[t as keyof typeof r.u]}`)
           .join("\r\n")
       : null;
     const troops = composition
@@ -627,24 +621,21 @@ export class MilitaryModule {
   }
 
   // get default regiment emblem
-  getEmblem(
-    r: MilitaryRegiment,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  getEmblem(r: MilitaryRegiment, context: EngineRuntimeContext) {
     const { options, pack } = context;
-    if (!r.n && !Object.values(r.u).length) return "🔰"; // "Newbie" regiment without troops
+    if (!r.n && !Object.values(r.u).length) return "馃敯"; // "Newbie" regiment without troops
     if (
       !r.n &&
       pack.states[r.state].form === "Monarchy" &&
       pack.cells.burg[r.cell] &&
       pack.burgs[pack.cells.burg[r.cell]].capital
     )
-      return "👑"; // "Royal" regiment based in capital
+      return "馃憫"; // "Royal" regiment based in capital
     const mainUnit = Object.entries(r.u).sort((a, b) => b[1] - a[1])[0][0]; // unit with more troops in regiment
     const unit = options.military.find(
       (u: { name: string; icon: string }) => u.name === mainUnit,
     );
-    return unit ? unit.icon : "⚔️";
+    return unit ? unit.icon : "鈿旓笍";
   }
 }
 

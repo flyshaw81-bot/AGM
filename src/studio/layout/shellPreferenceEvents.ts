@@ -1,3 +1,4 @@
+import { STUDIO_CANVAS_PRESETS } from "../canvas/presets";
 import type { StudioLanguage, StudioState, StudioTheme } from "../types";
 import type { StudioShellEventHandlers } from "./shellEventTypes";
 import { bindActionClick, bindSelectValue } from "./studioEventBinding";
@@ -33,7 +34,13 @@ export function bindShellPreferenceEvents(
     ) as HTMLSelectElement | null;
     if (!presetSelect) return;
     presetSelect.value = state.viewport.presetId;
-    bindSelectValue(id, (presetId) => onViewportChange({ presetId }));
+    bindSelectValue(id, (presetId) => {
+      const preset = STUDIO_CANVAS_PRESETS.find((item) => item.id === presetId);
+      onViewportChange({
+        presetId,
+        ...(preset ? { orientation: preset.orientation } : {}),
+      });
+    });
   });
 
   const stylePresetSelect = document.getElementById(

@@ -25,7 +25,9 @@ import {
   syncEngineDialogsPosition,
 } from "./engineHost";
 import { updateProjectCenterState } from "./projectCenter";
+import { replaceStudioRootHtml } from "./studioRenderSlots";
 import { syncStudioDocumentTheme } from "./studioThemeSync";
+import { applyStudioUiVariant } from "./studioUiVariant";
 import { updateViewportDimensions } from "./viewportState";
 
 export type StudioRendererTargets = {
@@ -74,11 +76,10 @@ export function createGlobalStudioRendererTargets(): StudioRendererTargets {
     updateProjectCenter: updateProjectCenterState,
     preserveEngineNode,
     renderShell: renderStudioShell,
-    setRootHtml: (root, html) => {
-      root.innerHTML = html;
-    },
+    setRootHtml: replaceStudioRootHtml,
     setRootTheme: (root, theme) => {
       root.dataset.studioTheme = theme;
+      applyStudioUiVariant(root);
     },
     setDocumentTheme: syncStudioDocumentTheme,
     relocateEngineMapHost,

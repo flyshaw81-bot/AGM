@@ -1,4 +1,8 @@
 import { afterEach, describe, expect, it } from "vitest";
+import {
+  clearActiveEngineRuntimeContext,
+  setActiveEngineRuntimeContext,
+} from "../../modules/engine-runtime-active-context";
 import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
 import {
   createFocusGeometryTargets,
@@ -20,6 +24,8 @@ const originalDescriptors = new Map(
 
 describe("createGlobalFocusGeometryTargets", () => {
   afterEach(() => {
+    clearActiveEngineRuntimeContext();
+
     for (const [name, value] of [
       ["pack", originalPack],
       ["graphWidth", originalGraphWidth],
@@ -73,6 +79,33 @@ describe("createGlobalFocusGeometryTargets", () => {
     expect(targets.getState(2)).toBe(state);
     expect(targets.getZone(9)).toBe(zone);
     expect(targets.getZone(99)).toBeUndefined();
+  });
+
+  it("prefers the active engine context over stale global pack data", () => {
+    const activeState = { i: 1, name: "Context State" };
+    const staleState = { i: 1, name: "Global State" };
+    globalThis.graphWidth = 1200;
+    globalThis.pack = {
+      states: [undefined, staleState],
+      cells: { i: [9], p: { 9: [90, 90] }, state: { 9: 9 } },
+    } as unknown as typeof pack;
+    setActiveEngineRuntimeContext({
+      worldSettings: {
+        graphWidth: 1440,
+        graphHeight: 900,
+      },
+      pack: {
+        states: [undefined, activeState],
+        cells: { i: [1], p: { 1: [10, 20] }, state: { 1: 3 } },
+      },
+    } as unknown as EngineRuntimeContext);
+
+    const targets = createGlobalFocusGeometryTargets();
+
+    expect(targets.getWidth()).toBe(1440);
+    expect(targets.getCellIds()).toEqual([1]);
+    expect(targets.getCellPoint(1)).toEqual([10, 20]);
+    expect(targets.getState(1)).toBe(activeState);
   });
 
   it("keeps global focus geometry safe when globals are blocked", () => {

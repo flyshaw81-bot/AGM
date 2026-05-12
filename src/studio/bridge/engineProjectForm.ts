@@ -78,12 +78,31 @@ function getPendingWindTier(
   targets: EngineProjectFormTargets,
   cachedValue?: string,
 ) {
-  return (
-    targets.getWindTierRotation(tier) ||
-    targets.getWindOption(tier) ||
-    cachedValue ||
-    ""
-  );
+  return targets.getWindOption(tier) || cachedValue || "";
+}
+
+function getPendingMapPlacement(
+  key: "mapSize" | "latitude" | "longitude",
+  targets: EngineProjectFormTargets,
+  cachedValue?: string,
+) {
+  return targets.getMapPlacementValue(key, cachedValue || "");
+}
+
+function getPendingTemperature(
+  key: "temperatureEquator" | "temperatureNorthPole" | "temperatureSouthPole",
+  targets: EngineProjectFormTargets,
+  cachedValue?: string,
+) {
+  return targets.getTemperatureValue(key, cachedValue || "");
+}
+
+function getPendingTemperatureFahrenheit(
+  key: "temperatureEquator" | "temperatureNorthPole" | "temperatureSouthPole",
+  targets: EngineProjectFormTargets,
+  cachedValue?: string,
+) {
+  return targets.getTemperatureFahrenheitLabel(key, cachedValue || "");
 }
 
 export function readEngineProjectForm(
@@ -125,47 +144,50 @@ export function readEngineProjectForm(
     cachedSummary?.pendingGrowthRate || "",
     targets,
   );
-  const pendingTemperatureEquator = getInputValue(
-    "temperatureEquatorInput",
-    cachedSummary?.pendingTemperatureEquator || "",
+  const pendingTemperatureEquator = getPendingTemperature(
+    "temperatureEquator",
     targets,
+    cachedSummary?.pendingTemperatureEquator,
   );
-  const pendingTemperatureEquatorF =
-    targets.getTextValue("temperatureEquatorF") ||
-    cachedSummary?.pendingTemperatureEquatorF ||
-    "";
-  const pendingTemperatureNorthPole = getInputValue(
-    "temperatureNorthPoleInput",
-    cachedSummary?.pendingTemperatureNorthPole || "",
+  const pendingTemperatureEquatorF = getPendingTemperatureFahrenheit(
+    "temperatureEquator",
     targets,
+    cachedSummary?.pendingTemperatureEquatorF,
   );
-  const pendingTemperatureNorthPoleF =
-    targets.getTextValue("temperatureNorthPoleF") ||
-    cachedSummary?.pendingTemperatureNorthPoleF ||
-    "";
-  const pendingTemperatureSouthPole = getInputValue(
-    "temperatureSouthPoleInput",
-    cachedSummary?.pendingTemperatureSouthPole || "",
+  const pendingTemperatureNorthPole = getPendingTemperature(
+    "temperatureNorthPole",
     targets,
+    cachedSummary?.pendingTemperatureNorthPole,
   );
-  const pendingTemperatureSouthPoleF =
-    targets.getTextValue("temperatureSouthPoleF") ||
-    cachedSummary?.pendingTemperatureSouthPoleF ||
-    "";
-  const pendingMapSize = getInputValue(
-    "mapSizeInput",
-    cachedSummary?.pendingMapSize || "",
+  const pendingTemperatureNorthPoleF = getPendingTemperatureFahrenheit(
+    "temperatureNorthPole",
     targets,
+    cachedSummary?.pendingTemperatureNorthPoleF,
   );
-  const pendingLatitude = getInputValue(
-    "latitudeInput",
-    cachedSummary?.pendingLatitude || "",
+  const pendingTemperatureSouthPole = getPendingTemperature(
+    "temperatureSouthPole",
     targets,
+    cachedSummary?.pendingTemperatureSouthPole,
   );
-  const pendingLongitude = getInputValue(
-    "longitudeInput",
-    cachedSummary?.pendingLongitude || "",
+  const pendingTemperatureSouthPoleF = getPendingTemperatureFahrenheit(
+    "temperatureSouthPole",
     targets,
+    cachedSummary?.pendingTemperatureSouthPoleF,
+  );
+  const pendingMapSize = getPendingMapPlacement(
+    "mapSize",
+    targets,
+    cachedSummary?.pendingMapSize,
+  );
+  const pendingLatitude = getPendingMapPlacement(
+    "latitude",
+    targets,
+    cachedSummary?.pendingLatitude,
+  );
+  const pendingLongitude = getPendingMapPlacement(
+    "longitude",
+    targets,
+    cachedSummary?.pendingLongitude,
   );
   const pendingWindTier0 = getPendingWindTier(
     0,

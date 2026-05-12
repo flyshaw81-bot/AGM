@@ -8,11 +8,12 @@ import type {
 import {
   bindCanvasToolInteractions,
   type CanvasInteractionTargets,
+  isNativeWorkbenchCanvasFrame,
 } from "./canvasController";
 
 type ListenerMap = Record<
   string,
-  Array<(event: PointerEvent & MouseEvent) => void>
+  Array<(event: Event & Partial<PointerEvent & MouseEvent>) => void>
 >;
 
 function createState(canvasTool: CanvasToolMode): StudioState {
@@ -53,12 +54,15 @@ function createSelection(): CanvasSelectionState {
   };
 }
 
-function createFrame(listeners: ListenerMap) {
+function createFrame(listeners: ListenerMap, nativeWorkbench = false) {
   return {
     offsetWidth: 200,
     offsetHeight: 100,
     addEventListener: vi.fn(
-      (type: string, listener: (event: PointerEvent & MouseEvent) => void) => {
+      (
+        type: string,
+        listener: (event: Event & Partial<PointerEvent & MouseEvent>) => void,
+      ) => {
         listeners[type] = [...(listeners[type] ?? []), listener];
       },
     ),
@@ -69,6 +73,9 @@ function createFrame(listeners: ListenerMap) {
     setPointerCapture: vi.fn(),
     hasPointerCapture: vi.fn(() => true),
     releasePointerCapture: vi.fn(),
+    closest: vi.fn((selector: string) =>
+      nativeWorkbench && selector === ".studio-native-app" ? {} : null,
+    ),
   } as unknown as HTMLElement;
 }
 
@@ -85,10 +92,12 @@ function createHost() {
 function createEvent(patch: Partial<PointerEvent & MouseEvent> = {}) {
   return {
     button: 0,
+    cancelable: true,
     pointerId: 1,
     clientX: 10,
     clientY: 10,
     preventDefault: vi.fn(),
+    stopPropagation: vi.fn(),
     ...patch,
   } as unknown as PointerEvent & MouseEvent;
 }
@@ -107,6 +116,7 @@ function createTargets(
     syncPaintPreview: vi.fn(),
     syncToolHud: vi.fn(),
     syncViewport: vi.fn(),
+    readViewportPatch: vi.fn(() => null),
     isPaintTool: ((
       tool,
     ): tool is Extract<CanvasToolMode, "brush" | "water" | "terrain"> =>
@@ -118,6 +128,11 @@ function createTargets(
 }
 
 describe("bindCanvasToolInteractions", () => {
+  it("detects native workbench canvas frames", () => {
+    expect(isNativeWorkbenchCanvasFrame(createFrame({}, true))).toBe(true);
+    expect(isNativeWorkbenchCanvasFrame(createFrame({}, false))).toBe(false);
+  });
+
   it("does not bind listeners without canvas frame or map host", () => {
     const targets = createTargets(null, null);
 
@@ -166,6 +181,171 @@ describe("bindCanvasToolInteractions", () => {
     expect(targets.syncToolHud).toHaveBeenCalledWith(state);
     expect(onViewportPatch).toHaveBeenCalledWith({ panX: 20, panY: 10 });
     expect(host.classList.remove).toHaveBeenCalledWith("is-panning");
+  });
+
+  it("does not commit a pan patch for a plain canvas click", () => {
+    const listeners: ListenerMap = {};
+    const frame = createFrame(listeners);
+    const host = createHost();
+    const state = createState("pan");
+    const onViewportPatch = vi.fn();
+    const targets = createTargets(frame, host);
+
+    bindCanvasToolInteractions(
+      state,
+      onViewportPatch,
+      vi.fn(),
+      vi.fn(),
+      targets,
+    );
+    listeners.pointerdown?.[0]?.(createEvent({ clientX: 10, clientY: 10 }));
+    listeners.pointerup?.[0]?.(createEvent({ clientX: 10, clientY: 10 }));
+
+    expect(targets.syncViewport).not.toHaveBeenCalled();
+    expect(onViewportPatch).not.toHaveBeenCalled();
+    expect(host.classList.remove).toHaveBeenCalledWith("is-panning");
+  });
+
+  it("hydrates viewport state from engine wheel zoom without rerendering", () => {
+    vi.useFakeTimers();
+    const listeners: ListenerMap = {};
+    const frame = createFrame(listeners);
+    const host = createHost();
+    const state = createState("pan");
+    const onViewportPatch = vi.fn();
+    const targets = createTargets(frame, host, {
+      readViewportPatch: vi.fn(() => ({ zoom: 2, panX: 120, panY: -40 })),
+    });
+
+    bindCanvasToolInteractions(
+      state,
+      onViewportPatch,
+      vi.fn(),
+      vi.fn(),
+      targets,
+    );
+    listeners.wheel?.[0]?.(createEvent());
+    vi.advanceTimersByTime(80);
+
+    expect(state.viewport.zoom).toBe(2);
+    expect(state.viewport.panX).toBe(120);
+    expect(state.viewport.panY).toBe(-40);
+    expect(host.dataset.panX).toBe("120");
+    expect(host.dataset.panY).toBe("-40");
+    expect(targets.syncToolHud).toHaveBeenCalledWith(state);
+    expect(onViewportPatch).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it("suppresses native engine drag gestures without swallowing normal canvas clicks", () => {
+    const listeners: ListenerMap = {};
+    const frame = createFrame(listeners, true);
+    const host = createHost();
+    const state = createState("select");
+    const onSelection = vi.fn();
+    const targets = createTargets(frame, host);
+
+    bindCanvasToolInteractions(state, vi.fn(), onSelection, vi.fn(), targets);
+
+    const mouseDownEvent = createEvent();
+    listeners.mousedown?.[0]?.(mouseDownEvent);
+    listeners.click?.[0]?.(createEvent());
+
+    expect(listeners.wheel).toHaveLength(1);
+    expect(mouseDownEvent.preventDefault).toHaveBeenCalled();
+    expect(mouseDownEvent.stopPropagation).toHaveBeenCalled();
+    expect(targets.getSelectionAt).toHaveBeenCalled();
+    expect(onSelection).toHaveBeenCalledWith(
+      expect.objectContaining({ targetId: 7 }),
+    );
+  });
+
+  it("suppresses native canvas clicks after AGM selection so the old engine cannot react", () => {
+    const listeners: ListenerMap = {};
+    const frame = createFrame(listeners, true);
+    const host = createHost();
+    const state = createState("select");
+    const onSelection = vi.fn();
+    const targets = createTargets(frame, host);
+
+    bindCanvasToolInteractions(state, vi.fn(), onSelection, vi.fn(), targets);
+
+    const clickEvent = createEvent();
+    listeners.click?.[0]?.(clickEvent);
+
+    expect(targets.getSelectionAt).toHaveBeenCalledWith(clickEvent, state);
+    expect(onSelection).toHaveBeenCalledWith(
+      expect.objectContaining({ targetId: 7 }),
+    );
+    expect(clickEvent.preventDefault).toHaveBeenCalled();
+    expect(clickEvent.stopPropagation).toHaveBeenCalled();
+  });
+
+  it("keeps wheel zoom hydration from turning the next native pan click into a viewport mutation", () => {
+    vi.useFakeTimers();
+    const listeners: ListenerMap = {};
+    const frame = createFrame(listeners, true);
+    const host = createHost();
+    const state = createState("pan");
+    const onViewportPatch = vi.fn();
+    const targets = createTargets(frame, host, {
+      readViewportPatch: vi.fn(() => ({ zoom: 1.8, panX: 84, panY: -12 })),
+    });
+
+    bindCanvasToolInteractions(
+      state,
+      onViewportPatch,
+      vi.fn(),
+      vi.fn(),
+      targets,
+    );
+
+    listeners.wheel?.[0]?.(createEvent());
+    vi.advanceTimersByTime(80);
+    const clickEvent = createEvent();
+    listeners.click?.[0]?.(clickEvent);
+
+    expect(state.viewport.zoom).toBe(1.8);
+    expect(state.viewport.panX).toBe(84);
+    expect(state.viewport.panY).toBe(-12);
+    expect(onViewportPatch).not.toHaveBeenCalled();
+    expect(targets.syncViewport).not.toHaveBeenCalled();
+    expect(clickEvent.preventDefault).toHaveBeenCalled();
+    expect(clickEvent.stopPropagation).toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it("keeps native workbench panning controlled by the AGM pointer tool", () => {
+    const listeners: ListenerMap = {};
+    const frame = createFrame(listeners, true);
+    const host = createHost();
+    const state = createState("pan");
+    const onViewportPatch = vi.fn();
+    const targets = createTargets(frame, host);
+
+    bindCanvasToolInteractions(
+      state,
+      onViewportPatch,
+      vi.fn(),
+      vi.fn(),
+      targets,
+    );
+    listeners.pointerdown?.[0]?.(createEvent({ clientX: 10, clientY: 10 }));
+    listeners.pointermove?.[0]?.(createEvent({ clientX: 20, clientY: 15 }));
+    listeners.pointerup?.[0]?.(createEvent());
+
+    expect(host.classList.add).toHaveBeenCalledWith("is-panning");
+    expect(state.viewport.panX).toBe(20);
+    expect(state.viewport.panY).toBe(10);
+    expect(targets.syncViewport).toHaveBeenCalledWith(
+      "desktop-landscape",
+      "landscape",
+      "cover",
+      1,
+      20,
+      10,
+    );
+    expect(onViewportPatch).toHaveBeenCalledWith({ panX: 20, panY: 10 });
   });
 
   it("paints through injected preview and overlay targets", () => {

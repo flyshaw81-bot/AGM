@@ -9,6 +9,7 @@ import {
   updateEngineBurg,
   updateEngineCulture,
   updateEngineDiplomacy,
+  updateEngineMarker,
   updateEngineProvince,
   updateEngineReligion,
   updateEngineRoute,
@@ -57,6 +58,10 @@ export type DirectEditorActionTargets = {
     id: HandlerParameters<"onDirectZoneApply">[0],
     next: HandlerParameters<"onDirectZoneApply">[1],
   ) => void;
+  updateMarker: (
+    id: HandlerParameters<"onDirectMarkerApply">[0],
+    next: HandlerParameters<"onDirectMarkerApply">[1],
+  ) => void;
   updateBiome: (
     id: HandlerParameters<"onDirectBiomeApply">[0],
     next: HandlerParameters<"onDirectBiomeApply">[1],
@@ -84,6 +89,7 @@ export type DirectEditorMutationAdapter = {
   updateProvince: DirectEditorActionTargets["updateProvince"];
   updateRoute: DirectEditorActionTargets["updateRoute"];
   updateZone: DirectEditorActionTargets["updateZone"];
+  updateMarker: DirectEditorActionTargets["updateMarker"];
   updateBiome: DirectEditorActionTargets["updateBiome"];
   updateDiplomacy: DirectEditorActionTargets["updateDiplomacy"];
 };
@@ -119,6 +125,7 @@ export function createGlobalDirectEditorMutationAdapter(): DirectEditorMutationA
     updateProvince: updateEngineProvince,
     updateRoute: updateEngineRoute,
     updateZone: updateEngineZone,
+    updateMarker: updateEngineMarker,
     updateBiome: updateEngineBiomeResource,
     updateDiplomacy: updateEngineDiplomacy,
   };
@@ -137,6 +144,7 @@ export function createRuntimeDirectEditorMutationAdapter(
     updateProvince: (id, next) => updateEngineProvince(id, next, entityTargets),
     updateRoute: (id, next) => updateEngineRoute(id, next, entityTargets),
     updateZone: (id, next) => updateEngineZone(id, next, entityTargets),
+    updateMarker: (id, next) => updateEngineMarker(id, next, entityTargets),
     updateBiome: (id, next) =>
       updateEngineBiomeResource(id, next, biomeTargets),
     updateDiplomacy: (subjectId, objectId, next) =>
@@ -159,6 +167,7 @@ export function createDirectEditorActionTargets(
     updateProvince: mutationAdapter.updateProvince,
     updateRoute: mutationAdapter.updateRoute,
     updateZone: mutationAdapter.updateZone,
+    updateMarker: mutationAdapter.updateMarker,
     updateBiome: mutationAdapter.updateBiome,
     updateDiplomacy: mutationAdapter.updateDiplomacy,
   };

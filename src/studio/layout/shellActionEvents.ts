@@ -1,3 +1,4 @@
+import { STUDIO_CANVAS_PRESETS } from "../canvas/presets";
 import type {
   CanvasToolMode,
   FitMode,
@@ -30,7 +31,9 @@ type ShellActionEventsOptions = {
   onCloseEditor: (action: keyof typeof EDITOR_CONTROL_LABELS) => void;
   onReturnToOrigin: (section: StudioSection) => void;
   onLayersPresetAction: (action: "save" | "remove") => void;
-  onViewportChange: (patch: Partial<StudioState["viewport"]>) => void;
+  onViewportChange: (
+    patch: Partial<StudioState["viewport"]>,
+  ) => void | Promise<void>;
   onCanvasEditAction: (action: "apply" | "undo", cellId?: number) => void;
   onExportFormatChange: (format: "svg" | "png" | "jpeg") => void;
   onRunExport: () => void;
@@ -122,6 +125,94 @@ export function bindShellActionEvents({
     onLayersPresetAction(button.dataset.value as "save" | "remove"),
   );
 
+  document.addEventListener(
+    "toggle",
+    (event) => {
+      const dropdown = event.target as HTMLDetailsElement | null;
+      if (
+        !dropdown?.matches?.(
+          ".studio-floating-toolbar__dropdown, .studio-native-v8-viewport__dropdown",
+        ) ||
+        !dropdown.open
+      ) {
+        return;
+      }
+      document
+        .querySelectorAll<HTMLDetailsElement>(
+          ".studio-floating-toolbar__dropdown[open], .studio-native-v8-viewport__dropdown[open]",
+        )
+        .forEach((otherDropdown) => {
+          if (otherDropdown !== dropdown) otherDropdown.open = false;
+        });
+    },
+    true,
+  );
+
+  bindActionClick("viewport-dropdown-option", (button) => {
+    const dropdown = button.closest<HTMLDetailsElement>(
+      ".studio-floating-toolbar__dropdown, .studio-native-v8-viewport__dropdown",
+    );
+    if (dropdown) dropdown.open = false;
+    const field = button.dataset.field;
+    const value = button.dataset.value || "";
+    if (field === "presetId") {
+      const preset = STUDIO_CANVAS_PRESETS.find((item) => item.id === value);
+      onViewportChange({
+        presetId: value,
+        ...(preset ? { orientation: preset.orientation } : {}),
+      });
+      return;
+    }
+    if (field === "orientation") {
+      onViewportChange({ orientation: value as Orientation });
+      return;
+    }
+    if (field === "fitMode") {
+      onViewportChange({ fitMode: value as FitMode });
+    }
+  });
+
+  document
+    .querySelectorAll<HTMLSelectElement>("[data-studio-viewport-select]")
+    .forEach((select) => {
+      select.addEventListener("change", () => {
+        const field = select.dataset.studioViewportSelect;
+        if (field === "presetId") {
+          const preset = STUDIO_CANVAS_PRESETS.find(
+            (item) => item.id === select.value,
+          );
+          onViewportChange({
+            presetId: select.value,
+            ...(preset ? { orientation: preset.orientation } : {}),
+          });
+          return;
+        }
+        if (field === "orientation") {
+          onViewportChange({ orientation: select.value as Orientation });
+          return;
+        }
+        if (field === "fitMode") {
+          onViewportChange({ fitMode: select.value as FitMode });
+        }
+      });
+    });
+
+  bindActionClick("viewport-preset-cycle", () => {
+    const presetIds = STUDIO_CANVAS_PRESETS.map((preset) => preset.id);
+    const currentIndex = Math.max(
+      0,
+      presetIds.indexOf(state.viewport.presetId),
+    );
+    const nextPresetId = presetIds[(currentIndex + 1) % presetIds.length];
+    const preset = STUDIO_CANVAS_PRESETS.find(
+      (item) => item.id === nextPresetId,
+    );
+    onViewportChange({
+      presetId: nextPresetId,
+      ...(preset ? { orientation: preset.orientation } : {}),
+    });
+  });
+
   bindActionClick("orientation", (button) =>
     onViewportChange({ orientation: button.dataset.value as Orientation }),
   );
@@ -152,13 +243,15 @@ export function bindShellActionEvents({
 
   bindActionClick("viewport-zoom", (button) => {
     const action = button.dataset.value;
+    if (action === "reset") {
+      onViewportChange({ zoom: 1, panX: 0, panY: 0 });
+      return;
+    }
     const currentZoom = state.viewport.zoom || 1;
     const nextZoom =
       action === "in"
         ? Math.min(currentZoom * 1.25, 4)
-        : action === "out"
-          ? Math.max(currentZoom / 1.25, 0.5)
-          : 1;
+        : Math.max(currentZoom / 1.25, 0.5);
     onViewportChange({ zoom: nextZoom });
   });
 

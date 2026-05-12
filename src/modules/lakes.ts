@@ -1,9 +1,6 @@
-import { mean, min } from "d3";
-import { rn } from "../utils/numberUtils";
-import {
-  type EngineRuntimeContext,
-  getGlobalEngineRuntimeContext,
-} from "./engine-runtime-context";
+﻿import { rn } from "../utils/numberUtils";
+import { mean, min } from "../utils/statUtils";
+import type { EngineRuntimeContext } from "./engine-runtime-context";
 import type { PackedGraphFeature } from "./features";
 
 declare global {
@@ -21,35 +18,27 @@ function getWindow(): (Window & typeof globalThis) | undefined {
 export class LakesModule {
   private LAKE_ELEVATION_DELTA = 0.1;
 
-  getHeight(
-    feature: PackedGraphFeature,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  getHeight(feature: PackedGraphFeature, context: EngineRuntimeContext) {
     const heights = context.pack.cells.h;
     const minShoreHeight =
       min(feature.shoreline.map((cellId) => heights[cellId])) || 20;
     return rn(minShoreHeight - this.LAKE_ELEVATION_DELTA, 2);
   }
 
-  defineNames(context: EngineRuntimeContext = getGlobalEngineRuntimeContext()) {
+  defineNames(context: EngineRuntimeContext) {
     context.pack.features.forEach((feature: PackedGraphFeature) => {
       if (feature.type !== "lake") return;
       feature.name = this.getName(feature, context);
     });
   }
 
-  getName(
-    feature: PackedGraphFeature,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ): string {
+  getName(feature: PackedGraphFeature, context: EngineRuntimeContext): string {
     const landCell = feature.shoreline[0];
     const culture = context.pack.cells.culture[landCell];
     return context.naming.getCulture(culture);
   }
 
-  cleanupLakeData = (
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) => {
+  cleanupLakeData = (context: EngineRuntimeContext) => {
     for (const feature of context.pack.features) {
       if (feature.type !== "lake") continue;
       delete feature.river;
@@ -73,7 +62,7 @@ export class LakesModule {
 
   defineClimateData(
     heights: number[] | Uint8Array,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
+    context: EngineRuntimeContext,
   ) {
     const { cells, features } = context.pack;
     const lakeOutCells = new Uint16Array(cells.i.length);
@@ -123,10 +112,7 @@ export class LakesModule {
   }
 
   // check if lake can be potentially open (not in deep depression)
-  detectCloseLakes(
-    h: number[] | Uint8Array,
-    context: EngineRuntimeContext = getGlobalEngineRuntimeContext(),
-  ) {
+  detectCloseLakes(h: number[] | Uint8Array, context: EngineRuntimeContext) {
     const { cells } = context.pack;
     const ELEVATION_LIMIT = context.generationSettings.lakeElevationLimit;
 

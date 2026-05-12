@@ -1,4 +1,4 @@
-import type { EditorAction } from "../bridge/engineActionTypes";
+﻿import type { EditorAction } from "../bridge/engineActionTypes";
 import { GAME_WORLD_PROFILE_LABELS } from "../state/worldDocumentConstants";
 import type {
   CanvasToolMode,
@@ -69,7 +69,7 @@ export const SHELL_LABELS = {
     open: "Open",
   },
   "zh-CN": {
-    preview: "预览版 Beta",
+    preview: "预览 Beta",
     tagline: "用结构化生成打造可玩的世界。",
     preset: "预设",
     orientation: "方向",
@@ -235,11 +235,15 @@ export const VIEWPORT_PRESET_LABELS: Record<
   Record<string, string>
 > = {
   en: {
-    "desktop-landscape": "Desktop 16:10",
-    "desktop-portrait": "Desktop Portrait",
+    "desktop-landscape": "16:10",
+    "desktop-portrait": "10:16",
+    "widescreen-landscape": "16:9",
+    "widescreen-portrait": "9:16",
+    "classic-landscape": "4:3",
+    "classic-portrait": "3:4",
     "mobile-portrait": "Mobile Portrait",
     "mobile-landscape": "Mobile Landscape",
-    square: "Square",
+    square: "1:1",
   },
   "zh-CN": {
     "desktop-landscape": "桌面横屏 16:10",
@@ -251,38 +255,38 @@ export const VIEWPORT_PRESET_LABELS: Record<
 };
 
 export const EDITOR_CONTROL_LABELS = {
-  editStates: "States",
-  editCultures: "Cultures",
-  editReligions: "Religions",
-  editBiomes: "Biomes",
-  editProvinces: "Provinces",
-  editZones: "Zones",
-  editDiplomacy: "Diplomacy",
+  stateWorkbench: "States",
+  cultureWorkbench: "Cultures",
+  religionWorkbench: "Religions",
+  biomeWorkbench: "Biomes",
+  provinceWorkbench: "Provinces",
+  zoneWorkbench: "Zones",
+  diplomacyWorkbench: "Diplomacy",
 } as const;
 
 export const EDITOR_CONTROL_ZH_LABELS: Record<
   keyof typeof EDITOR_CONTROL_LABELS,
   string
 > = {
-  editStates: "国家",
-  editCultures: "文化",
-  editReligions: "宗教",
-  editBiomes: "生物群系",
-  editProvinces: "省份",
-  editZones: "区域",
-  editDiplomacy: "外交",
+  stateWorkbench: "国家",
+  cultureWorkbench: "文化",
+  religionWorkbench: "宗教",
+  biomeWorkbench: "生物群系",
+  provinceWorkbench: "省份",
+  zoneWorkbench: "区域",
+  diplomacyWorkbench: "外交",
 };
 
 export const SECTION_EDITOR_RECOMMENDATIONS: Partial<
   Record<StudioSection, EditorAction>
 > = {
-  project: "editBiomes",
-  canvas: "editStates",
-  layers: "editStates",
-  export: "editProvinces",
-  data: "editStates",
-  editors: "editStates",
-  repair: "editStates",
+  project: "biomeWorkbench",
+  canvas: "stateWorkbench",
+  layers: "stateWorkbench",
+  export: "provinceWorkbench",
+  data: "stateWorkbench",
+  editors: "stateWorkbench",
+  repair: "stateWorkbench",
 };
 
 export const PRODUCT_NAV_LABELS: Record<

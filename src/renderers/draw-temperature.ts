@@ -1,22 +1,18 @@
-import {
-  color,
-  curveBasisClosed,
-  interpolateSpectral,
-  leastIndex,
-  line,
-  max,
-  min,
-  range,
-  scaleSequential,
-} from "d3";
-import { byId, connectVertices, convertTemperature, round } from "../utils";
+import type { EngineRuntimeContext } from "../modules/engine-runtime-context";
+import { connectVertices, convertTemperature, round } from "../utils";
+import { color } from "../utils/colorCore";
+import { interpolateSpectral } from "../utils/interpolateUtils";
+import { scaleSequential } from "../utils/scaleUtils";
+import { curveBasisClosed, line } from "../utils/shapeUtils";
+import { leastIndex, max, min, range } from "../utils/statUtils";
+import { createBrowserRendererContext } from "./renderer-runtime-context";
 
 declare global {
   var drawTemperature: () => void;
 }
 
 export interface TemperatureRendererTargets {
-  getTemperatureEquatorOutput: () => HTMLInputElement | undefined;
+  getTemperatureRange: () => { min: number; max: number };
 }
 
 const getWindow = (): (Window & typeof globalThis) | undefined => {
@@ -29,8 +25,7 @@ const getWindow = (): (Window & typeof globalThis) | undefined => {
 
 export function createGlobalTemperatureRendererTargets(): TemperatureRendererTargets {
   return {
-    getTemperatureEquatorOutput: () =>
-      byId<HTMLInputElement>("temperatureEquatorOutput"),
+    getTemperatureRange: () => ({ min: -50, max: 50 }),
   };
 }
 
@@ -38,22 +33,19 @@ const defaultTemperatureRendererTargets =
   createGlobalTemperatureRendererTargets();
 
 export const temperatureRenderer = (
+  context: EngineRuntimeContext,
   targets: TemperatureRendererTargets = defaultTemperatureRendererTargets,
 ): void => {
-  const temperatureEquatorOutput = targets.getTemperatureEquatorOutput();
-  if (!temperatureEquatorOutput) return;
-
-  TIME && console.time("drawTemperature");
+  context.timing.shouldTime && console.time("drawTemperature");
 
   temperature.selectAll("*").remove();
   const lineGen = line<[number, number]>().curve(curveBasisClosed);
   const scheme = scaleSequential(interpolateSpectral);
 
-  const tMax = +temperatureEquatorOutput.max;
-  const tMin = +temperatureEquatorOutput.min;
+  const { min: tMin, max: tMax } = targets.getTemperatureRange();
   const delta = tMax - tMin;
 
-  const { cells, vertices } = grid;
+  const { cells, vertices } = context.grid;
   const n = cells.i.length;
 
   const checkedCells = new Uint8Array(n);
@@ -100,7 +92,12 @@ export const temperatureRenderer = (
   // min temp isoline covers all graph
   temperature
     .append("path")
-    .attr("d", `M0,0 h${graphWidth} v${graphHeight} h${-graphWidth} Z`)
+    .attr(
+      "d",
+      `M0,0 h${context.worldSettings.graphWidth ?? 0} v${
+        context.worldSettings.graphHeight ?? 0
+      } h${-(context.worldSettings.graphWidth ?? 0)} Z`,
+    )
     .attr("fill", scheme(1 - (minTemp - tMin) / delta))
     .attr("stroke", "none");
 
@@ -144,7 +141,7 @@ export const temperatureRenderer = (
   }
 
   function addLabel(points: [number, number][], t: number): void {
-    const xCenter = svgWidth / 2;
+    const xCenter = (context.worldSettings.graphWidth ?? 0) / 2;
 
     // add label on isoline top center
     const tcIndex = leastIndex(
@@ -171,13 +168,17 @@ export const temperatureRenderer = (
   }
 
   function pushLabel(x: number, y: number, t: number): void {
-    if (x < 20 || x > svgWidth - 20) return;
-    if (y < 20 || y > svgHeight - 20) return;
+    const width = context.worldSettings.graphWidth ?? 0;
+    const height = context.worldSettings.graphHeight ?? 0;
+    if (x < 20 || x > width - 20) return;
+    if (y < 20 || y > height - 20) return;
     labels.push([x, y, t]);
   }
 
-  TIME && console.timeEnd("drawTemperature");
+  context.timing.shouldTime && console.timeEnd("drawTemperature");
 };
 
 const runtimeWindow = getWindow();
-if (runtimeWindow) runtimeWindow.drawTemperature = temperatureRenderer;
+if (runtimeWindow)
+  runtimeWindow.drawTemperature = () =>
+    temperatureRenderer(createBrowserRendererContext());

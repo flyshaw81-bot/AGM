@@ -1,4 +1,6 @@
+import { getActiveEngineRuntimeContext } from "../../modules/engine-runtime-active-context";
 import type { EngineRuntimeContext } from "../../modules/engine-runtime-context";
+import { getBrowserPack } from "./engineBrowserPackAdapter";
 
 export type EngineResourceSummaryTargets = {
   getBiomeData: () => unknown;
@@ -10,6 +12,7 @@ export type EngineResourceSummaryTargets = {
   getProvinces: () => unknown;
   getRoutes: () => unknown;
   getZones: () => unknown;
+  getMarkers: () => unknown;
   getCellArea: (cellId: number) => number | undefined;
   getCellPopulation: (cellId: number) => number | undefined;
 };
@@ -27,6 +30,7 @@ export type EngineResourcePackAdapter = {
   getProvinces: () => unknown;
   getRoutes: () => unknown;
   getZones: () => unknown;
+  getMarkers: () => unknown;
   getCellArea: (cellId: number) => number | undefined;
   getCellPopulation: (cellId: number) => number | undefined;
 };
@@ -40,6 +44,9 @@ function finiteNumberOrUndefined(value: unknown) {
 export function createGlobalResourceBiomeAdapter(): EngineResourceBiomeAdapter {
   return {
     getBiomeData: () => {
+      const activeData = getActiveEngineRuntimeContext()?.biomesData;
+      if (activeData) return activeData;
+
       const currentData = getGlobalValue<unknown>("biomesData");
       const data =
         currentData ||
@@ -50,6 +57,12 @@ export function createGlobalResourceBiomeAdapter(): EngineResourceBiomeAdapter {
       return data;
     },
     setBiomeData: (data) => {
+      const activeContext = getActiveEngineRuntimeContext();
+      if (activeContext && data) {
+        activeContext.biomesData = data as EngineRuntimeContext["biomesData"];
+        return;
+      }
+
       if (data) setGlobalValue("biomesData", data);
     },
   };
@@ -57,17 +70,18 @@ export function createGlobalResourceBiomeAdapter(): EngineResourceBiomeAdapter {
 
 export function createGlobalResourcePackAdapter(): EngineResourcePackAdapter {
   return {
-    getStates: () => getGlobalPack()?.states,
-    getBurgs: () => getGlobalPack()?.burgs,
-    getCultures: () => getGlobalPack()?.cultures,
-    getReligions: () => getGlobalPack()?.religions,
-    getProvinces: () => getGlobalPack()?.provinces,
-    getRoutes: () => getGlobalPack()?.routes,
-    getZones: () => getGlobalPack()?.zones,
+    getStates: () => getBrowserPack()?.states,
+    getBurgs: () => getBrowserPack()?.burgs,
+    getCultures: () => getBrowserPack()?.cultures,
+    getReligions: () => getBrowserPack()?.religions,
+    getProvinces: () => getBrowserPack()?.provinces,
+    getRoutes: () => getBrowserPack()?.routes,
+    getZones: () => getBrowserPack()?.zones,
+    getMarkers: () => getBrowserPack()?.markers,
     getCellArea: (cellId) =>
-      finiteNumberOrUndefined(getGlobalPack()?.cells?.area?.[cellId]),
+      finiteNumberOrUndefined(getBrowserPack()?.cells?.area?.[cellId]),
     getCellPopulation: (cellId) =>
-      finiteNumberOrUndefined(getGlobalPack()?.cells?.pop?.[cellId]),
+      finiteNumberOrUndefined(getBrowserPack()?.cells?.pop?.[cellId]),
   };
 }
 
@@ -93,6 +107,7 @@ export function createRuntimeResourcePackAdapter(
     getProvinces: () => context.pack?.provinces,
     getRoutes: () => context.pack?.routes,
     getZones: () => context.pack?.zones,
+    getMarkers: () => context.pack?.markers,
     getCellArea: (cellId) =>
       finiteNumberOrUndefined(context.pack?.cells?.area?.[cellId]),
     getCellPopulation: (cellId) =>
@@ -123,6 +138,7 @@ export function createResourceSummaryTargets(
     getProvinces: packAdapter.getProvinces,
     getRoutes: packAdapter.getRoutes,
     getZones: packAdapter.getZones,
+    getMarkers: packAdapter.getMarkers,
     getCellArea: packAdapter.getCellArea,
     getCellPopulation: packAdapter.getCellPopulation,
   };
@@ -133,10 +149,6 @@ export function createGlobalResourceSummaryTargets(): EngineResourceSummaryTarge
     createGlobalResourceBiomeAdapter(),
     createGlobalResourcePackAdapter(),
   );
-}
-
-function getGlobalPack() {
-  return getGlobalValue<typeof pack>("pack");
 }
 
 function getGlobalValue<T>(name: string): T | undefined {

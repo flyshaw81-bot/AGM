@@ -1,0 +1,50 @@
+
+> agm-studio@1.114.1 dev
+> vite --host 127.0.0.1 --port 5176
+
+
+  [32m[1mVITE[22m v7.3.2[39m  [2mready in [0m[1m183[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m5176[22m/AGM-Studio/[39m
+[2m04:50:35[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/layout/nativeShell.ts[22m
+[2m04:50:39[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/layout/nativeShell.ts[22m
+[2m04:50:50[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/layout/nativeShell.ts[22m
+[2m04:51:54[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/layout/nativeShell.ts[22m
+[2m04:52:13[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/layout/nativeShell.ts[22m
+[2m04:52:29[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/app/styleModules/experimentalV8.ts[22m
+[2m04:54:05[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/layout/nativeShell.ts[22m
+[2m04:54:36[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/app/styleModules/experimentalV8.ts[22m
+[2m04:55:56[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/app/styleModules/experimentalV8.ts[22m
+[2m04:56:45[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/layout/nativeShell.ts[22m
+[2m04:57:44[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/app/styleModules/experimentalV8.ts[22m
+[2m05:00:24[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/layout/nativeShell.ts[22m
+[2m05:00:50[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/app/styleModules/experimentalV8.ts[22m
+[2m05:04:12[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/layout/nativeShell.ts[22m
+[2m05:04:53[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/app/styleModules/experimentalV8.ts[22m
+[2m05:06:45[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/app/styleModules/experimentalV8.ts[22m
+[2m05:09:10[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/layout/nativeShell.ts[22m
+[2m05:09:41[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/app/styleModules/experimentalV8.ts[22m
+[2m05:14:03[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/layout/nativeShell.ts[22m
+[2m05:14:19[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/app/styleModules/experimentalV8.ts[22m
+[2m05:14:53[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/app/styleModules/experimentalV8.ts[22m
+[2m05:16:13[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/app/styleModules/experimentalV8.ts[22m
+[2m05:18:25[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/layout/nativeShell.ts[22m
+[2m05:18:34[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/app/styleModules/experimentalV8.ts[22m
+[2m05:19:38[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/app/styleModules/experimentalV8.ts[22m
+[2m05:21:29[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/app/styleModules/experimentalV8.ts[22m
+[2m05:23:28[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/app/styleModules/experimentalV8.ts[22m
+[2m05:24:42[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/app/styleModules/experimentalV8.ts[22m
+[2m05:25:10[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/app/styleModules/experimentalV8.ts[22m
+[2m05:26:30[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/app/styleModules/experimentalV8.ts[22m
+[2m05:29:06[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/layout/nativeShell.ts[22m
+[2m05:29:06[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/app/styleModules/experimentalV8.ts[22m
+[2m05:29:51[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/app/styleModules/experimentalV8.ts[22m
+[2m05:30:29[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/app/styleModules/experimentalV8.ts[22m
+[2m05:31:16[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/app/styleModules/experimentalV8.ts[22m
+[2m05:31:58[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/app/styleModules/experimentalV8.ts[22m
+[2m05:33:21[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/app/styleModules/experimentalV8.ts[22m
+[2m05:33:43[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/app/styleModules/experimentalV8.ts[22m
+[2m05:34:15[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/app/styleModules/experimentalV8.ts[22m
+[2m05:35:50[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/app/styleModules/experimentalV8.ts[22m
+[2m05:36:45[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/app/styleModules/experimentalV8.ts[22m
+[2m05:37:14[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mpage reload [39m[2mstudio/app/styleModules/experimentalV8.ts[22m

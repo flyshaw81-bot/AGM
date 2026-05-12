@@ -3,7 +3,7 @@ import {
   createSafeFilename,
   type DraftFileIoTargets,
   downloadBlobDraft,
-  loadJsZip,
+  loadZipConstructor,
   stringifyPackageFile,
 } from "./draftFileIo";
 import type { WorldDocumentDraft } from "./worldDocumentDraft";
@@ -54,7 +54,7 @@ export function createGlobalEnginePackageBundleTargets(
     options.heightmapPngTargets ?? createGlobalHeightmapPngExportTargets();
 
   return {
-    loadZip: () => loadJsZip(fileIoTargets),
+    loadZip: () => Promise.resolve(loadZipConstructor()),
     downloadBlob: (filename, blob) =>
       downloadBlobDraft(filename, blob, fileIoTargets),
     createPngBlob: (heightfield) =>

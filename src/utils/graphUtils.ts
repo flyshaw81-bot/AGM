@@ -1,6 +1,3 @@
-import Alea from "alea";
-import { color, quadtree } from "d3";
-import Delaunator from "delaunator";
 import {
   type Cells,
   type Point,
@@ -8,8 +5,12 @@ import {
   Voronoi,
 } from "../modules/voronoi";
 import type { PackedGraph } from "../types/PackedGraph";
+import Alea from "./alea";
 import { createTypedArray } from "./arrayUtils";
+import { color } from "./colorCore";
+import Delaunator from "./delaunator";
 import { rn } from "./numberUtils";
+import { quadtree } from "./quadtree";
 import { byId } from "./shorthands";
 
 export type GridPointSettingsTargets = {
@@ -657,7 +658,7 @@ export const drawHeights = ({
 
   for (let i = 0; i < heights.length; i++) {
     const colorScheme = scheme(1 - getHeight(heights[i]) / 100);
-    const { r, g, b } = color(colorScheme)?.rgb() ?? { r: 0, g: 0, b: 0 };
+    const { r, g, b } = color(colorScheme) ?? { r: 0, g: 0, b: 0 };
 
     const n = i * 4;
     imageData.data[n] = r;

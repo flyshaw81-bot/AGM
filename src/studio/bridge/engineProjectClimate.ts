@@ -5,28 +5,14 @@ import {
 
 export type EngineClimateApplyResult = "disabled" | "unavailable" | "applied";
 
-export type EngineClimateRedrawOptions = {
-  updateGlobePosition?: boolean;
-  updateGlobeTemperature?: boolean;
-};
-
 export function applyEngineWorldClimateRedraw(
-  options: EngineClimateRedrawOptions = {},
-  targets: EngineProjectClimateTargets = createGlobalProjectClimateTargets(
-    options,
-  ),
+  targets: EngineProjectClimateTargets = createGlobalProjectClimateTargets(),
 ): EngineClimateApplyResult {
   if (!targets.shouldAutoApplyClimate()) return "disabled";
 
-  if (
-    (options.updateGlobePosition && !targets.canUpdateGlobePosition()) ||
-    !targets.canApplyClimatePipeline()
-  ) {
+  if (!targets.canApplyClimatePipeline()) {
     return "unavailable";
   }
-
-  if (options.updateGlobeTemperature) targets.updateGlobeTemperature();
-  if (options.updateGlobePosition) targets.updateGlobePosition();
 
   targets.calculateTemperatures();
   targets.generatePrecipitation();

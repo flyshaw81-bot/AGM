@@ -1,3 +1,4 @@
+import type { EngineRenderAdapter } from "../engine-render-adapter";
 import { shieldBox } from "./box";
 import { colors } from "./colors";
 import { lines } from "./lines";
@@ -53,14 +54,6 @@ function getEmblems(): typeof emblems | undefined {
   }
 }
 
-function getLayerIsOn(): typeof layerIsOn | undefined {
-  try {
-    return globalThis.layerIsOn;
-  } catch {
-    return undefined;
-  }
-}
-
 function getErrorFlag(): boolean {
   try {
     return Boolean(globalThis.ERROR);
@@ -69,7 +62,22 @@ function getErrorFlag(): boolean {
   }
 }
 
-export function createGlobalEmblemRendererTargets(): EmblemRendererTargets {
+function isGlobalLayerOn(layer: string): boolean {
+  try {
+    const isLayerOn = Reflect.get(globalThis, "layerIsOn") as
+      | ((layer: string) => boolean)
+      | undefined;
+    return typeof isLayerOn === "function" ? Boolean(isLayerOn(layer)) : false;
+  } catch {
+    return false;
+  }
+}
+
+export function createGlobalEmblemRendererTargets(
+  rendering: Pick<EngineRenderAdapter, "isLayerOn"> = {
+    isLayerOn: isGlobalLayerOn,
+  },
+): EmblemRendererTargets {
   return {
     fetchText: async (url) => {
       const fetchResource = getFetch();
@@ -97,7 +105,7 @@ export function createGlobalEmblemRendererTargets(): EmblemRendererTargets {
     },
     getElementById: (id) => getDocument()?.getElementById(id) ?? null,
     hasRenderedUses: () => Boolean(getEmblems()?.selectAll?.("use")?.size?.()),
-    isLayerOn: (layer) => getLayerIsOn()?.(layer) ?? false,
+    isLayerOn: rendering.isLayerOn,
   };
 }
 

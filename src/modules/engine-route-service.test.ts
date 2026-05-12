@@ -5,6 +5,10 @@ import {
   createGlobalRouteServiceTargets,
   createRuntimeRouteService,
 } from "./engine-route-service";
+import {
+  clearActiveEngineRuntimeContext,
+  setActiveEngineRuntimeContext,
+} from "./engine-runtime-active-context";
 import type { EngineRuntimeContext } from "./engine-runtime-context";
 
 const originalRoutes = globalThis.Routes;
@@ -12,6 +16,7 @@ const originalPack = globalThis.pack;
 
 describe("createGlobalRouteService", () => {
   afterEach(() => {
+    clearActiveEngineRuntimeContext();
     globalThis.Routes = originalRoutes;
     globalThis.pack = originalPack;
   });
@@ -74,6 +79,32 @@ describe("createGlobalRouteService", () => {
 
     expect(targets.getRoutesModule()).toBe(globalThis.Routes);
     expect(targets.getPackedRoutes()).toEqual([packedRoute]);
+  });
+
+  it("prefers active context routes in default route targets", () => {
+    const activeRoute = { i: 8, group: "context-roads" };
+    const staleRoute = { i: 8, group: "global-roads" };
+    globalThis.Routes = {
+      hasRoad: vi.fn(() => true),
+    };
+    globalThis.pack = {
+      routes: [staleRoute],
+    } as typeof pack;
+    const context = {
+      pack: {
+        routes: [activeRoute],
+      },
+    } as unknown as EngineRuntimeContext;
+    setActiveEngineRuntimeContext(context);
+
+    const targets = createGlobalRouteServiceTargets();
+    const routes = createGlobalRouteService();
+
+    expect(targets.getRouteContext?.()).toBe(context);
+    expect(targets.getPackedRoutes()).toEqual([activeRoute]);
+    expect(routes.findById(8)).toBe(activeRoute);
+    expect(routes.hasRoad(12)).toBe(true);
+    expect(globalThis.Routes.hasRoad).toHaveBeenCalledWith(12, context);
   });
 
   it("composes route service from injected runtime targets", () => {

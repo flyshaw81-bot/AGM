@@ -8,6 +8,7 @@ import { getEngineExportSettings } from "../bridge/engineExport";
 import type { StudioState } from "../types";
 import { renderCanvasInspectorPanel } from "./canvasInspectorPanel";
 import { renderDataPanel } from "./dataPanel";
+import { createRelationshipRepairHealthFromSummaries } from "./directRelationshipRepairHealth";
 import { renderDirectWorkbenchDirectory } from "./directWorkbenches";
 import { renderEditorsPanel } from "./editorsPanel";
 import { renderExportPanel } from "./exportPanel";
@@ -32,7 +33,16 @@ export function renderInspector(state: StudioState) {
       return renderLayersInspectorPanel(state);
     }
     case "export": {
-      return renderExportPanel(state, getEngineExportSettings());
+      return renderExportPanel(
+        state,
+        getEngineExportSettings(),
+        createRelationshipRepairHealthFromSummaries({
+          directEditor: state.directEditor,
+          entitySummary: getEngineEntitySummary(),
+          language: state.language,
+          worldResources: getEngineWorldResourceSummary(),
+        }),
+      );
     }
     case "data": {
       const dataActions = getEngineDataActions();

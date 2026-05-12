@@ -1,8 +1,9 @@
-import type { EngineClimateRedrawOptions } from "./engineProjectClimate";
+﻿import {
+  createGlobalRenderAdapter,
+  type EngineRenderAdapter,
+} from "../../modules/engine-render-adapter";
 
-type ClimateWindow = typeof globalThis & {
-  updateGlobeTemperature?: () => void;
-  updateGlobePosition?: () => void;
+type ClimateWindow = {
   calculateTemperatures?: () => void;
   generatePrecipitation?: () => void;
   Rivers?: {
@@ -18,10 +19,8 @@ type ClimateWindow = typeof globalThis & {
   Lakes?: {
     defineNames?: () => void;
   };
-  layerIsOn?: (layer: string) => boolean;
   drawTemperature?: () => void;
   drawPrecipitation?: () => void;
-  drawBiomes?: () => void;
   drawCoordinates?: () => void;
   drawRivers?: () => void;
   ThreeD?: {
@@ -32,14 +31,12 @@ type ClimateWindow = typeof globalThis & {
       h?: ArrayLike<number>;
     };
   };
+  setTimeout?: Window["setTimeout"];
 };
 
 export type EngineProjectClimateTargets = {
   shouldAutoApplyClimate: () => boolean;
-  canUpdateGlobePosition: () => boolean;
   canApplyClimatePipeline: () => boolean;
-  updateGlobeTemperature: () => void;
-  updateGlobePosition: () => void;
   calculateTemperatures: () => void;
   generatePrecipitation: () => void;
   cloneHeights: () => Uint8Array | undefined;
@@ -66,10 +63,7 @@ export type EngineProjectClimateDomAdapter = {
 };
 
 export type EngineProjectClimatePipelineAdapter = {
-  canUpdateGlobePosition: () => boolean;
   canApplyClimatePipeline: () => boolean;
-  updateGlobeTemperature: () => void;
-  updateGlobePosition: () => void;
   calculateTemperatures: () => void;
   generatePrecipitation: () => void;
   cloneHeights: () => Uint8Array | undefined;
@@ -97,9 +91,9 @@ export type EngineProjectClimateSchedulerAdapter = {
 
 function getClimateWindow(): ClimateWindow {
   try {
-    return (globalThis.window ?? globalThis) as ClimateWindow;
+    return (globalThis.window ?? globalThis) as unknown as ClimateWindow;
   } catch {
-    return globalThis as ClimateWindow;
+    return globalThis as unknown as ClimateWindow;
   }
 }
 
@@ -123,12 +117,10 @@ function getPackCells() {
   }
 }
 
-function isClimatePipelineAvailable(options: EngineClimateRedrawOptions) {
+function isClimatePipelineAvailable() {
   try {
     const engineWindow = getClimateWindow();
     return (
-      (!options.updateGlobePosition ||
-        isFunction(engineWindow.updateGlobePosition)) &&
       isFunction(engineWindow.calculateTemperatures) &&
       isFunction(engineWindow.generatePrecipitation) &&
       isFunction(engineWindow.Rivers?.generate) &&
@@ -151,12 +143,10 @@ function callClimateHelper(callback: () => void) {
   }
 }
 
-export function createGlobalProjectClimateTargets(
-  options: EngineClimateRedrawOptions = {},
-): EngineProjectClimateTargets {
+export function createGlobalProjectClimateTargets(): EngineProjectClimateTargets {
   return createProjectClimateTargets(
     createGlobalProjectClimateDomAdapter(),
-    createGlobalProjectClimatePipelineAdapter(options),
+    createGlobalProjectClimatePipelineAdapter(),
     createGlobalProjectClimateRendererAdapter(),
     createGlobalProjectClimateSchedulerAdapter(),
   );
@@ -185,22 +175,9 @@ export function createGlobalProjectClimateDomAdapter(): EngineProjectClimateDomA
   };
 }
 
-export function createGlobalProjectClimatePipelineAdapter(
-  options: EngineClimateRedrawOptions = {},
-): EngineProjectClimatePipelineAdapter {
+export function createGlobalProjectClimatePipelineAdapter(): EngineProjectClimatePipelineAdapter {
   return {
-    canUpdateGlobePosition: () => {
-      try {
-        return isFunction(getClimateWindow().updateGlobePosition);
-      } catch {
-        return false;
-      }
-    },
-    canApplyClimatePipeline: () => isClimatePipelineAvailable(options),
-    updateGlobeTemperature: () =>
-      callClimateHelper(() => getClimateWindow().updateGlobeTemperature?.()),
-    updateGlobePosition: () =>
-      callClimateHelper(() => getClimateWindow().updateGlobePosition?.()),
+    canApplyClimatePipeline: () => isClimatePipelineAvailable(),
     calculateTemperatures: () =>
       callClimateHelper(() => getClimateWindow().calculateTemperatures?.()),
     generatePrecipitation: () =>
@@ -234,25 +211,22 @@ export function createGlobalProjectClimatePipelineAdapter(
   };
 }
 
-export function createGlobalProjectClimateRendererAdapter(): EngineProjectClimateRendererAdapter {
+export function createGlobalProjectClimateRendererAdapter(
+  rendering: Pick<
+    EngineRenderAdapter,
+    "isLayerOn" | "drawBiomes" | "drawRivers" | "drawTemperature"
+  > = createGlobalRenderAdapter(),
+): EngineProjectClimateRendererAdapter {
   return {
-    isLayerOn: (layer) => {
-      try {
-        return getClimateWindow().layerIsOn?.(layer) === true;
-      } catch {
-        return false;
-      }
-    },
+    isLayerOn: rendering.isLayerOn,
     drawTemperature: () =>
-      callClimateHelper(() => getClimateWindow().drawTemperature?.()),
+      callClimateHelper(() => rendering.drawTemperature?.()),
     drawPrecipitation: () =>
       callClimateHelper(() => getClimateWindow().drawPrecipitation?.()),
-    drawBiomes: () =>
-      callClimateHelper(() => getClimateWindow().drawBiomes?.()),
+    drawBiomes: () => callClimateHelper(() => rendering.drawBiomes?.()),
     drawCoordinates: () =>
       callClimateHelper(() => getClimateWindow().drawCoordinates?.()),
-    drawRivers: () =>
-      callClimateHelper(() => getClimateWindow().drawRivers?.()),
+    drawRivers: () => callClimateHelper(() => rendering.drawRivers?.()),
     updateThreeD: () =>
       callClimateHelper(() => getClimateWindow().ThreeD?.update?.()),
   };
@@ -279,10 +253,7 @@ export function createProjectClimateTargets(
 ): EngineProjectClimateTargets {
   return {
     shouldAutoApplyClimate: domAdapter.shouldAutoApplyClimate,
-    canUpdateGlobePosition: pipelineAdapter.canUpdateGlobePosition,
     canApplyClimatePipeline: pipelineAdapter.canApplyClimatePipeline,
-    updateGlobeTemperature: pipelineAdapter.updateGlobeTemperature,
-    updateGlobePosition: pipelineAdapter.updateGlobePosition,
     calculateTemperatures: pipelineAdapter.calculateTemperatures,
     generatePrecipitation: pipelineAdapter.generatePrecipitation,
     cloneHeights: pipelineAdapter.cloneHeights,

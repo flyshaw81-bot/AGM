@@ -10,6 +10,53 @@ type BiomeDistributionItem = {
   percentage: number;
 };
 
+type BiomeInsightsOptions = {
+  closeAction?: boolean;
+  palette?: "source" | "atlas";
+};
+
+const ATLAS_BIOME_COLORS: Record<string, string> = {
+  Marine: "#6f93bd",
+  "Hot desert": "#c9ac72",
+  "Cold desert": "#aeb88b",
+  Savanna: "#9baa78",
+  Grassland: "#89a874",
+  Steppe: "#a69b6e",
+  Forest: "#679178",
+  Desert: "#bd996a",
+  Highland: "#95958a",
+  "Tropical rainforest": "#5d9775",
+  "Temperate deciduous forest": "#779d77",
+  "Temperate rainforest": "#6d997f",
+  Taiga: "#6f8e7d",
+  Tundra: "#8794aa",
+  Glacier: "#b6cbd3",
+  Wetland: "#69a09b",
+  Other: "#6d778c",
+};
+
+const ATLAS_FALLBACK_COLORS = [
+  "#6f93bd",
+  "#aeb88b",
+  "#c9ac72",
+  "#8794aa",
+  "#69a09b",
+  "#6d778c",
+];
+
+function getBiomeDisplayColor(
+  item: BiomeDistributionItem,
+  index: number,
+  palette: BiomeInsightsOptions["palette"],
+) {
+  if (palette !== "atlas") return item.color;
+  if (item.id === "other") return ATLAS_BIOME_COLORS.Other;
+  return (
+    ATLAS_BIOME_COLORS[item.name] ??
+    ATLAS_FALLBACK_COLORS[index % ATLAS_FALLBACK_COLORS.length]
+  );
+}
+
 function localizeBiomeName(name: string, language: StudioLanguage) {
   const biomeNumberMatch = /^Biome #(\d+)$/u.exec(name);
   if (biomeNumberMatch)
@@ -108,8 +155,13 @@ function getBiomeDistributionItems(): BiomeDistributionItem[] {
   );
   if (!total) return [];
 
-  const ranked = Array.from(counts.entries())
-    .map(([id, count]) => {
+  const biomeIds = new Set<number>([
+    ...worldResources.biomes.map((biome) => biome.id),
+    ...counts.keys(),
+  ]);
+  const ranked = Array.from(biomeIds)
+    .map((id) => {
+      const count = counts.get(id) ?? 0;
       const biome = biomeMap.get(id);
       return {
         id,
@@ -120,8 +172,6 @@ function getBiomeDistributionItems(): BiomeDistributionItem[] {
       };
     })
     .sort((a, b) => b.count - a.count);
-
-  if (ranked.length <= 6) return ranked;
 
   const visible = ranked.slice(0, 5);
   const otherCount = ranked.slice(5).reduce((sum, item) => sum + item.count, 0);
@@ -140,18 +190,31 @@ function getBiomeDistributionItems(): BiomeDistributionItem[] {
 export function renderBiomeDistributionInsights(
   language: StudioLanguage,
   activeBiomeId: number | string | null,
+  options: BiomeInsightsOptions = {},
 ) {
-  const items = getBiomeDistributionItems();
+  const items = getBiomeDistributionItems().map((item, index) => ({
+    ...item,
+    displayColor: getBiomeDisplayColor(item, index, options.palette),
+  }));
   const title = t(language, "生物群系", "Biomes");
-  const activeBiomeKey = activeBiomeId === null ? null : String(activeBiomeId);
+  const fallbackActiveItem = items.find((item) => item.id !== "other") ?? null;
+  const activeBiomeKey =
+    activeBiomeId === null
+      ? fallbackActiveItem === null
+        ? null
+        : String(fallbackActiveItem.id)
+      : String(activeBiomeId);
   const selectedItem =
     activeBiomeKey === null
       ? null
       : items.find((item) => String(item.id) === activeBiomeKey) || null;
+  const headerAction = options.closeAction
+    ? `<button class="studio-biome-insights__close" type="button" data-studio-action="canvas-tool" data-value="select" aria-label="${t(language, "关闭生物群系调节", "Close biome adjustment")}">×</button>`
+    : "";
   if (!items.length) {
     return `
       <section class="studio-biome-insights" data-studio-biome-insights="true" data-biome-count="0">
-        <div class="studio-biome-insights__header"><strong>${title}</strong><span>⌃</span></div>
+        <div class="studio-biome-insights__header"><strong>${title}</strong>${headerAction}</div>
         <p>${t(language, "生成地图后会显示生物群系占比。", "Biome coverage appears after a map is generated.")}</p>
       </section>
     `;
@@ -165,7 +228,7 @@ export function renderBiomeDistributionInsights(
       const label = localizeBiomeName(item.name, language);
       const id = String(item.id);
       const active = String(item.id) === activeBiomeKey;
-      return `<path class="studio-biome-insights__slice" data-biome-id="${escapeHtml(id)}" data-biome-label="${escapeHtml(label)}" data-biome-percentage="${item.percentage.toFixed(1)}"${active ? ` data-biome-active="true"` : ""} d="${donutSegmentPath(start, cursor)}" fill="${escapeHtml(item.color)}" tabindex="0" role="button" aria-label="${escapeHtml(`${label} ${item.percentage.toFixed(1)}%`)}"></path>`;
+      return `<path class="studio-biome-insights__slice" data-biome-id="${escapeHtml(id)}" data-biome-label="${escapeHtml(label)}" data-biome-percentage="${item.percentage.toFixed(1)}"${active ? ` data-biome-active="true"` : ""} d="${donutSegmentPath(start, cursor)}" fill="${escapeHtml(item.displayColor)}" tabindex="0" role="button" aria-label="${escapeHtml(`${label} ${item.percentage.toFixed(1)}%`)}"></path>`;
     })
     .join("");
 
@@ -174,20 +237,20 @@ export function renderBiomeDistributionInsights(
     .map((item) => {
       const label = localizeBiomeName(item.name, language);
       const active = String(item.id) === activeBiomeKey;
-      return `<div class="studio-biome-insights__control" data-biome-control-id="${escapeHtml(String(item.id))}"${active ? "" : ` hidden`} style="--biome-color: ${escapeHtml(item.color)}"><div class="studio-biome-insights__control-head"><strong>${escapeHtml(label)}</strong><span>${item.percentage.toFixed(1)}%</span></div><label><span>${t(language, "目标占比", "Target coverage")}</span><input type="range" min="1" max="80" step="1" value="${Math.round(item.percentage)}" data-studio-action="biome-coverage-slider" data-biome-id="${item.id}" /></label><p>${t(language, "调整目标值后会重新分配地图单元。复杂控制会进入高级生态规则。", "Adjusting the target reallocates map cells. Advanced controls belong in biome rules.")}</p></div>`;
+      return `<div class="studio-biome-insights__control" data-biome-control-id="${escapeHtml(String(item.id))}"${active ? "" : ` hidden`} style="--biome-color: ${escapeHtml(item.displayColor)}"><div class="studio-biome-insights__control-head"><strong>${escapeHtml(label)}</strong><span>${item.percentage.toFixed(1)}%</span></div><label><span>${t(language, "目标占比", "Target coverage")}</span><input type="range" min="1" max="80" step="1" value="${Math.round(item.percentage)}" data-studio-action="biome-coverage-slider" data-biome-id="${item.id}" /></label><p>${t(language, "调整目标值后会重新分配地图单元。复杂控制会进入高级生态规则。", "Adjusting the target reallocates map cells. Advanced controls belong in biome rules.")}</p></div>`;
     })
     .join("");
 
   return `
     <section class="studio-biome-insights" data-studio-biome-insights="true" data-biome-count="${items.length}"${selectedItem ? ` data-active-biome-id="${escapeHtml(String(selectedItem.id))}"` : ""}>
-      <div class="studio-biome-insights__header"><strong>${title}</strong><span>⌃</span></div>
+      <div class="studio-biome-insights__header"><strong>${title}</strong>${headerAction}</div>
       <div class="studio-biome-insights__body">
         <div class="studio-biome-insights__legend">
           ${items
             .map((item) => {
               const label = localizeBiomeName(item.name, language);
               const active = String(item.id) === activeBiomeKey;
-              return `<button class="studio-biome-insights__row" data-biome-id="${escapeHtml(String(item.id))}" data-biome-percentage="${item.percentage.toFixed(1)}"${active ? ` data-biome-active="true"` : ""} style="--biome-color: ${escapeHtml(item.color)}" type="button"><span class="studio-biome-insights__swatch" style="--biome-color: ${escapeHtml(item.color)}"></span><strong>${escapeHtml(label)}</strong><em>${item.percentage.toFixed(1)}%</em></button>`;
+              return `<button class="studio-biome-insights__row" data-biome-id="${escapeHtml(String(item.id))}" data-biome-percentage="${item.percentage.toFixed(1)}"${active ? ` data-biome-active="true"` : ""} style="--biome-color: ${escapeHtml(item.displayColor)}" type="button"><span class="studio-biome-insights__swatch" style="--biome-color: ${escapeHtml(item.displayColor)}"></span><strong>${escapeHtml(label)}</strong><em>${item.percentage.toFixed(1)}%</em></button>`;
             })
             .join("")}
         </div>
